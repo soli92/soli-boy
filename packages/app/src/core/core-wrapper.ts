@@ -24,6 +24,14 @@ export interface LoadOptions {
 export interface EmulatorEngine {
   load(opts: LoadOptions): Promise<void>;
   start(): void;
+  /** Imposta volume (0..1) e mute sul core. TSK-009 / US-015. */
+  setAudio(settings: AudioSettings): void;
+}
+
+/** Impostazioni audio. `volume` normalizzato 0..1. */
+export interface AudioSettings {
+  volume: number;
+  mute: boolean;
 }
 
 export type SessionState = "idle" | "loaded" | "running";
@@ -63,4 +71,17 @@ export class CoreWrapper {
     this.engine.start();
     this.state = "running";
   }
+
+  /** Imposta volume/mute. Il volume è clampato in [0,1]. TSK-009 / US-015. */
+  setAudio(settings: AudioSettings): void {
+    const volume = Math.min(1, Math.max(0, settings.volume));
+    this.audio = { volume, mute: settings.mute };
+    this.engine.setAudio(this.audio);
+  }
+
+  get audioSettings(): AudioSettings {
+    return this.audio;
+  }
+
+  private audio: AudioSettings = { volume: 1, mute: false };
 }

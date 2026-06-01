@@ -121,3 +121,38 @@ Pagine create: 6 | Figure: 0 | Aggiornamenti: 2 (solids, index.md) | Gap nuovi: 
 **Commit:** n/a (gate VCS umano pendente)
 **DoD:** pass — typecheck OK, 21/21 test verdi (5 nuovi core-wrapper)
 **Note:** CoreWrapper (ADR-003): resolveCore (riusa PlatformRecognition) + lifecycle load/start su EmulatorEngine pluggable (EmulatorJS in runtime). Esegue solo file utente.
+
+- 2026-06-01 18:20 — `review TSK-002 iter-1 → pass`
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite 5.x (conf 0.95)
+  - Finding: {high:0, medium:0, low:0}, dedup:0 · Report: [report](../code_quality/reports/TSK-002-iter-1.md)
+- 2026-06-01 18:20 — `review TSK-007 iter-1 → pass`
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite 5.x (conf 0.95)
+  - Finding: {high:0, medium:0, low:1}, dedup:0 · Report: [report](../code_quality/reports/TSK-007-iter-1.md)
+
+## 2026-06-01 18:50 — develop TSK-009
+**Agente:** be-dev · **Layer:** be · **Code path:** ./packages/app/
+**TSK:** [[../management/kanban/EP-003-esecuzione-e-controlli/US-015-controllo-audio/TSK-009]]
+**Files touched:** 2 (src/core/core-wrapper.ts, src/core/core-wrapper.test.ts)
+**Commit:** n/a (gate VCS umano pendente) · **DoD:** pass — typecheck OK, 29/29 test verdi
+**Note:** CoreWrapper.setAudio(volume/mute) con clamp [0,1]; EmulatorEngine esteso. Migliorato il fake test (rimosso `as any`, advisory TSK-007).
+
+## 2026-06-01 18:50 — develop TSK-008
+**Agente:** fe-dev · **Layer:** fe · **Code path:** ./packages/app/
+**TSK:** [[../management/kanban/EP-003-esecuzione-e-controlli/US-010-avvio-emulazione/TSK-008]]
+**Files touched:** 2 (src/components/Player/Player.tsx, Player.test.tsx)
+**Commit:** n/a · **DoD:** pass — typecheck OK, test verdi
+**Note:** Player monta viewport + HUD; Avvia → CoreWrapper.load+start. Engine iniettato (testabile). Su solids.
+
+## 2026-06-01 18:50 — develop TSK-003
+**Agente:** fe-dev · **Layer:** fe · **Code path:** ./packages/app/
+**TSK:** [[../management/kanban/EP-001-gestione-file-di-gioco/US-001-caricare-rom/TSK-003]]
+**Files touched:** 2 (src/components/FileLoader/FileLoader.tsx, FileLoader.test.tsx)
+**Commit:** n/a · **DoD:** pass — typecheck OK, test verdi
+**Note:** Picker + drag&drop → importRom; lettura header difensiva; errore su file non supportato. Su solids.
+
+## 2026-06-01 18:50 — develop TSK-005
+**Agente:** be-dev · **Layer:** be · **Code path:** ./packages/app/
+**TSK:** [[../management/kanban/EP-001-gestione-file-di-gioco/US-003-caricare-bios/TSK-005]]
+**Files touched:** 3 (src/storage/bios.ts, src/storage/bios.test.ts, src/domain/bios-policy.ts)
+**Commit:** n/a · **DoD:** pass — typecheck OK, test verdi
+**Note:** putBios/getBios/hasBios su store config (chiave bios:<platform>); requiresBios (GBA). Nessuna distribuzione BIOS.

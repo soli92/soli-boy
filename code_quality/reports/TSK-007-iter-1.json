@@ -1,0 +1,25 @@
+{
+  "tsk_id": "TSK-007",
+  "stack_descriptor": { "language": "typescript", "framework": "vite", "version": "5.x", "confidence": 0.95 },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "rule_id": "TS-IDIOM-002",
+      "file": "packages/app/src/core/core-wrapper.test.ts",
+      "lines": "5-15",
+      "severity": "low",
+      "detected_by": ["idiomaticity"],
+      "rationale": "fakeEngine usa cast `as any` per l'engine di test; preferibile un tipo esplicito del fake per preservare la type-safety del test.",
+      "fix_complexity": "low",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "pass",
+  "verdict_rationale": "CoreWrapper idiomatico e robusto: resolveCore riusa PlatformRecognition, lifecycle con state machine e guard (start senza load → errore). Engine astratto per testabilità (ADR-003). Solo un low advisory sui cast `as any` nel test.",
+  "summary": "Integrazione core ben astratta e testata (5/5). Nota low: ridurre `as any` nel fake engine di test.",
+  "markers": { "no_progress": false, "regression": false, "loop_exhausted": false, "degraded": false },
+  "files_modified_by_fix": [],
+  "generated_at": "2026-06-01T18:20:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}

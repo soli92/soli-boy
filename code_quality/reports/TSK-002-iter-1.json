@@ -1,0 +1,14 @@
+{
+  "tsk_id": "TSK-002",
+  "stack_descriptor": { "language": "typescript", "framework": "vite", "version": "5.x", "confidence": 0.95 },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [],
+  "verdict": "pass",
+  "verdict_rationale": "StoragePort ben definita e disaccoppiata (ADR-002); importRom gestisce il caso non supportato senza persistere; risultato tipato come discriminated union {ok}. 3/3 test verdi con StoragePort in-memory. Nessuna finding.",
+  "summary": "Porta di persistenza pulita + adapter IndexedDB + dominio importRom robusto e idiomatico. import type usato correttamente; nessun problema rilevato.",
+  "markers": { "no_progress": false, "regression": false, "loop_exhausted": false, "degraded": false },
+  "files_modified_by_fix": [],
+  "generated_at": "2026-06-01T18:20:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}
