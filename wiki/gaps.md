@@ -84,14 +84,27 @@ _(nessun gap registrato al bootstrap)_
 **Sospetta fonte:** runbook/ADR ancora da scrivere per la pipeline (es. `wiki/runbooks/ci-pipeline.md`) + decisioni di topologia (GitHub Actions hosted vs self-hosted, parallelism, cache strategy).
 **Impatto:** non-bloccante per la definizione PM dell'epica (storia inquadrabile a livello "cosa", non "come"); bloccante per il TPM che dovrà scomporre in TSK senza inventare dettagli operativi (matrice, versioni, action specifiche). Risolvere in design/architettura prima del breakdown TSK.
 
+**CHIUSO 2026-06-01 — decisioni ratificate dall'owner (TPM Sprint 6):** GitHub Actions, workflow `.github/workflows/ci.yml`, trigger push+PR verso `main`, runner `ubuntu-latest`, Node 20 LTS, steps: checkout→setup-node (cache npm)→npm ci→typecheck→unit (vitest)→install Playwright chromium→e2e (chromium)→build. Working-directory `packages/app`. ROM e2e: MIT già in `public/test-roms/`. Implementato in TSK-049.
+
 ## 2026-06-01 — branch-protection-policy
 **Origine:** product-manager @ definizione EP-011 (CI/CD)
 **Gap:** la wiki cita R.14 "VCS gate umano" come vincolo della factory ma non documenta una policy esplicita di branch protection su `main` per soli-boy (chi può mergiare, quanti reviewer, status check obbligatori, linear history sì/no, signed commits sì/no, blocco force-push).
 **Sospetta fonte:** policy di governance del repo `soli92/soli-boy` (impostata via UI GitHub o `repository_rulesets`) ancora da definire e tracciare in wiki.
 **Impatto:** non-bloccante per definire la storia ("la main richiede CI verde prima del merge"); bloccante per implementazione tecnica esatta (numero approvers, status check names) → da definire con l'owner prima del TSK.
 
+**CHIUSO 2026-06-01 — decisioni ratificate dall'owner (TPM Sprint 6):** status check obbligatorio = job `ci` del workflow CI; nessuna review obbligatoria (repo single-committer); no force-push; no cancellazione `main`; PR obbligatoria. Configurazione effettiva è gate umano (R.14/R.15). Descritta in TSK-050.
+
 ## 2026-06-01 — vercel-deploy-trigger-policy
 **Origine:** product-manager @ definizione EP-011 (CD)
 **Gap:** [[distribuzione-web-e-desktop]] e `packages/app/vercel.json` (presente nel repo, solo header COOP/COEP) confermano Vercel come target di deploy ma la wiki non documenta la policy di Continuous Deployment: trigger (push su main? tag `v*`? release GitHub?), ambienti (preview vs production), gestione segreti, dominio.
 **Sospetta fonte:** decisione di product/owner + integrazione GitHub↔Vercel (project linking) da formalizzare in runbook.
 **Impatto:** non-bloccante per la storia ("deploy del frontend su Vercel con header COOP/COEP"); bloccante per gli AC operativi dei TSK → da definire prima del breakdown.
+
+**CHIUSO 2026-06-01 — decisioni ratificate dall'owner (TPM Sprint 6):** deploy produzione su tag `v*`, deploy preview automatico su PR. Output: dist di `packages/app`. Segreti GitHub necessari: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (creazione = gate umano). `packages/app/vercel.json` (COOP/COEP) non modificato. Implementato in TSK-051.
+
+## 2026-06-01 — svg-react-import-strategy
+**Origine:** tpm @ breakdown TSK-046 (logo header EP-010)
+**Gap:** TSK-046 prevede di importare `soliboy-logo-mono.svg` come componente React. `packages/app/vite.config.ts` usa solo `@vitejs/plugin-react` — non è installato/configurato `vite-plugin-svgr` (necessario per l'import `?react` che trasforma SVG in componente React). L'alternativa (import `?url` + `<img src>`) non richiede plugin aggiuntivi ma perde il vantaggio di `currentColor`.
+**Sospetta fonte:** decisione implementativa da prendere in TSK-046: (a) installare `vite-plugin-svgr` + aggiornare `vite.config.ts` e `tsconfig`; (b) oppure usare import URL + `<img>` con `aria-label`. Entrambe sono valide; (b) è zero-deps-extra.
+**Impatto:** non-bloccante per il task (TSK-046 documenta entrambe le opzioni). L'agent deve scegliere e annotare la decisione. Se sceglie (a), `vite.config.ts` va modificato (fuori scope TSK-042).
+**Azione:** risolto inline in TSK-046 (assunzione annotata). Nessun blocco su altri task.

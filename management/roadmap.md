@@ -2,7 +2,7 @@
 type: roadmap
 status: draft
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-01T22:00:00+02:00
 ---
 
 # Roadmap — soli-boy
@@ -52,21 +52,27 @@ Nucleo condiviso funzionante nel browser.
 Epiche trasversali (non vincolate a una specifica release di prodotto: agiscono sui
 moduli già consegnati e abilitano i futuri).
 
-| EP | Titolo | Priorità | Confidence | Dipende da |
-|----|--------|----------|-----------|-----------|
-| EP-010 | Tema 90's e identità di brand | medium | 75% | — |
-| EP-011 | CI/CD | high | 55% | — |
+| EP | Titolo | Priorità | Confidence | Dipende da | Sprint |
+|----|--------|----------|-----------|-----------|--------|
+| EP-010 | Tema 90's e identità di brand | medium | 75% | — | 6 |
+| EP-011 | CI/CD | high | 55% | — | 6 |
 
 - **EP-010** completa l'identità visiva: tema `90s-party` di SoliDS reale (gap
   `design-system-real-package` CHIUSO via TSK-040) + cablaggio dei brand asset
   (favicon, app icon, manifest, logo header) già presenti in `raw/soliboy-brand/`.
+  TSK generati in Sprint 6: TSK-042..048 (7 task: 5 fe, 2 qa).
 - **EP-011** introduce pipeline CI (typecheck/unit/e2e/build), branch protection
   su `main` (R.14 VCS gate) e CD del frontend su Vercel preservando gli header
   COOP/COEP richiesti dall'emulazione WASM ([[emulazione-via-core-wasm]]).
-  Tre gap aperti non-bloccanti su `wiki/gaps.md` da risolvere in architettura:
-  `ci-cd-pipeline-definition`, `branch-protection-policy`,
-  `vercel-deploy-trigger-policy`.
+  Gap di prodotto risolti con decisioni ratificate dall'owner:
+  `ci-cd-pipeline-definition` → TSK-049 (GitHub Actions, Node 20, ubuntu-latest,
+  Chromium only, working-dir packages/app);
+  `branch-protection-policy` → TSK-050 (CI verde obbligatorio, no reviews, no
+  force-push, gate umano R.14);
+  `vercel-deploy-trigger-policy` → TSK-051 (produzione su tag v*, preview su PR).
+  TSK generati in Sprint 6: TSK-049..052 (4 task: 3 fe/agent + 1 fe/human).
 
 ## Backlog emulazione (post ADR-005)
-- Sprint 4 (in corso): WasmBoy GB/GBC (real), GBA (mGBA), deprecazione EmulatorJS.
+- Sprint 4/5 (completati): WasmBoy GB/GBC (real), GBA (mGBA), deprecazione
+  EmulatorJS, save state, filtri video. TSK-041 done (bugfix canvas WasmBoy).
 - EP-009 (futura): **Supporto arcade** (FBNeo/MAME) via libretro/RetroArch web — rinviato (gap arcade-emulation-engine).
