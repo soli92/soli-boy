@@ -51,8 +51,11 @@ export function getDB(): Promise<IDBPDatabase<SoliBoyDB>> {
   return dbPromise;
 }
 
-/** Solo per i test: chiude la connessione e resetta il riferimento al database. */
-export async function __resetDBForTests(): Promise<void> {
+/**
+ * Chiude la connessione al database e ne resetta il riferimento.
+ * Capability di produzione (es. teardown dell'app / cambio profilo); riusata dai test.
+ */
+export async function closeDB(): Promise<void> {
   if (dbPromise) {
     const db = await dbPromise;
     db.close();
@@ -91,11 +94,12 @@ export async function removeRom(id: string): Promise<void> {
 /** Elenca le ROM, opzionalmente filtrate per piattaforma e/o sottostringa del titolo. */
 export async function listRoms(filter: RomFilter = {}): Promise<RomRecord[]> {
   const db = await getDB();
-  const all = await db.getAll("roms");
+  // Usa l'index `by_platform` quando il filtro piattaforma è valorizzato (TS-DESIGN-002),
+  // evitando il full-scan in memoria. La query testuale non ha index → filtro in memoria.
+  const rows = filter.platform
+    ? await db.getAllFromIndex("roms", "by_platform", filter.platform)
+    : await db.getAll("roms");
   const q = filter.query?.trim().toLowerCase();
-  return all.filter((r) => {
-    if (filter.platform && r.platform !== filter.platform) return false;
-    if (q && !r.title.toLowerCase().includes(q)) return false;
-    return true;
-  });
+  if (!q) return rows;
+  return rows.filter((r) => r.title.toLowerCase().includes(q));
 }

@@ -1,0 +1,25 @@
+{
+  "tsk_id": "TSK-004",
+  "stack_descriptor": { "language": "typescript", "framework": "vite", "version": "5.x", "confidence": 0.95 },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "rule_id": "TS-ROBUST-001",
+      "file": "packages/app/src/domain/platform-recognition.ts",
+      "lines": "31-34",
+      "severity": "low",
+      "detected_by": ["robustness"],
+      "rationale": "Arcade riconosciuto solo per estensione .zip senza ispezione del contenuto; documentato ma potenzialmente ambiguo (uno zip qualsiasi).",
+      "fix_complexity": "medium",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "pass",
+  "verdict_rationale": "Nessuna finding high/medium. Logica pura, tipata e coperta da 7 test (TSK-010 anticipato). Una nota low advisory sul riconoscimento arcade.",
+  "summary": "PlatformRecognition idiomatico e robusto: mapping estensione/contenuto→core, magic GBA prevale su estensione, non supportato→reason. Solo advisory sul riconoscimento arcade.",
+  "markers": { "no_progress": false, "regression": false, "loop_exhausted": false, "degraded": false },
+  "files_modified_by_fix": [],
+  "generated_at": "2026-06-01T17:30:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}

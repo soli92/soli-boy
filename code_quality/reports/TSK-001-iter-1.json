@@ -1,0 +1,35 @@
+{
+  "tsk_id": "TSK-001",
+  "stack_descriptor": { "language": "typescript", "framework": "vite", "version": "5.x", "confidence": 0.95 },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "rule_id": "TS-DESIGN-002",
+      "file": "packages/app/src/storage/db.ts",
+      "lines": "92-101",
+      "severity": "medium",
+      "detected_by": ["design"],
+      "rationale": "listRoms usa getAll + filtro in memoria ignorando l'index by_platform definito nello schema; degrada al crescere della libreria.",
+      "fix_complexity": "low",
+      "auto_fixable": false
+    },
+    {
+      "rule_id": "TS-DESIGN-001",
+      "file": "packages/app/src/storage/db.ts",
+      "lines": "53-60",
+      "severity": "low",
+      "detected_by": ["design"],
+      "rationale": "__resetDBForTests è un hook test-only esportato dal modulo di produzione.",
+      "fix_complexity": "low",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "conditional",
+  "verdict_rationale": "Una finding medium azionabile (uso dell'index) e una low; nessun marker rosso. Una iterazione di fix migliora design/performance dello storage.",
+  "summary": "Storage adapter corretto e testato (4/4). Migliorabile: usare l'index by_platform per il filtro piattaforma in listRoms; valutare l'isolamento dell'hook di reset test-only.",
+  "markers": { "no_progress": false, "regression": false, "loop_exhausted": false, "degraded": false },
+  "files_modified_by_fix": ["packages/app/src/storage/db.ts"],
+  "generated_at": "2026-06-01T17:30:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}

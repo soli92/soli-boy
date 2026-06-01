@@ -78,3 +78,26 @@ Pagine create: 6 | Figure: 0 | Aggiornamenti: 2 (solids, index.md) | Gap nuovi: 
 **Commit:** n/a (gate VCS umano pendente)
 **DoD:** pass — typecheck OK, 2/2 test verdi (@testing-library/react)
 **Note:** Componente LegalNotice riusabile su classi solids (sb-note); role=note/aria-label. Scheletro app minimo aggiunto.
+
+- 2026-06-01 17:30 — `review TSK-001 iter-1 → conditional`
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite 5.x (conf 0.95)
+  - Finding: {high:0, medium:1, low:1}, dedup:0 · Report: [report](../code_quality/reports/TSK-001-iter-1.md)
+- 2026-06-01 17:30 — `review TSK-004 iter-1 → pass`
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite 5.x (conf 0.95)
+  - Finding: {high:0, medium:0, low:1}, dedup:0 · Report: [report](../code_quality/reports/TSK-004-iter-1.md)
+- 2026-06-01 17:30 — `review TSK-006 iter-1 → pass`
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/react 18.3 (conf 0.95)
+  - Finding: {high:0, medium:0, low:1}, dedup:0 · Report: [report](../code_quality/reports/TSK-006-iter-1.md)
+
+## 2026-06-01 17:50 — develop TSK-001 (correction)
+**Agente:** db-dev
+**TSK:** [[../management/kanban/EP-001-gestione-file-di-gioco/US-004-persistenza-libreria/TSK-001]]
+**Layer:** db
+**Code path:** ./packages/app/
+**Files touched:** 2 (src/storage/db.ts, src/storage/db.test.ts)
+**Commit:** n/a (gate VCS umano pendente)
+**DoD:** pass — re-Develop su task_package iter 2; typecheck OK, 13/13 test verdi
+**Note:** Fix CQRL: listRoms usa index by_platform (TS-DESIGN-002); __resetDBForTests → closeDB() API prod (TS-DESIGN-001). Nessun refactor opportunistico (max_diff_lines 80 rispettato).
+- 2026-06-01 17:55 — `review TSK-001 iter-2 → pass`
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite 5.x (conf 0.95)
+  - Finding: {high:0, medium:0, low:0}, dedup:0 · Report: [report](../code_quality/reports/TSK-001-iter-2.md)

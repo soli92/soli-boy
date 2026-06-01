@@ -3,7 +3,7 @@
 // (Blob.arrayBuffer non è implementato dal Blob di jsdom; in browser reale è disponibile.)
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { addRom, getRom, listRoms, removeRom, __resetDBForTests } from "./db";
+import { addRom, getRom, listRoms, removeRom, closeDB } from "./db";
 import type { RomInput } from "./types";
 
 function rom(title: string, content: string, platform: RomInput["platform"], core: RomInput["core"]): RomInput {
@@ -12,7 +12,7 @@ function rom(title: string, content: string, platform: RomInput["platform"], cor
 
 beforeEach(async () => {
   // Chiudi la connessione aperta, poi elimina il DB (attendi il completamento).
-  await __resetDBForTests();
+  await closeDB();
   await new Promise<void>((resolve, reject) => {
     const req = indexedDB.deleteDatabase("soli-boy");
     req.onsuccess = () => resolve();
