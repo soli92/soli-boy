@@ -1,0 +1,8 @@
+{ "tsk_id":"TSK-021","stack_descriptor":{"language":"typescript","framework":"vite","version":"5.x","confidence":0.95},
+  "iter":2,"passes_run":["idiomaticity","design","robustness"],"findings":[],
+  "verdict":"pass",
+  "verdict_rationale":"Finding TS-ROBUST-001 risolta: load() ora reject su onerror del loader + timeout su EJS_ready (default 30s) + cleanup (revoke Object URL) sul fallimento. Nessuna nuova finding; typecheck OK, 49 unit verdi.",
+  "summary":"Re-Develop mirato chiuso: gestione errore/timeout robusta in load(). Runtime reale resta validato in TSK-024.",
+  "markers":{"no_progress":false,"regression":false,"loop_exhausted":false,"degraded":false},
+  "files_modified_by_fix":["packages/app/src/core/emulatorjs-engine.ts"],
+  "generated_at":"2026-06-01T22:40:00+02:00","reviewer_version":"code-reviewer@2.12.0" }

@@ -3,7 +3,7 @@
 // Monta il viewport di gioco e avvia l'esecuzione tramite CoreWrapper (ADR-003).
 // L'EmulatorEngine (EmulatorJS in runtime) è iniettato → componente testabile.
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   CoreWrapper,
   type EmulatorEngine,
@@ -23,11 +23,14 @@ export function Player({ engine, rom, title }: PlayerProps) {
   const wrapper = useMemo(() => new CoreWrapper(engine), [engine]);
   const [state, setState] = useState(wrapper.currentState);
   const [error, setError] = useState<string | null>(null);
+  const screenRef = useRef<HTMLDivElement>(null);
 
   async function handlePlay() {
     setError(null);
     try {
-      if (wrapper.currentState === "idle") await wrapper.load(rom);
+      // TSK-022: passa il nodo DOM all'engine (EmulatorJsEngine vi monta EmulatorJS).
+      if (wrapper.currentState === "idle")
+        await wrapper.load({ ...rom, container: screenRef.current ?? undefined });
       wrapper.start();
       setState(wrapper.currentState);
     } catch (e) {
@@ -55,7 +58,7 @@ export function Player({ engine, rom, title }: PlayerProps) {
 
   return (
     <section className="sb-app">
-      <div className="sb-screen" aria-label="Schermo di gioco" data-state={state}>
+      <div ref={screenRef} className="sb-screen" aria-label="Schermo di gioco" data-state={state}>
         {running ? (title ?? "In esecuzione") : paused ? "In pausa" : "Premi Avvia"}
       </div>
       <div className="sb-hud">

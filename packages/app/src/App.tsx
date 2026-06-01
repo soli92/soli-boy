@@ -6,19 +6,28 @@ import { Settings } from "./components/Settings/Settings";
 import { LegalNotice } from "./components/LegalNotice";
 import { indexedDbStorage } from "./storage/indexeddb-adapter";
 import { StubEngine } from "./core/stub-engine";
+import { EmulatorJsEngine } from "./core/emulatorjs-engine";
 import {
   DEFAULT_KEY_PROFILE,
   InputMapping,
   type KeyProfile,
 } from "./domain/input-mapping";
 import type { RomRecord } from "./storage/types";
-import type { GameButton } from "./core/core-wrapper";
+import type { EmulatorEngine, GameButton } from "./core/core-wrapper";
 
-// Composizione del Core web MVP. Storage reale (IndexedDB); engine = StubEngine
-// (placeholder dell'integrazione EmulatorJS reale, vedi gap e2e-browser-runtime).
+// TSK-022: selezione engine. Default StubEngine (test/dev/e2e deterministici);
+// EmulatorJsEngine (reale) opt-in via ?engine=emulatorjs (ADR-004).
+function selectEngine(): { engine: EmulatorEngine; real: boolean } {
+  const real =
+    typeof location !== "undefined" &&
+    new URLSearchParams(location.search).get("engine") === "emulatorjs";
+  return { engine: real ? new EmulatorJsEngine() : new StubEngine(), real };
+}
+
+// Composizione del Core web MVP. Storage reale (IndexedDB).
 export function App() {
   const storage = indexedDbStorage;
-  const engine = useMemo(() => new StubEngine(), []);
+  const { engine, real } = useMemo(selectEngine, []);
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
@@ -29,6 +38,9 @@ export function App() {
     [engine, profile],
   );
   useEffect(() => {
+    // Con engine reale l'input tastiera/gamepad è gestito nativamente da EmulatorJS
+    // (ADR-004): il wiring globale resta solo per lo StubEngine / controlli app.
+    if (real) return;
     const down = (e: KeyboardEvent) => input.keyDown(e.key);
     const up = (e: KeyboardEvent) => input.keyUp(e.key);
     window.addEventListener("keydown", down);
@@ -37,7 +49,7 @@ export function App() {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, [input]);
+  }, [input, real]);
 
   function remap(key: string, button: GameButton) {
     setProfile((p) => ({ ...p, [key]: button }));

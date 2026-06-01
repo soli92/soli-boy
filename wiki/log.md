@@ -227,3 +227,20 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 [2026-06-01 21:20] design — ADR-004 EmulatorJS reale (adapter EmulatorEngine) + architecture-overview + runbook emulatorjs-hosting — files touched: 3
 
 [2026-06-01 21:35] execute — sprint 3 "Emulazione reale": 4 TSK (TSK-021..024) da ADR-004 — files touched: 4
+
+## 2026-06-01 22:05 — develop TSK-021 + TSK-022
+**Agenti:** be-dev + fe-dev · **Code path:** ./packages/app/
+- TSK-021 (be) EmulatorJsEngine: adapter reale EmulatorEngine (loader lazy, EJS_*, lifecycle/audio/input, revoke Object URL)
+- TSK-022 (fe) Player passa container DOM all'engine + App seleziona engine (stub default; EmulatorJsEngine via ?engine=emulatorjs; keydown globale disattivato con engine reale)
+**DoD:** typecheck OK, 49 unit + 4 e2e (stub) verdi, nessuna regressione.
+**Caveat (onesto):** l'emulazione *reale* di EmulatorJsEngine NON è verificata in questo ambiente (no EmulatorJS data + ROM reale); validazione runtime delegata a TSK-024. Le chiamate API EJS sono difensive (superficie version-dependent, da confermare in TSK-024).
+**Commit:** n/a (gate)
+
+- 2026-06-01 22:20 — `review TSK-022 iter-1 → pass` (0/0/0)
+- 2026-06-01 22:20 — `review TSK-021 iter-1 → conditional` (0/1 medium/0; TS-ROBUST-001 su load())
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite+react (conf 0.95)
+
+## 2026-06-01 22:35 — develop TSK-021 (correction)
+**Agente:** be-dev · **Code path:** ./packages/app/ (src/core/emulatorjs-engine.ts)
+**DoD:** pass — fix CQRL iter 2: load() reject su onerror + timeout su EJS_ready + cleanup. typecheck OK, 49 unit verdi. **Commit:** n/a (gate)
+- 2026-06-01 22:40 — `review TSK-021 iter-2 → pass` (0/0/0) · Reviewer: code-reviewer@2.12.0

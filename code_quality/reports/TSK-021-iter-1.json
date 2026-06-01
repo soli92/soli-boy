@@ -1,0 +1,12 @@
+{ "tsk_id":"TSK-021","stack_descriptor":{"language":"typescript","framework":"vite","version":"5.x","confidence":0.95},
+  "iter":1,"passes_run":["idiomaticity","design","robustness"],
+  "findings":[
+    {"rule_id":"TS-ROBUST-001","file":"packages/app/src/core/emulatorjs-engine.ts","lines":"78-92","severity":"medium","detected_by":["robustness"],
+     "rationale":"load() risolve la Promise anche su errore di caricamento del loader (s.onerror→resolve) e non ha timeout: un fallimento del loader/EJS_ready mai emesso resta mascherato (start() poi no-op, nessun errore all'utente) o blocca indefinitamente.","fix_complexity":"low","auto_fixable":false}
+  ],
+  "verdict":"conditional",
+  "verdict_rationale":"Adapter ben strutturato (loader lazy, lifecycle, revoke Object URL, API EJS difensiva). Una finding medium azionabile sulla robustezza di load() (errore/timeout). Nessun marker rosso.",
+  "summary":"EmulatorJsEngine solido come struttura; migliorare la gestione di errore/timeout in load() per non mascherare i fallimenti. Runtime reale validato in TSK-024.",
+  "markers":{"no_progress":false,"regression":false,"loop_exhausted":false,"degraded":false},
+  "files_modified_by_fix":["packages/app/src/core/emulatorjs-engine.ts"],
+  "generated_at":"2026-06-01T22:20:00+02:00","reviewer_version":"code-reviewer@2.12.0" }
