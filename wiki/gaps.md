@@ -62,6 +62,12 @@ _(nessun gap registrato al bootstrap)_
 **Sospetta fonte:** percorso libretro/RetroArch web (umbrella) da valutare in EP-009.
 **Impatto:** non-bloccante per GB/GBA; le specifiche elencano arcade al lancio → rischio di scope da concordare con owner.
 
+## 2026-06-01 — wasmboy-loadstate-canvas-lost
+**Origine:** qa @ TSK-034
+**Gap:** `WasmBoy.loadState()` rimuove il canvas dal DOM dopo il restore. Sintomo verificato a runtime nell'e2e `emulation-save.e2e.ts`: dopo aver chiamato `handleLoad` (slot occupato, nessun `role="alert"` di errore emesso), il canvas `.sb-screen canvas` scompare dal DOM (locator non trovato in 5 s). Il save state è scritto correttamente in IndexedDB (test "salva → slot occupato" verde); il problema è nel flusso `WasmBoy.loadState()` → il canvas viene de-montato/rimpiazzato internamente da WasmBoy durante il restore. Il `SaveStatePanel` non emette un `role="alert"` (quindi dal punto di vista UI non è un errore visibile: è un glitch di canvas DOM silenzioso). Il test e2e corrispondente è marcato `test.fixme`.
+**Impatto:** bloccante per US-016 AC3 ("ripristinare un save state e riprendere esattamente da quello stato"). Il save (AC1/AC2) è verificato verde. Fix richiede: (a) indagare il comportamento di `WasmBoy.loadState()` sul canvas (riconfigurazione interna?), (b) eventuale re-init del canvas / re-render nel Player dopo restore.
+**Azione richiesta:** aprire TSK bugfix in EP-004 (layer be, target WasmBoyEngine o Player) prima di chiudere US-016.
+
 ## 2026-06-01 19:20 — gba-runtime-verification
 **Origine:** be-dev @ TSK-028
 **Gap:** MgbaEngine (GBA, @thenick775/mgba-wasm MPL-2.0) implementato contro l'API documentata e registrato (selectEngine mgba→MgbaEngine), build/typecheck verdi, ma NON verificato a runtime: manca una ROM GBA libera in public/test-roms/ per l'e2e (emulation-gba.e2e.ts, skip finché assente).

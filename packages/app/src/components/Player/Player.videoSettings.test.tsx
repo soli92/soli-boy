@@ -53,7 +53,7 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
       <Player
         engine={engine}
         rom={{ rom: new Blob(["x"]), core: "mgba" }}
-        videoSettings={{ scale: 3, aspect: "4:3" }}
+        videoSettings={{ scale: 3, aspect: "4:3", filter: "nearest" }}
       />,
     );
     const screenDiv = screen.getByLabelText("Schermo di gioco") as HTMLDivElement;
@@ -68,7 +68,7 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
       <Player
         engine={engine}
         rom={{ rom: new Blob(["x"]), core: "mgba" }}
-        videoSettings={{ scale: "auto", aspect: "stretch" }}
+        videoSettings={{ scale: "auto", aspect: "stretch", filter: "nearest" }}
       />,
     );
     expect(screenDiv.style.width).toBe("100%");
@@ -80,7 +80,7 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
   });
 
   it("persistenza: al mount applica il valore caricato dalla porta config (US-021)", async () => {
-    const port = makePort({ scale: 5, aspect: "stretch" });
+    const port = makePort({ scale: 5, aspect: "stretch", filter: "nearest" });
     render(
       <Player
         engine={fakeEngine()}
@@ -98,13 +98,15 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
     expect(screenDiv.style.width).toBe(`${5 * BASE_VIEWPORT_WIDTH_PX}px`);
   });
 
-  it("default in assenza di porta e di props: scale=auto, aspect=original", () => {
+  it("default in assenza di porta e di props: scale=auto, aspect=original, filter=nearest", () => {
     render(
       <Player engine={fakeEngine()} rom={{ rom: new Blob(["x"]), core: "mgba" }} />,
     );
     const screenDiv = screen.getByLabelText("Schermo di gioco") as HTMLDivElement;
     expect(screenDiv.getAttribute("data-scale")).toBe("auto");
     expect(screenDiv.getAttribute("data-aspect")).toBe("original");
+    // TSK-037: default filtro = nearest (resa pixel-art).
+    expect(screenDiv.getAttribute("data-filter")).toBe("nearest");
     expect(screenDiv.style.width).toBe("100%");
   });
 
@@ -113,7 +115,7 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
       <Player
         engine={fakeEngine()}
         rom={{ rom: new Blob(["x"]), core: "mgba" }}
-        videoSettings={{ scale: 2, aspect: "original" }}
+        videoSettings={{ scale: 2, aspect: "original", filter: "nearest" }}
       />,
     );
     // C'è un <style> con la regola object-fit: contain.
@@ -127,7 +129,7 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
       <Player
         engine={fakeEngine()}
         rom={{ rom: new Blob(["x"]), core: "mgba" }}
-        videoSettings={{ scale: 2, aspect: "stretch" }}
+        videoSettings={{ scale: 2, aspect: "stretch", filter: "nearest" }}
       />,
     );
     const css2 = Array.from(container.querySelectorAll("style"))
@@ -142,7 +144,11 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
     // serve un cambio valore: lo emuliamo invocando `setValue` esposto
     // dall'hook tramite un wrapper di test (riusiamo la stessa porta che
     // rejecta su `save`).
-    const loaded: VideoSettings = { scale: 2, aspect: "original" };
+    const loaded: VideoSettings = {
+      scale: 2,
+      aspect: "original",
+      filter: "nearest",
+    };
     const port: VideoSettingsPort & {
       load: ReturnType<typeof vi.fn>;
       save: ReturnType<typeof vi.fn>;
@@ -176,7 +182,9 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
           />
           <button
             data-testid="bump"
-            onClick={() => setValue({ scale: 5, aspect: "stretch" })}
+            onClick={() =>
+              setValue({ scale: 5, aspect: "stretch", filter: "nearest" })
+            }
           >
             bump
           </button>
@@ -195,7 +203,11 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
       screen.getByTestId("bump").click();
     });
 
-    expect(port.save).toHaveBeenCalledWith({ scale: 5, aspect: "stretch" });
+    expect(port.save).toHaveBeenCalledWith({
+      scale: 5,
+      aspect: "stretch",
+      filter: "nearest",
+    });
     // La UI riflette comunque il nuovo valore (best-effort, no rollback).
     await waitFor(() => {
       expect(screenDiv.getAttribute("data-scale")).toBe("5");

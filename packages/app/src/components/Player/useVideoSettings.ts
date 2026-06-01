@@ -1,5 +1,8 @@
 // TSK-036 — Stato e persistenza delle preferenze "video" (US-021):
 // fattore di scala + aspect ratio del viewport di gioco.
+// TSK-037 — Estensione con il campo `filter` (nearest/smoothing/scanline,
+// US-022): condivide lo stesso oggetto `VideoSettings` (e quindi la stessa
+// porta + lo stesso wiring App.tsx) introdotto da TSK-036.
 //
 // Engine-agnostico: la preferenza è applicata via CSS al contenitore `.sb-screen`
 // (e, di rimando, al `<canvas>` reso dall'adapter). Nessuna modifica a
@@ -7,8 +10,7 @@
 //
 // Persistenza opzionale via `VideoSettingsPort`: l'adapter reale (IndexedDB
 // `config` store) è cablato dalla composizione applicativa, fuori scope di
-// questo componente; qui consumiamo solo la porta. Filtri nearest/smoothing/
-// scanline NON sono coperti da questo TSK (vedi TSK-037).
+// questo componente; qui consumiamo solo la porta.
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 
@@ -25,15 +27,48 @@ export type ScaleFactor = (typeof SCALE_FACTORS)[number] | "auto";
 export const ASPECT_RATIOS = ["original", "4:3", "stretch"] as const;
 export type AspectRatio = (typeof ASPECT_RATIOS)[number];
 
+/**
+ * TSK-037 — Filtri base (US-022).
+ * - `nearest`: pixel art crisp — `image-rendering: pixelated` sul canvas.
+ * - `smoothing`: interpolazione del browser — `image-rendering: auto`.
+ * - `scanline`: pixelated + overlay scanline (CSS, sopra il canvas).
+ * Default canonico: `nearest` (resa tipica per piattaforme retro come GB/GBA).
+ */
+export const VIDEO_FILTERS = ["nearest", "smoothing", "scanline"] as const;
+export type VideoFilter = (typeof VIDEO_FILTERS)[number];
+
 export interface VideoSettings {
   scale: ScaleFactor;
   aspect: AspectRatio;
+  /** TSK-037 — filtro video (US-022). Default: "nearest". */
+  filter: VideoFilter;
 }
 
 export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
   scale: "auto",
   aspect: "original",
+  filter: "nearest",
 };
+
+/**
+ * TSK-037 — Backward-compat: applica i default di `DEFAULT_VIDEO_SETTINGS` ai
+ * campi mancanti in un valore persistito. È rilevante quando lo schema di
+ * `VideoSettings` viene esteso (es. aggiunta del campo `filter` rispetto a
+ * TSK-036): un valore salvato da una versione precedente NON contiene il
+ * nuovo campo, quindi senza merge l'UI mostrerebbe `undefined` (es. select
+ * senza opzione selezionata). Centralizzato qui per evitare drift fra
+ * consumatori e per essere riusabile da test.
+ *
+ * Implementazione: shallow merge, default-first → eventuali campi noti del
+ * valore persistito sovrascrivono i default; campi sconosciuti sono ignorati
+ * dal type system (TypeScript narrowa a `VideoSettings`).
+ */
+export function mergeWithDefaults(
+  partial: Partial<VideoSettings> | null | undefined,
+): VideoSettings {
+  if (!partial) return { ...DEFAULT_VIDEO_SETTINGS };
+  return { ...DEFAULT_VIDEO_SETTINGS, ...partial };
+}
 
 /**
  * Larghezza base di riferimento (px) usata quando `scale` è un fattore numerico.
@@ -92,7 +127,10 @@ export function useVideoSettings(
       .load()
       .then((loaded) => {
         if (cancelled) return;
-        if (loaded) setValueState(loaded);
+        // TSK-037 — backward-compat: un valore persistito da una versione
+        // precedente potrebbe non avere `filter` (o altri campi futuri).
+        // Merge con i default per evitare `undefined` nei consumatori.
+        if (loaded) setValueState(mergeWithDefaults(loaded));
         setHydrated(true);
       })
       .catch((err) => {
@@ -168,4 +206,33 @@ export function videoSettingsToContainerStyle(
  */
 export function aspectToCanvasObjectFit(a: AspectRatio): "contain" | "fill" {
   return a === "stretch" ? "fill" : "contain";
+}
+
+/**
+ * TSK-037 — Mappa il filtro al valore di `image-rendering` per il `<canvas>`
+ * interno (US-022). Engine-agnostico: il filtro si applica via CSS al canvas
+ * reso dall'adapter, non tocchiamo `EmulatorEngine`.
+ *
+ * - `nearest`: `pixelated` (no interpolazione, pixel crispi).
+ * - `smoothing`: `auto` (lascia al browser l'interpolazione di default).
+ * - `scanline`: `pixelated` come base (la scanline è un overlay CSS sopra,
+ *   gestito separatamente da `filterShowsScanlineOverlay`).
+ */
+export function filterToCanvasImageRendering(
+  f: VideoFilter,
+): "pixelated" | "auto" {
+  // Per la modalità `smoothing` lasciamo `auto`: i browser usano un'interpolazione
+  // bilineare/bicubica di default, quindi non serve forzare `smooth` (deprecato
+  // in alcuni engine) o vendor-specifics.
+  return f === "smoothing" ? "auto" : "pixelated";
+}
+
+/**
+ * TSK-037 — True se il filtro corrente richiede l'overlay scanline (US-022).
+ * L'overlay è un elemento DOM (vuoto, pointer-events:none) reso sopra il
+ * canvas dentro `.sb-screen`, con un `repeating-linear-gradient` che simula
+ * le linee orizzontali dei CRT. Esposto come helper per testabilità.
+ */
+export function filterShowsScanlineOverlay(f: VideoFilter): boolean {
+  return f === "scanline";
 }

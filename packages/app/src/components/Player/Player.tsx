@@ -5,6 +5,10 @@
 // TSK-036 — Scala + aspect ratio (US-021): CSS sul contenitore `.sb-screen` e
 //           regola scoped per il `<canvas>` interno (object-fit). Persistenza
 //           via `VideoSettingsPort` (opzionale). Engine-agnostico.
+// TSK-037 — Filtri base (US-022): nearest/smoothing/scanline. `image-rendering`
+//           sul canvas (regola scoped accanto a object-fit) + overlay scanline
+//           via CSS dentro `.sb-screen` (sopra il canvas, pointer-events:none).
+//           Engine-agnostico anche qui: nessuna modifica a `EmulatorEngine`.
 // Monta il viewport di gioco e avvia l'esecuzione tramite CoreWrapper (ADR-003).
 // L'EmulatorEngine (EmulatorJS in runtime) è iniettato → componente testabile.
 
@@ -19,6 +23,8 @@ import { useFullscreen } from "./useFullscreen";
 import { SaveStatePanel, type SaveServicePort } from "./SaveStatePanel";
 import {
   aspectToCanvasObjectFit,
+  filterShowsScanlineOverlay,
+  filterToCanvasImageRendering,
   useVideoSettings,
   videoSettingsToContainerStyle,
   type VideoSettings,
@@ -94,6 +100,13 @@ export function Player({
   // globale e resta engine-agnostico).
   const screenId = useId();
   const canvasObjectFit = aspectToCanvasObjectFit(effectiveSettings.aspect);
+  // TSK-037 — filtro: `image-rendering` sul canvas + overlay scanline (US-022).
+  const canvasImageRendering = filterToCanvasImageRendering(
+    effectiveSettings.filter,
+  );
+  const showScanlineOverlay = filterShowsScanlineOverlay(
+    effectiveSettings.filter,
+  );
 
   async function handlePlay() {
     setError(null);
@@ -150,13 +163,34 @@ export function Player({
     <section className="sb-app">
       {/* TSK-036 — regola scoped per il <canvas> reso dall'adapter all'interno
           del contenitore `.sb-screen`. width/height a 100% per riempire il
-          box, object-fit dipende dall'aspect scelto (contain | fill). */}
+          box, object-fit dipende dall'aspect scelto (contain | fill).
+          TSK-037 — `image-rendering` sul canvas (pixelated/auto) e overlay
+          scanline (US-022): un elemento .sb-scanline sopra il canvas con un
+          repeating-linear-gradient, pointer-events:none, posizionato in
+          assoluto dentro `.sb-screen`. */}
       <style>{`
+        .sb-screen[data-video-scope="${scopeId}"] {
+          position: relative;
+        }
         .sb-screen[data-video-scope="${scopeId}"] canvas {
           width: 100%;
           height: 100%;
           object-fit: ${canvasObjectFit};
+          image-rendering: ${canvasImageRendering};
           display: block;
+        }
+        .sb-screen[data-video-scope="${scopeId}"] .sb-scanline {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: repeating-linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.25) 0px,
+            rgba(0, 0, 0, 0.25) 1px,
+            rgba(0, 0, 0, 0) 1px,
+            rgba(0, 0, 0, 0) 3px
+          );
+          mix-blend-mode: multiply;
         }
       `}</style>
       <div
@@ -167,9 +201,19 @@ export function Player({
         data-video-scope={scopeId}
         data-scale={String(effectiveSettings.scale)}
         data-aspect={effectiveSettings.aspect}
+        data-filter={effectiveSettings.filter}
         style={screenStyle}
       >
         {running ? (title ?? "In esecuzione") : paused ? "In pausa" : "Premi Avvia"}
+        {/* TSK-037 — Overlay scanline (US-022): reso solo con filter=scanline.
+            Dentro `.sb-screen` per ereditare lo scoping CSS sopra. */}
+        {showScanlineOverlay && (
+          <div
+            className="sb-scanline"
+            aria-hidden="true"
+            data-testid="scanline-overlay"
+          />
+        )}
       </div>
       <div className="sb-hud">
         <span>{rom.core}</span>

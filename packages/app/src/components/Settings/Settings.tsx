@@ -4,6 +4,9 @@
 // del profilo comandi (callback `onSaveProfile`): qui il consumatore può sia
 // gestire lo stato esternamente (modalità controllata) sia delegare la
 // persistenza alla porta.
+// TSK-037 — Settings: filtro base (nearest/smoothing/scanline, US-022). Stesso
+// oggetto `VideoSettings`, quindi stessa porta e stesso wiring App.tsx già
+// esistente: per la persistenza non serve nulla in più.
 // UI della sezione Controlli su classi solids. La persistenza del profilo è delegata
 // via callback (onSaveProfile) → store config a livello applicativo.
 
@@ -13,9 +16,11 @@ import type { KeyProfile } from "../../domain/input-mapping";
 import {
   ASPECT_RATIOS,
   SCALE_FACTORS,
+  VIDEO_FILTERS,
   useVideoSettings,
   type AspectRatio,
   type ScaleFactor,
+  type VideoFilter,
   type VideoSettings,
   type VideoSettingsPort,
 } from "../Player/useVideoSettings";
@@ -57,6 +62,18 @@ function aspectLabel(a: AspectRatio): string {
   }
 }
 
+/** TSK-037 — Etichette user-facing per i filtri video (US-022). */
+function filterLabel(f: VideoFilter): string {
+  switch (f) {
+    case "nearest":
+      return "Nearest";
+    case "smoothing":
+      return "Smoothing";
+    case "scanline":
+      return "Scanline";
+  }
+}
+
 export function Settings({
   profile,
   onRemap,
@@ -92,6 +109,11 @@ export function Settings({
 
   function handleAspectChange(raw: string) {
     updateVideo({ ...effective, aspect: raw as AspectRatio });
+  }
+
+  // TSK-037 — applicazione del filtro (US-022).
+  function handleFilterChange(raw: string) {
+    updateVideo({ ...effective, filter: raw as VideoFilter });
   }
 
   return (
@@ -162,6 +184,24 @@ export function Settings({
             {ASPECT_RATIOS.map((a) => (
               <option key={a} value={a}>
                 {aspectLabel(a)}
+              </option>
+            ))}
+          </select>
+        </li>
+        {/* TSK-037 — Filtro (US-022): nearest/smoothing/scanline. Stesso
+            `VideoSettings`, stessa porta, persistenza già coperta dal
+            wiring App.tsx introdotto in TSK-036. */}
+        <li className="sb-row">
+          <span className="sb-key">Filtro</span>
+          <select
+            className="sb-sel"
+            aria-label="Filtro"
+            value={effective.filter}
+            onChange={(e) => handleFilterChange(e.target.value)}
+          >
+            {VIDEO_FILTERS.map((f) => (
+              <option key={f} value={f}>
+                {filterLabel(f)}
               </option>
             ))}
           </select>

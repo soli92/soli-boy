@@ -45,7 +45,13 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
 
   it("modalità controllata: il cambio scala/aspect invoca onVideoSettingsChange", () => {
     const onChange = vi.fn();
-    const current: VideoSettings = { scale: "auto", aspect: "original" };
+    // TSK-037: il campo `filter` è ora parte di `VideoSettings`. I cambi su
+    // scala/aspect devono preservarlo (spread su `effective`).
+    const current: VideoSettings = {
+      scale: "auto",
+      aspect: "original",
+      filter: "nearest",
+    };
     render(
       <Settings
         profile={DEFAULT_KEY_PROFILE}
@@ -58,16 +64,24 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
     fireEvent.change(screen.getByLabelText("Fattore di scala"), {
       target: { value: "3" },
     });
-    expect(onChange).toHaveBeenLastCalledWith({ scale: 3, aspect: "original" });
+    expect(onChange).toHaveBeenLastCalledWith({
+      scale: 3,
+      aspect: "original",
+      filter: "nearest",
+    });
 
     fireEvent.change(screen.getByLabelText("Aspect ratio"), {
       target: { value: "4:3" },
     });
-    expect(onChange).toHaveBeenLastCalledWith({ scale: "auto", aspect: "4:3" });
+    expect(onChange).toHaveBeenLastCalledWith({
+      scale: "auto",
+      aspect: "4:3",
+      filter: "nearest",
+    });
   });
 
   it("auto-gestito con porta: carica al mount e persiste il cambio (US-021 persistenza)", async () => {
-    const port = makePort({ scale: 4, aspect: "4:3" });
+    const port = makePort({ scale: 4, aspect: "4:3", filter: "nearest" });
 
     render(
       <Settings
@@ -94,14 +108,22 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
         target: { value: "2" },
       });
     });
-    expect(port.save).toHaveBeenLastCalledWith({ scale: 2, aspect: "4:3" });
+    expect(port.save).toHaveBeenLastCalledWith({
+      scale: 2,
+      aspect: "4:3",
+      filter: "nearest",
+    });
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText("Aspect ratio"), {
         target: { value: "stretch" },
       });
     });
-    expect(port.save).toHaveBeenLastCalledWith({ scale: 2, aspect: "stretch" });
+    expect(port.save).toHaveBeenLastCalledWith({
+      scale: 2,
+      aspect: "stretch",
+      filter: "nearest",
+    });
   });
 
   it("porta che ritorna null al load: resta sui default senza fallire", async () => {

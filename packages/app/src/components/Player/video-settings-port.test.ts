@@ -29,16 +29,21 @@ describe("video-settings-port (TSK-036 F-036-01)", () => {
     expect(await port.load()).toBeNull();
   });
 
-  it("save → load: round-trip preserva scale e aspect", async () => {
+  it("save → load: round-trip preserva scale, aspect e filter", async () => {
     const port = makeVideoSettingsPort(indexedDbConfig);
-    const v: VideoSettings = { scale: 4, aspect: "4:3" };
+    // TSK-037: il round-trip include il nuovo campo `filter` (US-022).
+    const v: VideoSettings = { scale: 4, aspect: "4:3", filter: "scanline" };
     await port.save(v);
     expect(await port.load()).toEqual(v);
   });
 
   it("persistenza cross-session: dopo closeDB il valore è ancora leggibile", async () => {
     const port = makeVideoSettingsPort(indexedDbConfig);
-    const v: VideoSettings = { scale: 5, aspect: "stretch" };
+    const v: VideoSettings = {
+      scale: 5,
+      aspect: "stretch",
+      filter: "smoothing",
+    };
     await port.save(v);
 
     // Simula reload: chiude la connessione e ricrea la porta.
@@ -49,9 +54,13 @@ describe("video-settings-port (TSK-036 F-036-01)", () => {
 
   it("save è idempotente: l'ultimo valore vince", async () => {
     const port = makeVideoSettingsPort(indexedDbConfig);
-    await port.save({ scale: 1, aspect: "original" });
-    await port.save({ scale: "auto", aspect: "stretch" });
-    expect(await port.load()).toEqual({ scale: "auto", aspect: "stretch" });
+    await port.save({ scale: 1, aspect: "original", filter: "nearest" });
+    await port.save({ scale: "auto", aspect: "stretch", filter: "smoothing" });
+    expect(await port.load()).toEqual({
+      scale: "auto",
+      aspect: "stretch",
+      filter: "smoothing",
+    });
   });
 
   it("usa la chiave canonica `video-settings`", () => {
