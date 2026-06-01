@@ -1,0 +1,118 @@
+{
+  "tsk_id": "TSK-031",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "vite",
+    "runtime": "browser-indexeddb",
+    "version": "5.x",
+    "confidence": 0.95
+  },
+  "iter": 2,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "id": "F-031-2-FP1",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "high",
+      "pass": "robustness",
+      "file": "packages/app/src/storage/db.ts",
+      "line_start": 18,
+      "line_end": 53,
+      "title": "F-031-1-R1 RITIRATO — falso positivo confermato: DB_VERSION=1 è corretto",
+      "description": "Il finding F-031-1-R1 (iter-1, bloccante) è confermato falso positivo. La verifica diretta su commit 20808c8 (Wave 1, TSK-001) dimostra che gli object store `saveStates`, `sram` e `config` sono creati nella callback `upgrade` di DB v1 insieme a `roms`. Tutti e quattro gli store esistono nello schema v1 dal primo deployment. Gli utenti con DB preesistente alla versione 1 hanno già tutti gli store: non è necessario alcun bump di `DB_VERSION`. Un eventuale bump a `DB_VERSION=2` con guard `oldVersion<2` causerebbe `DOMException: IDBObjectStore.createObjectStore: Object store named 'saveStates' already exists` per tutti gli utenti v1 esistenti, rompendo il boot dell'applicazione. La decisione di mantenere `DB_VERSION=1` è corretta e in linea con ADR-002. Il finding iter-1 è ritirato; il codice non richiede modifica su questo punto.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.ts:18]",
+      "adr_ref": "ADR-002 (schema IndexedDB v1 completo dalla Wave 1)",
+      "false_positive": true,
+      "false_positive_reason": "Tutti gli store (roms/saveStates/sram/config) sono stati creati nella callback upgrade di DB_VERSION=1 nel commit 20808c8 (TSK-001, Wave 1). Il finding iter-1 assumeva erroneamente che saveStates/sram fossero stati aggiunti da TSK-031 su un DB già inizializzato con solo `roms`. La verifica sul commit storico confuta questa assunzione.",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-031-2-R2-resolved",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "file": "packages/app/src/storage/db.ts",
+      "line_start": 122,
+      "line_end": 124,
+      "title": "F-031-1-R2 RISOLTO — saveStateId usa crypto.randomUUID() come tiebreaker",
+      "description": "La funzione `saveStateId` ora genera id nella forma `${romId}:${slot}:${createdAt}:${crypto.randomUUID()}`. Il suffisso UUID ad alta entropia garantisce unicità anche in caso di due chiamate a `putSaveState` sullo stesso slot entro 1ms (Date.now collisione). Il JSDoc aggiornato documenta esplicitamente il razionale del tiebreaker (F-031-1-R2) e la scelta deliberata di non implementare l'index composto per l'ordinamento (F-031-1-D1). Il test `due putSaveState ravvicinati sullo stesso slot coesistono` in `db.test.ts` (riga 96-105) valida il boundary direttamente: `id1 !== id2`, `listSaveStates` restituisce 2 entry con `slot=0`.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.ts:122]",
+      "resolution": "addressed",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-031-2-T1-resolved",
+      "rule_id": "QA-TEST-001",
+      "rule_ref": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "file": "packages/app/src/storage/db.test.ts",
+      "line_start": 72,
+      "line_end": 147,
+      "title": "F-031-1-T1 RISOLTO — test diretti storage layer aggiunti in db.test.ts",
+      "description": "Otto nuovi test distribuiti in due describe block (`storage saveStates (TSK-031)` riga 77-122 e `storage sram (TSK-031)` riga 125-147) coprono tutti i boundary identificati in iter-1: (a) round-trip putSaveState/getSaveState con verifica di romId, slot, core, createdAt; (b) ordinamento per slot crescente in listSaveStates (inserimento sparso slot 2,0,1 → atteso [0,1,2]); (c) anti-collisione su stesso slot (F-031-1-R2 — due put ravvicinati → id diversi, 2 entry in lista); (d) deleteSaveState idempotente; (e) segregazione per romId con romId assente restituisce lista vuota; (f) putSram/getSram round-trip; (g) putSram idempotente per romId (updatedAt aggiornato); (h) getSram undefined su romId assente. Nota: il `describe storage config (TSK-036)` aggiunto allo stesso file è out-of-scope per TSK-031 (appartiene a TSK-036) ma non introduce regressioni.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/QA-TEST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.test.ts:72]",
+      "resolution": "addressed",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-031-2-D1-carried",
+      "rule_id": "TS-DESIGN-002",
+      "rule_ref": "code_quality/rules/canonical/TS-DESIGN-002.md",
+      "severity": "low",
+      "pass": "design",
+      "file": "packages/app/src/storage/db.ts",
+      "line_start": 119,
+      "line_end": 123,
+      "title": "F-031-1-D1 documentato in loco — index composto non implementato (deliberato)",
+      "description": "Il finding F-031-1-D1 (iter-1, low, non-bloccante) relativo all'assenza di index composto `[romId, slot]` per l'ordinamento server-side in `listSaveStates` è stato gestito tramite documentazione in-code. Il commento JSDoc di `saveStateId` (righe 111-124) dichiara esplicitamente: 'index composto (slot,createdAt) per ordering server-side è non necessario sul volume atteso (US-016 = pochi slot per ROM); ordering in memoria è O(n log n) su n piccolo (F-031-1-D1 documentato qui, deliberatamente non implementato)'. La scelta è congruente con il volume atteso da US-016 e accettabile a livello di design. Il finding è considerato acknowledged.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-DESIGN-002.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.ts:119]",
+      "resolution": "acknowledged",
+      "auto_fixable": false,
+      "blocking": false
+    }
+  ],
+  "verdict": "passed",
+  "verdict_rationale": "Tutti i finding attivi di iter-1 sono risolti o legittimamente ritirati. F-031-1-R1 (high, bloccante) è confermato falso positivo dalla verifica diretta sul commit 20808c8: gli object store saveStates/sram/config esistono nello schema DB v1 dalla Wave 1 (TSK-001); DB_VERSION=1 è corretto e non va modificato. F-031-1-R2 (medium) risolto: crypto.randomUUID() come tiebreaker nell'id del save state garantisce unicità anche in scenari sub-millisecondo. F-031-1-T1 (medium) risolto: 8 test diretti aggiunti in db.test.ts coprono round-trip, ordinamento, anti-collisione, idempotenza, segregazione per romId, boundary SRAM. F-031-1-D1 (low) acknowledged con documentazione in-code nel JSDoc di saveStateId. Nessuna regressione: 111 unit + 6 e2e verdi come da commit message d6144b8. No-progress=false (i finding non sono gli stessi set dell'iterazione precedente: i non-bloccanti sono stati risolti o acknowledged). Il TSK-031 supera la CQRL.",
+  "summary": "Passed iter-2. L'unico finding bloccante di iter-1 (F-031-1-R1) è ritirato come falso positivo: tutti e 4 gli object store erano già presenti nello schema v1 dal commit 20808c8 (Wave 1). I 2 finding non-bloccanti attivi (R2, T1) sono stati corretti con fix chirurgici. Il finding di design (D1) è acknowledged via documentazione in-code. Il ruleset TS-ROBUST-001 guadagna un datapoint di false_positive su contesto IndexedDB schema-upgrade.",
+  "false_positives": [
+    {
+      "original_id": "F-031-1-R1",
+      "rule_id": "TS-ROBUST-001",
+      "false_positive_category": "context-gap",
+      "false_positive_note": "Il reviewer non aveva verificato la storia del commit per lo schema v1. La callback upgrade di DB_VERSION=1 conteneva già tutti e 4 gli store dal commit 20808c8. Il finding assumeva erroneamente che saveStates/sram fossero stati aggiunti da TSK-031 su un DB precedentemente inizializzato con solo roms. Lesson learned per TS-ROBUST-001: verificare git log del file di schema prima di concludere che mancano migration guard per nuovi store.",
+      "verified_at_commit": "20808c8"
+    }
+  ],
+  "iter1_findings_resolution": [
+    { "id": "F-031-1-R1", "status": "false_positive", "iter2_id": "F-031-2-FP1" },
+    { "id": "F-031-1-R2", "status": "addressed", "iter2_id": "F-031-2-R2-resolved" },
+    { "id": "F-031-1-D1", "status": "acknowledged", "iter2_id": "F-031-2-D1-carried" },
+    { "id": "F-031-1-T1", "status": "addressed", "iter2_id": "F-031-2-T1-resolved" }
+  ],
+  "markers": {
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false,
+    "degraded": false
+  },
+  "files_reviewed": [
+    "packages/app/src/storage/db.ts",
+    "packages/app/src/storage/db.test.ts"
+  ],
+  "files_modified_by_fix": [
+    "packages/app/src/storage/db.ts",
+    "packages/app/src/storage/db.test.ts"
+  ],
+  "generated_at": "2026-06-01T00:00:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}

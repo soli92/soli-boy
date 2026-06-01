@@ -1,0 +1,63 @@
+{
+  "tsk_id": "TSK-036",
+  "iter": 2,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [],
+  "no_progress": false,
+  "regression_detected": false,
+  "iter1_resolved": [
+    {
+      "id": "F-036-01",
+      "rule_id": "TS-DESIGN-001",
+      "resolution": "getConfig/setConfig aggiunti in db.ts; ConfigPort definita in port.ts; indexedDbConfig esportato da indexeddb-adapter.ts; makeVideoSettingsPort in video-settings-port.ts crea l'adapter concreto con chiave canonica 'video-settings'. Catena IndexedDB end-to-end verificata."
+    },
+    {
+      "id": "F-036-02",
+      "rule_id": "TS-DESIGN-001",
+      "resolution": "Stato video sollevato in App.tsx tramite useVideoSettings(videoPort); Player e Settings ricevono videoSettings controllato dalla stessa istanza. Singola sorgente di verità; sincronizzazione verificata."
+    },
+    {
+      "id": "F-036-03",
+      "rule_id": "TS-ROBUST-001",
+      "resolution": "console.warn('[useVideoSettings] port.load() rejected:', err) e console.warn('[useVideoSettings] port.save() rejected:', err) aggiunti nei rispettivi catch in useVideoSettings.ts."
+    },
+    {
+      "id": "F-036-04",
+      "rule_id": "QA-TEST-001",
+      "resolution": "Test 'porta save: persistenza side-effect non blocca la UI in caso di reject' riscritto con Harness component: simula setValue via click su bottone di test, verifica port.save chiamato con i nuovi settings, UI aggiornata nonostante il reject, console.warn emesso."
+    },
+    {
+      "id": "F-036-05",
+      "rule_id": "TS-IDIOM-002",
+      "resolution": "Cast 'as VideoSettings' rimosso in Settings.tsx; sostituito con 'videoSettings ?? internal.value'. Commento F-036-05 documenta il narrowing."
+    },
+    {
+      "id": "F-036-06",
+      "rule_id": "TS-IDIOM-002",
+      "resolution": "Coalescenza ridondante rimossa in Player.tsx: 'videoSettings ?? internal.value ?? DEFAULT_VIDEO_SETTINGS' ridotto a 'videoSettings ?? internal.value'. Commento F-036-06 documenta che internal.value è sempre definito."
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "total_findings": 0,
+    "by_severity": { "high": 0, "medium": 0, "low": 0 },
+    "blocking": 0,
+    "advisory": 0,
+    "passes_clean": ["idiomaticity", "design", "robustness"],
+    "passes_with_findings": []
+  },
+  "generated_at": "2026-06-01T23:55:00Z",
+  "reviewer_version": "code-reviewer@2.15.0"
+}
