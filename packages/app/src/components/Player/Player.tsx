@@ -14,7 +14,9 @@ import {
   type EmulatorEngine,
   type LoadOptions,
 } from "../../core/core-wrapper";
+import type { Core } from "../../domain/types";
 import { useFullscreen } from "./useFullscreen";
+import { SaveStatePanel, type SaveServicePort } from "./SaveStatePanel";
 import {
   aspectToCanvasObjectFit,
   useVideoSettings,
@@ -39,6 +41,23 @@ export interface PlayerProps {
   videoSettings?: VideoSettings;
   /** Porta di persistenza opzionale per le preferenze video (US-021). */
   videoConfigPort?: VideoSettingsPort;
+  /**
+   * TSK-032 — servizio di dominio per i save state (US-016, ADR-006).
+   * Se assente, il pannello "Save state" non viene reso (composizione legacy
+   * o test focalizzati su altri aspetti del Player non lo richiedono).
+   */
+  saveService?: SaveServicePort;
+  /**
+   * TSK-032 — ID della ROM in sessione, usato dal pannello save state per
+   * filtrare ed etichettare le entry (US-018 AC2: solo i saves del gioco
+   * corrente). Senza romId il pannello si auto-disabilita.
+   */
+  romId?: string;
+  /**
+   * TSK-032 — core canonico della ROM corrente. Il pannello lo passa al
+   * SaveService.loadState per il guard cross-engine (ADR-006 §Conseguenze).
+   */
+  currentCore?: Core;
 }
 
 export function Player({
@@ -47,6 +66,9 @@ export function Player({
   title,
   videoSettings,
   videoConfigPort,
+  saveService,
+  romId,
+  currentCore,
 }: PlayerProps) {
   const wrapper = useMemo(() => new CoreWrapper(engine), [engine]);
   const [state, setState] = useState(wrapper.currentState);
@@ -197,6 +219,18 @@ export function Player({
         <p className="sb-note" role="alert">
           {error}
         </p>
+      )}
+      {/* TSK-032 — Pannello "Save state" (US-016, ADR-006 §Decisione p.4).
+          Reso solo se la composizione applicativa fornisce un SaveService:
+          test e composizioni legacy che non lo passano restano invariati. */}
+      {saveService && (
+        <SaveStatePanel
+          engine={engine}
+          saveService={saveService}
+          romId={romId}
+          currentCore={currentCore}
+          isRunning={running}
+        />
       )}
     </section>
   );

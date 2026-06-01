@@ -60,11 +60,35 @@ export interface SramPort {
 }
 
 /**
+ * Porta copertina (US-009, TSK-039).
+ * Separata da StoragePort per interface segregation: i consumer ROM-only che
+ * non devono mutare la copertina (es. FileLoader, dominio rom-library) restano
+ * sul contratto minimo. La Library (che mostra/aggiorna la cover) consuma
+ * StoragePort & CoverPort. L'IndexedDBAdapter implementa entrambe.
+ *
+ * Invariante (US-033 privacy on-device, architecture-overview §EP-002):
+ * la cover è SEMPRE caricata dall'utente — gli adapter non eseguono fetch di
+ * rete per ricavarla automaticamente.
+ */
+export interface CoverPort {
+  /**
+   * Associa/aggiorna la copertina della ROM `romId`. Errore se la ROM non
+   * esiste (no record orfani). Idempotente per `(romId, cover)`.
+   */
+  setCover(romId: string, cover: Blob): Promise<void>;
+}
+
+/**
  * Porta completa per i salvataggi: combina save state + SRAM + accesso ROM
  * (il SaveService legge `RomRecord` per derivare il `core` canonico ed
  * etichettare l'entry saveState, ADR-006 §Conseguenze).
+ * Include anche CoverPort: l'IndexedDBAdapter unico implementa tutto.
  */
-export interface SaveStoragePort extends StoragePort, SaveStatePort, SramPort {}
+export interface SaveStoragePort
+  extends StoragePort,
+    SaveStatePort,
+    SramPort,
+    CoverPort {}
 
 /**
  * Porta config generica (TSK-036 F-036-01).

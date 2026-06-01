@@ -18,6 +18,7 @@ import {
   getSram,
   getConfig,
   setConfig,
+  setCover,
 } from "./db";
 import type { RomInput, SaveStateInput } from "./types";
 
@@ -178,5 +179,39 @@ describe("storage config (TSK-036)", () => {
       scale: 2,
       aspect: "4:3",
     });
+  });
+});
+
+// TSK-039 (US-009) — test diretti di setCover sullo store roms.
+describe("storage cover (TSK-039)", () => {
+  it("setCover aggiorna coverBlob su una ROM esistente", async () => {
+    const id = await addRom(rom("Tetris", "TT", "GB", "gambatte"));
+    expect((await getRom(id))?.coverBlob).toBeUndefined();
+    const cover = new Blob(["png-bytes"], { type: "image/png" });
+    await setCover(id, cover);
+    const updated = await getRom(id);
+    expect(updated?.coverBlob).toBeInstanceOf(Blob);
+    // Preserva gli altri campi.
+    expect(updated?.title).toBe("Tetris");
+    expect(updated?.platform).toBe("GB");
+    expect(updated?.fileBlob).toBeInstanceOf(Blob);
+  });
+
+  it("setCover sovrascrive una copertina preesistente (idempotente)", async () => {
+    const id = await addRom(rom("Metroid", "MM", "GBA", "mgba"));
+    await setCover(id, new Blob(["v1"], { type: "image/png" }));
+    await setCover(id, new Blob(["v2"], { type: "image/png" }));
+    const got = await getRom(id);
+    expect(got?.coverBlob).toBeInstanceOf(Blob);
+    // Il blob in storage è quello dell'ultima setCover.
+    const size = got?.coverBlob ? got.coverBlob.size : 0;
+    expect(size).toBe(2); // "v2" → 2 byte
+  });
+
+  it("setCover su ROM inesistente solleva (no record orfani)", async () => {
+    await expect(
+      setCover("ghost-id", new Blob(["x"], { type: "image/png" })),
+    ).rejects.toThrow(/non trovata/i);
+    expect(await getRom("ghost-id")).toBeUndefined();
   });
 });

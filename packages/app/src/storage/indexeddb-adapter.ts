@@ -14,6 +14,7 @@ import {
   putSram,
   removeRom,
   setConfig,
+  setCover,
 } from "./db";
 import type { ConfigPort, SaveStoragePort } from "./port";
 
@@ -32,6 +33,7 @@ export const indexedDbStorage: SaveStoragePort = {
   deleteSaveState,
   putSram,
   getSram,
+  setCover,
 };
 
 // TSK-036 F-036-01 — Adapter ConfigPort sullo store `config`. Esposto separato

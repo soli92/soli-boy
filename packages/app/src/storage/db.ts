@@ -93,6 +93,29 @@ export async function removeRom(id: string): Promise<void> {
   await (await getDB()).delete("roms", id);
 }
 
+// === Cover (TSK-039, US-009) ===================================================
+// Associa/aggiorna la copertina di una ROM esistente. La copertina è fornita
+// dall'utente (no fetch esterni — US-033 privacy on-device, ribadita in
+// architecture-overview §EP-002 "Fonte cover: caricata dall'utente").
+// Idempotente sul `coverBlob` per `romId`: legge il record, set `coverBlob`,
+// put atomico in transazione single-store. Errore se la ROM non esiste
+// (non vogliamo creare record orfani).
+
+export async function setCover(romId: string, cover: Blob): Promise<void> {
+  const db = await getDB();
+  // Transazione esplicita readwrite per garantire atomicità del get→put: senza
+  // questa, un removeRom concorrente potrebbe inserirsi tra le due operazioni
+  // e ci troveremmo a ri-creare un record "fantasma" senza fileBlob valido.
+  const tx = db.transaction("roms", "readwrite");
+  const existing = await tx.store.get(romId);
+  if (!existing) {
+    await tx.done;
+    throw new Error(`ROM non trovata: ${romId}`);
+  }
+  await tx.store.put({ ...existing, coverBlob: cover });
+  await tx.done;
+}
+
 /** Elenca le ROM, opzionalmente filtrate per piattaforma e/o sottostringa del titolo. */
 export async function listRoms(filter: RomFilter = {}): Promise<RomRecord[]> {
   const db = await getDB();

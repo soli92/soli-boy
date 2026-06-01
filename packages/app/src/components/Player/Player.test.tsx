@@ -1,8 +1,13 @@
 // TSK-008 — test del Player con engine fake (US-010).
-import { fireEvent, render, screen } from "@testing-library/react";
+// TSK-032 — verifica integrazione del pannello "Save state" (US-016) quando
+// `saveService` è iniettato dalla composizione.
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { EmulatorEngine } from "../../core/core-wrapper";
+import type { LoadStateResult } from "../../domain/save-service";
+import type { SaveStateRecord } from "../../storage/types";
 import { Player } from "./Player";
+import type { SaveServicePort } from "./SaveStatePanel";
 
 function fakeEngine() {
   return {
@@ -53,5 +58,60 @@ describe("Player", () => {
     fireEvent.click(screen.getByRole("button", { name: /arresta/i }));
     expect(engine.stop).toHaveBeenCalledOnce();
     await screen.findByText("Premi Avvia");
+  });
+
+  it("TSK-032: senza saveService il pannello save state NON è reso (backward compat)", () => {
+    render(
+      <Player
+        engine={fakeEngine()}
+        rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+      />,
+    );
+    expect(
+      screen.queryByRole("region", { name: /save state/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("TSK-032: con saveService il pannello è reso, e si abilita quando il gioco è in esecuzione (US-016 AC1)", async () => {
+    const saveService: SaveServicePort = {
+      saveState: vi.fn(async (_e, romId: string, slot: number) => `${romId}:${slot}:0:id`),
+      loadState: vi.fn(async (): Promise<LoadStateResult> => ({ ok: true })),
+      listSaveStates: vi.fn(async (): Promise<SaveStateRecord[]> => []),
+      deleteSaveState: vi.fn(async () => {}),
+    };
+    const engine = {
+      ...fakeEngine(),
+      // Override capability: l'engine corrente supporta i save state.
+      capabilities: { rewind: false, saveStates: true, sram: false },
+    } satisfies EmulatorEngine;
+
+    render(
+      <Player
+        engine={engine}
+        rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        title="Tetris"
+        saveService={saveService}
+        romId="rom-1"
+        currentCore="gambatte"
+      />,
+    );
+    const region = screen.getByRole("region", { name: /save state/i });
+    expect(region).toBeInTheDocument();
+    // Idle: pannello disabilitato (US-016 AC1).
+    expect(screen.getByRole("button", { name: /salva nello slot 1/i })).toBeDisabled();
+
+    // Avvia il gioco → running → il pannello si abilita.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /salva nello slot 1/i })).toBeEnabled();
+    });
+
+    // Click Salva: chiama saveService.saveState(engine, romId, slot=0).
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /salva nello slot 1/i }));
+    });
+    expect(saveService.saveState).toHaveBeenCalledWith(engine, "rom-1", 0);
   });
 });

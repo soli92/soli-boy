@@ -15,6 +15,7 @@ import {
   InputMapping,
   type KeyProfile,
 } from "./domain/input-mapping";
+import { SaveService } from "./domain/save-service";
 import type { RomRecord } from "./storage/types";
 import type { GameButton } from "./core/core-wrapper";
 import { useVideoSettings } from "./components/Player/useVideoSettings";
@@ -44,6 +45,11 @@ export function App() {
   );
   const { value: videoSettings, setValue: setVideoSettings } =
     useVideoSettings(videoPort);
+
+  // TSK-032 (US-016 / ADR-006) — SaveService composto al livello App e iniettato
+  // nel Player. Lo `storage` (IndexedDBAdapter) implementa già `SaveStoragePort`
+  // (port.ts §SaveStoragePort): nessun nuovo adapter, niente storage paralleli.
+  const saveService = useMemo(() => new SaveService(storage), [storage]);
 
   // In modalità reale l'engine dipende dal core del gioco selezionato (registry).
   const engine = useMemo(
@@ -90,6 +96,10 @@ export function App() {
           rom={{ rom: selected.fileBlob, core: selected.core }}
           title={selected.title}
           videoSettings={videoSettings}
+          // TSK-032 — wiring save state panel (US-016, ADR-006 §Decisione p.4).
+          saveService={saveService}
+          romId={selected.id}
+          currentCore={selected.core}
         />
       )}
 
