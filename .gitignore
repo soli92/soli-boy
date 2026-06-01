@@ -3,5 +3,10 @@
 # (filesystem = single source of truth, R.G1). Rebuildable da <code_path>.
 .graphify-state/
 
+# Node / build (L5 packages/app)
+node_modules/
+dist/
+*.tsbuildinfo
+
 # macOS
 .DS_Store

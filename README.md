@@ -1,41 +1,77 @@
-# soli-boy
+# Soli-boy
 
-Arcade and Game Boy application.
+**Emulatore multipiattaforma** per arcade e console handheld (Game Boy / Game Boy Color,
+Game Boy Advance, arcade FBNeo/MAME), distribuito come **web app**, **desktop** (Electron)
+e **mobile** (Android/iOS via Capacitor). L'utente carica le proprie ROM ed esegue i
+giochi nel browser o in app nativa; salvataggi e dati restano sul dispositivo.
 
----
+> **Vincolo legale**: Soli-boy non distribuisce né include ROM o BIOS protetti da
+> copyright. L'esecuzione avviene esclusivamente su file forniti dall'utente.
 
-Questo repo è gestito come **Agentic Factory llm-wiki++ v2.15** — una knowledge base
-wiki-style + pipeline multi-agente per planning ed esecuzione full-stack, governata dal
-contratto in [`PATTERN.md`](PATTERN.md). Il codice dell'applicazione vive in
-[`packages/app/`](packages/app/) (L5).
+Stato: **early development** — fondamenta del Core web MVP in corso (vedi
+[Stato del progetto](#stato-del-progetto)).
 
-## Struttura factory
+## Stack
+
+TypeScript · React · design system **solids** (`@soli92/solids`) · Vite ·
+**EmulatorJS** (core Libretro in WASM: Gambatte, mGBA, FBNeo/MAME) · **IndexedDB** (idb) ·
+Gamepad API · **Electron** (desktop) · **Capacitor** (mobile).
+
+Dettaglio e razionale: [`raw/tech_stack.md`](raw/tech_stack.md),
+[`wiki/syntheses/stack-tecnologico-soli-boy.md`](wiki/syntheses/stack-tecnologico-soli-boy.md),
+ADR in [`design_&_architecture/decisions/`](design_&_architecture/decisions/).
+
+## Applicazione (`packages/app/`)
+
+Il codice vive in [`packages/app/`](packages/app/) (Vite + React + TypeScript, test con Vitest).
+
+```bash
+cd packages/app
+npm install
+npm run dev        # dev server
+npm test           # unit/integration test (vitest)
+npm run typecheck  # tsc --noEmit
+npm run build      # build di produzione
+```
+
+Moduli implementati (Wave 1):
+- `src/storage/` — adapter IndexedDB + store `roms` (persistenza on-device).
+- `src/domain/` — riconoscimento piattaforma → core di emulazione.
+- `src/components/` — componenti UI su solids (es. avviso legale).
+
+## Gestione del progetto (Agentic Factory llm-wiki++ v2.15)
+
+Oltre a essere l'app, questo repo è gestito come **Agentic Factory**: una knowledge base
+wiki-style + pipeline multi-agente (ingest → planning → design → task → sviluppo) governata
+dal contratto in [`PATTERN.md`](PATTERN.md). Adapter runtime: `.claude/` e `.cursor/`.
 
 ```
-raw/                     L1 — input grezzi (read-only)
-wiki/                    L2 — wiki llm-style append-only
-management/              L3 — kanban + roadmap + questions
-design_&_architecture/   L4 — decisioni, API spec, DB schema
-packages/app/            L5 — codice dell'app (arcade / Game Boy)
-memory/                  side-channel — memoria cross-conversazione
-code_quality/            side-channel — KB regole + report CQRL
-.graphify-state/         side-channel — knowledge graph (non versionato)
-.claude/  .cursor/        adapter runtime
+raw/                     L1 — input grezzi (specifiche, mockup) — read-only
+wiki/                    L2 — knowledge base wiki-style (append-only)
+management/              L3 — kanban (epiche/US) + roadmap + questions
+design_&_architecture/   L4 — ADR + design (API/DB)
+packages/app/            L5 — codice dell'applicazione
+memory/ code_quality/    side-channel (memoria, regole/report qualità)
 ```
 
-## Setup
+Comandi factory: `/run` · `/sync-docs` · `/query` · `/dev` · `/review` · `/kanban-publish`
+· `/premortem` · `/compression` · `/graphify-sync`. Quick start in [`CLAUDE.md`](CLAUDE.md),
+configurazione in [`factory.config.yaml`](factory.config.yaml).
 
-1. **Adapter**: usa Claude Code (`.claude/`) o Cursor (`.cursor/`).
-2. **Stack**: `stack_mode: guided` — al primo `/dev` lo `stack-detector` propone lo stack.
-3. **GitHub**: `gh auth login` (per `/kanban-publish` e VCS handoff).
-4. **CQRL**: popola `code_quality/rules/canonical/` per lo stack prima del primo `/review`.
-5. **Compression context** (consigliato): `graphify --version` (≥ 0.8.22), poi
-   `/graphify-sync app` per popolare il side-channel.
+## Stato del progetto
 
-## Comandi principali
+| Layer | Stato |
+|---|---|
+| Knowledge base (L2) | 3 sorgenti ingerite → 35 pagine wiki |
+| Planning (L3) | 8 epiche · 35 user story · roadmap (R1 web / R2 desktop / R3 mobile) |
+| Design (L4) | 3 ADR + design Core web MVP (EP-001 + EP-003) |
+| Task (L4) | 19 TSK (Sprint 1 + lookahead) |
+| Sviluppo (L5) | Wave 1: 3 moduli (storage / domain / components), 13 test verdi |
+| Mirror GitHub | 8 milestone (EP-001…008) su `soli92/soli-boy` |
 
-`/run` · `/sync-docs` · `/query` · `/lint` · `/heal` · `/topology` · `/dev` · `/review`
-· `/kanban-publish` · `/premortem` · `/compression` · `/graphify-sync`
+Roadmap dettagliata: [`management/roadmap.md`](management/roadmap.md) ·
+board: [`management/kanban/sprint.md`](management/kanban/sprint.md).
 
-Vedi [`CLAUDE.md`](CLAUDE.md) per il quick start completo e
-[`factory.config.yaml`](factory.config.yaml) per la configurazione.
+## Licenza
+
+Da definire. Il progetto non veicola contenuti protetti da copyright.

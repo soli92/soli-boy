@@ -48,3 +48,33 @@ Pagine create: 6 | Figure: 0 | Aggiornamenti: 2 (solids, index.md) | Gap nuovi: 
 - CREATE (milestone): EP-001..EP-008 → github:milestone-2..9
 - SKIP (scope): US×35, TSK×19 (publish limitato alle epiche su richiesta)
 **Link al provider:** https://github.com/soli92/soli-boy/milestones
+
+## 2026-06-01 17:00 — develop TSK-001
+**Agente:** db-dev
+**TSK:** [[../management/kanban/EP-001-gestione-file-di-gioco/US-004-persistenza-libreria/TSK-001]]
+**Layer:** db
+**Code path:** ./packages/app/
+**Files touched:** 3 (src/storage/types.ts, src/storage/db.ts, src/storage/db.test.ts)
+**Commit:** n/a (gate VCS umano pendente)
+**DoD:** pass — typecheck OK, 4/4 test store `roms` verdi (fake-indexeddb)
+**Note:** Schema 4 store (roms/saveStates/sram/config) creato; CRUD su `roms`. Id = hash FNV-1a del contenuto (idempotente).
+
+## 2026-06-01 17:00 — develop TSK-004
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-001-gestione-file-di-gioco/US-002-riconoscimento-piattaforma/TSK-004]]
+**Layer:** be
+**Code path:** ./packages/app/
+**Files touched:** 3 (src/domain/types.ts, src/domain/platform-recognition.ts, src/domain/platform-recognition.test.ts)
+**Commit:** n/a (gate VCS umano pendente)
+**DoD:** pass — typecheck OK, 7/7 test verdi (anticipa il deliverable di TSK-010)
+**Note:** Mapping estensione/contenuto→core (Gambatte/mGBA/FBNeo). Magic GBA 0x96@0xB2 prevale su estensione ambigua; non supportato→reason.
+
+## 2026-06-01 17:00 — develop TSK-006
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-001-gestione-file-di-gioco/US-006-avviso-no-copyright/TSK-006]]
+**Layer:** fe
+**Code path:** ./packages/app/
+**Files touched:** 4 (src/components/LegalNotice.tsx, src/components/LegalNotice.test.tsx, src/App.tsx, src/main.tsx)
+**Commit:** n/a (gate VCS umano pendente)
+**DoD:** pass — typecheck OK, 2/2 test verdi (@testing-library/react)
+**Note:** Componente LegalNotice riusabile su classi solids (sb-note); role=note/aria-label. Scheletro app minimo aggiunto.
