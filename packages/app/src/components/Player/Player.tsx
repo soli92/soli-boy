@@ -9,6 +9,18 @@
 //           sul canvas (regola scoped accanto a object-fit) + overlay scanline
 //           via CSS dentro `.sb-screen` (sopra il canvas, pointer-events:none).
 //           Engine-agnostico anche qui: nessuna modifica a `EmulatorEngine`.
+// TSK-041 — Bugfix runtime US-016 AC3: canvas perso dopo WasmBoy.loadState.
+//           Causa: `.sb-screen` veniva passato all'engine come container ma
+//           contiene anche figli React (placeholder testuale + overlay scanline).
+//           Il canvas appeso imperativamente da WasmBoyEngine.ensureCanvas è un
+//           nodo "non-React" tra fratelli React: su re-render React riconcilia
+//           i figli di `.sb-screen` e può rimuovere/clobberare quel canvas.
+//           Fix engine-agnostico: introdurre un host React-VUOTO dedicato
+//           (`<div ref={canvasHostRef} className="sb-canvas-host" />`) DENTRO
+//           `.sb-screen`. Il canvas vive solo lì; React non riconcilia mai i
+//           figli dell'host (nessun figlio React dichiarato). Placeholder
+//           testuale e overlay scanline restano fratelli dell'host dentro
+//           `.sb-screen`, così CSS scoping e fullscreen restano invariati.
 // Monta il viewport di gioco e avvia l'esecuzione tramite CoreWrapper (ADR-003).
 // L'EmulatorEngine (EmulatorJS in runtime) è iniettato → componente testabile.
 
@@ -80,6 +92,12 @@ export function Player({
   const [state, setState] = useState(wrapper.currentState);
   const [error, setError] = useState<string | null>(null);
   const screenRef = useRef<HTMLDivElement>(null);
+  // TSK-041 — host React-vuoto per il canvas imperativo dell'engine. Sta
+  // DENTRO `.sb-screen` (così il CSS scoped `.sb-screen ... canvas` continua
+  // a matchare il canvas appeso dall'engine) ma non ha figli React, quindi
+  // React non riconcilia mai il suo contenuto. Questo isola il canvas
+  // imperativo dal flusso di re-render (vedi commento di intestazione).
+  const canvasHostRef = useRef<HTMLDivElement>(null);
 
   // TSK-035 — fullscreen sul contenitore del viewport (engine-agnostico).
   const fullscreen = useFullscreen(screenRef);
@@ -111,9 +129,16 @@ export function Player({
   async function handlePlay() {
     setError(null);
     try {
-      // TSK-022: passa il nodo DOM all'engine (gli engine reali, es. WasmBoy, vi montano il canvas).
+      // TSK-022 / TSK-041: passa al motore l'HOST DEDICATO (React-vuoto) e non
+      // `.sb-screen`, così il canvas imperativo non ha mai fratelli React che
+      // possano causarne la rimozione su re-render (anti-pattern React↔DOM
+      // imperativo che bloccava US-016 AC3 dopo `WasmBoy.loadState`). Fallback
+      // su screenRef solo se l'host non è ancora montato (test legacy): il
+      // canvas resterebbe comunque dentro `.sb-screen`, ma senza l'isolamento.
+      const container =
+        canvasHostRef.current ?? screenRef.current ?? undefined;
       if (wrapper.currentState === "idle")
-        await wrapper.load({ ...rom, container: screenRef.current ?? undefined });
+        await wrapper.load({ ...rom, container });
       wrapper.start();
       setState(wrapper.currentState);
     } catch (e) {
@@ -172,6 +197,14 @@ export function Player({
         .sb-screen[data-video-scope="${scopeId}"] {
           position: relative;
         }
+        /* TSK-041 — host React-vuoto per il canvas imperativo: riempie
+           l'intero box di .sb-screen cosi la resa visiva resta identica.
+           position:absolute + inset:0 evita di influenzare il layout dei
+           fratelli (placeholder testuale, overlay scanline). */
+        .sb-screen[data-video-scope="${scopeId}"] .sb-canvas-host {
+          position: absolute;
+          inset: 0;
+        }
         .sb-screen[data-video-scope="${scopeId}"] canvas {
           width: 100%;
           height: 100%;
@@ -204,9 +237,22 @@ export function Player({
         data-filter={effectiveSettings.filter}
         style={screenStyle}
       >
+        {/* TSK-041 — Host dedicato per il canvas imperativo dell'engine.
+            NESSUN figlio React qui dentro: React non riconcilia il contenuto
+            dell'host, quindi il <canvas> appeso da WasmBoyEngine.ensureCanvas
+            non viene mai rimosso/clobberato da re-render del Player (es. il
+            re-render che segue handleLoad in SaveStatePanel). Il selettore
+            e2e `.sb-screen canvas` continua a matchare (il canvas resta
+            discendente di `.sb-screen`). */}
+        <div
+          ref={canvasHostRef}
+          className="sb-canvas-host"
+          data-testid="sb-canvas-host"
+        />
         {running ? (title ?? "In esecuzione") : paused ? "In pausa" : "Premi Avvia"}
         {/* TSK-037 — Overlay scanline (US-022): reso solo con filter=scanline.
-            Dentro `.sb-screen` per ereditare lo scoping CSS sopra. */}
+            Dentro `.sb-screen` per ereditare lo scoping CSS sopra. Fratello
+            (NON figlio) dell'host canvas: vedi TSK-041. */}
         {showScanlineOverlay && (
           <div
             className="sb-scanline"

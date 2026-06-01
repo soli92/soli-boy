@@ -1,0 +1,110 @@
+{
+  "tsk_id": "TSK-037",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-037-01",
+      "rule_id": "TS-ROBUST-001",
+      "severity": "medium",
+      "pass": "robustness",
+      "file": "packages/app/src/components/Settings/Settings.tsx",
+      "line": 115,
+      "title": "Cast non validato `raw as VideoFilter` su input da evento DOM",
+      "description": "In `handleFilterChange`, il valore grezzo della `<select>` viene promosso a `VideoFilter` con un cast diretto (`raw as VideoFilter`) senza validazione contro `VIDEO_FILTERS`. Se un valore inatteso entresse nel DOM (es. option iniettata via extension o manipolazione DevTools), lo stato e la persistenza riceverebbero un `filter` fuori dall'union type senza alcun guard a runtime. Il pattern identico esiste su `handleAspectChange` (`raw as AspectRatio`), ma quello è ereditato da TSK-036 (già superato in review). F-037-01 copre solo l'aggiunta TSK-037.",
+      "suggestion": "Validare `raw` contro `VIDEO_FILTERS` prima del cast: `const next = VIDEO_FILTERS.includes(raw as VideoFilter) ? (raw as VideoFilter) : DEFAULT_VIDEO_SETTINGS.filter;` — oppure estrarre un helper `parseVideoFilter(raw: string): VideoFilter` condiviso con gli altri handler. La forma con guard elimina l'undefined silenzioso.",
+      "auto_fixable": false,
+      "reference": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/components/Settings/Settings.tsx:115]"
+    },
+    {
+      "id": "F-037-02",
+      "rule_id": "REACT-A11Y-001",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "file": "packages/app/src/components/Settings/Settings.tsx",
+      "line": 197,
+      "title": "aria-label del select Filtro troppo generico: non disambigua nel contesto della pagina",
+      "description": "`aria-label=\"Filtro\"` sul nuovo `<select>` è corrente e tecnicamente valido (soddisfa il requisito WCAG 1.3.1 e lo fa meglio di un label assente). Tuttavia, nel contesto della sezione Settings che già contiene altri select (Fattore di scala, Aspect ratio, più tutti i select di rimappatura tasti), la stringa \"Filtro\" è isolata dal contesto visivo fornito dalla label testuale `<span class=\"sb-key\">Filtro</span>`. Gli screen reader annunciano il controllo come \"Filtro, menu a discesa\" — corretto ma non contestualizzato nella sezione Resa Video. Il pattern degli altri select nella stessa sezione (es. `aria-label=\"Fattore di scala\"`, `aria-label=\"Aspect ratio\"`) è coerente, quindi questo finding è di bassa severity (coerente con il pattern esistente); si segnala solo perché la stringa singola parola potrebbe generare ambiguità su pagine future con più sezioni che usano il termine.",
+      "suggestion": "Considerare `aria-label=\"Filtro video\"` (o `\"Filtro rendering\"`) per disambiguare da potenziali futuri select con label simile in altre sezioni. Alternativa strutturale: avvolgere la sezione Resa video in un `<fieldset>/<legend>` così da fornire il contesto gerarchico agli screen reader senza modificare ogni label individuale.",
+      "auto_fixable": true,
+      "reference": "[^rule: code_quality/rules/canonical/REACT-A11Y-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/components/Settings/Settings.tsx:197]"
+    },
+    {
+      "id": "F-037-03",
+      "rule_id": "REACT-IDIOM-001",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "file": "packages/app/src/components/Player/Player.tsx",
+      "line": 171,
+      "title": "CSS iniettato via template literal sempre presente, anche quando l'overlay scanline non è attivo",
+      "description": "La regola CSS `.sb-screen[...] .sb-scanline { ... }` (con il `repeating-linear-gradient`) è sempre inclusa nel blocco `<style>` indipendentemente dal valore di `showScanlineOverlay`. Questo è comportamento corretto (il CSS è scoped al `data-video-scope` univoco e non ha effetti se `.sb-scanline` non è nel DOM), ma introduce una regola inutilizzata nel 66% dei casi di utilizzo (nearest e smoothing). In un componente funzionale React, un pattern più idiomatico è costruire il CSS selettivamente solo con le regole attive, oppure separare il blocco `<style>` dell'overlay dal blocco base — rendendo l'intento più leggibile e riducendo il payload CSS negli stati non-scanline.",
+      "suggestion": "Separare le regole CSS in due blocchi `<style>` (uno sempre presente per `position:relative` + canvas, uno condizionale per `.sb-scanline`), oppure costruire la stringa CSS con interpolazione condizionale. Priorità bassa: il comportamento è corretto; è una questione di leggibilità e pulizia del DOM. Questo dovrebbe comunque essere considerato in relazione a TSK-041 (bugfix React↔canvas) dove il numero di `<style>` tag potrebbe avere impatto.",
+      "auto_fixable": true,
+      "reference": "[^rule: code_quality/rules/canonical/REACT-IDIOM-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/components/Player/Player.tsx:171]"
+    }
+  ],
+  "notes": [
+    {
+      "id": "N-037-01",
+      "type": "observation",
+      "title": "Rischio interferenza React/canvas (TSK-041): segnalazione per awareness",
+      "description": "L'overlay `.sb-scanline` viene inserito come figlio React diretto di `.sb-screen`, lo stesso contenitore dove l'adapter EmulatorEngine monta il `<canvas>` in modo imperativo (cfr. CoreWrapper.load passando `container: screenRef.current`). React 18 con Strict Mode e Concurrent Features può rimontare i figli del componente; se l'engine ha già appeso il canvas al nodo DOM prima che React sincronizzi, un rimount del figlio scanline potrebbe riordinare i nodi del DOM o (in edge case) interferire con il canvas. Questo rischio è già noto e tracciato in TSK-041; non è un finding bloccante per TSK-037, ma è menzionato per completezza e per dare contesto al dev-agent che lavorerà su TSK-041. L'uso di `aria-hidden` e `pointer-events:none` non mitiga il rischio di ordinamento DOM."
+    },
+    {
+      "id": "N-037-02",
+      "type": "positive",
+      "title": "Backward-compat: mergeWithDefaults e load corretto",
+      "description": "La revisione esplicita richiesta: il path di load in useVideoSettings.ts (riga 133) invoca `mergeWithDefaults(loaded)` ogni volta che `port.load()` ritorna un valore non null. `mergeWithDefaults` fa un shallow merge default-first, quindi un oggetto persistito senza il campo `filter` (TSK-036 legacy) riceve il default `nearest`. Il test `backward-compat` in Player.filter.test.tsx e Settings.filter.test.tsx copre entrambi i lati. Meccanismo solido."
+    },
+    {
+      "id": "N-037-03",
+      "type": "positive",
+      "title": "CSS scoping corretto: nessuna collision globale",
+      "description": "L'overlay scanline e le regole canvas sono scoped tramite `[data-video-scope=\"${scopeId}\"]` dove `scopeId` deriva da `useId()` con sanitizzazione dei caratteri CSS non validi. Nessuna regola globale è aggiunta. Coerente con il pattern di TSK-036."
+    },
+    {
+      "id": "N-037-04",
+      "type": "positive",
+      "title": "Accessibilità overlay scanline soddisfatta",
+      "description": "L'elemento `.sb-scanline` ha `aria-hidden=\"true\"` e `pointer-events: none`. Corretto: è un elemento puramente decorativo che non deve essere navigabile né annunciato dagli screen reader. `data-testid` usato per i test (non `id` che potrebbe collidere). Conforme a WCAG 1.1.1 e al design contract di EP-005."
+    }
+  ],
+  "no_progress": false,
+  "regression_detected": false,
+  "verdict": "conditional",
+  "summary": {
+    "total_findings": 3,
+    "by_severity": { "high": 0, "medium": 1, "low": 2 },
+    "blocking": 0,
+    "advisory": 3,
+    "passes_clean": ["design"],
+    "passes_with_findings": ["robustness", "idiomaticity"]
+  },
+  "task_package": {
+    "tsk_id": "TSK-037",
+    "iter": 1,
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 80,
+      "findings_to_fix": ["F-037-01", "F-037-02", "F-037-03"],
+      "priority_order": ["F-037-01", "F-037-02", "F-037-03"]
+    }
+  },
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.15.0"
+}

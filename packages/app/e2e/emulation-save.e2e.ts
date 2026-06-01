@@ -75,20 +75,14 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
   test("salva stato → carica stato: nessun errore, canvas resta visibile", async ({
     page,
   }) => {
-    // FIXME (TSK-034 / gap qa@TSK-034): WasmBoy.loadState() rimuove il canvas
-    // dal DOM dopo il restore, causando la scomparsa del canvas .sb-screen.
-    // Sintomo: dopo aver chiamato "Carica slot 1" con successo (nessun alert
-    // di errore), il canvas non è più trovabile in `.sb-screen`.
-    // Ipotesi: WasmBoy riconfigura internamente il canvas element durante
-    // loadState, smontandolo e rimontandolo, ma il React ref .sb-screen
-    // punta ancora al vecchio nodo. Il flusso save funziona; il flusso load
-    // richiede un fix nell'integrazione WasmBoyEngine/Player (non nel test).
-    // Vedere wiki/gaps.md @ gap "TSK-034 — WasmBoy.loadState() rimuove canvas".
-    test.fixme(
-      true,
-      "Bug runtime: WasmBoy.loadState() rimuove il canvas dal DOM dopo il restore. Vedi wiki/gaps.md.",
-    );
-
+    // TSK-041 — Bugfix US-016 AC3. La causa del canvas perso era nel Player
+    // (anti-pattern React↔DOM imperativo): `.sb-screen` veniva passato come
+    // container all'engine MA conteneva anche figli React (placeholder +
+    // overlay scanline). Il `<canvas>` appeso da WasmBoyEngine.ensureCanvas
+    // era un nodo non gestito tra fratelli React; sui re-render successivi
+    // a `handleLoad` React poteva rimuoverlo. Fix: host dedicato React-vuoto
+    // (`.sb-canvas-host`) dentro `.sb-screen`, passato all'engine al posto
+    // di screenRef. Il selettore `.sb-screen canvas` continua a matchare.
     test.slow();
 
     await page.goto("/?engine=real");
@@ -118,7 +112,8 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
     await expect(page.getByRole("alert")).not.toBeVisible({ timeout: 5_000 });
 
     // Verifica: il canvas resta visibile → l'emulazione continua dopo il restore.
-    // QUESTA ASSERTION FALLISCE: il canvas scompare dopo loadState (vedi fixme sopra).
+    // TSK-041: con l'host React-vuoto il canvas non viene più clobberato dai
+    // re-render React conseguenti a `handleLoad`.
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 5_000 });
   });
 });
