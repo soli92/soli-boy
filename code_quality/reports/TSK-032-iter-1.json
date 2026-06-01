@@ -1,0 +1,94 @@
+{
+  "tsk_id": "TSK-032",
+  "iter": 1,
+  "generated_at": "2026-06-01T16:51:00Z",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version_min": "18",
+    "bundler": "vite",
+    "persistence": "indexeddb",
+    "confidence": 0.97,
+    "confidence_mode": "full"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-032-1-I1",
+      "pass": "idiomaticity",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "severity": "low",
+      "blocking": false,
+      "file": "packages/app/src/components/Player/SaveStatePanel.tsx",
+      "line": 266,
+      "title": "Non-null assertion `rec!` senza commento giustificativo",
+      "description": "`new Date(rec!.createdAt)` usa il non-null assertion operator perché TypeScript non restringe `rec` attraverso la variabile booleana `occupied` (pattern noto: control-flow narrowing non attraversa variabili intermedie). L'assertion è funzionalmente corretta (il ramo ternario `occupied ? ... : 'vuoto'` garantisce rec !== undefined), ma la regola TS-IDIOM-002 richiede un commento esplicito che ne giustifichi la sicurezza.",
+      "suggestion": "Aggiungere un commento inline: `rec!.createdAt /* occupied === rec !== undefined, TS non restringe attraverso var bool */` oppure usare `rec?.createdAt ?? 0` come alternativa null-safe.",
+      "refs": ["[^src5: packages/app/src/components/Player/SaveStatePanel.tsx:266]"]
+    },
+    {
+      "id": "F-032-1-I2",
+      "pass": "idiomaticity",
+      "rule_id": "REACT-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/REACT-IDIOM-001.md",
+      "severity": "low",
+      "blocking": false,
+      "file": "packages/app/src/components/Player/SaveStatePanel.tsx",
+      "line_range": [141, 207],
+      "title": "Handler async dichiarati come plain function nel corpo del componente, non memoizzati",
+      "description": "`handleSave`, `handleLoad`, `handleDelete` sono dichiarati come plain `async function` nel corpo del render — vengono ricostruiti a ogni render. Il pannello non li espone come dependency di hook (nessun useEffect li consuma), quindi non causano re-render infiniti. Tuttavia, il pattern è coerente con la firma di `refresh` che usa `useCallback`: per uniformità e prevenzione di futuri refactor rischiosi, i tre handler dovrebbero o essere documentati come 'inline by design (no stable ref needed)' oppure wrappati in `useCallback` con dipendenze esplicite.",
+      "suggestion": "Aggiungere un commento che documenta la scelta ('Dichiarati inline: non sono dependency di hook, si ricostruiscono a ogni render per design') oppure wrappare in `useCallback` con deps `[disabled, romId, currentCore, engine, saveService, refresh]`.",
+      "refs": [
+        "[^src5: packages/app/src/components/Player/SaveStatePanel.tsx:141]",
+        "[^src5: packages/app/src/components/Player/SaveStatePanel.tsx:159]",
+        "[^src5: packages/app/src/components/Player/SaveStatePanel.tsx:192]"
+      ]
+    }
+  ],
+  "verified_checks": {
+    "capability_check_honest": {
+      "result": "pass",
+      "note": "`engine.capabilities.saveStates === true` (non falsy check): pannello disabilitato con nota onesta se false. Nessun claim falso. [^src5: packages/app/src/components/Player/SaveStatePanel.tsx:84]"
+    },
+    "us018_rom_filter": {
+      "result": "pass",
+      "note": "Filtro doppio difensivo: `saveService.listSaveStates(romId)` già filtra per romId (TSK-031 contratto), più `.filter((r) => r.romId === romId)` locale nel refresh. Nessun 'fantasma' di altro gioco. [^src5: packages/app/src/components/Player/SaveStatePanel.tsx:112-114]"
+    },
+    "engine_mismatch_no_crash": {
+      "result": "pass",
+      "note": "`res.reason === 'engine-mismatch'` → setMessage error, region resta nel DOM. `res.reason === 'not-found'` → setMessage error + refresh(). Union LoadStateResult esaustiva (solo 'not-found' | 'engine-mismatch'): nessun ramo silente. [^src5: packages/app/src/components/Player/SaveStatePanel.tsx:167-181]"
+    },
+    "gate_running": {
+      "result": "pass",
+      "note": "`disabledReason` include `!isRunning` come terzo branch; `disabled` blocca tutti e tre gli handler in testa prima di qualsiasi operazione asincrona. [^src5: packages/app/src/components/Player/SaveStatePanel.tsx:88-95,142,160,193]"
+    },
+    "a11y_region_aria_label": {
+      "result": "pass",
+      "note": "`<section role='region' aria-label='Save state'>`. Bottoni con aria-label esplicito per slot ('Salva nello slot N', 'Carica slot N', 'Elimina slot N'). Stato disabilitato veicolato da `disabled` HTML. `data-disabled`/`data-supported` come attributi aggiuntivi, non sostitutivi. [^src5: packages/app/src/components/Player/SaveStatePanel.tsx:211-260]"
+    },
+    "backward_compat_player": {
+      "result": "pass",
+      "note": "Le tre nuove prop in `PlayerProps` (`saveService`, `romId`, `currentCore`) sono tutte opzionali. Il pannello è reso solo se `saveService` è definito. I test esistenti che non passano `saveService` non vengono toccati. [^src5: packages/app/src/components/Player/Player.tsx:43-63,220-232]"
+    },
+    "wiring_app_usememo": {
+      "result": "pass",
+      "note": "`const saveService = useMemo(() => new SaveService(storage), [storage])` — identità stabile; istanza ricreata solo se `storage` cambia (che è un singleton `indexedDbStorage`, quindi mai in pratica). [^src5: packages/app/src/App.tsx:52]"
+    }
+  },
+  "verdict": "pass",
+  "summary": "TSK-032 supera la review. Tutti i check critici (capability check, filtro ROM US-018, engine-mismatch no-crash, gate running, a11y, backward-compat, wiring) sono conformi alle spec e alle regole canoniche. Emergono 2 finding non-bloccanti di bassa severità: (F-032-1-I1) non-null assertion senza commento giustificativo a riga 266; (F-032-1-I2) handler async inline non documentati come scelta di design. Nessun finding blocking: verdict `pass` diretto senza conditional.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression": false,
+    "previous_iter_report": null
+  },
+  "next_step": "Nessuna azione bloccante. I 2 finding low/advisory possono essere risolti opportunisticamente nel prossimo TSK del layer fe (non richiedono iterazione separata). TSK-032 review_status: passed."
+}

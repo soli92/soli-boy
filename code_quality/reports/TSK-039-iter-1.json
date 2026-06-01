@@ -1,0 +1,88 @@
+{
+  "tsk_id": "TSK-039",
+  "iter": 1,
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "2.14.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "runtime": "browser/webview",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "full"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-039-01",
+      "rule_id": "TS-ROBUST-001",
+      "tier": "canonical",
+      "severity": "medium",
+      "blocking": true,
+      "file": "packages/app/src/components/Library/Library.tsx",
+      "lines": "104-115",
+      "pass": "robustness",
+      "title": "Errore setCover smonta l'intera griglia (guard error condiviso)",
+      "description": "La funzione handleCoverChange in caso di errore chiama setError, che triggera il guard 'if (error !== null) return <p role=\"alert\">...' a riga 104-107. Questo guard e' condiviso con gli errori di listRoms e causa la rimozione dell'intera griglia <ul> dalla UI. Un errore di upload copertina non dovrebbe smontare la navigazione della libreria: l'utente perde il contesto (scroll, filtri, lista) per un errore di un'operazione secondaria. L'errore andrebbe reso locale alla tile (stato per-rom) o mostrato in una regione distinta senza distruggere la lista.",
+      "evidence": "handleCoverChange chiama setError (packages/app/src/components/Library/Library.tsx:110); il guard condiviso a riga 104-107 restituisce l'alert al posto dell'intera pagina. Il test F-039 'setCover fallisce mostra role=alert e non aggiorna la tile' (Library.test.tsx:253-275) passa perche' trova l'alert, ma non verifica che la griglia rimanga montata.",
+      "suggestion": "Introdurre uno stato coverError locale (es. useState<Record<string,string>>({})) indicizzato per romId, visualizzato nella tile corrispondente. In alternativa, un stato coverError separato da error che non triggheri il guard globale. Il global error deve restare riservato a listRoms (failure totale di caricamento).",
+      "citation": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/components/Library/Library.tsx:104]"
+    },
+    {
+      "id": "F-039-02",
+      "rule_id": "REACT-IDIOM-001",
+      "tier": "canonical",
+      "severity": "low",
+      "blocking": false,
+      "file": "packages/app/src/components/Library/Library.tsx",
+      "lines": "89-103",
+      "pass": "idiomaticity",
+      "title": "handleCoverChange non memoizzata — referenza instabile verso GameTile",
+      "description": "handleCoverChange e' dichiarata come async function nel corpo del componente Library senza useCallback. A ogni render di Library viene creata una nuova referenza che viene passata come prop onCoverChange a ogni GameTile. Poiche' GameTile non e' avvolta in React.memo, questo non causa rerender superflui in pratica, ma e' non idiomatico in React 18 per handler passati come prop a componenti figlio. La coerenza con il pattern esistente del codebase (onSelect e' una closure inline in JSX, ma non e' asincrona) e' accettabile come contesto; il finding resta advisory.",
+      "suggestion": "Avvolgere handleCoverChange in useCallback con dipendenze [storage] per stabilizzare la referenza e documentare l'intent. Alternativa: se GameTile viene avvolta in React.memo in futuro, questa mancanza diventerebbe bloccante.",
+      "citation": "[^rule: code_quality/rules/canonical/REACT-IDIOM-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/components/Library/Library.tsx:89]"
+    }
+  ],
+  "verdict": "conditional",
+  "summary": "TSK-039 implementa correttamente il contratto US-009: upload cover da file locale (no fetch esterni), revoke ObjectURL nel cleanup, setCover update-only con errore su ROM inesistente, CoverPort segregata, a11y (alt, aria-label, aria-hidden sul placeholder), accessible name della tile invariato. Un finding medium bloccante: l'errore setCover riusa il guard globale che smonta l'intera griglia — comportamento regressivo per un'operazione secondaria. Un finding low advisory: handleCoverChange non memoizzata.",
+  "loop_status": {
+    "current_iter": 1,
+    "max_iter": 3,
+    "no_progress": false,
+    "regression": false
+  },
+  "task_package": {
+    "tsk_id": "TSK-039",
+    "iter": 2,
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 80,
+      "findings_to_fix": ["F-039-01"],
+      "findings_advisory": ["F-039-02"]
+    },
+    "findings": [
+      {
+        "id": "F-039-01",
+        "severity": "medium",
+        "blocking": true,
+        "file": "packages/app/src/components/Library/Library.tsx",
+        "lines": "104-115",
+        "fix": "Separare coverError da error. Introdurre useState<string|null>(null) dedicato per gli errori di upload cover (o un Record<romId,string> per errori per-tile). Rimuovere la chiamata a setError in handleCoverChange; sostituire con setCoverError o equivalente. Il guard globale 'if (error !== null)' deve restare riservato esclusivamente agli errori di listRoms. Il role=alert per l'errore cover deve essere reso localmente (nella GameTile o in una regione separata che non smonta la griglia). Aggiornare Library.test.tsx: il test 'setCover fallisce mostra role=alert e non aggiorna la tile' deve verificare anche che la griglia (ul[aria-label='Risultati libreria']) rimanga nel documento dopo l'errore."
+      },
+      {
+        "id": "F-039-02",
+        "severity": "low",
+        "blocking": false,
+        "advisory": true,
+        "fix": "Opzionale: avvolgere handleCoverChange in useCallback([storage])."
+      }
+    ]
+  }
+}

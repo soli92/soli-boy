@@ -270,6 +270,13 @@ describe("Library", () => {
       const alert = await screen.findByRole("alert");
       expect(alert).toHaveTextContent(/impossibile aggiornare la copertina/i);
       expect(alert).toHaveTextContent(/quota piena/i);
+      // F-039-01: l'errore di setCover NON deve smontare l'intera griglia
+      // (l'utente non perde lista/filtri/scroll). La <ul> dei risultati resta
+      // presente e la tile esistente è ancora visibile.
+      expect(
+        screen.getByRole("list", { name: /risultati libreria/i }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Tetris")).toBeInTheDocument();
     });
   });
 });

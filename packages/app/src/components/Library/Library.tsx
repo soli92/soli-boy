@@ -6,7 +6,7 @@
 // refresh della tile. Nessun fetch esterno (US-033 privacy on-device).
 // UI su classi solids.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Platform } from "../../domain/types";
 import type { CoverPort, StoragePort } from "../../storage/port";
 import type { RomRecord } from "../../storage/types";
@@ -40,7 +40,12 @@ const PLATFORM_ORDER: Platform[] = ["GB", "GBC", "GBA", "ARCADE"];
 
 export function Library({ storage, onSelect }: LibraryProps) {
   const [roms, setRoms] = useState<RomRecord[] | null>(null);
+  // `error` è riservato ESCLUSIVAMENTE al fallimento di listRoms (smonta la
+  // griglia): F-039-01 separa l'errore non-fatale dell'upload copertina in
+  // `coverError`, che viene reso come alert sopra la <ul> senza smontarla
+  // (l'utente non perde lista/filtri/scroll).
   const [error, setError] = useState<string | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [platform, setPlatform] = useState<PlatformFilter>(ALL);
 
@@ -51,6 +56,7 @@ export function Library({ storage, onSelect }: LibraryProps) {
     setQuery("");
     setPlatform(ALL);
     setError(null);
+    setCoverError(null);
     storage
       .listRoms()
       .then((r) => {
@@ -92,20 +98,26 @@ export function Library({ storage, onSelect }: LibraryProps) {
   // TSK-039 — handler upload copertina: persiste via setCover, poi aggiorna
   // localmente la entry in `roms` per refreshare la tile senza ri-listare
   // l'intera libreria (evita flicker e mantiene scroll/filtri stabili).
-  async function handleCoverChange(romId: string, file: File) {
-    setError(null);
-    try {
-      await storage.setCover(romId, file);
-      setRoms((prev) =>
-        prev
-          ? prev.map((r) => (r.id === romId ? { ...r, coverBlob: file } : r))
-          : prev,
-      );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(`Impossibile aggiornare la copertina: ${msg}`);
-    }
-  }
+  // F-039-01: errore non-fatale → `coverError`, NON `error` (che smonterebbe
+  // l'intera griglia). F-039-02: `useCallback` per referenza stabile verso
+  // GameTile (riduce re-render delle tile).
+  const handleCoverChange = useCallback(
+    async (romId: string, file: File) => {
+      setCoverError(null);
+      try {
+        await storage.setCover(romId, file);
+        setRoms((prev) =>
+          prev
+            ? prev.map((r) => (r.id === romId ? { ...r, coverBlob: file } : r))
+            : prev,
+        );
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setCoverError(`Impossibile aggiornare la copertina: ${msg}`);
+      }
+    },
+    [storage],
+  );
 
   if (error !== null)
     return (
@@ -153,6 +165,12 @@ export function Library({ storage, onSelect }: LibraryProps) {
           ))}
         </div>
       </div>
+
+      {coverError !== null && (
+        <p className="sb-note" role="alert">
+          {coverError}
+        </p>
+      )}
 
       {filtered.length === 0 ? (
         <p className="sb-note" role="status">
