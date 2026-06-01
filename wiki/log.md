@@ -263,3 +263,13 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 [2026-06-01 17:10] develop — debug EmulatorJS (cont.): core runtime non carica anche in headed ("EJS_Runtime not defined"). Provati threads off/on, core variants, build coerente stable. Causa = caricamento core EJS (compression/report JSON). Gap resta aperto; engine config base mantenuta. — files touched: 3
 
 [2026-06-01 17:30] design — ADR-005 multi-engine registry (WasmBoy GB/GBC, mGBA GBA, arcade non coperto/rinvio; EmulatorJsEngine deprecato). Rivede ADR-004. architecture-overview aggiornato. — files touched: 2
+
+[2026-06-01 17:35] execute — sprint 4 "Emulazione reale multi-engine": TSK-025/027/028/029 da ADR-005. Arcade rinviato (gap arcade-emulation-engine, EP-009 futura). — files touched: 4
+
+## 2026-06-01 18:10 — develop TSK-025 + TSK-027
+**Agenti:** be-dev + qa-dev · **Code path:** ./packages/app/
+- TSK-025 (be) WasmBoyEngine (GB/GBC, npm wasmboy ESM) + engine-registry selectEngine + App (engine reale per-core via ?engine=real)
+- TSK-027 (qa) e2e reale WasmBoy + dmg-acid2.gb → canvas reso
+**DoD:** typecheck OK, 49 unit + 5 e2e verdi (4 stub + 1 REALE). Emulazione GB reale OK.
+**Esito:** gap emulatorjs-real-integration RISOLTO per GB (pivot WasmBoy, ADR-005). EmulatorJsEngine ora dead-code → rimozione in TSK-029. **Commit:** n/a (gate)
+[2026-06-01 18:10] gap-closed — emulatorjs-real-integration (GB via WasmBoy) — files touched: 1

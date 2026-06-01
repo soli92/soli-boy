@@ -38,6 +38,19 @@ View aggregata generata dal `tpm`. Scope: Core web MVP (EP-001 + EP-003).
 | TSK-023 | Hosting core + COOP/COEP | infra | human | P1 | M | todo | TSK-021 |
 | TSK-024 | e2e ROM homebrew reale (chiude gap) | qa | agent | P1 | M | todo | TSK-021,022,023 |
 
+
+## Sprint 4 — "Emulazione reale multi-engine" (ADR-005)
+
+| TSK | Titolo | layer | consumer | prio | status | depends_on |
+|-----|--------|-------|----------|------|--------|-----------|
+| TSK-025 | WasmBoyEngine (GB/GBC) + engine registry | be | agent | P0 | todo | — |
+| TSK-027 | e2e reale GB (WasmBoy + dmg-acid2) | qa | agent | P0 | todo | TSK-025 |
+| TSK-028 | MgbaEngine (GBA) — spike + adapter | be | agent | P1 | todo | TSK-025 |
+| TSK-029 | Deprecare/rimuovere EmulatorJsEngine | be | agent | P2 | todo | TSK-025,027 |
+
+Arcade (FBNeo/MAME): **rinviato** a epica dedicata (EP-009) — nessun ESM standalone;
+il registry instrada l'arcade a "non ancora supportato". Vedi gap arcade-emulation-engine.
+
 ## Note
 
 - **Core web MVP completo a livello TSK** (20/20 done). 49 test verdi, typecheck OK.

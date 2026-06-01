@@ -43,6 +43,8 @@ _(nessun gap registrato al bootstrap)_
 
 **Aggiornamento 2026-06-01 (debug):** causa del CDN isolata = **ORB/COEP** blocca le sottorisorse interne di EmulatorJS (`emulator.min.js`, core). **Risolto** con **self-host same-origin**: `npm run setup:emu` copia `@emulatorjs/emulatorjs/data` + scarica `emulator.min.js` e `gambatte-wasm.data` in `public/emulatorjs/data/` (gitignorato); `EJS_pathtodata=/emulatorjs/data/`. Ora EmulatorJS **si inizializza completamente** (EJS_emulator + menu controlli + virtual gamepad). **Blocco residuo**: `EJS_Runtime is not defined!` + `Could not fetch core report JSON` → il **runtime del core WASM non si carica** (nessun canvas in headless). Lead: verificare decompressione/caricamento core (report JSON dei core, variante threads vs non-threads, possibile limite WebGL/WASM in Chromium headless); validare in browser **headed**. Gap RESTA APERTO (molto avanzato).
 
+**Risolto 2026-06-01:** pivot a **WasmBoy** (ADR-005). Emulazione **GB/GBC reale** funzionante e verificata in e2e (`?engine=real` + `dmg-acid2.gb`, canvas reso, 5/5 e2e verdi). EmulatorJS abbandonato (gap superato). GBA tracciato in TSK-028; arcade in gap `arcade-emulation-engine`/EP-009.
+
 ## 2026-06-01 16:45 — design-system-real-package
 **Origine:** fe-dev @ wiring stile app
 **Gap:** l'app importa un tema SoliDS *approssimato* (vendorizzato dai mockup, `src/styles/solids-theme.css`) perché il pacchetto reale `@soli92/solids` non è disponibile/installato. Colori e alcune classi sono approssimati.
@@ -51,3 +53,9 @@ _(nessun gap registrato al bootstrap)_
 
 
 **Aggiornamento 2026-06-01 (debug 2):** confermato che fallisce **anche in browser headed** (utente): "Error loading EmulatorJS runtime" / `EJS_Runtime is not defined`. NON è né versione né headless. Provati senza successo: self-host npm+CDN, `EJS_threads=false`, core variante threaded e non-threaded, build **coerente** stable (`emulator.min.zip` esteso in `data/`), min vs non-min. Sintomo costante: "Could not fetch core report JSON" + il runtime del core non si estrae/definisce. Cause residue da indagare (sessione dedicata): caricamento/decompressione del core EmulatorJS (modulo `compression/` + endpoint cores report), MIME `application/wasm`, eventuale necessità di un manifest `cores`/`version` specifico, o quirk noto di self-host EJS (consultare doc/community EmulatorJS). Engine config (threads=false, startOnLoaded, selettore, pathtodata locale) lasciata come base. Gap RESTA APERTO.
+
+## 2026-06-01 17:35 — arcade-emulation-engine
+**Origine:** lead-architect @ ADR-005
+**Gap:** FBNeo/MAME (arcade) non hanno una libreria ESM standalone (come WasmBoy per GB); girano via libretro (EmulatorJS/RetroArch). Decisione: **rinvio** a epica dedicata (EP-009); il registry instrada l'arcade a "non ancora supportato".
+**Sospetta fonte:** percorso libretro/RetroArch web (umbrella) da valutare in EP-009.
+**Impatto:** non-bloccante per GB/GBA; le specifiche elencano arcade al lancio → rischio di scope da concordare con owner.

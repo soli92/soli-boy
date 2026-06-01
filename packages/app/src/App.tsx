@@ -6,31 +6,34 @@ import { Settings } from "./components/Settings/Settings";
 import { LegalNotice } from "./components/LegalNotice";
 import { indexedDbStorage } from "./storage/indexeddb-adapter";
 import { StubEngine } from "./core/stub-engine";
-import { EmulatorJsEngine } from "./core/emulatorjs-engine";
+import { selectEngine } from "./core/engine-registry";
 import {
   DEFAULT_KEY_PROFILE,
   InputMapping,
   type KeyProfile,
 } from "./domain/input-mapping";
 import type { RomRecord } from "./storage/types";
-import type { EmulatorEngine, GameButton } from "./core/core-wrapper";
+import type { GameButton } from "./core/core-wrapper";
 
-// TSK-022: selezione engine. Default StubEngine (test/dev/e2e deterministici);
-// EmulatorJsEngine (reale) opt-in via ?engine=emulatorjs (ADR-004).
-function selectEngine(): { engine: EmulatorEngine; real: boolean } {
-  const real =
-    typeof location !== "undefined" &&
-    new URLSearchParams(location.search).get("engine") === "emulatorjs";
-  return { engine: real ? new EmulatorJsEngine() : new StubEngine(), real };
-}
+// TSK-025 (ADR-005): selezione engine. Default StubEngine (test/dev/e2e deterministici);
+// engine REALE per-piattaforma via registry, opt-in con ?engine=real.
+const REAL_ENGINE =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("engine") === "real";
 
 // Composizione del Core web MVP. Storage reale (IndexedDB).
 export function App() {
   const storage = indexedDbStorage;
-  const { engine, real } = useMemo(selectEngine, []);
+  const stub = useMemo(() => new StubEngine(), []);
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
+
+  // In modalità reale l'engine dipende dal core del gioco selezionato (registry).
+  const engine = useMemo(
+    () => (REAL_ENGINE && selected ? selectEngine(selected.core) : stub),
+    [selected, stub],
+  );
 
   // Routing input fisici → core (US-012), basato sul profilo corrente.
   const input = useMemo(
@@ -38,9 +41,9 @@ export function App() {
     [engine, profile],
   );
   useEffect(() => {
-    // Con engine reale l'input tastiera/gamepad è gestito nativamente da EmulatorJS
-    // (ADR-004): il wiring globale resta solo per lo StubEngine / controlli app.
-    if (real) return;
+    // Con engine reale l'input tastiera è gestito dalla lib (WasmBoy): il wiring
+    // globale resta per lo StubEngine / controlli app.
+    if (REAL_ENGINE) return;
     const down = (e: KeyboardEvent) => input.keyDown(e.key);
     const up = (e: KeyboardEvent) => input.keyUp(e.key);
     window.addEventListener("keydown", down);
@@ -49,7 +52,7 @@ export function App() {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, [input, real]);
+  }, [input]);
 
   function remap(key: string, button: GameButton) {
     setProfile((p) => ({ ...p, [key]: button }));

@@ -46,3 +46,7 @@ Nucleo condiviso funzionante nel browser.
 - **Decisione di scope**: mobile inteso come Android + iOS (la richiesta originaria
   citava "Android e macOS"; macOS resta nella distribuzione desktop EP-006). Da
   validare con lo stakeholder.
+
+## Backlog emulazione (post ADR-005)
+- Sprint 4 (in corso): WasmBoy GB/GBC (real), GBA (mGBA), deprecazione EmulatorJS.
+- EP-009 (futura): **Supporto arcade** (FBNeo/MAME) via libretro/RetroArch web — rinviato (gap arcade-emulation-engine).
