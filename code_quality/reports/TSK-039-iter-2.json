@@ -1,0 +1,32 @@
+{
+  "tsk_id": "TSK-039",
+  "iter": 2,
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "2.15.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "runtime": "browser/webview",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "full"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [],
+  "verdict": "passed",
+  "summary": "Tutti i finding iter-1 risolti. F-039-01 (medium blocking): stato `coverError` dedicato introdotto; `handleCoverChange` chiama `setCoverError` (non `setError`); il guard globale `if (error !== null)` resta riservato esclusivamente agli errori di `listRoms`; la `<p role=alert>` dell'errore cover è resa sopra la `<ul>` senza smontarla; `setCoverError(null)` nel reset al cambio storage. Test aggiornato: verifica che `ul[aria-label='Risultati libreria']` e la tile 'Tetris' restino nel DOM dopo il reject di `setCover`. F-039-02 (low advisory): `handleCoverChange` avvolta in `useCallback([storage])` — referenza stabile verso `GameTile`. Nessun refactor opportunistico fuori scope. Nessuna regressione su file non toccati dalla fix. No-progress: false. Regression: false. Verde: 130 unit + 6 e2e.",
+  "loop_status": {
+    "current_iter": 2,
+    "max_iter": 3,
+    "no_progress": false,
+    "regression": false,
+    "resolved_findings": ["F-039-01", "F-039-02"],
+    "surviving_findings": []
+  },
+  "iter_1_ref": "code_quality/reports/TSK-039-iter-1.json"
+}

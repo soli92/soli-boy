@@ -1,7 +1,7 @@
 # Digest settimanale code-review — dev-agent fe — 2026-W22
-<!-- aggiornato iter TSK-032: 2026-06-01 -->
+<!-- aggiornato iter TSK-039: 2026-06-01 -->
 
-Generato: 2026-06-01 (aggiornato TSK-032 iter-1: 2026-06-01) | Reviewer: code-reviewer@2.15.0
+Generato: 2026-06-01 (aggiornato TSK-039 iter-2: 2026-06-01) | Reviewer: code-reviewer@2.15.0
 
 ## TSK-035 — Schermo intero (Fullscreen API) — iter-2 → PASS
 
@@ -95,7 +95,20 @@ Nessuna azione richiesta. I 2 finding low/advisory possono essere risolti nel pr
 
 ---
 
-## TSK-039 — Copertina gioco (upload/display) — iter-1 → CONDITIONAL
+## TSK-039 — Copertina gioco (upload/display) — iter-2 → PASS
+
+**Verdict iter-2:** pass (0 finding — F-039-01 e F-039-02 risolti in commit 17b190a)
+**Verdict iter-1:** conditional (1 medium blocking + 1 low advisory) — superato
+
+### Risoluzione iter-2 (commit 17b190a)
+
+- F-039-01: `coverError` separato da `error`; `handleCoverChange` chiama `setCoverError` (non `setError`); guard globale `if (error !== null)` riservato esclusivamente a `listRoms`; `<p role="alert">` sopra la `<ul>` — la griglia non viene smontata; `setCoverError(null)` nel reset al cambio storage. Test aggiornato: `ul[aria-label='Risultati libreria']` e tile 'Tetris' verificati presenti nel DOM dopo reject di `setCover`.
+- F-039-02: `handleCoverChange` in `useCallback([storage])` — referenza stabile verso `GameTile`.
+Verde: 130 unit + 6 e2e, typecheck, build.
+
+---
+
+## TSK-039 — iter-1 — archivio finding (tutti risolti) — CONDITIONAL
 
 **Verdict iter-1:** conditional (1 medium blocking + 1 low advisory)
 **Stack:** typescript/react/vite (conf 0.97)
