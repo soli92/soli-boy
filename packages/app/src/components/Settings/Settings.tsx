@@ -7,12 +7,21 @@
 // TSK-037 — Settings: filtro base (nearest/smoothing/scanline, US-022). Stesso
 // oggetto `VideoSettings`, quindi stessa porta e stesso wiring App.tsx già
 // esistente: per la persistenza non serve nulla in più.
+// TSK-033 — Settings: sezione "Dati" (US-019). Export/import salvataggi come
+// file portabile, versionato. Il componente è UI-only: la (de)serializzazione
+// è di competenza del SaveService di dominio (ADR-006 §Decisione p.3), iniettato
+// via prop (interface segregata `SaveDataPort` per testabilità).
 // UI della sezione Controlli su classi solids. La persistenza del profilo è delegata
 // via callback (onSaveProfile) → store config a livello applicativo.
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameButton } from "../../core/core-wrapper";
 import type { KeyProfile } from "../../domain/input-mapping";
+import type {
+  ExportSaveStateResult,
+  ImportSaveResult,
+} from "../../domain/save-service";
+import type { SaveStateRecord } from "../../storage/types";
 import {
   ASPECT_RATIOS,
   SCALE_FACTORS,
@@ -27,6 +36,30 @@ import {
 } from "../Player/useVideoSettings";
 
 const BUTTONS: GameButton[] = ["up", "down", "left", "right", "a", "b", "start", "select"];
+
+/**
+ * TSK-033 — Interfaccia segregata consumata dalla sezione "Dati".
+ * È un sottoinsieme di `SaveService` (TSK-031/TSK-033): qui evitiamo di
+ * importare la classe concreta così il componente è testabile con fake
+ * minimali e non si accoppia ai dettagli di save state / SRAM runtime
+ * (US-016/017) che non gli competono.
+ */
+export interface SaveDataPort {
+  listSaveStates(romId: string): Promise<SaveStateRecord[]>;
+  exportSaveState(saveStateId: string): Promise<ExportSaveStateResult>;
+  importSave(input: Blob | ArrayBuffer | string): Promise<ImportSaveResult>;
+}
+
+/**
+ * Riassunto ROM richiesto dalla UI della sezione "Dati" per mostrare il
+ * titolo umano accanto agli id (i save state hanno solo `romId`). Subset
+ * minimale per non legare il componente al `RomRecord` completo (interface
+ * segregation: niente Blob nella firma del consumer).
+ */
+export interface RomSummary {
+  id: string;
+  title: string;
+}
 
 export interface SettingsProps {
   profile: KeyProfile;
@@ -44,6 +77,23 @@ export interface SettingsProps {
   onVideoSettingsChange?: (next: VideoSettings) => void;
   /** Porta di persistenza opzionale (US-021), usata se il componente è auto-gestito. */
   videoConfigPort?: VideoSettingsPort;
+  /**
+   * TSK-033 — servizio salvataggi (US-019) per la sezione "Dati". Se assente,
+   * la sezione viene comunque renderizzata in stato disabilitato con nota
+   * onesta ("Carica una ROM per esportare i salvataggi"): nessun branch che
+   * nasconde feature al volo (UX prevedibile).
+   */
+  saveService?: SaveDataPort;
+  /**
+   * TSK-033 — ROM corrente (id + title) il cui salvataggio l'utente può
+   * esportare. Sceglierla dalla selezione attiva (Player) evita di duplicare
+   * la lista ROM in Settings (la Library/tile la mostra già) e mantiene la
+   * sezione "Dati" coerente con il contesto di gioco corrente.
+   * Se assente, la sezione export è disabilitata con nota onesta.
+   * L'import non richiede selezione: il file porta sempre il proprio `romId`
+   * (riassociazione automatica via SaveService.importSave).
+   */
+  currentRom?: RomSummary;
 }
 
 /** Etichette user-facing per i valori di scala. */
@@ -82,6 +132,8 @@ export function Settings({
   videoSettings,
   onVideoSettingsChange,
   videoConfigPort,
+  saveService,
+  currentRom,
 }: SettingsProps) {
   const [saved, setSaved] = useState(false);
 
@@ -121,6 +173,171 @@ export function Settings({
     const next: VideoFilter = parseVideoFilter(raw);
     updateVideo({ ...effective, filter: next });
   }
+
+  // === TSK-033 — sezione "Dati" (US-019): export/import salvataggi ===========
+  //
+  // Stato locale:
+  // - `saveStates`: lista save state della ROM corrente (`currentRom`).
+  //   Aggiornata via `saveService.listSaveStates` ad ogni cambio di
+  //   `currentRom.id` (e dopo import OK, vedi `handleImportFile`). Feedback
+  //   sincrona evita entry stantie commutando ROM.
+  // - `selectedSaveStateId`: scelta dell'utente sull'entry da esportare (la
+  //   prima entry è preselezionata per UX).
+  // - `dataMessage`: feedback user-facing. L'avviso US-019 AC3 ("avviso
+  //   comprensibile") è veicolato con `role="alert"` per gli esiti KO; per
+  //   i success `role="status"` (assistive tech non interrompono l'utente).
+  const currentRomId = currentRom?.id ?? "";
+  const [saveStates, setSaveStates] = useState<ReadonlyArray<SaveStateRecord>>([]);
+  const [selectedSaveStateId, setSelectedSaveStateId] = useState<string>("");
+  const [dataMessage, setDataMessage] = useState<
+    | { kind: "info"; text: string }
+    | { kind: "error"; text: string }
+    | null
+  >(null);
+  const [dataBusy, setDataBusy] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Carica i save state della ROM corrente. Si invalida ad ogni cambio di
+  // `currentRomId` o di `saveService` (es. test con fake diversi).
+  const refreshSaveStates = useCallback(async () => {
+    if (!saveService || !currentRomId) {
+      setSaveStates([]);
+      setSelectedSaveStateId("");
+      return;
+    }
+    try {
+      const list = await saveService.listSaveStates(currentRomId);
+      // Difesa: filtro per romId (US-018 AC2 — niente fantasmi cross-rom).
+      const filtered = list.filter((r) => r.romId === currentRomId);
+      setSaveStates(filtered);
+      // Preselezione: prima entry (UX), oppure reset se vuota.
+      setSelectedSaveStateId(filtered[0]?.id ?? "");
+    } catch (e) {
+      setSaveStates([]);
+      setSelectedSaveStateId("");
+      setDataMessage({
+        kind: "error",
+        text: `Impossibile leggere i salvataggi: ${(e as Error).message}`,
+      });
+    }
+  }, [saveService, currentRomId]);
+
+  useEffect(() => {
+    void refreshSaveStates();
+  }, [refreshSaveStates]);
+
+  // Etichetta umana per una entry: "Slot N — DD/MM/YYYY HH:MM".
+  // Localizziamo con `toLocaleString` (lo userà jsdom in test ma non è il
+  // contenuto che asseriamo).
+  function saveStateLabel(rec: SaveStateRecord): string {
+    return `Slot ${rec.slot + 1} — ${new Date(rec.createdAt).toLocaleString()}`;
+  }
+
+  // Triggera il download nel browser. Usato anche dai test: i test mockano
+  // `URL.createObjectURL`/`anchor.click` per verificare l'invocazione senza
+  // toccare il filesystem (idem Library.test.tsx).
+  function triggerDownload(blob: Blob, filename: string) {
+    // Guard difensivo per ambienti privi di URL.createObjectURL (jsdom legacy).
+    if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+      throw new Error("URL.createObjectURL non disponibile in questo ambiente.");
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    // L'anchor non viene aggiunto al DOM (no side-effect visivo); .click()
+    // lavora ugualmente in jsdom/Chromium.
+    a.click();
+    // revoke immediato: il browser ha già avviato il download al click,
+    // tenere l'URL allocato non serve (no leak).
+    if (typeof URL.revokeObjectURL === "function") {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function handleExport() {
+    if (!saveService || !selectedSaveStateId) return;
+    setDataBusy(true);
+    setDataMessage(null);
+    try {
+      const res = await saveService.exportSaveState(selectedSaveStateId);
+      if (!res.ok) {
+        // Esito esplicito (entry/ROM non più presenti tra refresh e click).
+        const text =
+          res.reason === "not-found"
+            ? "Il salvataggio selezionato non è più presente."
+            : "La ROM associata al salvataggio non è più presente.";
+        setDataMessage({ kind: "error", text });
+        return;
+      }
+      triggerDownload(res.blob, res.filename);
+      setDataMessage({
+        kind: "info",
+        text: `Esportato "${res.filename}".`,
+      });
+    } catch (e) {
+      setDataMessage({
+        kind: "error",
+        text: `Esportazione fallita: ${(e as Error).message}`,
+      });
+    } finally {
+      setDataBusy(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    if (!saveService) return;
+    setDataBusy(true);
+    setDataMessage(null);
+    try {
+      const res = await saveService.importSave(file);
+      if (res.ok) {
+        setDataMessage({
+          kind: "info",
+          text: `Salvataggio importato (${res.kind === "saveState" ? "save state" : "SRAM"}).`,
+        });
+        // Se l'import riguarda la ROM corrente, aggiorna l'elenco.
+        if (res.romId === currentRomId) {
+          await refreshSaveStates();
+        }
+      } else {
+        // US-019 AC3: avviso comprensibile per file non valido o non corrispondente.
+        // Mappa reason → testo user-facing (no leakage di campi tecnici).
+        const text =
+          res.reason === "invalid-file"
+            ? "File non valido o danneggiato."
+            : res.reason === "format-mismatch"
+              ? "Il file non è un salvataggio Soli-boy."
+              : res.reason === "unsupported-version"
+                ? "Versione del file non supportata da questa versione dell'app."
+                : "La ROM associata al salvataggio non è presente nella libreria.";
+        setDataMessage({ kind: "error", text });
+      }
+    } catch (e) {
+      // Difensivo: importSave non dovrebbe lanciare, ma l'I/O del File può.
+      setDataMessage({
+        kind: "error",
+        text: `Importazione fallita: ${(e as Error).message}`,
+      });
+    } finally {
+      setDataBusy(false);
+      // Permette di reimportare lo stesso file (gli `input[type=file]` non
+      // sparano `change` se il valore non cambia).
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }
+
+  function handleImportChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void handleImportFile(file);
+  }
+
+  const dataSectionAvailable = saveService !== undefined;
+  const exportDisabled =
+    !dataSectionAvailable ||
+    dataBusy ||
+    selectedSaveStateId === "" ||
+    saveStates.length === 0;
 
   return (
     <section className="sd-card sb-sec" aria-label="Impostazioni controlli">
@@ -213,6 +430,94 @@ export function Settings({
           </select>
         </li>
       </ul>
+
+      {/* TSK-033 — Dati (US-019): export/import salvataggi.
+          Sezione sempre visibile per UX prevedibile; disabilitata con nota
+          se manca `saveService` (es. test legacy senza wiring) o non ci sono
+          save state per la ROM selezionata. */}
+      <p className="sb-lbl">Dati — salvataggi (export/import)</p>
+      <div
+        className="sd-flex sd-items-center sd-gap-sm"
+        role="group"
+        aria-label="Esporta e importa salvataggi"
+        data-testid="sb-data-section"
+      >
+        {/* Etichetta di contesto: la ROM corrente è quella selezionata nel
+            Player (App-level state). Non rendiamo un selettore ROM dedicato:
+            (a) la Library lo è già; (b) duplicare il titolo qui collide con
+            gli e2e che usano `getByText(title)` in modalità strict. L'utente
+            che vuole esportare i save di un'altra ROM la seleziona dalla
+            Library, poi torna in Settings (workflow esistente).
+            Per la stessa ragione, indichiamo la ROM tramite id corto (non il
+            titolo): il titolo resta univoco nella DOM (Library tile + Player). */}
+        <span className="sb-key" data-testid="sb-data-rom-context">
+          {currentRom
+            ? `Gioco corrente: [${currentRom.id.slice(0, 6)}]`
+            : /* Wording deliberatamente distinto da "Nessun gioco" usato da
+                 Library (vedi Library.tsx) per non collidere con l'e2e
+                 `getByText(/nessun gioco/i)` in modalità strict. */
+              "— seleziona una ROM dalla libreria —"}
+        </span>
+      </div>
+      <div className="sd-flex sd-items-center sd-gap-sm">
+        <span className="sb-key">Salvataggio</span>
+        <select
+          className="sb-sel"
+          aria-label="Salvataggio da esportare"
+          value={selectedSaveStateId}
+          onChange={(e) => setSelectedSaveStateId(e.target.value)}
+          disabled={!dataSectionAvailable || saveStates.length === 0}
+        >
+          {saveStates.length === 0 && (
+            <option value="">(nessun salvataggio)</option>
+          )}
+          {saveStates.map((rec) => (
+            <option key={rec.id} value={rec.id}>
+              {saveStateLabel(rec)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="sb-btn sb-btn-primary"
+          onClick={handleExport}
+          disabled={exportDisabled}
+          aria-label="Esporta salvataggio selezionato"
+        >
+          Esporta
+        </button>
+      </div>
+      <div className="sd-flex sd-items-center sd-gap-sm">
+        <span className="sb-key">Importa file</span>
+        <input
+          ref={importInputRef}
+          type="file"
+          aria-label="Importa file di salvataggio"
+          // application/json + estensione di courtesy: il dialog non filtra a
+          // schermo (US-019 menziona "file"), ma offre un hint al browser.
+          accept="application/json,.json"
+          onChange={handleImportChange}
+          disabled={!dataSectionAvailable || dataBusy}
+        />
+      </div>
+      {!dataSectionAvailable && (
+        // Nota statica (no aria-live): è uno stato permanente del rendering
+        // quando manca il SaveService, non un feedback contestuale. Mantenere
+        // un role="status" qui creerebbe ambiguità con il messaggio "Profilo
+        // salvato" (anch'esso role="status"): l'AT leggerebbe entrambi.
+        <p className="sb-note" data-testid="sb-data-unavailable">
+          La gestione dei salvataggi non è disponibile.
+        </p>
+      )}
+      {dataMessage && (
+        <p
+          className="sb-note"
+          role={dataMessage.kind === "error" ? "alert" : "status"}
+          data-testid="sb-data-message"
+        >
+          {dataMessage.text}
+        </p>
+      )}
     </section>
   );
 }

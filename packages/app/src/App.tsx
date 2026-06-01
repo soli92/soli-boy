@@ -34,6 +34,17 @@ export function App() {
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
+  // TSK-033 (US-019) — riassunto ROM corrente per la sezione "Dati" di Settings.
+  // La ROM "corrente" è quella selezionata nel Player (`selected`); proiettiamo
+  // un sottoinsieme leggero (id + title) per disaccoppiare Settings dal
+  // `RomRecord` completo (interface segregation: niente Blob nel contratto UI).
+  const currentRomSummary = useMemo(
+    () =>
+      selected !== null
+        ? { id: selected.id, title: selected.title }
+        : undefined,
+    [selected],
+  );
 
   // TSK-036 (F-036-02) — stato video sollevato a livello App: Settings e Player
   // ne sono consumatori controllati, condividendo la stessa istanza e così
@@ -108,6 +119,13 @@ export function App() {
         onRemap={remap}
         videoSettings={videoSettings}
         onVideoSettingsChange={setVideoSettings}
+        // TSK-033 (US-019) — wiring sezione "Dati": export/import salvataggi.
+        // Il SaveService è la stessa istanza condivisa col Player (TSK-032),
+        // così le entry create dal Player sono immediatamente esportabili.
+        // `currentRom` riflette la selezione del Player: l'UI Dati lavora
+        // sempre sulla ROM "in contesto" (no doppio selettore).
+        saveService={saveService}
+        currentRom={currentRomSummary}
       />
 
       <LegalNotice />

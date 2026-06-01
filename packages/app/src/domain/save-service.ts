@@ -5,9 +5,15 @@
 //   - SRAM autosave su stop/pausa: engine.getSram() → storage.putSram
 //   - SRAM reload su load:        storage.getSram → engine.loadSram
 //
+// TSK-033 — Export/import salvataggi (ADR-006 §Decisione p.3, US-019):
+//   - exportSaveState(id) → Blob portabile, versionato (JSON con base64 del blob).
+//   - importSave(file)    → parse + validazione struttura/versione, verifica che
+//                            la ROM esista (riassociazione), e persistenza via
+//                            storage.putSaveState/putSram. Esito esplicito su
+//                            file invalido o non corrispondente (no claim falsi).
+//
 // Resta agnostico sull'engine concreto (lavora sull'interfaccia EmulatorEngine,
 // ADR-003) e sull'adapter di persistenza (StoragePort, ADR-002).
-// Export/import (US-019) sono di competenza di TSK-033 e non sono qui.
 
 import type { EmulatorEngine } from "../core/core-wrapper";
 import type { SaveStoragePort } from "../storage/port";
@@ -42,6 +48,216 @@ export type RestoreSramResult =
 export type AutosaveSramResult =
   | { ok: true; persisted: boolean }
   | { ok: false; reason: "rom-not-found" | "engine-unsupported"; detail?: string };
+
+// === Export/import (US-019, TSK-033) ===========================================
+
+/**
+ * Magic string del formato file portabile (US-019, ADR-006 §Decisione p.3).
+ * Permette di riconoscere a vista i file Soli-boy e di rifiutare in modo onesto
+ * i file di altri prodotti senza falsi positivi.
+ */
+export const SAVE_FILE_FORMAT = "soliboy-save" as const;
+
+/**
+ * Versione corrente del formato. L'import accetta solo questa versione: in
+ * caso di mismatch, restituisce un esito esplicito (no claim falsi). Future
+ * estensioni possono allargare l'accettazione mantenendo la backward-compat.
+ */
+export const SAVE_FILE_VERSION = 1 as const;
+
+/**
+ * Tipi di entry serializzabili dal formato portabile.
+ * - "saveState": istantanea dell'engine (ADR-006), entry dello store
+ *                `saveStates` con `slot`/`core`/`romId`.
+ * - "sram":      battery RAM della cartuccia (ADR-006), entry dello store
+ *                `sram` con chiave `romId` (no slot, no core: è on-cart).
+ */
+export type SaveFileKind = "saveState" | "sram";
+
+/**
+ * Struttura on-disk del file portabile (JSON serializzato in UTF-8).
+ * Campi comuni a tutte le `kind`:
+ *  - `format`/`version`: gating per riconoscere il formato (vedi
+ *    `SAVE_FILE_FORMAT`/`SAVE_FILE_VERSION`).
+ *  - `romId`:            id della ROM a cui l'entry appartiene (riassociazione
+ *    su import — US-019 Business Rule).
+ *  - `data`:             payload binario codificato in base64 (i Blob non sono
+ *    direttamente JSON-serializzabili; base64 è ASCII-safe e portabile).
+ *  - `createdAt`:        timestamp originario, ricostruito su import dove
+ *    possibile (gli adapter `putSaveState`/`putSram` derivano comunque il proprio).
+ *
+ * Campi specifici per `kind`:
+ *  - "saveState": `slot` (numero, US-016) e `core` (ADR-006 — guard cross-engine).
+ *  - "sram":      nessun campo aggiuntivo (chiave naturale = `romId`).
+ */
+export type SaveFileEnvelope =
+  | {
+      format: typeof SAVE_FILE_FORMAT;
+      version: typeof SAVE_FILE_VERSION;
+      kind: "saveState";
+      romId: string;
+      core: Core;
+      slot: number;
+      createdAt: number;
+      data: string; // base64
+    }
+  | {
+      format: typeof SAVE_FILE_FORMAT;
+      version: typeof SAVE_FILE_VERSION;
+      kind: "sram";
+      romId: string;
+      createdAt: number;
+      data: string; // base64
+    };
+
+/**
+ * Esito di un import (US-019 AC). L'API non lancia su input invalidi: ogni
+ * fallimento è un `ok:false` con `reason` esplicita, perché l'UI deve poter
+ * mostrare un avviso comprensibile (US-019 AC3).
+ *
+ * Reason mappabili a messaggi user-facing:
+ *  - "invalid-file":        non leggibile come testo, JSON malformato, struttura
+ *                            attesa assente. Messaggio: "File non valido".
+ *  - "format-mismatch":     `format` ≠ "soliboy-save". Messaggio: "Il file non
+ *                            è un salvataggio Soli-boy".
+ *  - "unsupported-version": `version` ≠ versione supportata. Messaggio: "Versione
+ *                            del file non supportata (atteso v<N>, trovato v<M>)".
+ *  - "rom-not-found":       ROM associata assente nello storage (US-019 Business
+ *                            Rule: riassociazione obbligatoria). Messaggio:
+ *                            "La ROM associata non è presente in libreria".
+ */
+export type ImportSaveResult =
+  | { ok: true; kind: SaveFileKind; romId: string; id?: string }
+  | {
+      ok: false;
+      reason:
+        | "invalid-file"
+        | "format-mismatch"
+        | "unsupported-version"
+        | "rom-not-found";
+      detail?: string;
+    };
+
+/**
+ * Esito di un export. È un caso "rare-but-possible" che la ROM associata
+ * sia stata cancellata fra la lettura del save state e l'export; per
+ * coerenza con il resto del SaveService, lo esponiamo come esito esplicito
+ * piuttosto che lanciare.
+ */
+export type ExportSaveStateResult =
+  | { ok: true; blob: Blob; filename: string }
+  | { ok: false; reason: "not-found" | "rom-not-found"; detail?: string };
+
+// --- helper base64 (UTF-8 safe, no Buffer per stare cross-runtime) ------------
+
+/**
+ * Codifica un ArrayBuffer in base64. Non usiamo `Buffer` (Node-only) per
+ * mantenere il dominio agnostico dall'ambiente; `btoa` opera su stringhe
+ * binarie (latin-1), quindi convertiamo i bytes uno-a-uno. Chunking per
+ * evitare stack overflow su payload grandi (`String.fromCharCode(...bytes)`
+ * fallirebbe oltre ~125k argomenti).
+ */
+function bytesToBase64(buf: ArrayBuffer): string {
+  const view = new Uint8Array(buf);
+  const CHUNK = 0x8000;
+  let bin = "";
+  for (let i = 0; i < view.length; i += CHUNK) {
+    const slice = view.subarray(i, i + CHUNK);
+    bin += String.fromCharCode(...slice);
+  }
+  return typeof btoa === "function"
+    ? btoa(bin)
+    : // Fallback Node (es. vitest env:node): atob/btoa non sono sempre globali
+      // su versioni più vecchie; in pratica Node ≥ 16 li espone.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).Buffer.from(bin, "binary").toString("base64");
+}
+
+/** Decodifica una stringa base64 in ArrayBuffer. Speculare a `bytesToBase64`. */
+function base64ToBytes(b64: string): ArrayBuffer {
+  const bin =
+    typeof atob === "function"
+      ? atob(b64)
+      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).Buffer.from(b64, "base64").toString("binary");
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+
+// --- type guards (validano la struttura senza fidarsi del JSON arbitrario) ---
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Valida che `v` sia un envelope ben formato (formato + versione + campi
+ * specifici per `kind`). Una validazione strutturale è necessaria perché
+ * il JSON in input è arbitrario; lo type narrowing dà al chiamante l'envelope
+ * tipizzato senza cast non sicuri.
+ */
+function parseEnvelope(v: unknown):
+  | { ok: true; envelope: SaveFileEnvelope }
+  | { ok: false; reason: "invalid-file" | "format-mismatch" | "unsupported-version"; detail?: string } {
+  if (!isPlainObject(v)) {
+    return { ok: false, reason: "invalid-file", detail: "Root JSON non è un oggetto." };
+  }
+  if (v.format !== SAVE_FILE_FORMAT) {
+    return {
+      ok: false,
+      reason: "format-mismatch",
+      detail: `Campo "format" atteso "${SAVE_FILE_FORMAT}", trovato ${JSON.stringify(v.format)}.`,
+    };
+  }
+  if (v.version !== SAVE_FILE_VERSION) {
+    return {
+      ok: false,
+      reason: "unsupported-version",
+      detail: `Versione attesa ${SAVE_FILE_VERSION}, trovata ${JSON.stringify(v.version)}.`,
+    };
+  }
+  if (typeof v.romId !== "string" || v.romId.length === 0) {
+    return { ok: false, reason: "invalid-file", detail: "Campo \"romId\" assente o non stringa." };
+  }
+  if (typeof v.data !== "string") {
+    return { ok: false, reason: "invalid-file", detail: "Campo \"data\" assente o non stringa." };
+  }
+  if (typeof v.createdAt !== "number") {
+    return { ok: false, reason: "invalid-file", detail: "Campo \"createdAt\" assente o non numero." };
+  }
+  if (v.kind === "saveState") {
+    if (typeof v.slot !== "number") {
+      return { ok: false, reason: "invalid-file", detail: "Campo \"slot\" assente o non numero." };
+    }
+    if (typeof v.core !== "string") {
+      return { ok: false, reason: "invalid-file", detail: "Campo \"core\" assente o non stringa." };
+    }
+    return { ok: true, envelope: v as SaveFileEnvelope };
+  }
+  if (v.kind === "sram") {
+    return { ok: true, envelope: v as SaveFileEnvelope };
+  }
+  return {
+    ok: false,
+    reason: "invalid-file",
+    detail: `Campo "kind" sconosciuto: ${JSON.stringify(v.kind)}.`,
+  };
+}
+
+/**
+ * Estrae il testo da un input flessibile: l'UI può passare un `Blob`/`File`
+ * (input file), e i test possono passare direttamente la stringa JSON o
+ * un `ArrayBuffer`. Mantenere un unico punto di estrazione semplifica il
+ * call site e localizza il parsing/validation.
+ */
+async function readAsText(input: Blob | ArrayBuffer | string): Promise<string> {
+  if (typeof input === "string") return input;
+  if (input instanceof ArrayBuffer) {
+    return new TextDecoder("utf-8").decode(new Uint8Array(input));
+  }
+  return input.text();
+}
 
 /**
  * Servizio di dominio per save state e SRAM (TSK-031, ADR-006).
@@ -170,6 +386,147 @@ export class SaveService {
     }
     await this.storage.putSram(romId, new Blob([toArrayBuffer(data)]));
     return { ok: true, persisted: true };
+  }
+
+  // === Export / Import (US-019, TSK-033) =======================================
+
+  /**
+   * Esporta un save state come file portabile, versionato (ADR-006 §Decisione p.3).
+   *
+   * Formato (vedi `SaveFileEnvelope`): JSON UTF-8 con
+   *  { format:"soliboy-save", version:1, kind:"saveState", romId, core, slot,
+   *    createdAt, data: base64(snapshotBlob) }.
+   *
+   * Scelte:
+   *  - JSON+base64 sceglie portabilità (file di testo, mai-corrotto da editor)
+   *    su compattezza: il save state è piccolo (<128 KB) e l'overhead ~33% del
+   *    base64 è accettabile (US-019 — esperienza umana, no rete).
+   *  - Il file include `core`: l'import valida la compatibilità cross-engine
+   *    già al check-in (rifiuto onesto, mai un load mascherato).
+   *
+   * Ritorna un esito esplicito (no throw) anche per "save state non trovato",
+   * coerente con `loadState`.
+   */
+  async exportSaveState(saveStateId: string): Promise<ExportSaveStateResult> {
+    const rec = await this.storage.getSaveState(saveStateId);
+    if (!rec) {
+      return { ok: false, reason: "not-found", detail: `Save state ${saveStateId} non trovato.` };
+    }
+    // Verifica che la ROM esista ancora: un export di un orphan record sarebbe
+    // un file inutile (impossibile reimportarlo — ADR-006). Esito esplicito.
+    const rom = await this.storage.getRom(rec.romId);
+    if (!rom) {
+      return {
+        ok: false,
+        reason: "rom-not-found",
+        detail: `ROM ${rec.romId} associata al save state non più presente.`,
+      };
+    }
+    const bytes = await rec.snapshotBlob.arrayBuffer();
+    const envelope: SaveFileEnvelope = {
+      format: SAVE_FILE_FORMAT,
+      version: SAVE_FILE_VERSION,
+      kind: "saveState",
+      romId: rec.romId,
+      core: rec.core,
+      slot: rec.slot,
+      createdAt: rec.createdAt,
+      data: bytesToBase64(bytes),
+    };
+    // application/json + filename derivato dal titolo (sanitizzato) + slot.
+    // Il filename è un suggerimento per il download — l'UI lo userà come
+    // attributo `download` dell'anchor.
+    const safeTitle = (rom.title ?? "save").replace(/[^a-z0-9._-]+/gi, "_");
+    const filename = `${safeTitle}.slot${rec.slot}.soliboy-save.json`;
+    const blob = new Blob([JSON.stringify(envelope)], { type: "application/json" });
+    return { ok: true, blob, filename };
+  }
+
+  /**
+   * Importa un file di salvataggio precedentemente esportato (US-019 AC2/AC3).
+   *
+   * Sequenza:
+   *  1. Lettura come testo (Blob/File/ArrayBuffer/stringa).
+   *  2. JSON.parse difensivo: errore → `invalid-file`.
+   *  3. Validazione strutturale (`parseEnvelope`): `format`/`version` mismatch
+   *     mappati a reason dedicate per UX comprensibile.
+   *  4. Verifica esistenza ROM (riassociazione, US-019 Business Rule):
+   *     assente → `rom-not-found` (non si persistono entry orfane).
+   *  5. Persistenza via storage (`putSaveState`/`putSram`): nuova entry,
+   *     `id`/`createdAt` derivati dall'adapter (il `createdAt` originale è
+   *     informativo nel file, ma non sovrascriviamo l'invariante dello store).
+   *
+   * Nota su `kind:"sram"`: per US-017 una sola entry SRAM per ROM è ammessa.
+   * `putSram(romId, blob)` sovrascrive l'entry esistente, coerente con
+   * il comportamento di reimport.
+   */
+  async importSave(input: Blob | ArrayBuffer | string): Promise<ImportSaveResult> {
+    let text: string;
+    try {
+      text = await readAsText(input);
+    } catch (e) {
+      return {
+        ok: false,
+        reason: "invalid-file",
+        detail: `Impossibile leggere il file: ${(e as Error).message}`,
+      };
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      return {
+        ok: false,
+        reason: "invalid-file",
+        detail: `JSON malformato: ${(e as Error).message}`,
+      };
+    }
+    const env = parseEnvelope(parsed);
+    if (!env.ok) {
+      return { ok: false, reason: env.reason, detail: env.detail };
+    }
+    const { envelope } = env;
+
+    // Riassociazione: la ROM target deve esistere (US-019 Business Rule).
+    const rom = await this.storage.getRom(envelope.romId);
+    if (!rom) {
+      return {
+        ok: false,
+        reason: "rom-not-found",
+        detail: `La ROM ${envelope.romId} non è presente nella libreria.`,
+      };
+    }
+
+    // Decodifica payload + persistenza per kind.
+    let dataBuf: ArrayBuffer;
+    try {
+      dataBuf = base64ToBytes(envelope.data);
+    } catch (e) {
+      return {
+        ok: false,
+        reason: "invalid-file",
+        detail: `Payload base64 non decodificabile: ${(e as Error).message}`,
+      };
+    }
+
+    if (envelope.kind === "saveState") {
+      // Note: il `core` salvato nel file deve coerentemente corrispondere a
+      // quello canonico della ROM (un saveState mGBA non ha senso su una ROM
+      // GB). Lasciamo che il guard cross-engine scatti al successivo
+      // `loadState` (rifiuto onesto in fase di load) per non aggiungere un
+      // codice di reject specifico di sola fase import: il file resta
+      // archiviato per ispezione/cancellazione.
+      const id = await this.storage.putSaveState({
+        romId: envelope.romId,
+        slot: envelope.slot,
+        core: envelope.core,
+        snapshotBlob: new Blob([dataBuf]),
+      });
+      return { ok: true, kind: "saveState", romId: envelope.romId, id };
+    }
+    // kind === "sram"
+    await this.storage.putSram(envelope.romId, new Blob([dataBuf]));
+    return { ok: true, kind: "sram", romId: envelope.romId };
   }
 
   /**
