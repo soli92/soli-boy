@@ -297,3 +297,6 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 ## 2026-06-01 19:45 — verify TSK-028 (GBA reale)
 **Agente:** qa-dev · **Note:** ROM GBA libera gba-tests-thumb.gba (MIT) → e2e MgbaEngine verde, mGBA rende il canvas. GBA REALE verificato. Gap gba-runtime-verification chiuso. 49 unit + 6 e2e verdi (stub + GB + GBA).
 [2026-06-01 19:45] gap-closed — gba-runtime-verification (GBA reale via mGBA) — files touched: 1
+
+[2026-06-01 20:10] design — ADR-006 Salvataggi (EP-004) + note design EP-005/EP-002 in architecture-overview — files touched: 2
+[2026-06-01 20:10] execute — sprint 5 backlog post-MVP: TSK-030..039 (EP-004 salvataggi, EP-005 resa video, EP-002 libreria avanzata) — files touched: 10

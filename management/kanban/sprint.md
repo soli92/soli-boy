@@ -51,6 +51,25 @@ View aggregata generata dal `tpm`. Scope: Core web MVP (EP-001 + EP-003).
 Arcade (FBNeo/MAME): **rinviato** a epica dedicata (EP-009) — nessun ESM standalone;
 il registry instrada l'arcade a "non ancora supportato". Vedi gap arcade-emulation-engine.
 
+
+## Sprint 5 — Backlog post-MVP (EP-004 / EP-005 / EP-002)
+
+| TSK | Titolo | EP | layer | prio | status | depends_on |
+|-----|--------|----|-------|------|--------|-----------|
+| TSK-030 | EmulatorEngine snapshot/restore + SRAM | EP-004 | be | P0 | todo | — |
+| TSK-031 | StoragePort saveStates/sram + SaveService | EP-004 | be | P0 | todo | TSK-030 |
+| TSK-032 | Player: pannello save state (slot) | EP-004 | fe | P1 | todo | TSK-031 |
+| TSK-033 | Export/Import salvataggi (Settings) | EP-004 | fe | P2 | todo | TSK-031 |
+| TSK-034 | e2e save/load state (GB reale) | EP-004 | qa | P1 | todo | TSK-030,032 |
+| TSK-035 | Schermo intero (Fullscreen API) | EP-005 | fe | P1 | todo | — |
+| TSK-036 | Scala + aspect ratio (persistiti) | EP-005 | fe | P2 | todo | — |
+| TSK-037 | Filtri base (nearest/scanline) | EP-005 | fe | P2 | todo | — |
+| TSK-038 | Ricerca + filtro piattaforma (Library) | EP-002 | fe | P1 | todo | — |
+| TSK-039 | Copertina gioco (upload/display) | EP-002 | fe | P2 | todo | TSK-038 |
+
+DAG: EP-004 catena (030→031→{032,033}→034); EP-005 e EP-002 in parallelo (UI indipendenti).
+ADR-006 (salvataggi). EP-005/EP-002 design in architecture-overview.
+
 ## Note
 
 - **Core web MVP completo a livello TSK** (20/20 done). 49 test verdi, typecheck OK.

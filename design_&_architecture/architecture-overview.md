@@ -60,3 +60,21 @@ Tutti i moduli UI usano esclusivamente componenti e token del design system soli
 - **fe** (React/solids): FileLoader, Library, Player, Settings.
 - **db** (persistenza): schema IndexedDB ([[indexeddb-stores]]).
 - **qa**: criteri di accettazione delle US come base dei test.
+
+## Feature post-MVP (design)
+
+### EP-004 — Salvataggi
+Vedi [[ADR-006]]: `EmulatorEngine` esteso (snapshot/restore + SRAM), `StoragePort` esteso
+(saveStates/sram), `SaveService` (dominio), UI Player (slot) + Settings (export/import).
+
+### EP-005 — Resa video (UI-centrica, no ADR)
+- **Schermo intero** (US-020): Fullscreen API sul contenitore del Player.
+- **Scala / aspect ratio** (US-021): CSS sul `<canvas>` (object-fit/aspect-ratio, fattori 1x–5x); preferenza persistita in `config` store.
+- **Filtri** (US-022): `image-rendering: pixelated` (nearest) vs smoothing; overlay scanline via CSS; preferenza in `config`.
+- Engine-agnostico: agisce sul canvas reso dall'adapter; nessuna modifica a `EmulatorEngine`.
+
+### EP-002 — Libreria avanzata (UI-centrica, no ADR)
+- **Ricerca/filtro** (US-008): la `StoragePort.listRoms(filter)` già supporta `platform`/`query`
+  ([[storage-port]]); aggiungere la UI in `Library` (campo ricerca + filtro piattaforma).
+- **Copertina** (US-009): `coverBlob` già nello schema `roms` ([[indexeddb-stores]]); UI per
+  associare/mostrare la cover (segnaposto se assente). Fonte cover: caricata dall'utente (no fetch esterni).
