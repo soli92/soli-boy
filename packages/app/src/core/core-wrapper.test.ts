@@ -1,5 +1,5 @@
 // TSK-007 — test resolveCore + lifecycle CoreWrapper con engine fake.
-// TSK-009 — test setAudio (US-015). Fake engine tipato (no `as any`).
+// TSK-009 — test setAudio (US-015). TSK-015 — test pause/resume/stop (US-011).
 import { describe, expect, it, vi } from "vitest";
 import { CoreWrapper, resolveCore, type EmulatorEngine } from "./core-wrapper";
 
@@ -7,6 +7,9 @@ function fakeEngine() {
   return {
     load: vi.fn<EmulatorEngine["load"]>(async () => {}),
     start: vi.fn<EmulatorEngine["start"]>(() => {}),
+    pause: vi.fn<EmulatorEngine["pause"]>(() => {}),
+    resume: vi.fn<EmulatorEngine["resume"]>(() => {}),
+    stop: vi.fn<EmulatorEngine["stop"]>(() => {}),
     setAudio: vi.fn<EmulatorEngine["setAudio"]>(() => {}),
   } satisfies EmulatorEngine;
 }
@@ -40,6 +43,34 @@ describe("CoreWrapper lifecycle", () => {
   it("start senza load lancia errore", () => {
     const w = new CoreWrapper(fakeEngine());
     expect(() => w.start()).toThrow(/nessuna ROM caricata/i);
+  });
+});
+
+describe("CoreWrapper pause/resume/stop (US-011)", () => {
+  it("pause→paused, resume→running, stop→idle", async () => {
+    const engine = fakeEngine();
+    const w = new CoreWrapper(engine);
+    await w.load({ rom: new Blob(["x"]), core: "gambatte" });
+    w.start();
+    w.pause();
+    expect(w.currentState).toBe("paused");
+    w.resume();
+    expect(w.currentState).toBe("running");
+    w.stop();
+    expect(w.currentState).toBe("idle");
+    expect(engine.pause).toHaveBeenCalledOnce();
+    expect(engine.resume).toHaveBeenCalledOnce();
+    expect(engine.stop).toHaveBeenCalledOnce();
+  });
+
+  it("pause/resume sono no-op fuori dallo stato corretto", () => {
+    const engine = fakeEngine();
+    const w = new CoreWrapper(engine);
+    w.pause(); // idle → no-op
+    w.resume(); // idle → no-op
+    expect(engine.pause).not.toHaveBeenCalled();
+    expect(engine.resume).not.toHaveBeenCalled();
+    expect(w.currentState).toBe("idle");
   });
 });
 

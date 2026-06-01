@@ -156,3 +156,45 @@ Pagine create: 6 | Figure: 0 | Aggiornamenti: 2 (solids, index.md) | Gap nuovi: 
 **Files touched:** 3 (src/storage/bios.ts, src/storage/bios.test.ts, src/domain/bios-policy.ts)
 **Commit:** n/a · **DoD:** pass — typecheck OK, test verdi
 **Note:** putBios/getBios/hasBios su store config (chiave bios:<platform>); requiresBios (GBA). Nessuna distribuzione BIOS.
+
+- 2026-06-01 18:55 — `review TSK-009 iter-1 → pass` (finding 0/0/0)
+- 2026-06-01 18:55 — `review TSK-008 iter-1 → pass` (finding 0/0/0)
+- 2026-06-01 18:55 — `review TSK-003 iter-1 → pass` (finding 0/0/0; emergent candidate REACT-A11Y-001)
+- 2026-06-01 18:55 — `review TSK-005 iter-1 → pass` (finding 0/0/1 low)
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/react+vite (conf 0.95)
+  - Report: code_quality/reports/TSK-00{3,5,8,9}-iter-1.md
+
+[2026-06-01 19:05] policy — promossa regola REACT-A11Y-001 emergent(candidate) → canonical(active) (gate umano §19.5); origine TSK-003 — files touched: 2
+
+## 2026-06-01 19:30 — develop TSK-015
+**Agente:** be-dev · **Code path:** ./packages/app/ (src/core/)
+**Files touched:** 3 (core-wrapper.ts, core-wrapper.test.ts, Player.test.tsx[fake engine])
+**DoD:** pass — pause/resume/stop con guard di stato; 37/37 test. **Commit:** n/a (gate)
+
+## 2026-06-01 19:30 — develop TSK-013
+**Agente:** be-dev · **Code path:** ./packages/app/ (src/domain/)
+**Files touched:** 2 (library-service.ts, library-service.test.ts)
+**DoD:** pass — LibraryService list/remove sopra StoragePort. **Commit:** n/a (gate)
+
+## 2026-06-01 19:30 — develop TSK-012
+**Agente:** fe-dev · **Code path:** ./packages/app/ (src/components/Library/)
+**Files touched:** 2 (Library.tsx, Library.test.tsx)
+**DoD:** pass — griglia titolo/piattaforma + stato vuoto + onSelect, su solids. **Commit:** n/a (gate)
+
+## 2026-06-01 19:30 — develop TSK-020
+**Agente:** fe-dev · **Code path:** ./packages/app/ (src/components/FileLoader/)
+**Files touched:** 2 (FileLoader.tsx, FileLoader.test.tsx)
+**DoD:** pass — dropzone onKeyDown (Enter/Space)→picker, conforme REACT-A11Y-001. **Commit:** n/a (gate)
+
+## 2026-06-01 19:30 — develop TSK-010 (closure)
+**Agente:** qa-dev · **Code path:** ./packages/app/ (tests)
+**DoD:** pass — deliverable (platform-recognition.test.ts, 7 test) già implementato in TSK-004; verificato verde. Nessun nuovo file. **Commit:** n/a
+
+- 2026-06-01 19:40 — `review TSK-015 iter-1 → pass` (0/0/0)
+- 2026-06-01 19:40 — `review TSK-013 iter-1 → pass` (0/0/0)
+- 2026-06-01 19:40 — `review TSK-012 iter-1 → pass` (0/0/0)
+- 2026-06-01 19:40 — `review TSK-020 iter-1 → pass` (0/0/0; REACT-A11Y-001 soddisfatta)
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/react+vite (conf 0.95)
+
+## [2026-06-01] ingest | soliboy-brand (Brand kit: logo + icon set + palette)
+Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, index.md) | Gap nuovi: 1 (palette-brand-da-verificare) | Gap chiusi: 0

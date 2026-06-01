@@ -2,7 +2,7 @@
 // Carica una ROM fornita dall'utente e la importa via dominio (importRom, TSK-002).
 // UI su classi solids. Errore comprensibile su file non valido.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { StoragePort } from "../../storage/port";
 import { importRom } from "../../domain/rom-library";
 
@@ -25,6 +25,7 @@ async function readHeader(file: Blob): Promise<Uint8Array | undefined> {
 
 export function FileLoader({ storage, onImported }: FileLoaderProps) {
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
     setError(null);
@@ -39,6 +40,7 @@ export function FileLoader({ storage, onImported }: FileLoaderProps) {
       <label className="sb-btn sb-btn-primary">
         Carica ROM
         <input
+          ref={inputRef}
           type="file"
           aria-label="Carica ROM"
           style={{ display: "none" }}
@@ -59,6 +61,13 @@ export function FileLoader({ storage, onImported }: FileLoaderProps) {
           e.preventDefault();
           const f = e.dataTransfer.files?.[0];
           if (f) void handleFile(f);
+        }}
+        onKeyDown={(e) => {
+          // TSK-020 / REACT-A11Y-001: attivazione da tastiera → apre il selettore file.
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
         }}
       >
         Trascina qui una ROM

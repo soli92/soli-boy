@@ -8,6 +8,9 @@ function fakeEngine() {
   return {
     load: vi.fn<EmulatorEngine["load"]>(async () => {}),
     start: vi.fn<EmulatorEngine["start"]>(() => {}),
+    pause: vi.fn<EmulatorEngine["pause"]>(() => {}),
+    resume: vi.fn<EmulatorEngine["resume"]>(() => {}),
+    stop: vi.fn<EmulatorEngine["stop"]>(() => {}),
     setAudio: vi.fn<EmulatorEngine["setAudio"]>(() => {}),
   } satisfies EmulatorEngine;
 }

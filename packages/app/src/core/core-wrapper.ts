@@ -24,6 +24,12 @@ export interface LoadOptions {
 export interface EmulatorEngine {
   load(opts: LoadOptions): Promise<void>;
   start(): void;
+  /** Sospende l'esecuzione mantenendo lo stato. TSK-015 / US-011. */
+  pause(): void;
+  /** Riprende l'esecuzione dopo una pausa. TSK-015 / US-011. */
+  resume(): void;
+  /** Arresta l'esecuzione e libera la sessione. TSK-015 / US-011. */
+  stop(): void;
   /** Imposta volume (0..1) e mute sul core. TSK-009 / US-015. */
   setAudio(settings: AudioSettings): void;
 }
@@ -34,7 +40,7 @@ export interface AudioSettings {
   mute: boolean;
 }
 
-export type SessionState = "idle" | "loaded" | "running";
+export type SessionState = "idle" | "loaded" | "running" | "paused";
 
 /** Risolve piattaforma + core dal file caricato (riusa PlatformRecognition, TSK-004). */
 export function resolveCore(
@@ -70,6 +76,27 @@ export class CoreWrapper {
     }
     this.engine.start();
     this.state = "running";
+  }
+
+  /** Sospende l'esecuzione (no-op se non in running). TSK-015 / US-011. */
+  pause(): void {
+    if (this.state !== "running") return;
+    this.engine.pause();
+    this.state = "paused";
+  }
+
+  /** Riprende dopo una pausa (no-op se non in paused). TSK-015 / US-011. */
+  resume(): void {
+    if (this.state !== "paused") return;
+    this.engine.resume();
+    this.state = "running";
+  }
+
+  /** Arresta l'esecuzione e riporta lo stato a idle. TSK-015 / US-011. */
+  stop(): void {
+    if (this.state === "idle") return;
+    this.engine.stop();
+    this.state = "idle";
   }
 
   /** Imposta volume/mute. Il volume è clampato in [0,1]. TSK-009 / US-015. */

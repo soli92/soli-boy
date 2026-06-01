@@ -20,6 +20,7 @@ arcade e console handheld). Layout karpathy-style.
 - [[2026-06-01-specifiche-funzionali]] — Documento di Specifiche Funzionali v1.0.
 - [[2026-06-01-integrazione-mobile]] — Estensione alle piattaforme mobile (Android e iOS).
 - [[2026-06-01-mockups-ui]] — Mockup UI SoliDS (18 schermate).
+- [[2026-06-01-brand-kit]] — Brand kit (logo + icon set + palette).
 
 ### Concepts
 - [[emulazione-via-core-wasm]] — riuso di core Libretro maturi in WebAssembly.
@@ -35,6 +36,7 @@ arcade e console handheld). Layout karpathy-style.
 - [[emulazione-su-mobile]] — core WASM nel WebView, vincolo iOS.
 - [[temi-e-design-token-solids]] — token --sd-*, temi dark/cyberpunk, accessibilità.
 - [[layout-responsive]] — adattamento mobile/tablet/desktop.
+- [[brand-identita-soliboy]] — logo pixel-art + palette cyberpunk.
 
 ### Entities
 - [[solids]] — design system aziendale (soli92/solids v1.14.1).
@@ -43,6 +45,7 @@ arcade e console handheld). Layout karpathy-style.
 - [[indexeddb]] — persistenza locale (via idb).
 - [[capacitor]] — contenitore nativo mobile (Android/iOS).
 - [[schermata-library]] · [[schermata-player]] · [[schermata-settings]] — mockup UI (kind: screen).
+- [[soliboy-logo]] — logo/icone (kind: asset).
 
 ### Syntheses
 - [[requisiti-funzionali-soli-boy]] — RF-01..RF-25 e RNF-01..RNF-08 consolidati.

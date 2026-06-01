@@ -20,3 +20,9 @@ necessaria **non è presente in `wiki/`** e non può essere inventata.
 ## Entries
 
 _(nessun gap registrato al bootstrap)_
+
+## 2026-06-01 19:50 — palette-brand-da-verificare
+**Origine:** wiki-keeper @ ingest brand-kit (raw/soliboy-brand/)
+**Gap:** la palette del brand kit deriva dal tema cyberpunk SoliDS e non è verificata sui brand asset ufficiali (`soli-icons`, pacchetto npm). Tonalità esatte da confermare.
+**Sospetta fonte:** brand asset ufficiali Soli (`soli-icons`) — non ancora forniti in raw/.
+**Impatto:** non-bloccante. Logo/icone usabili; allineare le tonalità (e l'export PNG con font reali) prima del rilascio brand-definitivo.

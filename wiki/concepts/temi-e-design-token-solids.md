@@ -34,6 +34,7 @@ I valori esadecimali nei mockup sono approssimati; nell'app reale va importato i
 
 ## Concetti correlati
 [[layout-responsive]]
+[[brand-identita-soliboy]]
 
 ## Pagine collegate
 [[solids]]

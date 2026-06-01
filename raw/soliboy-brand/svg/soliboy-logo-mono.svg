@@ -1,0 +1,24 @@
+<svg width="680" height="240" viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Soli-boy logo monocromatico">
+  <title>Soli-boy logo monocromatico</title>
+  <rect x="0" y="0" width="680" height="240" rx="18" fill="none"/>
+  <g fill="currentColor" color="#f0e9ff">
+    <rect x="48" y="44" width="120" height="152" rx="10" fill="none" stroke="currentColor" stroke-width="2"/>
+    <g shape-rendering="crispEdges">
+      <rect x="76" y="68" width="20" height="20"/>
+      <rect x="96" y="68" width="20" height="20"/>
+      <rect x="116" y="68" width="20" height="20"/>
+      <rect x="76" y="88" width="20" height="20"/>
+      <rect x="76" y="108" width="20" height="20"/>
+      <rect x="96" y="108" width="20" height="20"/>
+      <rect x="116" y="108" width="20" height="20"/>
+      <rect x="116" y="128" width="20" height="20"/>
+      <rect x="76" y="148" width="20" height="20"/>
+      <rect x="96" y="148" width="20" height="20"/>
+      <rect x="116" y="148" width="20" height="20"/>
+    </g>
+    <circle cx="92" cy="182" r="6"/>
+    <circle cx="124" cy="182" r="6"/>
+    <text x="200" y="120" font-family="'DM Sans','Inter',sans-serif" font-size="58" font-weight="600">Soli-boy</text>
+    <text x="202" y="158" font-family="'JetBrains Mono',monospace" font-size="17" letter-spacing="5" opacity="0.7">RETRO &#183; ARCADE &#183; HANDHELD</text>
+  </g>
+</svg>

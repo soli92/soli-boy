@@ -1,0 +1,16 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Soli-boy favicon">
+  <title>Soli-boy favicon</title>
+  <rect x="0" y="0" width="64" height="64" rx="12" fill="#140b22"/>
+  <g shape-rendering="crispEdges">
+    <rect x="16" y="12" width="10" height="10" fill="#ff2bd6"/>
+    <rect x="26" y="12" width="10" height="10" fill="#ff2bd6"/>
+    <rect x="36" y="12" width="10" height="10" fill="#ff2bd6"/>
+    <rect x="16" y="22" width="10" height="10" fill="#ff2bd6"/>
+    <rect x="16" y="32" width="10" height="10" fill="#ff5be4"/>
+    <rect x="26" y="32" width="10" height="10" fill="#ff5be4"/>
+    <rect x="36" y="32" width="10" height="10" fill="#00e5ff"/>
+    <rect x="36" y="42" width="10" height="10" fill="#00e5ff"/>
+    <rect x="16" y="42" width="10" height="10" fill="#00e5ff"/>
+    <rect x="26" y="42" width="10" height="10" fill="#00e5ff"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+{
+  "tsk_id": "TSK-015",
+  "stack_descriptor": { "language": "typescript", "framework": "vite", "version": "x", "confidence": 0.95 },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [],
+  "verdict": "pass",
+  "verdict_rationale": "Lifecycle pause/resume/stop con guard di stato (no-op fuori stato), inoltro coerente all'engine; 9/9 test core. Nessuna finding.",
+  "summary": "Lifecycle pause/resume/stop con guard di stato (no-op fuori stato), inoltro coerente all'engine; 9/9 test core. Nessuna finding.",
+  "markers": { "no_progress": false, "regression": false, "loop_exhausted": false, "degraded": false },
+  "files_modified_by_fix": [],
+  "generated_at": "2026-06-01T19:40:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}

@@ -32,6 +32,17 @@
       "extractor": "unzip",
       "title": "Soli-boy — Mockup UI SoliDS (18 schermate: 3 sezioni x 2 temi x 3 dispositivi)",
       "images": []
+    },
+    {
+      "key": "2026-06-01-brand-kit",
+      "source": "brand-kit",
+      "original": "raw/files.zip",
+      "primary_path": "raw/soliboy-brand/README.md",
+      "assets_dir": "raw/soliboy-brand/",
+      "extracted_at": "2026-06-01",
+      "extractor": "unzip",
+      "title": "Soli-boy — Brand kit (logo SVG/PNG + icon set + palette cyberpunk)",
+      "images": ["raw/soliboy-brand/png/icon-512.png", "raw/soliboy-brand/svg/soliboy-icon.svg"]
     }
   ]
 }

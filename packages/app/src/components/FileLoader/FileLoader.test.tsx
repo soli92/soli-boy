@@ -40,4 +40,14 @@ describe("FileLoader", () => {
     await screen.findByRole("alert");
     expect(storage.addRom).not.toHaveBeenCalled();
   });
+
+  it("TSK-020/REACT-A11Y-001: Enter/Space sulla dropzone apre il selettore file", () => {
+    render(<FileLoader storage={fakeStorage()} />);
+    const input = screen.getByLabelText("Carica ROM") as HTMLInputElement;
+    const clickSpy = vi.spyOn(input, "click").mockImplementation(() => {});
+    const dropzone = screen.getByLabelText("Trascina qui una ROM");
+    fireEvent.keyDown(dropzone, { key: "Enter" });
+    fireEvent.keyDown(dropzone, { key: " " });
+    expect(clickSpy).toHaveBeenCalledTimes(2);
+  });
 });
