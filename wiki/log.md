@@ -261,3 +261,5 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 [2026-06-01 16:45] develop — wiring stile app: vendorizzato tema SoliDS approssimato (src/styles/solids-theme.css) + app-extra.css + import in main.tsx + vite-env.d.ts. App ora stilizzata. Gap design-system-real-package aperto. — files touched: 5
 
 [2026-06-01 17:10] develop — debug EmulatorJS (cont.): core runtime non carica anche in headed ("EJS_Runtime not defined"). Provati threads off/on, core variants, build coerente stable. Causa = caricamento core EJS (compression/report JSON). Gap resta aperto; engine config base mantenuta. — files touched: 3
+
+[2026-06-01 17:30] design — ADR-005 multi-engine registry (WasmBoy GB/GBC, mGBA GBA, arcade non coperto/rinvio; EmulatorJsEngine deprecato). Rivede ADR-004. architecture-overview aggiornato. — files touched: 2

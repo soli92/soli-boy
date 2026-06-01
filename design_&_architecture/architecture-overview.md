@@ -22,11 +22,13 @@ Disegno dell'architettura del nucleo condiviso (caricamento + esecuzione), su st
 | `src/storage/` | `StoragePort` + adapter IndexedDB/native ([[storage-port]], [[indexeddb-stores]]) | Persistenza |
 | `src/theme/` | Token e tema del design system solids | Presentazione |
 
-> **Selezione engine** (ADR-004): l'app inietta un `EmulatorEngine`. `StubEngine` è
-> deterministico (unit + e2e, nessun WASM); `EmulatorJsEngine` è l'integrazione reale
-> (loader EmulatorJS lazy, core da CDN su web / self-host su desktop+mobile, COOP/COEP
-> per i core threaded — vedi [[emulatorjs-hosting]]). Input: nativo EJS per
-> tastiera/gamepad, `InputMapping` solo per i controlli touch.
+> **Selezione engine — multi-motore registry** ([[ADR-005]], rivede ADR-004): un
+> `selectEngine(core)` mappa il core risolto all'adapter `EmulatorEngine` per piattaforma:
+> `WasmBoyEngine` (GB/GBC, npm ESM), `MgbaEngine` (GBA, mGBA wasm — da validare),
+> `StubEngine` (test/e2e deterministici). **Arcade (FBNeo/MAME) non coperto** da lib ESM
+> standalone → libretro umbrella o rinvio (decisione aperta, ADR-005). `EmulatorJsEngine`
+> deprecato (gap emulatorjs-real-integration: core non caricabile in self-host).
+> Input: per-lib (WasmBoy: responsive-gamepad/Gamepad API), `InputMapping` per touch.
 
 ## Servizi di dominio (BE logico, TypeScript)
 
