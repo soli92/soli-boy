@@ -1,0 +1,208 @@
+# Factory configuration — soli-boy
+# PATTERN.md §13 (topology) + §15 (VCS) + §17 (publisher) + §18 (parallel scheduler)
+#                          + §19 (code quality review) + §20 (compression layer a due assi)
+# Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
+# Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
+
+pattern_version: "2.15"
+
+owner: soli92
+language: it
+
+# === Adapter installati (PATTERN §12) =============================================
+adapters:
+  - name: claude
+    folder: .claude
+    maturity: full
+  - name: cursor
+    folder: .cursor
+    maturity: full
+
+# Topologia: full-stack-agents → tutti i dev-agent (be/fe/db/qa)
+topology: full-stack-agents
+
+# === Code paths (L5) — PATTERN §13 ================================================
+code_paths:
+  - name: app
+    path: ./packages/app
+    layers: [be, fe, db, qa]
+    tags: [monorepo]
+    vcs:
+      mode: monorepo
+      submodule_path: ""
+      remote_url: ""
+      branch_strategy: shared
+      commit_coupling: float
+
+# Legacy single-repo (non usato — code_paths valorizzato)
+code_path: ""
+vcs:
+  mode: none
+
+# Modalità di scelta dello stack: manual | guided | auto
+stack_mode: guided
+
+# Routing TSK → consumer. full-stack-agents: tutti i layer dev su agent.
+routing:
+  be: agent
+  fe: agent
+  db: agent
+  qa: agent
+  infra: human
+
+# Stack scelto (guided: stack-detector propone, owner conferma). Source of truth: raw/tech_stack.md
+stack:
+  backend: ""
+  frontend: ""
+  database: ""
+  qa: ""
+  infra: ""
+
+# Kanban publish (PATTERN §17) — mirror push-only di EP/US/TSK/sprint su GitHub Issues.
+kanban_publish:
+  provider: github
+  target: "soli92/soli-boy"
+  auth_env: GH_TOKEN
+  mode: push-only
+  batch_limit: 10
+  mapping:
+    epic_to: milestone
+    story_to: issue-label
+    task_to: issue-label
+    sprint_to: milestone
+  labels:
+    epic: "kanban:epic"
+    story: "kanban:story"
+    task: "kanban:task"
+    layer_prefix: "layer:"
+    milestone_prefix: "milestone:"
+  filter:
+    only_consumer: any
+    only_status: any
+
+# Parallel scheduler (PATTERN §18) — DAG-based dispatch.
+scheduler:
+  enabled: true
+  max_parallel: 4
+  parallel_gate_threshold: 3
+  code_path_conflict: strict
+  empty_code_path_policy: serial
+  domains:
+    ingest:  true
+    develop: true
+    lint:    true
+    query:   true
+    plan:    false
+    design:  false
+    publish: false
+    sync:    true
+    review:  true
+
+# Code Quality Review Layer (PATTERN §19) — ON.
+code_quality:
+  enabled: true
+  max_iterations: 3
+  thresholds:
+    confidence_min: 0.6
+    batching_split: 7
+    pass_rate_warn: 0.05
+    false_positive_warn: 0.30
+  passes:
+    idiomaticity: true
+    design: true
+    robustness: true
+  router:
+    strategy: severity-tiered
+    max_diff_lines: 80
+    ordering: severity_then_complexity
+  ruleset:
+    path: ./code_quality/rules/
+    tiers: [canonical, emergent, team-specific]
+    evolve:
+      enabled: false
+      cadence_days: 7
+  reports:
+    path: ./code_quality/reports/
+    retain_iterations: 5
+    digest_cadence: weekly
+
+# === Compression Layer (PATTERN §20) — ENTRAMBI gli assi ON =======================
+compression:
+  # --- Asse OUTPUT (Fase 1 OCL — Caveman) ---
+  output:
+    provider: caveman
+    enabled: true
+    install_command: "curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash"
+    policy_profile: conservative   # topology full-stack → conservative (R.C3 chain-depth ceiling attivo)
+    invariants:                    # R.C1 — non overridabili neppure in custom
+      to_user: off
+      to_artifact: off
+      propagate_resolution: off
+    channels:                      # usato SOLO se policy_profile == custom
+      orchestrator_to_subagent: full
+      subagent_to_tool: ultra
+      tool_to_subagent: lite
+      subagent_to_orchestrator: full
+      sibling_to_sibling: full
+      feedback_router_to_devagent: full
+    chain_depth_downgrade: true
+    chain_depth_threshold: 3
+    cross_factory: off             # R.C4
+    drift_fallback:                # R.C5
+      enabled: true
+      markers: [AMBIGUOUS_HANDOFF, REQUEST_CLARIFY]
+    audit_trail_for:
+      - propagate-resolution
+      - feedback-router
+
+  # --- Asse CONTEXT (Fase 2 CCL — Graphify) ---
+  context:
+    provider: graphify-cloud       # graphify-cloud (default) | graphify-ollama | none
+    enabled: true
+    package: graphifyy
+    install_command: "pip install graphifyy"
+    ollama:
+      model: llama3.1:8b
+      vram_gb_min: 16
+    targets:
+      - kind: code_path
+        name: app
+        gitignore_patterns:
+          - "*.env"
+          - "secrets/**"
+    update_strategy: incremental
+    full_rebuild_cron: "0 0 * * 0"  # weekly (R.G4 drift mitigation)
+    drift_alert_days: 7
+    full_rebuild_cost_warn: 5       # USD
+    ghost_duplicates_warn: 10
+    ci_strategy:
+      mode: cache-with-fallback     # R.G4
+      cache_provider: actions
+      cache_key_prefix: graphify-state
+      stale_threshold_hours: 168    # 7 giorni
+      full_rebuild_on_demand: true
+    confidence_gating:              # R.G2 — per ruolo agent
+      executor: [EXTRACTED]                          # be/fe/db/qa-dev
+      explorer: [EXTRACTED, INFERRED]                # lead-architect / wiki-query
+      reviewer: [EXTRACTED, INFERRED, AMBIGUOUS]     # code-reviewer
+    mcp_server:
+      enabled: false                # opt-in se runtime MCP disponibile
+      topology: per-agent           # per-agent (isolato) | shared
+      crg_tools_max: 8
+
+notes: |
+  Factory soli-boy generata da factory-bootstrap v2.15 (2026-06-01).
+  topology full-stack-agents: dev-agent be/fe/db/qa attivi su code_path `app`
+  (./packages/app, monorepo). Stack mode guided → stack-detector propone, owner conferma.
+  CQRL ON: code-reviewer attivo; popolare code_quality/rules/canonical/ per lo stack
+  prima del primo /review.
+  kanban_publish github: mirror push-only del kanban su GH Issues/Milestones di
+  soli92/soli-boy (richiede `gh auth login` / GH_TOKEN). Source of truth resta
+  management/kanban/** (PATTERN §8).
+  Compression Layer ENTRAMBI gli assi ON:
+   - output (Caveman) conservative: comprime canali messaging agent-to-agent;
+     invarianti R.C1 (to_user/to_artifact/propagate_resolution off) non overridabili.
+     Smoke test consigliato: /compression dry-run su una wave significativa.
+   - context (Graphify-cloud): knowledge graph di packages/app come context
+     replacement, confidence-gated. Warm-up: /graphify-sync app (graphify >= 0.8.22 OK).
+     Side-channel .graphify-state/ non versionato (R.G6).

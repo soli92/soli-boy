@@ -1,0 +1,7 @@
+# Compression Layer side-channel (v2.14 Fase 2, PATTERN §20.10 + R.G6)
+# Knowledge graph estratto da graphify-sync — view derivata, mai authoritative
+# (filesystem = single source of truth, R.G1). Rebuildable da <code_path>.
+.graphify-state/
+
+# macOS
+.DS_Store

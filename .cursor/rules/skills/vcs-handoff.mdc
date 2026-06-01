@@ -1,0 +1,160 @@
+---
+description: Coordina il commit del codice prodotto da un dev-agent con la topologia VCS dichiarata in factory.config.yaml.vcs (PATTERN §15). Gate umano obbligatorio per scritture VCS.
+globs:
+alwaysApply: false
+---
+
+> **Adapter Cursor** del costrutto definito in `PATTERN.md` (agent-agnostic).
+> Tool mapping runtime: `Read`→`@<file>` mention · `Write`/`Edit`→Apply (agent mode) ·
+> `Bash`→Terminal embedded · `Agent(subagent_type=...)`→Compose/sequential rule activation ·
+> skill reference `[[name]]`→`[name](mdc:.cursor/rules/skills/name.mdc)`.
+> Il **contenuto** (responsabilità, scope di scrittura, gate, regole §2/§7) è IDENTICO al `.claude/`.
+
+# Procedura — VCS handoff a chiusura di un TSK
+
+Invocata dal `dev-protocol` (Fase 5), DOPO `dev-handoff` (entry su `wiki/log.md`).
+Branch logico per `vcs.mode` letto da `factory.config.yaml`.
+
+## Fase 0 — Pre-condizioni
+
+1. Leggi `factory.config.yaml`. Estrai `vcs.mode`, `vcs.submodule_path` (se applicabile),
+   `vcs.remote_url`, `vcs.branch_strategy` (default `shared`), `vcs.commit_coupling` (default `float`).
+2. Verifica che `code_path` sia coerente con `vcs.mode`:
+   - `mode: monorepo` → `code_path` deve essere relativo (`./...`) e dentro al repo.
+   - `mode: submodule` → `vcs.submodule_path` valorizzato e presente in `.gitmodules`.
+   - `mode: sibling` → `code_path` deve essere assoluto o relativo fuori dal repo.
+   - `mode: external` → nessuna verifica, qualsiasi path ammesso.
+   - `mode: none` → STOP, non c'è L5 da coordinare (errore di config se siamo qui).
+3. Se incoerenza → STOP e segnala in chat.
+
+## Fase 1 — Branch (solo `submodule` e `sibling`)
+
+Determina il branch target in base a `branch_strategy`:
+
+- **`shared`**: usa il branch corrente. Se HEAD detached → STOP, segnala.
+- **`per-tsk`**: nome branch `tsk-<id-lowercase>-<slug-from-tsk-title>` (es. `tsk-042-add-login-endpoint`).
+  Se non esiste, propone `git checkout -b <branch>` → **gate umano** → esegui.
+  Se esiste e siamo già su quello → OK.
+  Se esiste ma siamo altrove → STOP, segnala potenziale conflitto.
+- **`per-sprint`**: nome `sprint-<NN>` (NN da frontmatter TSK `sprint:`). Stesso flow di `per-tsk`.
+
+## Fase 2 — Procedura per mode
+
+### Mode: `monorepo`
+
+1. `git status` nel factory repo.
+2. Se nessun cambiamento in `code_path` → STOP, segnala "develop senza modifiche" (rare ma possibili).
+3. Stagea solo i file sotto `code_path`: `git add <code_path>`.
+4. Propone messaggio di commit:
+   ```
+   feat(<layer>): <TSK title sintetizzato>
+
+   TSK-ZZZ: <link relativo al TSK>
+   <eventuale DoD partial note>
+   ```
+5. **Gate umano** → mostra il diff staged + il messaggio proposto, chiedi OK.
+6. Su OK: `git commit -m <messaggio>`. Nessun push automatico.
+
+### Mode: `submodule`
+
+1. `cd <submodule_path> && git status`.
+2. Se HEAD detached nel submodule → STOP, segnala (richiede checkout su un branch prima di committare).
+3. Stagea + propone commit nel submodule:
+   ```
+   feat(<layer>): <TSK title sintetizzato>
+
+   TSK-ZZZ (factory: <factory-repo-name>)
+   ```
+4. **Gate umano** → conferma commit nel submodule.
+5. Opzionale: chiedi se vuoi pushare il submodule (`git push origin <branch>`). Solo se utente conferma esplicitamente.
+6. `cd <factory-repo-root> && git add <submodule_path>` → stagea il bump del ref nel factory repo.
+7. Propone commit nel factory repo:
+   ```
+   chore(<layer>): bump <submodule_path> for TSK-ZZZ
+
+   Submodule commit: <hash-short>
+   ```
+8. **Gate umano** → conferma commit factory.
+9. Se `commit_coupling: pin` → aggiorna `.factory-lock` (vedi Fase 3).
+
+### Mode: `sibling`
+
+1. `cd <code_path> && git status`.
+2. Stessa procedura del submodule **MA**:
+   - Niente bump nel factory repo (sono due repo indipendenti).
+   - Stampa avviso: "Ricorda di aprire PR su <vcs.remote_url> se vuoi mergeare su main."
+3. **Gate umano** per ogni commit.
+4. Se `commit_coupling: pin` → aggiorna `.factory-lock`.
+
+### Mode: `external`
+
+1. Tenta `cd <code_path> && git rev-parse HEAD` (test best-effort).
+2. Se è un git repo → cattura il commit hash corrente per il log.
+3. Se non lo è → solo annota `commit: n/a` nel log.
+4. **Nessuna operazione VCS**. La factory non sa cosa coordinare.
+
+## Fase 3 — `.factory-lock` (solo se `commit_coupling: pin`)
+
+File al root del factory repo. Append-only.
+
+Formato (YAML list):
+
+```yaml
+# .factory-lock — generato da vcs-handoff (PATTERN §15)
+# Mappa ogni Develop chiuso al commit hash del codice corrispondente.
+# Reproducibilità: `git checkout <factory-commit>` → so quale commit di L5 corrispondeva.
+
+- tsk: TSK-042
+  layer: be
+  vcs_mode: submodule
+  submodule_path: ./code/
+  commit: a1b2c3d4
+  date: 2026-05-20T14:32:00Z
+- tsk: TSK-043
+  layer: fe
+  vcs_mode: sibling
+  code_path: /Users/me/Repos/customer-portal/
+  commit: e5f6g7h8
+  date: 2026-05-20T15:10:00Z
+```
+
+Append-only: mai editare entry passate. Se serve correzione, append nuova entry
+con marker `correction: true`.
+
+## Fase 4 — Log entry (estensione di `dev-handoff`)
+
+Append a `wiki/log.md` (la stessa entry di `dev-handoff`, ma estesa con info VCS):
+
+```markdown
+## YYYY-MM-DD HH:MM — develop TSK-ZZZ
+**Agente:** <be-dev|fe-dev|db-dev|qa-dev>
+**TSK:** [[../management/kanban/.../TSK-ZZZ]]
+**Layer:** <be|fe|db|qa|infra>
+**Code path:** <code_path>
+**VCS mode:** <monorepo|submodule|sibling|external>
+**Branch:** <nome-branch o "shared">
+**Commit (L5):** <hash-short o "n/a">
+**Commit (factory):** <hash-short se monorepo o submodule bump; "n/a" altrimenti>
+**Files touched:** <count>
+**DoD:** <pass | partial>
+**Note:** <free-form>
+```
+
+## Vincoli inviolabili (PATTERN §7 r.14)
+
+- **Mai `git push`** senza conferma esplicita dell'utente, mai automatico.
+- **Mai `git submodule add|update --remote`** automatico. Bootstrap stampa il comando, utente lo lancia.
+- **Mai `git clone`** automatico per `sibling`: stampa istruzioni.
+- **Mai `--force`**, `--no-verify`, `--amend` (preferisci nuovi commit).
+- **Mai modificare `.gitmodules`** fuori da questa skill.
+- **Mai modificare `.factory-lock`** fuori da questa skill.
+- **Mai cambiare branch** nel factory repo (`git checkout <other-branch>`): l'utente decide su quale branch del factory si trova prima di invocare il dev-agent.
+- **Mai cambiare branch** in `code_path` per modi `sibling`/`external`: l'utente è responsabile dello stato del repo esterno.
+
+## Errori comuni
+
+- **HEAD detached** in submodule o sibling → STOP, l'utente deve fare checkout di un branch prima.
+- **`.gitmodules` non trovato** in mode `submodule` → STOP, configurazione incoerente.
+- **`code_path` non esiste** in mode `monorepo`/`sibling` → STOP, segnala.
+- **`code_path` esiste ma non è un git repo** in mode `submodule`/`sibling` → STOP, segnala.
+- **Conflitti staged** nel factory repo → STOP, non si committa sopra conflitti aperti.
