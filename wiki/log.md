@@ -257,3 +257,5 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 [2026-06-01 16:05] develop — ROM libera dmg-acid2.gb (MIT) aggiunta + whitelist; e2e reale opt-in (SOLIBOY_E2E_REAL). EmulatorJS reale non inizializza in headless (EJS_ready assente) → gap emulatorjs-real-integration resta aperto. — files touched: 5
 
 [2026-06-01 16:25] develop — debug EmulatorJS: ORB/COEP isolato → self-host same-origin (npm run setup:emu, public/emulatorjs gitignorato, EJS_pathtodata locale). EJS ora inizializza; residuo: EJS_Runtime (core WASM) non carica in headless. Gap aperto, avanzato. — files touched: 5
+
+[2026-06-01 16:45] develop — wiring stile app: vendorizzato tema SoliDS approssimato (src/styles/solids-theme.css) + app-extra.css + import in main.tsx + vite-env.d.ts. App ora stilizzata. Gap design-system-real-package aperto. — files touched: 5

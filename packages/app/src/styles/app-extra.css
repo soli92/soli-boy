@@ -1,0 +1,53 @@
+/* Stili applicativi minimi non coperti dal tema mockup (FileLoader/Library/Player/Settings).
+   Provvisori: da consolidare quando si integra il pacchetto reale @soli92/solids. */
+
+html, body { margin: 0; }
+body {
+  background: var(--sd-color-bg-canvas, #140b22);
+  color: var(--sd-color-text-primary, #f0e9ff);
+  font-family: var(--sd-font-body, system-ui, sans-serif);
+}
+
+.sb-app {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--sd-space-lg, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-lg, 16px);
+}
+.sb-app > header { margin-bottom: var(--sd-space-md, 12px); }
+
+/* FileLoader */
+.sb-loader { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sd-space-md, 12px); }
+.sb-dropzone {
+  flex: 1 1 220px;
+  min-height: 64px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px dashed var(--sd-color-border-default, #5a35a0);
+  border-radius: var(--sd-radius-lg, 10px);
+  color: var(--sd-color-text-secondary, #b9a9e0);
+  cursor: pointer;
+}
+.sb-dropzone:focus-visible { outline: 2px solid var(--sd-color-primary-default, #00e5ff); }
+
+/* Library */
+.sb-grid {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; gap: var(--sd-space-md, 12px);
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+.sb-game {
+  width: 100%; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: var(--sd-space-sm, 8px);
+  padding: var(--sd-space-md, 12px);
+  background: var(--sd-color-bg-surface, #1d1233);
+  border: 1px solid var(--sd-color-border-muted, #3a2a63);
+  border-radius: var(--sd-radius-lg, 10px);
+  color: inherit;
+}
+.sb-game-title { font-weight: 600; }
+
+/* Settings — keymap */
+.sb-keymap { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.sb-key { font-family: var(--sd-font-mono, monospace); }
