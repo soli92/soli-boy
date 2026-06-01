@@ -2,8 +2,9 @@
 import type { Core } from "../domain/types";
 import type { EmulatorEngine, LoadOptions } from "./core-wrapper";
 import { WasmBoyEngine } from "./wasmboy-engine";
+import { MgbaEngine } from "./mgba-engine";
 
-/** Engine per piattaforme non ancora supportate (GBA finché TSK-028, arcade → EP-009). */
+/** Engine per piattaforme non ancora supportate (arcade → EP-009). */
 class UnsupportedEngine implements EmulatorEngine {
   readonly capabilities = { rewind: false };
   constructor(private readonly reason: string) {}
@@ -25,9 +26,7 @@ export function selectEngine(core: Core): EmulatorEngine {
     case "gambatte":
       return new WasmBoyEngine(); // GB/GBC
     case "mgba":
-      return new UnsupportedEngine(
-        "GBA non ancora supportato (adapter mGBA in arrivo — TSK-028).",
-      );
+      return new MgbaEngine(); // GBA (mGBA wasm) — adapter non ancora verificato a runtime (TSK-028)
     case "fbneo":
     case "mame":
       return new UnsupportedEngine(

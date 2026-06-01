@@ -59,3 +59,9 @@ _(nessun gap registrato al bootstrap)_
 **Gap:** FBNeo/MAME (arcade) non hanno una libreria ESM standalone (come WasmBoy per GB); girano via libretro (EmulatorJS/RetroArch). Decisione: **rinvio** a epica dedicata (EP-009); il registry instrada l'arcade a "non ancora supportato".
 **Sospetta fonte:** percorso libretro/RetroArch web (umbrella) da valutare in EP-009.
 **Impatto:** non-bloccante per GB/GBA; le specifiche elencano arcade al lancio → rischio di scope da concordare con owner.
+
+## 2026-06-01 19:20 — gba-runtime-verification
+**Origine:** be-dev @ TSK-028
+**Gap:** MgbaEngine (GBA, @thenick775/mgba-wasm MPL-2.0) implementato contro l'API documentata e registrato (selectEngine mgba→MgbaEngine), build/typecheck verdi, ma NON verificato a runtime: manca una ROM GBA libera in public/test-roms/ per l'e2e (emulation-gba.e2e.ts, skip finché assente).
+**Sospetta fonte:** ROM GBA homebrew/free (es. demo libere) da aggiungere + whitelist .gitignore.
+**Impatto:** non-bloccante; GB già reale. GBA da validare quando si fornisce una ROM libera (l'e2e passerà da skip a verde).

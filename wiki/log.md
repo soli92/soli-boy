@@ -285,3 +285,8 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 
 - 2026-06-01 18:55 — `review TSK-029 iter-1 → pass` (0/0/0; rimozione pulita + hardening WasmBoy)
   - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite (conf 0.95)
+
+## 2026-06-01 19:20 — develop TSK-028
+**Agente:** be-dev · **Code path:** ./packages/app/src/core/
+**Note:** spike OK → @thenick775/mgba-wasm (MPL-2.0, API documentata). MgbaEngine adapter (import dinamico, FSInit/uploadRom/loadGame/buttonPress/setVolume) + registrato (mgba→MgbaEngine). e2e GBA skip-until-ROM. build code-split (mgba chunk 152KB), typecheck OK, 49 unit + 5 e2e verdi.
+**DoD:** pacchetto validato + adapter implementato. **Caveat onesto:** runtime GBA NON verificato (manca ROM GBA libera) → gap gba-runtime-verification. **Commit:** n/a (gate)
