@@ -34,6 +34,11 @@ import {
   type VideoSettings,
   type VideoSettingsPort,
 } from "../Player/useVideoSettings";
+// TSK-044 (US-036) — ThemeSelector ospitato nella nuova sezione "Aspetto".
+// Le prop relative al tema sono OPZIONALI (vedi `SettingsProps`): se assenti,
+// la sezione non viene renderizzata — preserva i test legacy che istanziano
+// `<Settings>` senza wiring tema.
+import { ThemeSelector } from "../ThemeSelector/ThemeSelector";
 
 const BUTTONS: GameButton[] = ["up", "down", "left", "right", "a", "b", "start", "select"];
 
@@ -94,6 +99,18 @@ export interface SettingsProps {
    * (riassociazione automatica via SaveService.importSave).
    */
   currentRom?: RomSummary;
+  /**
+   * TSK-044 (US-036) — tema UI corrente. Se passato insieme a `onThemeChange`,
+   * la sezione "Aspetto" mostra il `ThemeSelector` cablato (modalità
+   * controllata: lo stato vive a livello App tramite `useTheme`).
+   * Prop OPZIONALI: i test legacy che istanziano `<Settings>` senza wiring
+   * tema (es. Settings.test.tsx, Settings.videoSettings.test.tsx) continuano
+   * a funzionare invariati — la sezione "Aspetto" semplicemente non viene
+   * renderizzata se manca il binding.
+   */
+  theme?: string;
+  /** Callback invocata al cambio tema (US-036). */
+  onThemeChange?: (theme: string) => void;
 }
 
 /** Etichette user-facing per i valori di scala. */
@@ -134,6 +151,8 @@ export function Settings({
   videoConfigPort,
   saveService,
   currentRom,
+  theme,
+  onThemeChange,
 }: SettingsProps) {
   const [saved, setSaved] = useState(false);
 
@@ -440,6 +459,20 @@ export function Settings({
           </select>
         </li>
       </ul>
+
+      {/* TSK-044 (US-036) — Aspetto: tema UI applicato via `data-theme` su
+          `<html>`. Sezione opzionale: renderizzata solo se App.tsx ha cablato
+          `theme` + `onThemeChange` (modalità controllata via `useTheme` con
+          porta IndexedDB). I test legacy che non passano queste prop vedono
+          lo stesso markup di prima — niente regressioni. */}
+      {theme !== undefined && onThemeChange !== undefined && (
+        <>
+          <p className="sb-lbl">Aspetto — tema UI</p>
+          <ul className="sb-keymap" aria-label="Impostazioni aspetto">
+            <ThemeSelector theme={theme} onThemeChange={onThemeChange} />
+          </ul>
+        </>
+      )}
 
       {/* TSK-033 — Dati (US-019): export/import salvataggi.
           Sezione sempre visibile per UX prevedibile; disabilitata con nota

@@ -103,3 +103,22 @@ export interface ConfigPort {
   /** Persiste (o sostituisce) `value` sotto la chiave `key`. */
   setConfig<T>(key: string, value: T): Promise<void>;
 }
+
+/**
+ * Porta di persistenza del tema UI (TSK-044, US-036).
+ *
+ * Analoga a `VideoSettingsPort` (cfr. components/Player/useVideoSettings.ts):
+ * `load()` ritorna `null` se non c'è preferenza salvata (primo avvio: l'hook
+ * `useTheme` resta sul default canonico `"90s-party"` senza setState).
+ * `save(theme)` persiste in modo idempotente sotto la chiave canonica
+ * `"ui-theme"` (store `config`, vedi `make_theme_port.ts`); gli errori sono
+ * propagati per permettere al chiamante di logarli, ma NON degradano lo stato
+ * in memoria (il `data-theme` corrente resta valido nel documento).
+ *
+ * Esposta qui — accanto a `ConfigPort` — per riusarla da componenti diversi
+ * (Settings/ThemeSelector) senza importare dettagli dell'adapter.
+ */
+export interface ThemePort {
+  load(): Promise<string | null>;
+  save(theme: string): Promise<void>;
+}
