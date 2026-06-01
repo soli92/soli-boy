@@ -305,3 +305,13 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 
 - 2026-06-01 20:55 — `review TSK-040 iter-1 → pass` (0/0/1 low: CSS-DESIGN-001 token contratto non documentato; advisory non bloccante)
   - Reviewer: code-reviewer@2.12.0 · Stack: typescript/react/vite + @soli92/solids (conf 0.97)
+
+## 2026-06-01 21:30 — develop TSK-030
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-004-salvataggi/US-016-save-state-multipli/TSK-030]]
+**Layer:** be
+**Code path:** ./packages/app/src/core/
+**Files touched:** vedi commit (core: core-wrapper.ts, stub-engine.ts, wasmboy-engine.ts, mgba-engine.ts, engine-registry.ts, wasmboy.d.ts + stub-engine.test.ts; fixture fakeEngine in core-wrapper.test.ts e Player.*.test.tsx aggiornate al contratto esteso)
+**Commit:** n/a (gate)
+**DoD:** pass — typecheck OK, 71/71 unit verdi (49 esistenti + 11 nuovi StubEngine + 11 fixture-test esistenti adattati al nuovo contratto), build OK
+**Note:** EmulatorEngine esteso con snapshot/restore + getSram/loadSram (ADR-006). EngineCapabilities aggiunto saveStates+sram. StubEngine: round-trip deterministico (JSON+magic header SOLISTUB1, tick monotono, SRAM con copie difensive). WasmBoyEngine: API native `saveState`/`loadState` su oggetto JS serializzato come JSON+magic WBSV1 (cross-engine reject onesto); SRAM via cartridgeRam dello save state (read) e patch+loadState (write). MgbaEngine: slot-based saveState/loadState con I/O su FS virtuale Emscripten via `FS.readFile`/`writeFile` (path = saveStatePath/<game>.ss0); SRAM via `getSave()` (read) e `FS.writeFile(saveName, data)` (write); reject onesto se API non disponibili o non c'è ROM caricata. Caveat: i save state mGBA non sono ancora verificati a runtime end-to-end (gap già noto, non introdotto qui). UnsupportedEngine rifiuta onestamente i 4 nuovi metodi. Nessuna estensione di StoragePort/SaveService/UI (TSK-031/032/033). Nessun asset protetto introdotto.

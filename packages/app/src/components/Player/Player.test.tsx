@@ -14,7 +14,12 @@ function fakeEngine() {
     setAudio: vi.fn<EmulatorEngine["setAudio"]>(() => {}),
     sendInput: vi.fn<EmulatorEngine["sendInput"]>(() => {}),
     setSpeed: vi.fn<EmulatorEngine["setSpeed"]>(() => {}),
-    capabilities: { rewind: false },
+    // TSK-030: no-op per soddisfare il contratto esteso (UI Player non li chiama ancora).
+    snapshot: vi.fn<EmulatorEngine["snapshot"]>(async () => new Uint8Array()),
+    restore: vi.fn<EmulatorEngine["restore"]>(async () => {}),
+    getSram: vi.fn<EmulatorEngine["getSram"]>(async () => null),
+    loadSram: vi.fn<EmulatorEngine["loadSram"]>(async () => {}),
+    capabilities: { rewind: false, saveStates: false, sram: false },
   } satisfies EmulatorEngine;
 }
 

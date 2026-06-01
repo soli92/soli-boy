@@ -38,6 +38,34 @@ export interface EmulatorEngine {
   sendInput(button: GameButton, pressed: boolean): void;
   /** Imposta velocità (fast-forward / rewind). TSK-018 / US-014. */
   setSpeed(settings: SpeedSettings): void;
+  /**
+   * Cattura un'istantanea dello stato corrente dell'emulatore (save state).
+   * TSK-030 / US-016. Il payload è opaco per il dominio: serializzato come
+   * Uint8Array così la persistenza (ADR-002 / store `saveStates`) può trattarlo
+   * come blob senza conoscere il formato specifico dell'engine.
+   * Reject onesto se l'engine non supporta i save state in runtime.
+   */
+  snapshot(): Promise<Uint8Array>;
+  /**
+   * Ripristina lo stato dell'emulatore da uno snapshot precedente.
+   * TSK-030 / US-016. Il formato è specifico per engine/versione (vedi
+   * conseguenze in ADR-006): un payload prodotto da WasmBoy NON è
+   * caricabile da mGBA — è responsabilità del livello dominio/storage
+   * memorizzare `core`/`engine` ed evitare cross-load.
+   * Reject onesto se l'engine non supporta i save state in runtime.
+   */
+  restore(state: Uint8Array): Promise<void>;
+  /**
+   * Legge la SRAM corrente della cartuccia (save in-game). TSK-030 / US-017.
+   * Ritorna `null` se non c'è SRAM (es. cartuccia senza battery RAM o nessuna
+   * ROM caricata). Reject onesto se l'engine non espone la SRAM in runtime.
+   */
+  getSram(): Promise<Uint8Array | null>;
+  /**
+   * Inietta dati SRAM nella cartuccia caricata. TSK-030 / US-017.
+   * Reject onesto se l'engine non espone la SRAM in runtime.
+   */
+  loadSram(data: Uint8Array): Promise<void>;
   /** Capacità del core (es. rewind dipende dalla piattaforma). TSK-018 / US-014. */
   readonly capabilities: EngineCapabilities;
 }
@@ -62,6 +90,10 @@ export interface SpeedSettings {
 export interface EngineCapabilities {
   /** true se il core supporta il rewind (US-014). */
   rewind: boolean;
+  /** true se il core supporta i save state (snapshot/restore). TSK-030 / US-016. */
+  saveStates: boolean;
+  /** true se il core espone la SRAM cartuccia (getSram/loadSram). TSK-030 / US-017. */
+  sram: boolean;
 }
 
 export type SessionState = "idle" | "loaded" | "running" | "paused";

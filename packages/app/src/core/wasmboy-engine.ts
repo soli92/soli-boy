@@ -1,10 +1,12 @@
 // TSK-025 — WasmBoyEngine: adapter EmulatorEngine reale su WasmBoy (GB/GBC, ADR-005).
 // WasmBoy è ESM (no script globale / no decompressione core da CDN): supera i problemi
 // di EmulatorJS (gap emulatorjs-real-integration). Singleton WasmBoy → un gioco alla volta.
-import { WasmBoy, type WasmBoyJoypadState } from "wasmboy";
+// TSK-030 (ADR-006) — esteso con snapshot/restore + SRAM (US-016/US-017).
+import { WasmBoy, type WasmBoyJoypadState, type WasmBoySaveState } from "wasmboy";
 import type {
   AudioSettings,
   EmulatorEngine,
+  EngineCapabilities,
   GameButton,
   LoadOptions,
   SpeedSettings,
@@ -22,8 +24,22 @@ const BTN: Record<GameButton, keyof WasmBoyJoypadState> = {
   a: "A", b: "B", start: "START", select: "SELECT",
 };
 
+/**
+ * TSK-030 — magic header del payload binario WasmBoy save state.
+ * Il save state nativo è un oggetto JS: lo serializziamo come JSON UTF-8 dietro
+ * un magic header così:
+ *  1) il dominio (SaveService) lo tratta come opaque blob conforme all'interfaccia;
+ *  2) `restore()` rifiuta in modo onesto blob non prodotti da WasmBoy (cross-engine).
+ */
+const WASMBOY_SAVE_MAGIC = "WBSV1";
+
 export class WasmBoyEngine implements EmulatorEngine {
-  readonly capabilities = { rewind: false };
+  // TSK-030: WasmBoy supporta save state nativi e cartridgeRam → entrambe capability ON.
+  readonly capabilities: EngineCapabilities = {
+    rewind: false,
+    saveStates: true,
+    sram: true,
+  };
 
   private configured = false;
   private joypad: WasmBoyJoypadState = {};
@@ -72,6 +88,88 @@ export class WasmBoyEngine implements EmulatorEngine {
     WasmBoy.setSpeed(settings.fastForward ? 2 : 1); // rewind non supportato (capabilities.rewind=false)
   }
 
+  /**
+   * TSK-030 / US-016 — cattura save state via API WasmBoy reale.
+   * `WasmBoy.saveState()` ritorna un oggetto JS con `wasmboyMemory.*` (incluso
+   * cartridgeRam): lo serializziamo come JSON con magic header.
+   * Reject onesto se non è stato ancora caricato un gioco o se l'API non c'è.
+   */
+  async snapshot(): Promise<Uint8Array> {
+    if (!this.configured) {
+      throw new Error("WasmBoyEngine.snapshot: nessuna ROM caricata (chiamare load prima).");
+    }
+    if (typeof WasmBoy.saveState !== "function") {
+      throw new Error("WasmBoyEngine.snapshot: API WasmBoy.saveState non disponibile a runtime.");
+    }
+    const state = await WasmBoy.saveState();
+    const serializable = toSerializableSaveState(state);
+    const json = JSON.stringify(serializable);
+    const body = new TextEncoder().encode(json);
+    const header = new TextEncoder().encode(WASMBOY_SAVE_MAGIC);
+    const out = new Uint8Array(header.length + body.length);
+    out.set(header, 0);
+    out.set(body, header.length);
+    return out;
+  }
+
+  /**
+   * TSK-030 / US-016 — ripristina lo stato da uno snapshot prodotto da `snapshot()`.
+   * Reject onesto se il magic header non corrisponde (es. snapshot mGBA passato
+   * per errore: ADR-006 §Conseguenze — i save state sono engine-specific).
+   */
+  async restore(state: Uint8Array): Promise<void> {
+    if (!this.configured) {
+      throw new Error("WasmBoyEngine.restore: nessuna ROM caricata (chiamare load prima).");
+    }
+    if (typeof WasmBoy.loadState !== "function") {
+      throw new Error("WasmBoyEngine.restore: API WasmBoy.loadState non disponibile a runtime.");
+    }
+    const obj = decodeSaveState(state);
+    await WasmBoy.loadState(obj);
+  }
+
+  /**
+   * TSK-030 / US-017 — legge la SRAM cartuccia corrente.
+   * Strategia: estraiamo `cartridgeRam` dallo save state appena catturato
+   * (è l'unico modo di ottenere bytes raw dall'API pubblica WasmBoy).
+   * Ritorna `null` se cartridgeRam è assente/vuoto (cartuccia senza battery RAM).
+   */
+  async getSram(): Promise<Uint8Array | null> {
+    if (!this.configured) return null;
+    if (typeof WasmBoy.saveState !== "function") {
+      throw new Error("WasmBoyEngine.getSram: API WasmBoy.saveState non disponibile a runtime.");
+    }
+    const state = await WasmBoy.saveState();
+    const cr = state?.wasmboyMemory?.cartridgeRam;
+    if (!cr) return null;
+    const bytes = cr instanceof Uint8Array ? cr : new Uint8Array(cr as ArrayLike<number>);
+    return bytes.length > 0 ? new Uint8Array(bytes) : null;
+  }
+
+  /**
+   * TSK-030 / US-017 — inietta SRAM nella cartuccia caricata.
+   * Approccio: cattura lo state corrente, sostituisce solo `cartridgeRam`,
+   * lo ricarica via `loadState`. Così evitiamo di toccare API interne (WasmBoyMemory)
+   * e restiamo sull'API pubblica.
+   */
+  async loadSram(data: Uint8Array): Promise<void> {
+    if (!this.configured) {
+      throw new Error("WasmBoyEngine.loadSram: nessuna ROM caricata (chiamare load prima).");
+    }
+    if (typeof WasmBoy.saveState !== "function" || typeof WasmBoy.loadState !== "function") {
+      throw new Error("WasmBoyEngine.loadSram: API save/loadState WasmBoy non disponibili a runtime.");
+    }
+    const current = await WasmBoy.saveState();
+    const patched: WasmBoySaveState = {
+      ...current,
+      wasmboyMemory: {
+        ...(current.wasmboyMemory ?? {}),
+        cartridgeRam: new Uint8Array(data),
+      },
+    };
+    await WasmBoy.loadState(patched);
+  }
+
   /** Crea (una sola volta) un <canvas> dentro il container e lo ritorna. */
   private ensureCanvas(container: HTMLElement): HTMLCanvasElement {
     const existing = container.querySelector("canvas");
@@ -81,4 +179,63 @@ export class WasmBoyEngine implements EmulatorEngine {
     container.appendChild(canvas);
     return canvas;
   }
+}
+
+/**
+ * TSK-030 — converte Uint8Array dentro `wasmboyMemory` in array di numeri,
+ * altrimenti `JSON.stringify` produrrebbe `{}`. Mirror logico di getSaveStateAsArrays
+ * (cfr. wasmboy.ts.esm.js ~L2914).
+ */
+function toSerializableSaveState(state: WasmBoySaveState): WasmBoySaveState {
+  const mem = state.wasmboyMemory ?? {};
+  const next: Record<string, number[] | unknown> = {};
+  for (const key of Object.keys(mem)) {
+    const v = (mem as Record<string, unknown>)[key];
+    if (v instanceof Uint8Array) {
+      next[key] = Array.prototype.slice.call(v) as number[];
+    } else {
+      next[key] = v;
+    }
+  }
+  return {
+    ...state,
+    wasmboyMemory: next as WasmBoySaveState["wasmboyMemory"],
+  };
+}
+
+/** TSK-030 — decodifica un blob WasmBoy save state, validando magic header. */
+function decodeSaveState(state: Uint8Array): WasmBoySaveState {
+  const header = new TextEncoder().encode(WASMBOY_SAVE_MAGIC);
+  if (state.length < header.length) {
+    throw new Error("WasmBoyEngine.restore: snapshot troppo corto / formato non riconosciuto.");
+  }
+  for (let i = 0; i < header.length; i++) {
+    if (state[i] !== header[i]) {
+      throw new Error(
+        "WasmBoyEngine.restore: magic header non corrisponde (snapshot non prodotto da WasmBoyEngine; cross-engine save states non supportati — ADR-006).",
+      );
+    }
+  }
+  const json = new TextDecoder().decode(state.subarray(header.length));
+  let parsed: WasmBoySaveState;
+  try {
+    parsed = JSON.parse(json) as WasmBoySaveState;
+  } catch (e) {
+    throw new Error(`WasmBoyEngine.restore: payload JSON non valido (${(e as Error).message}).`);
+  }
+  // Re-promuovi gli array di numeri a Uint8Array per coerenza con la memoria viva.
+  const mem = parsed.wasmboyMemory ?? {};
+  const restored: Record<string, Uint8Array | unknown> = {};
+  for (const key of Object.keys(mem)) {
+    const v = (mem as Record<string, unknown>)[key];
+    if (Array.isArray(v)) {
+      restored[key] = new Uint8Array(v as number[]);
+    } else {
+      restored[key] = v;
+    }
+  }
+  return {
+    ...parsed,
+    wasmboyMemory: restored as WasmBoySaveState["wasmboyMemory"],
+  };
 }

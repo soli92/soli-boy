@@ -21,12 +21,12 @@ test("carica una ROM GB → compare in libreria → avvia → pausa", async ({ p
     buffer: Buffer.from("ROMDATA-GB"),
   });
 
-  // la ROM appare in libreria con titolo e piattaforma
-  await expect(page.getByText("tetris")).toBeVisible();
-  await expect(page.getByText("GB")).toBeVisible();
+  // la ROM appare in libreria con titolo e piattaforma (tile, non il chip filtro)
+  const tile = page.getByRole("button", { name: "tetris GB" });
+  await expect(tile).toBeVisible();
 
   // selezione → Player → Avvia
-  await page.getByText("tetris").click();
+  await tile.click();
   await page.getByRole("button", { name: /avvia/i }).click();
   await expect(page.getByLabel("Schermo di gioco")).toHaveText("tetris");
 

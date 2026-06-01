@@ -3,7 +3,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { CoreWrapper, resolveCore, type EmulatorEngine } from "./core-wrapper";
 
-function fakeEngine(capabilities: { rewind: boolean } = { rewind: false }) {
+function fakeEngine(
+  capabilities: { rewind: boolean; saveStates?: boolean; sram?: boolean } = { rewind: false },
+) {
   return {
     load: vi.fn<EmulatorEngine["load"]>(async () => {}),
     start: vi.fn<EmulatorEngine["start"]>(() => {}),
@@ -13,7 +15,17 @@ function fakeEngine(capabilities: { rewind: boolean } = { rewind: false }) {
     setAudio: vi.fn<EmulatorEngine["setAudio"]>(() => {}),
     sendInput: vi.fn<EmulatorEngine["sendInput"]>(() => {}),
     setSpeed: vi.fn<EmulatorEngine["setSpeed"]>(() => {}),
-    capabilities,
+    // TSK-030: stubs no-op per soddisfare il contratto esteso (CoreWrapper non
+    // espone ancora questi metodi: il wiring SaveService arriva con TSK-032).
+    snapshot: vi.fn<EmulatorEngine["snapshot"]>(async () => new Uint8Array()),
+    restore: vi.fn<EmulatorEngine["restore"]>(async () => {}),
+    getSram: vi.fn<EmulatorEngine["getSram"]>(async () => null),
+    loadSram: vi.fn<EmulatorEngine["loadSram"]>(async () => {}),
+    capabilities: {
+      rewind: capabilities.rewind,
+      saveStates: capabilities.saveStates ?? false,
+      sram: capabilities.sram ?? false,
+    },
   } satisfies EmulatorEngine;
 }
 
