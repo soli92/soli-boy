@@ -101,3 +101,23 @@ Pagine create: 6 | Figure: 0 | Aggiornamenti: 2 (solids, index.md) | Gap nuovi: 
 - 2026-06-01 17:55 — `review TSK-001 iter-2 → pass`
   - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite 5.x (conf 0.95)
   - Finding: {high:0, medium:0, low:0}, dedup:0 · Report: [report](../code_quality/reports/TSK-001-iter-2.md)
+
+## 2026-06-01 18:10 — develop TSK-002
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-001-gestione-file-di-gioco/US-004-persistenza-libreria/TSK-002]]
+**Layer:** be
+**Code path:** ./packages/app/
+**Files touched:** 4 (src/storage/port.ts, src/storage/indexeddb-adapter.ts, src/domain/rom-library.ts, src/domain/rom-library.test.ts)
+**Commit:** n/a (gate VCS umano pendente)
+**DoD:** pass — typecheck OK, 21/21 test verdi (3 nuovi rom-library)
+**Note:** StoragePort (ADR-002) + adapter IndexedDB + dominio importRom (riconosce→persiste). Test con StoragePort in-memory.
+
+## 2026-06-01 18:10 — develop TSK-007
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-003-esecuzione-e-controlli/US-010-avvio-emulazione/TSK-007]]
+**Layer:** be
+**Code path:** ./packages/app/
+**Files touched:** 2 (src/core/core-wrapper.ts, src/core/core-wrapper.test.ts)
+**Commit:** n/a (gate VCS umano pendente)
+**DoD:** pass — typecheck OK, 21/21 test verdi (5 nuovi core-wrapper)
+**Note:** CoreWrapper (ADR-003): resolveCore (riusa PlatformRecognition) + lifecycle load/start su EmulatorEngine pluggable (EmulatorJS in runtime). Esegue solo file utente.
