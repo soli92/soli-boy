@@ -73,8 +73,11 @@ export class EmulatorJsEngine implements EmulatorEngine {
       throw new Error("EmulatorJsEngine.load: container DOM mancante (TSK-022).");
     }
 
+    // EmulatorJS richiede un SELETTORE CSS per EJS_player (non un HTMLElement):
+    // assicura un id sul container e passa il selettore.
+    if (!opts.container.id) opts.container.id = "ejs-player";
     const w = this.win;
-    w.EJS_player = opts.container;
+    w.EJS_player = `#${opts.container.id}`;
     w.EJS_core = opts.core;
     w.EJS_gameUrl = this.objectUrl = URL.createObjectURL(opts.rom);
     w.EJS_pathtodata = this.pathtodata;

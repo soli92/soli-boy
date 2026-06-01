@@ -253,3 +253,5 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 [2026-06-01 23:30] develop — TSK-023 (prod headers + hardening): vercel.json (COOP/COEP) + crossorigin sullo script EmulatorJS — files touched: 3
 
 [2026-06-01 15:40] execute — TSK-024 e2e reale scaffoldato (e2e/emulation-real.e2e.ts, skip se ROM libera assente) + .gitignore protezione test-roms — files touched: 2
+
+[2026-06-01 16:05] develop — ROM libera dmg-acid2.gb (MIT) aggiunta + whitelist; e2e reale opt-in (SOLIBOY_E2E_REAL). EmulatorJS reale non inizializza in headless (EJS_ready assente) → gap emulatorjs-real-integration resta aperto. — files touched: 5

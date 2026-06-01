@@ -20,3 +20,4 @@ packages/app/test-results/
 #   !packages/app/public/test-roms/<nome-rom-libera>
 packages/app/public/test-roms/*
 !packages/app/public/test-roms/README.md
+!packages/app/public/test-roms/dmg-acid2.gb

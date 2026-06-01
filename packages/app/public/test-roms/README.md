@@ -17,4 +17,4 @@ Destinata alle ROM usate dall'e2e di emulazione reale (**TSK-024**, engine `Emul
 
 | File | Piattaforma | Fonte | Licenza |
 |------|-------------|-------|---------|
-| _(vuoto — aggiungere una ROM libera per abilitare TSK-024)_ | | | |
+| dmg-acid2.gb | Game Boy | github.com/mattcurrie/dmg-acid2 (v1.0) | MIT |
