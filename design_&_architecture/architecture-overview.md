@@ -18,9 +18,15 @@ Disegno dell'architettura del nucleo condiviso (caricamento + esecuzione), su st
 |---|---|---|
 | `src/components/` | UI: FileLoader, Library, Player, Settings (su solids) | Presentazione |
 | `src/domain/` | Riconoscimento piattaforma, sessione di gioco, mapping comandi | Dominio |
-| `src/core/` | `CoreWrapper`: integrazione EmulatorJS, lifecycle, input/output ([[core-wrapper]]) | Emulazione |
+| `src/core/` | `CoreWrapper` (lifecycle/audio/input/speed) + `EmulatorEngine` adapter: `StubEngine` (test/app) e `EmulatorJsEngine` (reale, [[ADR-004]]) ([[core-wrapper]]) | Emulazione |
 | `src/storage/` | `StoragePort` + adapter IndexedDB/native ([[storage-port]], [[indexeddb-stores]]) | Persistenza |
 | `src/theme/` | Token e tema del design system solids | Presentazione |
+
+> **Selezione engine** (ADR-004): l'app inietta un `EmulatorEngine`. `StubEngine` è
+> deterministico (unit + e2e, nessun WASM); `EmulatorJsEngine` è l'integrazione reale
+> (loader EmulatorJS lazy, core da CDN su web / self-host su desktop+mobile, COOP/COEP
+> per i core threaded — vedi [[emulatorjs-hosting]]). Input: nativo EJS per
+> tastiera/gamepad, `InputMapping` solo per i controlli touch.
 
 ## Servizi di dominio (BE logico, TypeScript)
 

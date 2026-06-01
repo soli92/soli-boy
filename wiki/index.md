@@ -53,6 +53,9 @@ arcade e console handheld). Layout karpathy-style.
 - [[requisiti-mobile-soli-boy]] — RFM-01..09 e RNFM-01..07 mobile.
 - [[roadmap-mobile-soli-boy]] — roadmap estesa con le fasi mobile.
 
+### Runbooks
+- [[emulatorjs-hosting]] — hosting core EmulatorJS (CDN/self-host, COOP/COEP).
+
 ## Framework (factory llm-wiki++)
 
 ### Concepts

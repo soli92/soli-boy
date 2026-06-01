@@ -223,3 +223,7 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 **Files touched:** playwright.config.ts, e2e/app.e2e.ts, src/core/stub-engine.ts, src/App.tsx, package.json
 **Note:** App composta (FileLoader/Library/Player/Settings + StubEngine + InputMapping). 4 e2e Chromium verdi. Gap e2e-browser-runtime risolto; aperto emulatorjs-real-integration (engine reale).
 [2026-06-01 20:55] gap-closed — e2e-browser-runtime via packages/app/e2e/ — files touched: 1
+
+[2026-06-01 21:20] design — ADR-004 EmulatorJS reale (adapter EmulatorEngine) + architecture-overview + runbook emulatorjs-hosting — files touched: 3
+
+[2026-06-01 21:35] execute — sprint 3 "Emulazione reale": 4 TSK (TSK-021..024) da ADR-004 — files touched: 4

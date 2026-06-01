@@ -28,6 +28,16 @@ View aggregata generata dal `tpm`. Scope: Core web MVP (EP-001 + EP-003).
 | TSK-019 | Integrazione: pausa/ripresa + input | qa | done | passed |
 | TSK-020 | Dropzone FileLoader a11y | fe | done | passed |
 
+
+## Sprint 3 — "Emulazione reale" (ADR-004, post-MVP)
+
+| TSK | Titolo | layer | consumer | prio | est | status | depends_on |
+|-----|--------|-------|----------|------|-----|--------|-----------|
+| TSK-021 | EmulatorJsEngine: adapter reale | be | agent | P0 | L | todo | — |
+| TSK-022 | Player mount DOM + selezione engine | fe | agent | P0 | M | todo | TSK-021 |
+| TSK-023 | Hosting core + COOP/COEP | infra | human | P1 | M | todo | TSK-021 |
+| TSK-024 | e2e ROM homebrew reale (chiude gap) | qa | agent | P1 | M | todo | TSK-021,022,023 |
+
 ## Note
 
 - **Core web MVP completo a livello TSK** (20/20 done). 49 test verdi, typecheck OK.
