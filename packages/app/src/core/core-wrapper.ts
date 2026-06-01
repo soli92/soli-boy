@@ -32,12 +32,34 @@ export interface EmulatorEngine {
   stop(): void;
   /** Imposta volume (0..1) e mute sul core. TSK-009 / US-015. */
   setAudio(settings: AudioSettings): void;
+  /** Inoltra un input di gioco al core. TSK-016 / US-012. */
+  sendInput(button: GameButton, pressed: boolean): void;
+  /** Imposta velocità (fast-forward / rewind). TSK-018 / US-014. */
+  setSpeed(settings: SpeedSettings): void;
+  /** Capacità del core (es. rewind dipende dalla piattaforma). TSK-018 / US-014. */
+  readonly capabilities: EngineCapabilities;
 }
 
 /** Impostazioni audio. `volume` normalizzato 0..1. */
 export interface AudioSettings {
   volume: number;
   mute: boolean;
+}
+
+/** Pulsanti di gioco logici (mappati dall'InputMapping). TSK-016. */
+export type GameButton =
+  | "up" | "down" | "left" | "right"
+  | "a" | "b" | "start" | "select";
+
+/** Impostazioni di velocità. TSK-018 / US-014. */
+export interface SpeedSettings {
+  fastForward: boolean;
+  rewind: boolean;
+}
+
+export interface EngineCapabilities {
+  /** true se il core supporta il rewind (US-014). */
+  rewind: boolean;
 }
 
 export type SessionState = "idle" | "loaded" | "running" | "paused";
@@ -108,6 +130,28 @@ export class CoreWrapper {
 
   get audioSettings(): AudioSettings {
     return this.audio;
+  }
+
+  /** Inoltra un input al core (no-op se non in running). TSK-016 / US-012. */
+  sendInput(button: GameButton, pressed: boolean): void {
+    if (this.state !== "running") return;
+    this.engine.sendInput(button, pressed);
+  }
+
+  /**
+   * Imposta la velocità. Il rewind è applicato solo se il core lo supporta
+   * (capability); altrimenti viene forzato a false. TSK-018 / US-014.
+   */
+  setSpeed(settings: SpeedSettings): SpeedSettings {
+    const rewind = settings.rewind && this.engine.capabilities.rewind;
+    const effective: SpeedSettings = { fastForward: settings.fastForward, rewind };
+    this.engine.setSpeed(effective);
+    return effective;
+  }
+
+  /** True se il core supporta il rewind. TSK-018 / US-014. */
+  get supportsRewind(): boolean {
+    return this.engine.capabilities.rewind;
   }
 
   private audio: AudioSettings = { volume: 1, mute: false };

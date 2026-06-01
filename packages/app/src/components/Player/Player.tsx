@@ -1,4 +1,5 @@
 // TSK-008 — Player: viewport + mount del core (US-010).
+// TSK-014 — controlli pausa/ripresa/arresto (US-011).
 // Monta il viewport di gioco e avvia l'esecuzione tramite CoreWrapper (ADR-003).
 // L'EmulatorEngine (EmulatorJS in runtime) è iniettato → componente testabile.
 
@@ -34,18 +35,55 @@ export function Player({ engine, rom, title }: PlayerProps) {
     }
   }
 
+  // TSK-014 — controlli di esecuzione (US-011).
+  function handlePause() {
+    wrapper.pause();
+    setState(wrapper.currentState);
+  }
+  function handleResume() {
+    wrapper.resume();
+    setState(wrapper.currentState);
+  }
+  function handleStop() {
+    wrapper.stop();
+    setState(wrapper.currentState);
+  }
+
+  const idle = state === "idle";
+  const running = state === "running";
+  const paused = state === "paused";
+
   return (
     <section className="sb-app">
       <div className="sb-screen" aria-label="Schermo di gioco" data-state={state}>
-        {state === "running" ? (title ?? "In esecuzione") : "Premi Avvia"}
+        {running ? (title ?? "In esecuzione") : paused ? "In pausa" : "Premi Avvia"}
       </div>
       <div className="sb-hud">
         <span>{rom.core}</span>
         <span>{state}</span>
       </div>
-      <button className="sb-btn sb-btn-primary" onClick={handlePlay}>
-        Avvia
-      </button>
+      <div className="sd-flex sd-gap-sm">
+        {idle && (
+          <button className="sb-btn sb-btn-primary" onClick={handlePlay}>
+            Avvia
+          </button>
+        )}
+        {running && (
+          <button className="sb-btn" onClick={handlePause}>
+            Pausa
+          </button>
+        )}
+        {paused && (
+          <button className="sb-btn sb-btn-primary" onClick={handleResume}>
+            Riprendi
+          </button>
+        )}
+        {!idle && (
+          <button className="sb-btn sb-danger" onClick={handleStop}>
+            Arresta
+          </button>
+        )}
+      </div>
       {error && (
         <p className="sb-note" role="alert">
           {error}

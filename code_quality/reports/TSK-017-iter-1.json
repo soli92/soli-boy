@@ -1,0 +1,7 @@
+{ "tsk_id": "TSK-017", "stack_descriptor": { "language": "typescript", "framework": "react", "version": "18.3", "confidence": 0.95 },
+  "iter": 1, "passes_run": ["idiomaticity","design","robustness"],
+  "findings": [ { "rule_id": "TS-IDIOM-002", "file": "packages/app/src/components/Settings/Settings.tsx", "lines": "37-37", "severity": "low", "detected_by": ["idiomaticity"], "rationale": "Cast e.target.value as GameButton; le option sono vincolate ai valori GameButton, ma il cast non valida a runtime.", "fix_complexity": "low", "auto_fixable": false } ],
+  "verdict": "pass", "verdict_rationale": "Settings accessibile (select con aria-label), remap via callback, salva con conferma (role=status). Una nota low sul cast del value.",
+  "summary": "Sezione Controlli rimappabile e accessibile; profilo salvabile. Low: cast as GameButton sul value del select.",
+  "markers": { "no_progress": false, "regression": false, "loop_exhausted": false, "degraded": false },
+  "files_modified_by_fix": [], "generated_at": "2026-06-01T20:25:00+02:00", "reviewer_version": "code-reviewer@2.12.0" }

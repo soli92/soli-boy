@@ -1,7 +1,7 @@
 {
   "name": "@soli-boy/app",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Soli-boy — emulatore multipiattaforma (web/desktop/mobile). Codebase condivisa (ADR-001).",
   "scripts": {

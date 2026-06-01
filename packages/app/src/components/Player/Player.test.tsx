@@ -12,6 +12,9 @@ function fakeEngine() {
     resume: vi.fn<EmulatorEngine["resume"]>(() => {}),
     stop: vi.fn<EmulatorEngine["stop"]>(() => {}),
     setAudio: vi.fn<EmulatorEngine["setAudio"]>(() => {}),
+    sendInput: vi.fn<EmulatorEngine["sendInput"]>(() => {}),
+    setSpeed: vi.fn<EmulatorEngine["setSpeed"]>(() => {}),
+    capabilities: { rewind: false },
   } satisfies EmulatorEngine;
 }
 
@@ -27,5 +30,23 @@ describe("Player", () => {
     await screen.findByText("World 1-1");
     expect(engine.load).toHaveBeenCalledOnce();
     expect(engine.start).toHaveBeenCalledOnce();
+  });
+
+  it("TSK-014: controlli pausa → riprendi → arresta (US-011)", async () => {
+    const engine = fakeEngine();
+    render(<Player engine={engine} rom={{ rom: new Blob(["x"]), core: "gambatte" }} />);
+    fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+    await screen.findByRole("button", { name: /pausa/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
+    expect(engine.pause).toHaveBeenCalledOnce();
+    await screen.findByText("In pausa");
+
+    fireEvent.click(screen.getByRole("button", { name: /riprendi/i }));
+    expect(engine.resume).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByRole("button", { name: /arresta/i }));
+    expect(engine.stop).toHaveBeenCalledOnce();
+    await screen.findByText("Premi Avvia");
   });
 });

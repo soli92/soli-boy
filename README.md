@@ -8,8 +8,7 @@ giochi nel browser o in app nativa; salvataggi e dati restano sul dispositivo.
 > **Vincolo legale**: Soli-boy non distribuisce né include ROM o BIOS protetti da
 > copyright. L'esecuzione avviene esclusivamente su file forniti dall'utente.
 
-Stato: **early development** — fondamenta del Core web MVP in corso (vedi
-[Stato del progetto](#stato-del-progetto)).
+Stato: **Core web MVP completo** (20/20 task, 49 test) — feature post-MVP (libreria avanzata, salvataggi, desktop, mobile) a backlog. Vedi [Stato del progetto](#stato-del-progetto).
 
 ## Stack
 
@@ -65,8 +64,8 @@ configurazione in [`factory.config.yaml`](factory.config.yaml).
 | Knowledge base (L2) | 3 sorgenti ingerite → 35 pagine wiki |
 | Planning (L3) | 8 epiche · 35 user story · roadmap (R1 web / R2 desktop / R3 mobile) |
 | Design (L4) | 3 ADR + design Core web MVP (EP-001 + EP-003) |
-| Task (L4) | 19 TSK (Sprint 1 + lookahead) |
-| Sviluppo (L5) | Wave 1: 3 moduli (storage / domain / components), 13 test verdi |
+| Task (L4) | 20 TSK · **tutti done** · 19/20 review-passed |
+| Sviluppo (L5) | **Core web MVP completo**: 12 moduli (storage/domain/core/components), 49 test verdi |
 | Mirror GitHub | 8 milestone (EP-001…008) su `soli92/soli-boy` |
 
 Roadmap dettagliata: [`management/roadmap.md`](management/roadmap.md) ·

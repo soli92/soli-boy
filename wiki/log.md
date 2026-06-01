@@ -198,3 +198,22 @@ Pagine create: 6 | Figure: 0 | Aggiornamenti: 2 (solids, index.md) | Gap nuovi: 
 
 ## [2026-06-01] ingest | soliboy-brand (Brand kit: logo + icon set + palette)
 Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, index.md) | Gap nuovi: 1 (palette-brand-da-verificare) | Gap chiusi: 0
+
+## 2026-06-01 20:10 — develop Wave finale (TSK-016/014/017/018/011/019)
+**Agenti:** be-dev + fe-dev + qa-dev · **Code path:** ./packages/app/
+- TSK-016 (be) InputMapping tastiera+Gamepad→sink (domain) + remap profili
+- TSK-014 (fe) Player controls pausa/ripresa/arresto (US-011)
+- TSK-018 (be) CoreWrapper.setSpeed (fast-forward + rewind capability-gated, US-014)
+- TSK-017 (fe) Settings rimappatura comandi + salva profilo (US-013)
+- TSK-011 (qa) integrazione carica→avvia→audio (tests/e2e)
+- TSK-019 (qa) integrazione pausa/ripresa+input (tests/e2e)
+**DoD:** pass — typecheck OK, 49/49 test verdi. **Commit:** n/a (gate)
+**Note:** e2e a livello integrazione modulo; browser-e2e reale tracciato in gaps (e2e-browser-runtime). EmulatorEngine esteso (sendInput/setSpeed/capabilities).
+
+- 2026-06-01 20:25 — `review TSK-016 iter-1 → pass` (0/0/0)
+- 2026-06-01 20:25 — `review TSK-014 iter-1 → pass` (0/0/0)
+- 2026-06-01 20:25 — `review TSK-018 iter-1 → pass` (0/0/0)
+- 2026-06-01 20:25 — `review TSK-011 iter-1 → pass` (0/0/0)
+- 2026-06-01 20:25 — `review TSK-019 iter-1 → pass` (0/0/0)
+- 2026-06-01 20:25 — `review TSK-017 iter-1 → pass` (0/0/1 low)
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/react+vite (conf 0.95)

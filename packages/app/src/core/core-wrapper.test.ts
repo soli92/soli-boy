@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { CoreWrapper, resolveCore, type EmulatorEngine } from "./core-wrapper";
 
-function fakeEngine() {
+function fakeEngine(capabilities: { rewind: boolean } = { rewind: false }) {
   return {
     load: vi.fn<EmulatorEngine["load"]>(async () => {}),
     start: vi.fn<EmulatorEngine["start"]>(() => {}),
@@ -11,6 +11,9 @@ function fakeEngine() {
     resume: vi.fn<EmulatorEngine["resume"]>(() => {}),
     stop: vi.fn<EmulatorEngine["stop"]>(() => {}),
     setAudio: vi.fn<EmulatorEngine["setAudio"]>(() => {}),
+    sendInput: vi.fn<EmulatorEngine["sendInput"]>(() => {}),
+    setSpeed: vi.fn<EmulatorEngine["setSpeed"]>(() => {}),
+    capabilities,
   } satisfies EmulatorEngine;
 }
 
@@ -89,5 +92,32 @@ describe("CoreWrapper.setAudio (US-015)", () => {
     expect(w.audioSettings.volume).toBe(1);
     w.setAudio({ volume: -1, mute: true });
     expect(w.audioSettings).toEqual({ volume: 0, mute: true });
+  });
+});
+
+describe("CoreWrapper.sendInput (US-012)", () => {
+  it("inoltra l'input solo in running", async () => {
+    const engine = fakeEngine();
+    const w = new CoreWrapper(engine);
+    w.sendInput("a", true); // idle → no-op
+    expect(engine.sendInput).not.toHaveBeenCalled();
+    await w.load({ rom: new Blob(["x"]), core: "mgba" });
+    w.start();
+    w.sendInput("a", true);
+    expect(engine.sendInput).toHaveBeenCalledWith("a", true);
+  });
+});
+
+describe("CoreWrapper.setSpeed (US-014)", () => {
+  it("applica fast-forward; rewind solo se supportato dal core", () => {
+    const noRewind = fakeEngine({ rewind: false });
+    const w1 = new CoreWrapper(noRewind);
+    expect(w1.supportsRewind).toBe(false);
+    expect(w1.setSpeed({ fastForward: true, rewind: true })).toEqual({ fastForward: true, rewind: false });
+    expect(noRewind.setSpeed).toHaveBeenCalledWith({ fastForward: true, rewind: false });
+
+    const withRewind = fakeEngine({ rewind: true });
+    const w2 = new CoreWrapper(withRewind);
+    expect(w2.setSpeed({ fastForward: false, rewind: true })).toEqual({ fastForward: false, rewind: true });
   });
 });
