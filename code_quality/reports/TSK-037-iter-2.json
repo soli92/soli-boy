@@ -1,0 +1,63 @@
+{
+  "tsk_id": "TSK-037",
+  "iter": 2,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [],
+  "notes": [
+    {
+      "id": "N-037-2-01",
+      "type": "positive",
+      "title": "F-037-01 risolto: parseVideoFilter centralizzato e corretto",
+      "description": "La funzione `parseVideoFilter(raw: string): VideoFilter` esportata da `useVideoSettings.ts` (riga 48-52) valida a runtime contro `VIDEO_FILTERS` tramite `(VIDEO_FILTERS as readonly string[]).includes(raw)` — il cast `as readonly string[]` è necessario per soddisfare la firma di `.includes()` su tuple `readonly`, idiomatico in TypeScript. Il fallback su `DEFAULT_VIDEO_SETTINGS.filter` è corretto. Posizionata prima della dichiarazione di `DEFAULT_VIDEO_SETTINGS` (const a riga 61): safe perché il corpo della funzione viene eseguito al momento della chiamata, non al momento della dichiarazione (ES module evaluation sequenziale). `Settings.handleFilterChange` (riga 121) usa `parseVideoFilter` al posto del cast diretto. Nessun consumatore residuo con cast non guardato nel perimetro del TSK."
+    },
+    {
+      "id": "N-037-2-02",
+      "type": "positive",
+      "title": "F-037-02 risolto: aria-label contestualizzato",
+      "description": "`aria-label=\"Filtro video\"` (Settings.tsx riga 204) disambigua il select nella sezione Resa Video. Test aggiornati a `/filtro video/i` in 5 occorrenze in `Settings.filter.test.tsx` (righe 36, 63, 67, 94, 98, 122). Coerente con il pattern degli altri select della sezione (\"Fattore di scala\", \"Aspect ratio\")."
+    },
+    {
+      "id": "N-037-2-03",
+      "type": "positive",
+      "title": "F-037-03 risolto: CSS scanline interpolato condizionalmente",
+      "description": "In `Player.tsx` il blocco CSS `.sb-scanline` viene serializzato solo quando `showScanlineOverlay === true` (riga 221-234: operatore ternario `showScanlineOverlay ? \`.sb-screen... .sb-scanline {...}\` : \"\"`). Le regole base (`.sb-screen`, `.sb-canvas-host`, `canvas`) restano sempre presenti. Commento esplicativo aggiunto nel diff (F-037-03). Nessun CSS morto nei filtri `nearest` e `smoothing`."
+    },
+    {
+      "id": "N-037-2-04",
+      "type": "observation",
+      "title": "Nota TSK-041 chiuso: canvas-host integrato in Player.tsx",
+      "description": "Il commit contestuale include anche la fix TSK-041 (host React-vuoto `<div ref={canvasHostRef} className=\"sb-canvas-host\">` per isolare il canvas imperativo dall'engine). Questo era tracciato in N-037-01 dell'iter-1 come rischio di interferenza React/canvas. La soluzione adottata (host dedicato senza figli React, canvas dell'engine dentro l'host) è coerente con il contratto descritto nel commento di intestazione di Player.tsx. L'overlay scanline resta fratello dell'host (non figlio), quindi il CSS scoped `.sb-screen ... .sb-scanline` continua a matchare. Nessun impatto sui finding TSK-037."
+    }
+  ],
+  "no_progress": false,
+  "regression_detected": false,
+  "verdict": "passed",
+  "summary": {
+    "total_findings": 0,
+    "by_severity": { "high": 0, "medium": 0, "low": 0 },
+    "blocking": 0,
+    "advisory": 0,
+    "passes_clean": ["idiomaticity", "design", "robustness"],
+    "passes_with_findings": []
+  },
+  "iter_history": {
+    "iter_1_verdict": "conditional",
+    "iter_1_findings_count": 3,
+    "iter_1_findings_resolved": ["F-037-01", "F-037-02", "F-037-03"],
+    "new_findings_this_iter": 0
+  },
+  "generated_at": "2026-06-01T20:00:00Z",
+  "reviewer_version": "code-reviewer@2.15.0"
+}

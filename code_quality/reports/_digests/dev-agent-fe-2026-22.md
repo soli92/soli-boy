@@ -1,7 +1,7 @@
 # Digest settimanale code-review — dev-agent fe — 2026-W22
-<!-- aggiornato iter TSK-039: 2026-06-01 -->
+<!-- aggiornato iter TSK-037: 2026-06-01 -->
 
-Generato: 2026-06-01 (aggiornato TSK-039 iter-2: 2026-06-01) | Reviewer: code-reviewer@2.15.0
+Generato: 2026-06-01 (aggiornato TSK-037 iter-2: 2026-06-01) | Reviewer: code-reviewer@2.15.0
 
 ## TSK-035 — Schermo intero (Fullscreen API) — iter-2 → PASS
 
@@ -135,3 +135,28 @@ handleCoverChange viene ricreata ad ogni render di Library. Avvolgere in useCall
 ### Prossimo step
 
 Risolvere F-039-01 (bloccante). max_diff_lines: 80. F-039-02 advisory (opzionale stesso commit).
+
+---
+
+## TSK-037 — Filtri base nearest/smoothing/scanline (EP-005 / US-022) — iter-2 → PASS
+
+**Verdict iter-2:** pass (0 finding — F-037-01, F-037-02, F-037-03 tutti risolti in commit 25f3bec)
+**Verdict iter-1:** conditional (1 medium advisory + 2 low advisory) — superato
+
+### Risoluzione iter-2 (commit 25f3bec)
+
+- F-037-01 [medium, TS-ROBUST-001]: `parseVideoFilter(raw: string): VideoFilter` aggiunta a `useVideoSettings.ts` (export). Valida `raw` contro `VIDEO_FILTERS` tramite `(VIDEO_FILTERS as readonly string[]).includes(raw)` — cast necessario per soddisfare la firma `.includes()` su tuple `readonly`. Fallback su `DEFAULT_VIDEO_SETTINGS.filter`. Usata in `Settings.handleFilterChange` al posto del cast diretto `raw as VideoFilter`.
+- F-037-02 [low, REACT-A11Y-001]: `aria-label="Filtro video"` in `Settings.tsx:204`. Test aggiornati a `/filtro video/i` in `Settings.filter.test.tsx` (5 occorrenze). Coerente con pattern degli altri select della sezione Resa Video.
+- F-037-03 [low, REACT-IDIOM-001]: regola CSS `.sb-scanline` nel template literal di `Player.tsx` interpolata condizionalmente via operatore ternario `showScanlineOverlay ? ... : ""`. Regole base (`.sb-screen`, `.sb-canvas-host`, `canvas`) sempre presenti. Commento esplicativo nel diff.
+
+Verde: 145 unit + 8 e2e, typecheck, build.
+
+### Cosa ha funzionato bene (da replicare)
+
+- Centralizzazione del parser vicino alla costante `VIDEO_FILTERS`: riduce drift tra consumatori.
+- Il commit include anche la fix TSK-041 (canvas-host React-vuoto) senza interferire con le fix TSK-037: scope separati, nessuna regressione.
+- Backward-compat invariato: `mergeWithDefaults` già presente da TSK-037 iter-0; `parseVideoFilter` non modifica la firma del hook né delle prop.
+
+### Prossimo step
+
+Nessuna azione richiesta. TSK-037 review_status: passed.
