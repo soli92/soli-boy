@@ -16,7 +16,6 @@ import {
 } from "../../core/core-wrapper";
 import { useFullscreen } from "./useFullscreen";
 import {
-  DEFAULT_VIDEO_SETTINGS,
   aspectToCanvasObjectFit,
   useVideoSettings,
   videoSettingsToContainerStyle,
@@ -60,9 +59,11 @@ export function Player({
   // TSK-036 — preferenze video. Se il componente è controllato dall'esterno
   // (prop `videoSettings`), saltiamo lo stato interno; altrimenti carichiamo
   // dalla porta (opzionale) e gestiamo qui lo stato.
+  // F-036-06: `internal.value` è SEMPRE definito (l'hook ritorna i default in
+  // attesa del load), quindi un secondo `?? DEFAULT_VIDEO_SETTINGS` sarebbe
+  // dead code.
   const internal = useVideoSettings(videoConfigPort);
-  const effectiveSettings: VideoSettings =
-    videoSettings ?? internal.value ?? DEFAULT_VIDEO_SETTINGS;
+  const effectiveSettings: VideoSettings = videoSettings ?? internal.value;
 
   // Stile inline sul contenitore: width (in funzione del fattore) + aspect-ratio.
   const screenStyle = videoSettingsToContainerStyle(effectiveSettings);

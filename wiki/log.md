@@ -330,3 +330,9 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 
 - 2026-06-01 22:50 — `review TSK-035 iter-2 → pass` (0 finding; tutti i 4 finding iter-1 risolti: F-035-01 guard toggle null [medium, blocking], F-035-02 firma hook HTMLElement [low], F-035-03 allineamento aria-label/testo WCAG 2.5.3 [low, blocking], F-035-04 commento mono-target [low])
   - Reviewer: code-reviewer@2.14.0 · Commit: 139dba7 · Stack: typescript/react/vite (conf 0.97) · Report: code_quality/reports/TSK-035-iter-2.json
+
+- 2026-06-01 — `review TSK-031 iter-1 → conditional` (1 high blocking + 1 medium + 1 low + 1 medium/qa: F-031-1-R1 DB_VERSION non incrementato [high, blocking], F-031-1-R2 saveStateId collisione same-ms [medium], F-031-1-D1 index composto assente [low], F-031-1-T1 db.test.ts senza copertura nuove funzioni [medium/qa]). Finding TSK-030 F-030-1-R1 e F-030-1-R2 risolti.
+  - Reviewer: code-reviewer@2.12.0 · Commit: 0e77967 · Stack: typescript/vite/indexeddb (conf 0.95) · Report: code_quality/reports/TSK-031-iter-1.json
+
+- 2026-06-01 23:10 — `review TSK-036 iter-1 → conditional` (1 high + 2 medium + 3 low: F-036-01 VideoSettingsPort non cablata end-to-end [high, blocking], F-036-02 doppio hook non sincronizzato Player+Settings [medium, blocking], F-036-03 errori I/O swallowati senza log [medium, advisory], F-036-04 test save-reject non esercita save [low, advisory], F-036-05 cast superfluo 'as VideoSettings' [low, advisory], F-036-06 coalescenza doppia unreachable [low, advisory])
+  - Reviewer: code-reviewer@2.15.0 · Stack: typescript/react/vite (conf 0.97) · Report: code_quality/reports/TSK-036-iter-1.json

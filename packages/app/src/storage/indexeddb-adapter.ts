@@ -4,6 +4,7 @@
 import {
   addRom,
   deleteSaveState,
+  getConfig,
   getRom,
   getSaveState,
   getSram,
@@ -12,8 +13,9 @@ import {
   putSaveState,
   putSram,
   removeRom,
+  setConfig,
 } from "./db";
-import type { SaveStoragePort } from "./port";
+import type { ConfigPort, SaveStoragePort } from "./port";
 
 // Adapter unico che implementa l'intera porta di persistenza locale: ROM
 // (TSK-002), save state e SRAM (TSK-031). I consumer ROM-only (componenti UI
@@ -30,4 +32,12 @@ export const indexedDbStorage: SaveStoragePort = {
   deleteSaveState,
   putSram,
   getSram,
+};
+
+// TSK-036 F-036-01 — Adapter ConfigPort sullo store `config`. Esposto separato
+// per consentire ai consumer di richiedere solo la capability di cui hanno
+// bisogno (interface segregation), senza tirarsi dietro il contratto ROM/save.
+export const indexedDbConfig: ConfigPort = {
+  getConfig,
+  setConfig,
 };

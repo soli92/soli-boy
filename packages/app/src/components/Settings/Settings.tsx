@@ -71,9 +71,9 @@ export function Settings({
   // altrimenti usiamo l'hook con eventuale porta di persistenza.
   const internal = useVideoSettings(videoConfigPort);
   const controlled = videoSettings !== undefined;
-  const effective: VideoSettings = controlled
-    ? (videoSettings as VideoSettings)
-    : internal.value;
+  // F-036-05: il narrowing su `videoSettings !== undefined` consente di evitare
+  // il cast esplicito; il branch controllato vede `videoSettings` come definito.
+  const effective: VideoSettings = videoSettings ?? internal.value;
 
   function updateVideo(next: VideoSettings) {
     if (controlled) {

@@ -109,13 +109,18 @@ export async function listRoms(filter: RomFilter = {}): Promise<RomRecord[]> {
 // === saveStates (TSK-031, US-016) ==============================================
 
 /**
- * Id deterministico di un save state: `<romId>:<slot>:<createdAt>`.
- * Slot multipli per la stessa ROM coesistono perché `createdAt` discrimina
- * i save state creati in momenti diversi sullo stesso slot (non si vuole
- * sovrascrittura silenziosa; per "sostituire" lo slot, l'UI cancella prima).
+ * Id univoco di un save state: `<romId>:<slot>:<createdAt>:<uuid>`.
+ * Prefisso leggibile (romId/slot/createdAt) per debug/ispezione, suffisso
+ * `crypto.randomUUID()` come tiebreaker ad alta entropia: due salvataggi sullo
+ * stesso slot entro 1ms (Date.now collisione) restano entry distinte e non si
+ * sovrascrivono silenziosamente (F-031-1-R2). `createdAt` resta sul record per
+ * l'ordinamento in `listSaveStates`.
+ * NB: index composto (slot,createdAt) per ordering server-side è non necessario
+ * sul volume atteso (US-016 = pochi slot per ROM); ordering in memoria è O(n log n)
+ * su n piccolo (F-031-1-D1 documentato qui, deliberatamente non implementato).
  */
 function saveStateId(romId: string, slot: number, createdAt: number): string {
-  return `${romId}:${slot}:${createdAt}`;
+  return `${romId}:${slot}:${createdAt}:${crypto.randomUUID()}`;
 }
 
 /**
@@ -161,4 +166,29 @@ export async function putSram(romId: string, data: Blob): Promise<void> {
 /** Recupera la SRAM cartuccia per una ROM, se presente. */
 export async function getSram(romId: string): Promise<SramRecord | undefined> {
   return (await getDB()).get("sram", romId);
+}
+
+// === Config store generico (TSK-036 F-036-01) ===================================
+// Accesso tipato per chiavi arbitrarie sullo store `config` (keyPath "key", v1).
+// Usato per persistere preferenze applicative (es. `video-settings`); il pattern
+// `bios:<platform>` resta servito dal modulo `bios.ts` (chiavi prefissate).
+
+/**
+ * Recupera il valore associato a una chiave nel config store.
+ * Ritorna `undefined` se la chiave non esiste.
+ * Il caller è responsabile della validazione del payload (lo store è untyped).
+ */
+export async function getConfig<T>(key: string): Promise<T | undefined> {
+  const db = await getDB();
+  const rec = await db.get("config", key);
+  return rec?.value as T | undefined;
+}
+
+/**
+ * Persiste (o sostituisce) il valore associato a `key` nel config store.
+ * Idempotente: la chiave è il keyPath del record.
+ */
+export async function setConfig<T>(key: string, value: T): Promise<void> {
+  const db = await getDB();
+  await db.put("config", { key, value });
 }

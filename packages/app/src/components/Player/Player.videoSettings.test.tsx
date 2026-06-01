@@ -137,30 +137,74 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
   });
 
   it("porta save: persistenza side-effect non blocca la UI in caso di reject", async () => {
+    // F-036-04: scenario realistico — il componente è "auto-gestito" (nessuna
+    // prop `videoSettings`) e usa la porta. Per invocare davvero `port.save`
+    // serve un cambio valore: lo emuliamo invocando `setValue` esposto
+    // dall'hook tramite un wrapper di test (riusiamo la stessa porta che
+    // rejecta su `save`).
     const loaded: VideoSettings = { scale: 2, aspect: "original" };
-    const port: VideoSettingsPort = {
+    const port: VideoSettingsPort & {
+      load: ReturnType<typeof vi.fn>;
+      save: ReturnType<typeof vi.fn>;
+    } = {
       load: vi.fn<VideoSettingsPort["load"]>(async () => loaded),
       // Reject volutamente per simulare I/O degradato.
       save: vi.fn<VideoSettingsPort["save"]>(async () => {
         throw new Error("io down");
       }),
     };
-    // Smoke: il render con porta che rejecta non deve crashare. Il save viene
-    // chiamato solo a fronte di un cambio (qui assente), ma copriamo il path di
-    // load → hydration con valore non-default.
-    render(
-      <Player
-        engine={fakeEngine()}
-        rom={{ rom: new Blob(["x"]), core: "mgba" }}
-        videoConfigPort={port}
-      />,
-    );
+    // Sopprimiamo il warning diagnostico emesso da useVideoSettings su reject
+    // (F-036-03) per non sporcare l'output di test; verifichiamo comunque che
+    // sia stato invocato.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    // Componiamo Player + Settings sulla stessa porta: il cambio di scala in
+    // Settings propaga a Player (modalità controllata) e invoca port.save.
+    // Qui basta un cambio sul Player auto-gestito: invochiamo setValue
+    // simulando il path Settings → save dal punto di vista della porta.
+    // Per farlo in modo focalizzato sul Player, montiamo Player+useVideoSettings
+    // condiviso via wrapper: l'hook esposto in test rende possibile il setValue.
+    const { useVideoSettings: useVS } = await import("./useVideoSettings");
+    function Harness() {
+      const { value, setValue } = useVS(port);
+      return (
+        <>
+          <Player
+            engine={fakeEngine()}
+            rom={{ rom: new Blob(["x"]), core: "mgba" }}
+            videoSettings={value}
+          />
+          <button
+            data-testid="bump"
+            onClick={() => setValue({ scale: 5, aspect: "stretch" })}
+          >
+            bump
+          </button>
+        </>
+      );
+    }
+
+    render(<Harness />);
     const screenDiv = screen.getByLabelText("Schermo di gioco") as HTMLDivElement;
     await waitFor(() => {
       expect(screenDiv.getAttribute("data-scale")).toBe("2");
     });
-    // Aggiunge robustezza: il componente non solleva e resta interattivo.
-    await act(async () => {});
+
+    // F-036-04: simula un cambio valore → port.save viene invocato e rejecta.
+    await act(async () => {
+      screen.getByTestId("bump").click();
+    });
+
+    expect(port.save).toHaveBeenCalledWith({ scale: 5, aspect: "stretch" });
+    // La UI riflette comunque il nuovo valore (best-effort, no rollback).
+    await waitFor(() => {
+      expect(screenDiv.getAttribute("data-scale")).toBe("5");
+      expect(screenDiv.getAttribute("data-aspect")).toBe("stretch");
+    });
+    // Il componente resta montato nonostante il reject sulla porta.
     expect(screenDiv).toBeInTheDocument();
+    // Il warning diagnostico (F-036-03) è stato emesso almeno una volta.
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });

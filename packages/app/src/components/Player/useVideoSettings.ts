@@ -95,9 +95,12 @@ export function useVideoSettings(
         if (loaded) setValueState(loaded);
         setHydrated(true);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
         // Persistenza degradata: continuiamo con i default in memoria.
+        // Diagnostico (F-036-03): rende visibile il degradamento in dev/console
+        // senza propagare l'errore alla UI (lo stato in memoria resta valido).
+        console.warn("[useVideoSettings] port.load() rejected:", err);
         setHydrated(true);
       });
     return () => {
@@ -110,8 +113,11 @@ export function useVideoSettings(
       setValueState(next);
       if (port) {
         // Best-effort: non blocchiamo la UI sull'I/O.
-        port.save(next).catch(() => {
-          /* swallow: lo stato in memoria resta `next` */
+        port.save(next).catch((err) => {
+          // Diagnostico (F-036-03): la UI resta su `next`; logghiamo perché la
+          // persistenza è fallita per facilitare il debug (quota piena, DB
+          // chiuso da un altro tab, ecc.).
+          console.warn("[useVideoSettings] port.save() rejected:", err);
         });
       }
     },

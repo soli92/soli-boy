@@ -1,0 +1,121 @@
+{
+  "tsk_id": "TSK-036",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-036-01",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "severity": "high",
+      "blocking": true,
+      "pass": "design",
+      "title": "VideoSettingsPort non collegata al config store reale: la persistenza non funziona tra sessioni",
+      "description": "VideoSettingsPort è definita, testata in isolamento (mock) e documentata, ma non viene mai istanziata né collegata al config store IndexedDB nella composizione applicativa (App.tsx). App.tsx monta <Player> senza videoConfigPort né videoSettings, e <Settings> senza videoConfigPort né videoSettings. Non esistono funzioni getConfig/setConfig in storage/db.ts o storage/indexeddb-adapter.ts che implementino il binding verso lo store `config` (presente nello schema IndexedDB ma mai esposto dalla porta di storage). La chiave canonica 'video-settings' citata nel commento di useVideoSettings.ts non ha un adapter concreto. Conseguenza: le preferenze scala/aspect non vengono mai lette né scritte su IndexedDB; ad ogni ricarica della pagina il componente parte dai default in memoria. La feature US-021 'preferenza persistita in config store' non è implementata end-to-end.",
+      "locations": [
+        "[^src5: packages/app/src/App.tsx:72-79]",
+        "[^src5: packages/app/src/App.tsx:79]",
+        "[^src5: packages/app/src/storage/db.ts:1-165]",
+        "[^src5: packages/app/src/storage/indexeddb-adapter.ts:1-33]",
+        "[^src5: packages/app/src/components/Player/useVideoSettings.ts:48-58]"
+      ],
+      "citation": "[^rule: code_quality/rules/canonical/TS-DESIGN-001.md §Rationale]"
+    },
+    {
+      "id": "F-036-02",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "severity": "medium",
+      "blocking": true,
+      "pass": "design",
+      "title": "Doppio useVideoSettings indipendente senza stato condiviso: Player e Settings possono divergere",
+      "description": "Player e Settings istanziano ciascuno la propria copia di useVideoSettings(videoConfigPort). In assenza di modalità controllata (l'App.tsx attuale non la usa), se lo stesso port venisse passato ad entrambi (scenario futuro al momento del wiring), le due istanze dell'hook non si sincronizzano: un setValue() in Settings aggiorna il proprio stato interno e chiama port.save(), ma Player mantiene il proprio stato separato e non viene notificato del cambio. La preferenza si aggiorna visivamente in Settings ma non si applica in tempo reale al canvas del Player nella stessa sessione. Il design corretto richiede di sollevare lo stato a livello App e usare la modalità controllata (videoSettings + onVideoSettingsChange) per entrambi i figli. La struttura dei prop lo consente già, ma App.tsx non la attiva.",
+      "locations": [
+        "[^src5: packages/app/src/components/Player/Player.tsx:63]",
+        "[^src5: packages/app/src/components/Settings/Settings.tsx:72]",
+        "[^src5: packages/app/src/App.tsx:72-79]"
+      ],
+      "citation": "[^rule: code_quality/rules/canonical/TS-DESIGN-001.md §Rationale]"
+    },
+    {
+      "id": "F-036-03",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "medium",
+      "blocking": false,
+      "pass": "robustness",
+      "title": "Errori port.save e port.load swallowati silenziosamente senza logging",
+      "description": "In useVideoSettings.ts il catch di port.save() ha un commento /* swallow: ... */ ma non emette alcun console.warn o altra segnalazione diagnostica. Il JSDoc dello hook dichiara che un reject 'è loggato' ma il codice non lo fa. Idem il catch di port.load(): in caso di errore di I/O si cade sui default senza alcuna segnalazione. In produzione, un IndexedDB degradato (quota esaurita, permessi revocati) fallirebbe silenziosamente e l'utente non riceverebbe alcun segnale. TS-ROBUST-001 richiede gestione/propagazione esplicita degli errori ai confini I/O.",
+      "locations": [
+        "[^src5: packages/app/src/components/Player/useVideoSettings.ts:112-115]",
+        "[^src5: packages/app/src/components/Player/useVideoSettings.ts:98-102]"
+      ],
+      "citation": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]"
+    },
+    {
+      "id": "F-036-04",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "low",
+      "blocking": false,
+      "pass": "robustness",
+      "title": "Test 'porta save reject' non esercita effettivamente port.save",
+      "description": "Il test 'porta save: persistenza side-effect non blocca la UI in caso di reject' in Player.videoSettings.test.tsx monta il componente con una porta che ha save che rigetta, ma non simula alcuna interazione utente che chiami setValue() — quindi port.save() non viene mai invocato nel test. Il test verifica solo il path di load+hydration con un valore non-default. La robustezza di save-reject non è effettivamente coperta. Il qa-dev dovrebbe aggiungere un test che simuli un cambio di valore dopo il mount (es. rerender con nuovi videoSettings o fireEvent su Settings) e verifichi che la UI non si degradi dopo il reject del save.",
+      "locations": [
+        "[^src5: packages/app/src/components/Player/Player.videoSettings.test.tsx:139-165]"
+      ],
+      "citation": "[^rule: code_quality/rules/canonical/QA-TEST-001.md §Rationale]"
+    },
+    {
+      "id": "F-036-05",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "severity": "low",
+      "blocking": false,
+      "pass": "idiomaticity",
+      "title": "Cast 'videoSettings as VideoSettings' superfluo: il tipo è già ristretto dalla guard",
+      "description": "In Settings.tsx la variabile effective è definita come: `const effective: VideoSettings = controlled ? (videoSettings as VideoSettings) : internal.value`. Il cast `as VideoSettings` è superfluo: la prop videoSettings ha tipo `VideoSettings | undefined` e la guard `controlled = videoSettings !== undefined` già esclude undefined. TypeScript non riesce a ristringere automaticamente qui perché videoSettings viene valutato in un'espressione ternaria separata dalla guard (non un type predicate), ma il cast è comunque indicativo di una debolezza del tipo: la prop potrebbe essere dichiarata con firma overload discriminata o il corpo semplificato a `videoSettings ?? internal.value` (che TypeScript inferisce correttamente senza cast). Il cast, benché non dangerous, segnala una mancata fiducia nel type system (TS-IDIOM-002).",
+      "locations": [
+        "[^src5: packages/app/src/components/Settings/Settings.tsx:74-76]"
+      ],
+      "citation": "[^rule: code_quality/rules/canonical/TS-IDIOM-002.md §Rationale]"
+    },
+    {
+      "id": "F-036-06",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "severity": "low",
+      "blocking": false,
+      "pass": "idiomaticity",
+      "title": "Doppio coalescenza 'internal.value ?? DEFAULT_VIDEO_SETTINGS' in Player: secondo termine mai raggiunto",
+      "description": "In Player.tsx: `const effectiveSettings = videoSettings ?? internal.value ?? DEFAULT_VIDEO_SETTINGS`. `internal.value` è sempre definita perché useVideoSettings inizializza lo stato con useState(initial) dove initial è default DEFAULT_VIDEO_SETTINGS — non è mai undefined. Il secondo operando `?? DEFAULT_VIDEO_SETTINGS` non è mai raggiunto e implica falsamente che internal.value possa essere nullish. Rimuoverlo semplifica il codice e rimuove un'implicazione fuorviante.",
+      "locations": [
+        "[^src5: packages/app/src/components/Player/Player.tsx:64-65]"
+      ],
+      "citation": "[^rule: code_quality/rules/canonical/TS-IDIOM-002.md §Rationale]"
+    }
+  ],
+  "verdict": "conditional",
+  "summary": {
+    "total_findings": 6,
+    "by_severity": { "high": 1, "medium": 2, "low": 3 },
+    "blocking": 2,
+    "advisory": 4,
+    "passes_clean": ["idiomaticity"],
+    "passes_with_findings": ["design", "robustness"]
+  },
+  "generated_at": "2026-06-01T23:10:00Z",
+  "reviewer_version": "code-reviewer@2.15.0"
+}

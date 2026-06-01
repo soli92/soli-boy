@@ -44,7 +44,8 @@ describe("SaveService.saveState + loadState (US-016)", () => {
 
     const svc = new SaveService(indexedDbStorage);
     const id = await svc.saveState(engine, romId, 1);
-    expect(id).toMatch(/^.+:1:\d+$/);
+    // Id shape post F-031-1-R2: `<romId>:<slot>:<createdAt>:<uuid v4>`.
+    expect(id).toMatch(/^.+:1:\d+:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 
     // Muta lo stato dopo il save: il restore lo deve riportare indietro.
     engine.setAudio({ volume: 1, mute: true });

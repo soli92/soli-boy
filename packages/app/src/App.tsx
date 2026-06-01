@@ -4,7 +4,10 @@ import { Library } from "./components/Library/Library";
 import { Player } from "./components/Player/Player";
 import { Settings } from "./components/Settings/Settings";
 import { LegalNotice } from "./components/LegalNotice";
-import { indexedDbStorage } from "./storage/indexeddb-adapter";
+import {
+  indexedDbConfig,
+  indexedDbStorage,
+} from "./storage/indexeddb-adapter";
 import { StubEngine } from "./core/stub-engine";
 import { selectEngine } from "./core/engine-registry";
 import {
@@ -14,6 +17,8 @@ import {
 } from "./domain/input-mapping";
 import type { RomRecord } from "./storage/types";
 import type { GameButton } from "./core/core-wrapper";
+import { useVideoSettings } from "./components/Player/useVideoSettings";
+import { makeVideoSettingsPort } from "./components/Player/video-settings-port";
 
 // TSK-025 (ADR-005): selezione engine. Default StubEngine (test/dev/e2e deterministici);
 // engine REALE per-piattaforma via registry, opt-in con ?engine=real.
@@ -28,6 +33,17 @@ export function App() {
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
+
+  // TSK-036 (F-036-02) — stato video sollevato a livello App: Settings e Player
+  // ne sono consumatori controllati, condividendo la stessa istanza e così
+  // restando sincronizzati in sessione. La porta concreta (IndexedDB `config`,
+  // chiave `video-settings`) idrata al mount e persiste su `setValue`.
+  const videoPort = useMemo(
+    () => makeVideoSettingsPort(indexedDbConfig),
+    [],
+  );
+  const { value: videoSettings, setValue: setVideoSettings } =
+    useVideoSettings(videoPort);
 
   // In modalità reale l'engine dipende dal core del gioco selezionato (registry).
   const engine = useMemo(
@@ -73,10 +89,16 @@ export function App() {
           engine={engine}
           rom={{ rom: selected.fileBlob, core: selected.core }}
           title={selected.title}
+          videoSettings={videoSettings}
         />
       )}
 
-      <Settings profile={profile} onRemap={remap} />
+      <Settings
+        profile={profile}
+        onRemap={remap}
+        videoSettings={videoSettings}
+        onVideoSettingsChange={setVideoSettings}
+      />
 
       <LegalNotice />
     </main>

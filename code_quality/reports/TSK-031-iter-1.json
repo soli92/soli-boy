@@ -1,0 +1,119 @@
+{
+  "tsk_id": "TSK-031",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "vite",
+    "runtime": "browser-indexeddb",
+    "version": "5.x",
+    "confidence": 0.95
+  },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "id": "F-031-1-R1",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "high",
+      "pass": "robustness",
+      "file": "packages/app/src/storage/db.ts",
+      "line_start": 18,
+      "line_end": 53,
+      "title": "DB_VERSION non incrementato: i nuovi store saveStates/sram non vengono creati su DB esistente",
+      "description": "La callback `upgrade` di `openDB` viene invocata da `idb` solo quando `DB_VERSION` è maggiore di quello già presente nel browser dell'utente. In TSK-031 i due nuovi object store (`saveStates`, `sram`) sono aggiunti nel corpo della callback `upgrade`, ma `DB_VERSION` rimane a `1` (lo stesso valore di TSK-001). Un utente che ha già aperto l'app (e dunque ha il DB alla versione 1 senza i nuovi store) non vedrà mai invocare la callback di upgrade: `openDB` si connette al DB esistente, la promise si risolve con successo, ma le chiamate successive a `db.put('saveStates', ...)` o `db.put('sram', ...)` lanceranno `DOMException: The operation failed because the requested database object could not be found`. Qualsiasi path che invoca `putSaveState`, `putSram`, `listSaveStates`, `getSaveState`, `deleteSaveState`, `getSram` è broken per gli utenti con DB preesistente. Il bug non emerge nei test perché `fake-indexeddb` parte sempre da un DB vuoto (freshDb). Si tratta di un gap di confine (I/O storage) non validato che determina un errore silenzioso lato IDB ma esplicito solo in runtime per l'utente.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.ts:18]",
+      "adr_ref": "ADR-006 §Conseguenze (persistenza on-device, IndexedDB)",
+      "suggestion": "Incrementare `DB_VERSION` a `2` e gestire la migrazione in `upgrade(db, oldVersion)`: usare `if (oldVersion < 2) { db.createObjectStore('saveStates', ...); db.createObjectStore('sram', ...); }` in modo che gli utenti con DB alla versione 1 ricevano lo schema aggiornato, mentre i nuovi utenti (oldVersion=0) vengono inizializzati dal branch esistente. I test con `fake-indexeddb` dovrebbero aggiungere un caso che simula l'upgrade da v1 a v2 (DB preesistente con solo lo store `roms`).",
+      "auto_fixable": false,
+      "blocking": true
+    },
+    {
+      "id": "F-031-1-R2",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "file": "packages/app/src/storage/db.ts",
+      "line_start": 112,
+      "line_end": 131,
+      "title": "saveStateId: collisione su Date.now() nel caso di due put ravvicinati nello stesso ms",
+      "description": "`saveStateId(romId, slot, createdAt)` è costruito come `${romId}:${slot}:${createdAt}` dove `createdAt = Date.now()`. Due chiamate a `putSaveState` con lo stesso `romId` e stesso `slot` effettuate nello stesso millisecondo generano lo stesso id. Poiché `db.put` usa `put` (non `add`), la seconda scrittura sovrascrive silenziosamente la prima senza errore. Il commento JSDoc afferma che '`createdAt` discrimina i save state creati in momenti diversi sullo stesso slot' — questa asserzione è falsa per due chiamate nello stesso ms. In produzione il rischio è basso (l'azione UI è di solito throttled), ma nei test può emergere (la suite usa `await` in sequenza senza delay forzato). Nessun test copre questo boundary. L'id deterministico è utile, ma la sua costruzione non garantisce unicità in tutti i casi d'uso documentati.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.ts:127]",
+      "adr_ref": "ADR-006 §Decisione p.2 (putSaveState crea entry distinte per slot)",
+      "suggestion": "Usare `db.add` invece di `db.put` per `saveStates` (lancia se la chiave esiste già, rendendo la collisione rilevabile) oppure aggiungere un componente di alta risoluzione all'id (es. `performance.now()`, `crypto.randomUUID()` come tiebreaker, o un contatore monotono per sessione). Aggiungere un test che chiama `putSaveState` due volte in rapida successione sullo stesso slot e verifica che esistano due entry distinte.",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-031-1-D1",
+      "rule_id": "TS-DESIGN-002",
+      "rule_ref": "code_quality/rules/canonical/TS-DESIGN-002.md",
+      "severity": "low",
+      "pass": "design",
+      "file": "packages/app/src/storage/db.ts",
+      "line_start": 136,
+      "line_end": 141,
+      "title": "listSaveStates: sort in-memory post-index ridondante su dataset di grandi dimensioni",
+      "description": "`listSaveStates` recupera correttamente via `getAllFromIndex('saveStates', 'by_rom', romId)` (TS-DESIGN-002 onorato per il filtro per ROM), poi ordina in memoria per `(slot, createdAt)`. Lo schema IDB definisce un solo index `by_rom`: l'ordinamento per slot non può essere delegato direttamente all'IDB senza un index composto `[romId, slot]`. Per dataset di pochi slot (tipico di un emulatore) il sort in-memory è trascurabile e la scelta è pragmatica. Tuttavia l'assenza di un index composto è una decisione di schema da documentare, poiché al crescere delle entry (US-019 import batch) il sort diventa O(n log n) in memoria. La regola non è violata in senso stretto (l'index semplice viene usato per filtrare), ma la completezza del design merita nota.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-DESIGN-002.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.ts:136]",
+      "adr_ref": "ADR-006 §Decisione p.2 (listSaveStates per romId)",
+      "suggestion": "Documentare esplicitamente nello schema (db.ts, sezione saveStates) l'assenza dell'index composto e la scelta del sort in-memory, oppure aggiungere l'index composto `[romId, slot]` nella prossima revisione dello schema (compatibile con il bump di DB_VERSION richiesto da F-031-1-R1). Non bloccante.",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-031-1-T1",
+      "rule_id": "QA-TEST-001",
+      "rule_ref": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "file": "packages/app/src/storage/db.test.ts",
+      "line_start": 1,
+      "line_end": 55,
+      "title": "db.test.ts non copre le nuove funzioni storage layer (saveStates/sram)",
+      "description": "Le funzioni `putSaveState`, `listSaveStates`, `getSaveState`, `deleteSaveState`, `putSram`, `getSram` introdotte in `db.ts` da TSK-031 non hanno test diretti in `db.test.ts`. La copertura indiretta esiste tramite `save-service.test.ts` (che usa `fake-indexeddb` + `indexedDbStorage` end-to-end), ma mancano test di unità sullo storage layer che verifichino: (a) ordinamento per slot in `listSaveStates`, (b) idempotenza di `putSram` (sovrascrittura entry esistente), (c) boundary del formato id (`<romId>:<slot>:<createdAt>`), (d) la collisione di `saveStateId` nello stesso ms (finding F-031-1-R2), (e) upgrade da DB v1 a v2 (finding F-031-1-R1). Il finding è lasciato al qa-dev per l'aggiunta dei test mancanti; non è competenza del code-reviewer scriverli.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/QA-TEST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/storage/db.test.ts:1]",
+      "adr_ref": "ADR-006 §Decisione p.2",
+      "suggestion": "Aggiungere in `db.test.ts` (o in un nuovo `db.saves.test.ts`) test diretti per: putSaveState round-trip, listSaveStates ordinamento per slot, putSram sovrascrittura idempotente, getSram undefined su ROM assente, saveStateId unicità su chiamate rapide. Demandare al qa-dev.",
+      "auto_fixable": false,
+      "blocking": false
+    }
+  ],
+  "verdict": "conditional",
+  "verdict_rationale": "Un finding bloccante (F-031-1-R1, high): DB_VERSION non incrementato implica che i nuovi store saveStates/sram non vengono mai creati per utenti con DB preesistente alla versione 1, causando DOMException in produzione su qualsiasi path di save/load. La fix è chirurgica (bump DB_VERSION a 2 + migrazione oldVersion < 2) e non impatta il contratto delle porte né i consumer FE. I finding rinviati di TSK-030 sono correttamente indirizzati: guard cross-engine onesto implementato in SaveService.loadState (rec.core !== currentCore → engine-mismatch), disambiguazione null getSram documentata a livello JSDoc e testata (persisted:false). Copie difensive dei buffer presenti (toArrayBuffer). Id deterministico slot funziona ma ha un boundary di collisione (F-031-1-R2, medium, non-bloccante). Interface segregation corretta: StoragePort invariata, FE consumer non impattati. Test save-service coprono 12 scenari chiave con fake-indexeddb; mancano test diretti sullo storage layer (F-031-1-T1, medium, non-bloccante).",
+  "summary": "Conditional con 1 finding bloccante (DB_VERSION non incrementato — regressione in produzione per utenti con DB preesistente) + 3 non-bloccanti (collisione saveStateId, design index composto, copertura test storage layer). Fix attesa: bump DB_VERSION + migrazione oldVersion guard. I 2 finding rinviati di TSK-030 sono risolti.",
+  "carried_over_findings": [
+    {
+      "original_id": "F-030-1-R1",
+      "status": "addressed",
+      "note": "Guard cross-engine implementato in SaveService.loadState: rec.core !== currentCore → LoadStateResult { ok:false, reason:'engine-mismatch' }. Il magic check engine-layer su mGBA rimane opzionale (non bloccante per contratto ADR-006)."
+    },
+    {
+      "original_id": "F-030-1-R2",
+      "status": "addressed",
+      "note": "Disambiguazione null getSram documentata nel JSDoc della classe SaveService (riga 58-61 save-service.ts) e testata in save-service.test.ts (riga 157-166, 168-176). Scelta consapevole: persisted:false segnala assenza senza false claim."
+    }
+  ],
+  "markers": {
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false,
+    "degraded": false
+  },
+  "files_reviewed": [
+    "packages/app/src/storage/types.ts",
+    "packages/app/src/storage/port.ts",
+    "packages/app/src/storage/db.ts",
+    "packages/app/src/storage/indexeddb-adapter.ts",
+    "packages/app/src/storage/db.test.ts",
+    "packages/app/src/domain/save-service.ts",
+    "packages/app/src/domain/save-service.test.ts"
+  ],
+  "files_modified_by_fix": [],
+  "generated_at": "2026-06-01T00:00:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}

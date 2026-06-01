@@ -65,3 +65,17 @@ export interface SramPort {
  * etichettare l'entry saveState, ADR-006 §Conseguenze).
  */
 export interface SaveStoragePort extends StoragePort, SaveStatePort, SramPort {}
+
+/**
+ * Porta config generica (TSK-036 F-036-01).
+ * Accesso tipato a chiavi/valori arbitrari sullo store `config` (keyPath "key"),
+ * usato per persistere preferenze applicative (es. `video-settings`). Il modulo
+ * `bios.ts` continua a servire le chiavi `bios:<platform>` via funzioni dedicate
+ * (zero overlap: la chiave canonica è diversa).
+ */
+export interface ConfigPort {
+  /** Recupera il valore associato a `key`, o `undefined` se assente. */
+  getConfig<T>(key: string): Promise<T | undefined>;
+  /** Persiste (o sostituisce) `value` sotto la chiave `key`. */
+  setConfig<T>(key: string, value: T): Promise<void>;
+}
