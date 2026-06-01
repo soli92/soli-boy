@@ -1,0 +1,38 @@
+{
+  "tsk_id": "TSK-034",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "playwright",
+    "runtime": "nodejs",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "findings": [
+    {
+      "id": "F-034-01",
+      "rule_id": "QA-TEST-001",
+      "rule_ref": "code_quality/rules/canonical/QA-TEST-001.md §Rationale",
+      "severity": "low",
+      "blocking": false,
+      "category": "advisory",
+      "title": "AC2 US-016 coperta da un solo slot — copertura multi-slot assente nell'e2e",
+      "detail": "US-016 AC2 richiede di 'mantenere più save state distinti per lo stesso gioco'. I due test esercitano esclusivamente lo slot 0 (SLOT_LABEL = 1). Nessun test verifica che uno slot 1 (o superiore) sia indipendente dallo slot 0 (es. save su slot 0 non sovrascrive slot 1). La copertura AC2 multi-slot resta affidata ai test unitari/componente di SaveStatePanel, non verificata end-to-end a runtime. Non è una regressione — il design del TSK era smoke-test del round-trip — ma un gap di copertura.",
+      "location": "packages/app/e2e/emulation-save.e2e.ts:23-24",
+      "src_ref": "[^src5: packages/app/e2e/emulation-save.e2e.ts:23]",
+      "suggestion": "Advisory: aggiungere un terzo test 'salva su slot 0 e slot 1 → i due meta sono indipendenti' oppure annotare esplicitamente nel file che la copertura multi-slot è delegata ai test componente di SaveStatePanel. Non blocking per il verdict.",
+      "false_positive_risk": "low"
+    }
+  ],
+  "verdict": "passed",
+  "summary": "1 finding low/advisory (F-034-01). Nessun finding blocking. Tutti i controlli critici verificati positivamente: guardia skip coerente con emulation-real.e2e.ts (existsSync, SOLIBOY_E2E_ROM env, stessa ROM MIT dmg-acid2.gb); selettori robusti (aria-label, role+name, data-testid, role=alert); test.slow() appropriato per WASM init; beforeEach IndexedDB isolation corretta; AC1 e AC3 US-016 verificate end-to-end con asserzioni real (slotMeta non 'vuoto', loadBtn abilitato, no alert, canvas visibile post-load). Nessun asset protetto. Nessun flakiness evidente. L'unico gap è AC2 multi-slot (advisory).",
+  "ac_coverage": {
+    "US-016-AC1": "verified — test 1: saveBtn.click() + slotMeta not 'vuoto' + loadBtn enabled",
+    "US-016-AC2": "partial — solo slot 0 esercitato; indipendenza multi-slot non verificata e2e",
+    "US-016-AC3": "verified — test 2: loadBtn.click() + no alert + .sb-screen canvas visible post-load"
+  },
+  "no_progress": false,
+  "regression": false,
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.15.0"
+}

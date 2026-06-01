@@ -196,3 +196,29 @@ Verde: 145 unit + 8 e2e, typecheck, build.
 ### Prossimo step
 
 Nessuna azione richiesta. TSK-037 review_status: passed.
+
+---
+
+## TSK-041 — Bugfix canvas perso dopo WasmBoy.loadState (US-016 AC3) — iter-1 → PASS
+
+**Verdict iter-1:** pass (1 finding low advisory; 0 blocking)
+**Stack:** typescript/react/vite (conf 0.97)
+**Files toccati:** packages/app/src/components/Player/Player.tsx, packages/app/e2e/emulation-save.e2e.ts
+
+### Finding (non-bloccante)
+
+**F-041-1 [low, advisory] — Fallback screenRef in handlePlay silenzioso (TS-ROBUST-001)**
+`Player.tsx` righe 138-139 — `const container = canvasHostRef.current ?? screenRef.current ?? undefined`. Il ramo `screenRef.current` e' documentato come "test legacy" ma non emette alcun warning se attivato in produzione. Una race condition sottile (es. nuovo engine che chiama handlePlay prima del mount completo) porterebbe l'engine a ricevere `.sb-screen` come container, reintroducendo silenziosamente l'anti-pattern eliminato da TSK-041. Non bloccante: il bottone Avvia e' reso solo dopo il mount del componente (canvasHostRef gia' assegnato al click). Suggerimento: guard `if (import.meta.env.DEV && !canvasHostRef.current) console.warn(...)` in handlePlay, oppure commento JSDoc che escluda formalmente la race condition.
+
+### Verifiche positive rilevanti
+
+- Isolamento canvas host React-vuoto corretto e engine-agnostico: `core/wasmboy-engine.ts` non toccato.
+- Nessuna regressione fullscreen (TSK-035): `useFullscreen(screenRef)` invariato.
+- Nessuna regressione CSS scala/aspect/filtri (TSK-036/037): selettori `.sb-screen canvas` e `.sb-screen .sb-scanline` (discendenti) matchano invariati con l'host intermedio.
+- Selettore e2e `.sb-screen canvas` valido e verde su engine reale (dmg-acid2.gb, MIT): 8/8 e2e.
+- Documentazione inline di qualita' superiore alla norma: riduce rischio di reintroduzione dell'anti-pattern.
+- Gap `wasmboy-loadstate-canvas-lost` chiuso correttamente in wiki/gaps.md.
+
+### Prossimo step
+
+Nessuna azione bloccante. Finding F-041-1 advisory low: il dev-agent puo' aggiungere il guard DEV o il commento JSDoc inline al prossimo tocco del file. TSK-041 review_status: passed.

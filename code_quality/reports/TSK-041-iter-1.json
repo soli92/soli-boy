@@ -1,0 +1,86 @@
+{
+  "tsk_id": "TSK-041",
+  "iter": 1,
+  "generated_at": "2026-06-01T19:56:00+02:00",
+  "reviewer_version": "code-reviewer@2.14.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "design_system": "@soli92/solids",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Player/Player.tsx",
+    "packages/app/e2e/emulation-save.e2e.ts"
+  ],
+  "diff_commit": "dd573e4",
+  "diff_lines_added": 74,
+  "diff_lines_removed": 28,
+  "passes": {
+    "idiomaticity": "clean",
+    "design": "clean",
+    "robustness": "1-finding-low"
+  },
+  "findings": [
+    {
+      "id": "F-041-1",
+      "rule_id": "TS-ROBUST-001",
+      "rule_tier": "canonical",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "file": "packages/app/src/components/Player/Player.tsx",
+      "lines": [138, 139],
+      "title": "Fallback screenRef in handlePlay: divergenza silenziosa dall'isolamento canvas",
+      "description": "In `handlePlay`, il container passato all'engine e' calcolato come `canvasHostRef.current ?? screenRef.current ?? undefined`. Il ramo `screenRef.current` e' esplicitamente documentato come 'test legacy' nel commento, ma non c'e' alcun guard che segnali (es. console.warn in sviluppo, o log strutturato) quando il fallback si attiva. Se in un test integration o in un nuovo engine il canvasHostRef non risultasse montato al momento della chiamata (race condition sottile tra effetti React e click handler su mount rapido), l'engine riceverebbe `.sb-screen` come container — reintroducendo silenziosamente l'anti-pattern che TSK-041 intende eliminare. Il bug non e' critico (il fallback e' intenzionale per retrocompatibilita' dei test legacy), ma la divergenza e' invisible a runtime in produzione.",
+      "recommendation": "Aggiungere un warning di sviluppo (guard `if (import.meta.env.DEV && !canvasHostRef.current)`) che segnali il fallback quando si e' in ambienti non-legacy. Questo rende la deviazione esplicita senza rompere i test legacy. In alternativa, documentare nel JSDoc di `PlayerProps` o nel commento di `handlePlay` le condizioni attese (es. 'canvasHostRef sempre montato al momento del click su Avvia, perche' il bottone e' reso solo dopo il mount del componente') per escludere formalmente la race condition.",
+      "auto_fixable": false,
+      "blocking": false,
+      "source_note": "Finding advisory. Non bloccante: il fallback e' intenzionale per test legacy e non si attiva in produzione poiche' il bottone 'Avvia' viene reso solo dopo il mount completo (canvasHostRef gia' assegnato). Segnalato per robustezza difensiva."
+    }
+  ],
+  "positive_notes": [
+    {
+      "id": "N-041-01",
+      "type": "positive",
+      "title": "Isolamento canvas: pattern corretto e engine-agnostico",
+      "description": "L'introduzione di `<div ref={canvasHostRef} className=\"sb-canvas-host\" />` come nodo React-vuoto risolve correttamente l'anti-pattern React<->DOM imperativo. Il nodo non ha figli React dichiarati: React non riconcilia mai il suo contenuto, quindi il canvas montato imperativamente dall'engine (WasmBoyEngine.ensureCanvas o equivalente) non viene mai clobberato. La fix e' engine-agnostica: core/wasmboy-engine.ts non e' toccato, e qualsiasi engine che rispetti il contratto EmulatorEngine (metodo load con container HTMLElement) beneficia automaticamente dell'isolamento. Il fallback `?? screenRef.current ?? undefined` garantisce retrocompatibilita' con i test legacy senza introdurre regressioni."
+    },
+    {
+      "id": "N-041-02",
+      "type": "positive",
+      "title": "Nessuna regressione su fullscreen (TSK-035): screenRef non modificato",
+      "description": "`useFullscreen(screenRef)` resta invariato su `screenRef` (riga 103). Il contenitore che entra in fullscreen e' sempre `.sb-screen` (come deciso in TSK-035), non il canvas-host. L'introduzione di canvasHostRef non tocca screenRef, che continua ad essere il nodo radice del viewport. Nessuna regressione su US-020."
+    },
+    {
+      "id": "N-041-03",
+      "type": "positive",
+      "title": "CSS scoping corretto: scala/aspect/filtri (TSK-036/037) non regrediti",
+      "description": "I selettori scoped `.sb-screen[data-video-scope] canvas` (object-fit, image-rendering, width/height) continuano a matchare il canvas, che ora e' discendente di `.sb-canvas-host` che e' discendente di `.sb-screen`. Il selettore discendente CSS non richiede la diretta parentela — il canvas resta accessibile. Il nuovo selettore `.sb-screen[data-video-scope] .sb-canvas-host` (position:absolute; inset:0) e' aggiunto senza rimuovere ne' modificare le regole precedenti. L'overlay scanline (`.sb-scanline`) resta fratello dell'host (non figlio), quindi `.sb-screen[data-video-scope] .sb-scanline` continua a matchare senza modifiche."
+    },
+    {
+      "id": "N-041-04",
+      "type": "positive",
+      "title": "Selettore e2e `.sb-screen canvas` valido e verificato a runtime",
+      "description": "Il test e2e `emulation-save.e2e.ts` usa `page.locator(\".sb-screen canvas\")` che continua a matchare il canvas anche con l'host intermedio. Il test e' stato de-fixme-ato e verificato verde (8/8 e2e) con engine reale WasmBoy su dmg-acid2.gb (MIT), che e' la condizione di esercizio piu' stringente. La correttezza del selettore e' evidenza di test di accettazione reale, non solo ragionamento strutturale."
+    },
+    {
+      "id": "N-041-05",
+      "type": "positive",
+      "title": "Commento tecnico esaustivo: decisione documentata in linea con il corpo del codice",
+      "description": "I commenti nel file (intestazione, canvasHostRef, handlePlay, blocco JSX) documentano esaustivamente la causa del bug, il pattern adottato e i contratti invarianti (nessun figlio React nell'host, canvas resta discendente di .sb-screen, fallback condizionato al legacy). La qualita' della documentazione inline supera la norma: riduce il rischio che un futuro manutentore reintroduca l'anti-pattern aggiungendo figli React all'host per convenienza."
+    }
+  ],
+  "verdict": "pass",
+  "summary": "TSK-041 risolve correttamente e in modo engine-agnostico il bug runtime `wasmboy-loadstate-canvas-lost` (gap wiki chiuso). La fix — host React-vuoto `<div.sb-canvas-host>` primo figlio di `.sb-screen`, passato all'engine come container al posto di screenRef — e' idiomatica, non regredisce fullscreen (TSK-035), scala/aspect/filtri (TSK-036/037) ne' i selettori e2e. Un solo finding low advisory (TS-ROBUST-001): il fallback `?? screenRef.current` in handlePlay e' silenzioso in produzione; un guard di sviluppo renderebbe esplicita la deviazione. Non bloccante: il fallback e' intenzionale per test legacy e non si attiva in produzione. Tre passate tutte clean salvo il finding low in robustness. Nessuna regressione rilevata su file non toccati dal diff.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false
+  },
+  "next_step": "TSK-041 -> review_status: passed. Finding F-041-1 advisory low: il dev-agent puo' aggiungere un guard `if (import.meta.env.DEV && !canvasHostRef.current) console.warn(...)` in handlePlay o un commento JSDoc che escluda formalmente la race condition, in un task separato o inline al prossimo tocco del file. Nessuna azione bloccante richiesta."
+}
