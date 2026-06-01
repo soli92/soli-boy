@@ -33,7 +33,7 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
       <Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} />,
     );
     // AC US-022 #1: deve essere selezionabile almeno nearest/smoothing/scanline.
-    const filterSel = screen.getByLabelText("Filtro") as HTMLSelectElement;
+    const filterSel = screen.getByLabelText(/filtro video/i) as HTMLSelectElement;
     expect(filterSel).toBeInTheDocument();
     expect(Array.from(filterSel.options).map((o) => o.value)).toEqual([
       "nearest",
@@ -60,7 +60,7 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Filtro"), {
+    fireEvent.change(screen.getByLabelText(/filtro video/i), {
       target: { value: "scanline" },
     });
     expect(onChange).toHaveBeenLastCalledWith({
@@ -69,7 +69,7 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
       filter: "scanline",
     });
 
-    fireEvent.change(screen.getByLabelText("Filtro"), {
+    fireEvent.change(screen.getByLabelText(/filtro video/i), {
       target: { value: "smoothing" },
     });
     expect(onChange).toHaveBeenLastCalledWith({
@@ -91,12 +91,12 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
 
     expect(port.load).toHaveBeenCalledOnce();
     await waitFor(() => {
-      const sel = screen.getByLabelText("Filtro") as HTMLSelectElement;
+      const sel = screen.getByLabelText(/filtro video/i) as HTMLSelectElement;
       expect(sel.value).toBe("scanline");
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("Filtro"), {
+      fireEvent.change(screen.getByLabelText(/filtro video/i), {
         target: { value: "smoothing" },
       });
     });
@@ -119,7 +119,7 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
     );
 
     await waitFor(() => {
-      const sel = screen.getByLabelText("Filtro") as HTMLSelectElement;
+      const sel = screen.getByLabelText(/filtro video/i) as HTMLSelectElement;
       // Il default è stato applicato dal merge in `useVideoSettings`.
       expect(sel.value).toBe("nearest");
       // scale/aspect dal valore legacy sono preservati.

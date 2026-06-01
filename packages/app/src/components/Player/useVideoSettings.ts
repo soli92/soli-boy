@@ -37,6 +37,20 @@ export type AspectRatio = (typeof ASPECT_RATIOS)[number];
 export const VIDEO_FILTERS = ["nearest", "smoothing", "scanline"] as const;
 export type VideoFilter = (typeof VIDEO_FILTERS)[number];
 
+/**
+ * TSK-037 / F-037-01 — Validazione runtime di un valore filtro proveniente da
+ * input non tipizzati (es. `event.target.value` di un <select>). Restituisce il
+ * valore se incluso in `VIDEO_FILTERS`, altrimenti il default canonico
+ * (`DEFAULT_VIDEO_SETTINGS.filter`). Centralizzato qui — accanto a
+ * `VIDEO_FILTERS` — per evitare drift fra i consumatori (Settings, Player)
+ * e per essere riusabile dai test.
+ */
+export function parseVideoFilter(raw: string): VideoFilter {
+  return (VIDEO_FILTERS as readonly string[]).includes(raw)
+    ? (raw as VideoFilter)
+    : DEFAULT_VIDEO_SETTINGS.filter;
+}
+
 export interface VideoSettings {
   scale: ScaleFactor;
   aspect: AspectRatio;

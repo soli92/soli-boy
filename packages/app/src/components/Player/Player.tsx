@@ -212,7 +212,14 @@ export function Player({
           image-rendering: ${canvasImageRendering};
           display: block;
         }
-        .sb-screen[data-video-scope="${scopeId}"] .sb-scanline {
+        ${
+          // F-037-03: la regola dell'overlay viene serializzata SOLO quando il
+          // filtro corrente lo richiede (filter=scanline). Quando l'overlay non
+          // è reso, evitiamo di iniettare CSS morto. Le regole base (canvas
+          // image-rendering/object-fit, .sb-canvas-host, position:relative)
+          // restano sempre presenti.
+          showScanlineOverlay
+            ? `.sb-screen[data-video-scope="${scopeId}"] .sb-scanline {
           position: absolute;
           inset: 0;
           pointer-events: none;
@@ -224,6 +231,8 @@ export function Player({
             rgba(0, 0, 0, 0) 3px
           );
           mix-blend-mode: multiply;
+        }`
+            : ""
         }
       `}</style>
       <div

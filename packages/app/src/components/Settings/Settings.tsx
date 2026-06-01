@@ -17,6 +17,7 @@ import {
   ASPECT_RATIOS,
   SCALE_FACTORS,
   VIDEO_FILTERS,
+  parseVideoFilter,
   useVideoSettings,
   type AspectRatio,
   type ScaleFactor,
@@ -112,8 +113,13 @@ export function Settings({
   }
 
   // TSK-037 — applicazione del filtro (US-022).
+  // F-037-01: validiamo a runtime contro VIDEO_FILTERS tramite `parseVideoFilter`
+  // (in useVideoSettings.ts). Un valore non riconosciuto ricade sul default
+  // canonico (`DEFAULT_VIDEO_SETTINGS.filter`) invece di propagare un cast
+  // non sicuro.
   function handleFilterChange(raw: string) {
-    updateVideo({ ...effective, filter: raw as VideoFilter });
+    const next: VideoFilter = parseVideoFilter(raw);
+    updateVideo({ ...effective, filter: next });
   }
 
   return (
@@ -195,7 +201,7 @@ export function Settings({
           <span className="sb-key">Filtro</span>
           <select
             className="sb-sel"
-            aria-label="Filtro"
+            aria-label="Filtro video"
             value={effective.filter}
             onChange={(e) => handleFilterChange(e.target.value)}
           >
