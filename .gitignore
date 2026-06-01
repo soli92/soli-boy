@@ -10,3 +10,7 @@ dist/
 
 # macOS
 .DS_Store
+
+# Playwright
+packages/app/playwright-report/
+packages/app/test-results/

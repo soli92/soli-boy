@@ -217,3 +217,9 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 - 2026-06-01 20:25 — `review TSK-019 iter-1 → pass` (0/0/0)
 - 2026-06-01 20:25 — `review TSK-017 iter-1 → pass` (0/0/1 low)
   - Reviewer: code-reviewer@2.12.0 · Stack: typescript/react+vite (conf 0.95)
+
+## 2026-06-01 20:55 — e2e | Playwright setup (Chromium)
+**Agente:** qa-dev
+**Files touched:** playwright.config.ts, e2e/app.e2e.ts, src/core/stub-engine.ts, src/App.tsx, package.json
+**Note:** App composta (FileLoader/Library/Player/Settings + StubEngine + InputMapping). 4 e2e Chromium verdi. Gap e2e-browser-runtime risolto; aperto emulatorjs-real-integration (engine reale).
+[2026-06-01 20:55] gap-closed — e2e-browser-runtime via packages/app/e2e/ — files touched: 1
