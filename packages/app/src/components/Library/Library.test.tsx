@@ -42,6 +42,21 @@ describe("Library", () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
+  it("mostra role=alert quando storage.listRoms rejecta (F-038-01)", async () => {
+    const failing: StoragePort = {
+      addRom: vi.fn(async () => "x"),
+      listRoms: vi.fn(async () => {
+        throw new Error("IndexedDB indisponibile");
+      }),
+      getRom: vi.fn(async () => undefined),
+      removeRom: vi.fn(async () => {}),
+    };
+    render(<Library storage={failing} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/impossibile caricare la libreria/i);
+    expect(alert).toHaveTextContent(/IndexedDB indisponibile/);
+  });
+
   // TSK-038 — US-008 acceptance criteria
   describe("ricerca e filtro (US-008)", () => {
     it("filtra per titolo (case-insensitive) quando l'utente digita", async () => {

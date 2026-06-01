@@ -1,0 +1,133 @@
+{
+  "tsk_id": "TSK-035",
+  "iter": 1,
+  "generated_at": "2026-06-01T21:45:00+02:00",
+  "reviewer_version": "2.14.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "bundler": "vite",
+    "test_runner": "vitest",
+    "confidence": 0.97,
+    "mode": "full"
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Player/useFullscreen.ts",
+    "packages/app/src/components/Player/Player.tsx",
+    "packages/app/src/components/Player/Player.fullscreen.test.tsx",
+    "packages/app/src/components/Player/Player.test.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-035-01",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "title": "toggle() non gestisce il caso null — fullscreenElement confrontato con ref potenzialmente null senza guard",
+      "description": "In `useFullscreen.ts` riga 92, `toggle()` esegue `document.fullscreenElement === (ref.current as Element | null)`. Se `document.fullscreenElement` è `null` e `ref.current` è anch'esso `null` (componente smontato, ref non ancora assegnata), la condizione è `null === null → true` e viene chiamata `exit()`. La `exit()` gestisce il caso senza fullscreen attivo (`if (document.fullscreenElement)` a riga 86), quindi non causa errori visibili, ma la semantica è fuorviante: il toggle entra nel ramo 'exit' per effetto della comparazione null===null piuttosto che per una scelta logica. Un mount tardivo potrebbe chiamare `toggle()` prima che `ref.current` sia valorizzato e invocare `exit()` anziché lanciare o fare no-op.",
+      "location": "packages/app/src/components/Player/useFullscreen.ts:91-97",
+      "suggestion": "Aggiungere un guard esplicito prima del confronto: `if (!ref.current) return;` (o `throw`) all'inizio di `toggle()`, separando il caso 'ref non disponibile' dalla logica toggle vera e propria.",
+      "auto_fixable": false,
+      "references": [
+        "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:91]"
+      ]
+    },
+    {
+      "id": "F-035-02",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "title": "Cast `as HTMLElement | null` in enter() — non giustificato nel contesto dell'interfaccia `RefObject<Element | null>`",
+      "description": "In `useFullscreen.ts` riga 75, `const el = ref.current as HTMLElement | null`. `ref` è tipizzato `RefObject<Element | null>` quindi `ref.current` è `Element | null`; il cast widening verso `HTMLElement` è necessario per accedere a `requestFullscreen` (definito su `HTMLElement` nelle lib TypeScript), ma il downcast non è verificato: qualunque `Element` (es. `SVGElement`) passerebbe il check runtime `typeof el.requestFullscreen === 'function'` solo se la funzione esiste, quindi il rischio è minimo in pratica. Tuttavia il cast silenzioso maschera la discrepanza tra il tipo dichiarato del parametro (`Element | null`) e l'assunzione implicita (`HTMLElement`). La firma del hook dovrebbe restringere il parametro a `RefObject<HTMLElement | null>` — più precisa e senza cast.",
+      "location": "packages/app/src/components/Player/useFullscreen.ts:75",
+      "suggestion": "Cambiare la firma dell'hook da `RefObject<Element | null>` a `RefObject<HTMLElement | null>` (e aggiornare `isApiSupported` di conseguenza), eliminando il cast a riga 75. Il chiamante `Player.tsx` usa già `useRef<HTMLDivElement>(null)` quindi il cambiamento è retro-compatibile.",
+      "auto_fixable": false,
+      "references": [
+        "[^rule: code_quality/rules/canonical/TS-IDIOM-002.md §Rationale]",
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:44]",
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:75]"
+      ]
+    },
+    {
+      "id": "F-035-03",
+      "rule_id": "REACT-A11Y-001",
+      "rule_path": "code_quality/rules/canonical/REACT-A11Y-001.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "title": "Dissonanza tra aria-label e testo visibile del bottone schermo intero",
+      "description": "In `Player.tsx` righe 119 e 127, il bottone ha `aria-label={fsLabel}` (valore: 'Schermo intero' o 'Esci da schermo intero') e contenuto testuale `{fullscreen.isFullscreen ? 'Esci schermo intero' : 'Schermo intero'}`. In stato fullscreen: `aria-label='Esci da schermo intero'` vs testo visibile 'Esci schermo intero'. Per i browser che usano aria-label come accessible name, l'overriding è corretto; ma la differenza tra label e testo ('da' mancante nel testo) crea una micro-incoerenza che può confondere screen reader che enunciano anche il testo visibile (WCAG 2.5.3 Label in Name). Non è un violation di REACT-A11Y-001 (il bottone nativo gestisce già Enter/Space), ma segnala una friction a11y.",
+      "location": "packages/app/src/components/Player/Player.tsx:119-127",
+      "suggestion": "Allineare testo visibile e aria-label usando la stessa stringa `fsLabel`, oppure unificare tramite `fsLabel` anche per il children del bottone (allineamento completo 'Schermo intero' / 'Esci da schermo intero').",
+      "auto_fixable": false,
+      "references": [
+        "[^rule: code_quality/rules/canonical/REACT-A11Y-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Player/Player.tsx:119]",
+        "[^src5: packages/app/src/components/Player/Player.tsx:127]"
+      ]
+    },
+    {
+      "id": "F-035-04",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "title": "useEffect per 'supported' ha [ref] come dipendenza — ref identity non cambia mai, effetto eseguito solo al mount",
+      "description": "In `useFullscreen.ts` riga 57, il primo `useEffect` ha `[ref]` come array di dipendenze. In React, `ref` (l'oggetto `RefObject`) è stabile per tutta la vita del componente — non cambia identità tra render. L'effetto quindi gira solo al mount, il che è il comportamento desiderato e correttamente commentato. Tuttavia, se in futuro il chiamante passa un ref diverso (o l'hook viene reso generico), la dipendenza su `ref` non triggherebbe come atteso perché l'oggetto wrapper è stabile anche se `.current` cambia. Il behaviour attuale è corretto per l'uso corrente, ma il commento inline non avverte di questa limitazione: un manutentore potrebbe aspettarsi reattività al cambio di `ref.current`.",
+      "location": "packages/app/src/components/Player/useFullscreen.ts:54-57",
+      "suggestion": "Aggiungere un commento esplicito che chiarisca che `[ref]` è stabile per design (hook mono-target) e che un cambio di target richiederebbe rimontare il componente o passare il nodo direttamente invece del ref.",
+      "auto_fixable": false,
+      "references": [
+        "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:54]"
+      ]
+    }
+  ],
+  "checks_explicit": {
+    "cleanup_fullscreenchange_on_unmount": {
+      "result": "PASS",
+      "note": "useFullscreen.ts righe 66-71: addEventListener in effetto con cleanup return () => removeEventListener. Test Player.fullscreen.test.tsx riga 185-200 verifica lo stesso via spy su addEventListener/removeEventListener."
+    },
+    "fallback_api_assente": {
+      "result": "PASS",
+      "note": "isApiSupported() controlla typeof requestFullscreen/exitFullscreen. supported=false → bottone disabled + title esplicativo. Test 'fallback onesto' copre il caso."
+    },
+    "a11y_aria_label_aria_pressed": {
+      "result": "PASS_WITH_ADVISORY",
+      "note": "aria-label dinamico e aria-pressed presenti e sincronizzati. Micro-incoerenza tra aria-label e testo visibile segnalata come F-035-03 (severity: low)."
+    },
+    "no_modifica_emulator_engine": {
+      "result": "PASS",
+      "note": "Diff confermato: nessuna modifica a core-wrapper.ts, stub-engine.ts, wasmboy-engine.ts, mgba-engine.ts. useFullscreen.ts è engine-agnostico. La fixture fakeEngine in Player.test.tsx è aggiornata solo per il contratto esteso da TSK-030 (saveStates/sram), non da TSK-035."
+    }
+  },
+  "summary": {
+    "total_findings": 4,
+    "by_severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 3
+    },
+    "blocking": 1,
+    "advisory": 3
+  },
+  "verdict": "conditional",
+  "verdict_rationale": "1 finding medium (F-035-01: guard mancante in toggle() per ref null). Non causa crash in produzione grazie alla defensive coding di exit(), ma la semantica è fuorviante e introduce un caso-limite non testato. I 3 finding low sono advisory. Nessun finding critical/high, nessuna violazione di scope (EmulatorEngine intatto), cleanup corretto, fallback onesto, a11y sostanzialmente corretta. Conditional: il dev-agent deve risolvere F-035-01 (guard in toggle) e F-035-03 (allineamento testo/label). F-035-02 e F-035-04 sono advisory facoltativi ma raccomandati.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "previous_iter_rule_ids": [],
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "next_step": "feedback-router → dev-agent (fe): risolvere F-035-01 (toggle guard) e F-035-03 (label/testo allineamento). max_diff_lines: 80. blast_radius: scope limitato a useFullscreen.ts e Player.tsx; nessun downstream fuori da Player/."
+}

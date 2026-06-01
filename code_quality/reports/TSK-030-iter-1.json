@@ -1,0 +1,88 @@
+{
+  "tsk_id": "TSK-030",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "vite",
+    "runtime": "browser-wasm",
+    "version": "5.x",
+    "confidence": 0.95
+  },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "id": "F-030-1-R1",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "file": "packages/app/src/core/mgba-engine.ts",
+      "line_start": 157,
+      "line_end": 173,
+      "title": "MgbaEngine.restore: nessuna pre-flight magic check prima della scrittura FS",
+      "description": "A differenza di WasmBoyEngine.restore e StubEngine.restore, MgbaEngine.restore non esegue alcuna validazione del formato del blob ricevuto prima di scriverlo sul filesystem virtuale Emscripten (FS.writeFile). Se un blob cross-engine viene passato per errore (es. un payload WasmBoy JSON), viene scritto sullo slot tecnico 0, mGBA lo rifiuta (loadState → false), il metodo lancia correttamente, ma il file stale rimane sul FS virtuale. Il contratto ADR-006 demanda la prevenzione del cross-load al livello dominio (SaveService/storage con campo `core`/`engine`), quindi non si tratta di un bug di correttezza. Si tratta però di un gap di defense-in-depth: un formato non riconoscibile potrebbe essere rilevato prima della scrittura, evitando lo stato stale sull'IDBFS.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/core/mgba-engine.ts:157]",
+      "adr_ref": "ADR-006 §Conseguenze (formato save state engine-specific; cross-load prevenuto dal dominio)",
+      "suggestion": "Valutare l'aggiunta di un magic header anche per i blob mGBA (es. prefisso fisso `MGBA\\x00` o simile) oppure un'euristica leggera (es. dimensione minima/massima attesa per un save state mGBA valido) per fail-fast prima della scrittura FS. Alternativa più semplice: documentare l'assenza del check come scelta consapevole con un commento esplicito, e tracciare il rischio in wiki/gaps.md.",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-030-1-R2",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "file": "packages/app/src/core/wasmboy-engine.ts",
+      "line_start": 137,
+      "line_end": 147,
+      "title": "WasmBoyEngine.getSram: comportamento asimmetrico rispetto a snapshot() in assenza di ROM",
+      "description": "Quando configured=false, getSram() ritorna null silenziosamente (riga 138), mentre snapshot() e loadSram() lanciano un errore esplicito. L'interfaccia EmulatorEngine documenta 'Ritorna null se non c'è SRAM (es. nessuna ROM caricata)' — quindi il comportamento è intenzionale e coerente con ADR-006. Tuttavia, la discrepanza interna tra i metodi che lanciano e quelli che ritornano null per la stessa pre-condizione (nessun gioco caricato) riduce la prevedibilità per chi implementa il SaveService (TSK-032): dovrà distinguere 'null perché nessuna ROM' da 'null perché nessuna battery RAM'.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/core/wasmboy-engine.ts:138]",
+      "suggestion": "Se il SaveService (TSK-032) ha bisogno di distinguere i due casi, valutare di lanciare in getSram() quando !configured (come fanno loadSram/snapshot), oppure documentare esplicitamente in un JSDoc che null può significare sia 'no ROM' sia 'no battery RAM'. La scelta attuale (null) è accettabile se il dominio non ha bisogno di disambiguare.",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-030-1-D1",
+      "rule_id": "TS-DESIGN-001",
+      "rule_ref": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "severity": "low",
+      "pass": "design",
+      "file": "packages/app/src/core/stub-engine.ts",
+      "line_start": 39,
+      "line_end": 41,
+      "title": "StubEngine espone campi pubblici mutabili usati solo per introspezione da test",
+      "description": "I campi `loaded`, `audio`, `lastInput` sono pubblici e mutabili su StubEngine. Sono letti direttamente dai test (stub-engine.test.ts, core-wrapper.test.ts) per verificare lo stato interno, ma non sono parte del contratto EmulatorEngine. Ciò amplia la superficie pubblica della classe: codice non di test potrebbe teoricamente mutare questi campi direttamente, bypassando la logica di load/setAudio/sendInput. Poiché StubEngine è dichiaratamente un placeholder senza esecuzione reale, l'impatto pratico è limitato; tuttavia la regola suggerisce di limitare la visibilità o documentare esplicitamente.",
+      "rationale_ref": "[^rule: code_quality/rules/canonical/TS-DESIGN-001.md §Rationale]",
+      "code_ref": "[^src5: packages/app/src/core/stub-engine.ts:39]",
+      "suggestion": "Rendere readonly (o getter) i campi usati solo per l'introspezione da test, oppure aggiungere un commento esplicito che ne documenta l'esposizione pubblica intenzionale per i test. Esempio: `/** @visibleForTesting */ readonly loaded: boolean`. Invariante già garantita dal pattern (StubEngine non è istanziato in produzione, solo in test e2e).",
+      "auto_fixable": false,
+      "blocking": false
+    }
+  ],
+  "verdict": "pass",
+  "verdict_rationale": "L'implementazione realizza correttamente il contratto ADR-006: reject onesti su API non disponibili in tutti gli adapter (WasmBoy, mGBA, UnsupportedEngine), copie difensive SRAM in StubEngine (sia getSram che loadSram), StubEngine deterministico con tick monotono e round-trip verificabile, magic header su WasmBoy e Stub per prevenire cross-engine restore. I 3 finding sono tutti non-bloccanti: un gap di defense-in-depth su mGBA (medium, nessuna pre-flight check), un'asimmetria comportamentale di bassa gravità su WasmBoyEngine.getSram, un campo pubblico mutabile di bassa gravità su StubEngine. Typecheck, 71 unit (11 nuovi su StubEngine), 6 e2e verdi confermano correttezza funzionale.",
+  "summary": "Pass con 3 finding non-bloccanti (1 medium, 2 low). Nessuna regressione. Prossimo step: indirizzare i finding nel SaveService (TSK-032) se il dominio ha bisogno di disambiguare il caso null di getSram, e valutare magic check su mGBA se si vuole defense-in-depth.",
+  "markers": {
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false,
+    "degraded": false
+  },
+  "files_reviewed": [
+    "packages/app/src/core/core-wrapper.ts",
+    "packages/app/src/core/stub-engine.ts",
+    "packages/app/src/core/wasmboy-engine.ts",
+    "packages/app/src/core/mgba-engine.ts",
+    "packages/app/src/core/engine-registry.ts",
+    "packages/app/src/core/wasmboy.d.ts",
+    "packages/app/src/core/stub-engine.test.ts",
+    "packages/app/src/core/core-wrapper.test.ts"
+  ],
+  "files_modified_by_fix": [],
+  "generated_at": "2026-06-01T19:30:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0"
+}

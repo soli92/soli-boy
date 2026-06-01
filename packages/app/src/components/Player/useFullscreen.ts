@@ -41,7 +41,7 @@ function isApiSupported(target: Element | null | undefined): boolean {
  *   reject (es. gesto utente mancante) l'errore è loggato e ri-lanciato così il
  *   chiamante può reagire (qui usato per non sporcare lo stato UI con throw).
  */
-export function useFullscreen(ref: RefObject<Element | null>): FullscreenApi {
+export function useFullscreen(ref: RefObject<HTMLElement | null>): FullscreenApi {
   // Calcoliamo `supported` lazy al primo render: in jsdom il nodo è già montato in test.
   const [supported, setSupported] = useState<boolean>(() => isApiSupported(ref.current));
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -51,6 +51,7 @@ export function useFullscreen(ref: RefObject<Element | null>): FullscreenApi {
 
   // Sync iniziale del flag supported: il ref può essere null al primo render,
   // popolato solo dopo il mount → ri-valutiamo.
+  // ref identity è stabile (mono-target by design)
   useEffect(() => {
     setSupported(isApiSupported(ref.current));
     targetRef.current = ref.current;
@@ -72,7 +73,7 @@ export function useFullscreen(ref: RefObject<Element | null>): FullscreenApi {
   }, []);
 
   const enter = useCallback(async () => {
-    const el = ref.current as HTMLElement | null;
+    const el = ref.current;
     if (!el || typeof el.requestFullscreen !== "function") {
       throw new Error("Fullscreen API non disponibile");
     }
@@ -89,7 +90,10 @@ export function useFullscreen(ref: RefObject<Element | null>): FullscreenApi {
   }, []);
 
   const toggle = useCallback(async () => {
-    if (document.fullscreenElement === (ref.current as Element | null)) {
+    // Guard: senza target non possiamo né entrare né scegliere il ramo "exit"
+    // per coincidenza `null === null` quando document.fullscreenElement è null.
+    if (!ref.current) return;
+    if (document.fullscreenElement === ref.current) {
       await exit();
     } else {
       await enter();

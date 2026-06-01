@@ -1,0 +1,149 @@
+{
+  "tsk_id": "TSK-038",
+  "iter": 1,
+  "generated_at": "2026-06-01T22:30:00+02:00",
+  "reviewer_version": "2.15.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "bundler": "vite",
+    "test_runner": "vitest",
+    "e2e_runner": "playwright",
+    "confidence": 0.97,
+    "mode": "full"
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Library/Library.tsx",
+    "packages/app/src/components/Library/Library.test.tsx",
+    "packages/app/e2e/app.e2e.ts"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-038-01",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "title": "storage.listRoms() — promise rejection non gestita (nessun .catch / error state)",
+      "description": "In Library.tsx righe 39-44 l'effetto chiama `storage.listRoms().then(r => setRoms(r))`. Il prefisso `void` sopprime il warning TypeScript sull'unhandled promise, ma non gestisce il rifiuto runtime: se `listRoms()` rigetta (es. IndexedDB corrotto, storage non inizializzato) l'errore è silenziosamente inghiottito e il componente rimane nello stato 'Caricamento libreria…' a tempo indeterminato senza alcuna indicazione all'utente. La regola TS-ROBUST-001 richiede gestione esplicita degli errori ai confini I/O/storage.",
+      "location": "packages/app/src/components/Library/Library.tsx:37-45",
+      "suggestion": "Aggiungere uno stato `error` (es. `const [error, setError] = useState<string | null>(null)`) e un `.catch(err => { if (active) setError('Impossibile caricare la libreria.') })`. Mostrare un messaggio dedicato (`role='alert'`) quando `error !== null`. Il test corrispondente va segnalato al qa-dev (QA-TEST-001).",
+      "auto_fixable": false,
+      "references": [
+        "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:37]"
+      ]
+    },
+    {
+      "id": "F-038-02",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "title": "Stato filtro non resettato al cambio di prop `storage` — possibile empty-state fuorviante",
+      "description": "Quando la prop `storage` cambia, l'useEffect a riga 37 ricarica `roms` (azzerando lo snapshot). Gli stati `query` e `platform` però non vengono resettati. Se un utente stava filtrando per piattaforma 'GBA' e viene passata una nuova istanza `storage` che contiene solo giochi 'GB', il componente mostra l'empty-state 'Nessun risultato per i filtri selezionati' con il chip 'Tutte' disponibile ma lo stato interno `platform === 'GBA'` ancora attivo — l'utente deve capire da solo di dover resettare il filtro. Nella pratica attuale la prop `storage` è stabile per tutta la vita dell'app, ma la dipendenza `[storage]` nel useEffect suggerisce che il codice è scritto per gestire cambi. La mancanza di reset è una latente incoerenza stato-UI.",
+      "location": "packages/app/src/components/Library/Library.tsx:34-45",
+      "suggestion": "Aggiungere nel useEffect `setQuery(''); setPlatform(ALL);` prima del fetch quando `storage` cambia, oppure documentare esplicitamente tramite commento che `storage` è immutabile per design e rimuovere `[storage]` dalla dep array (usando `eslint-disable-next-line` con commento motivante).",
+      "auto_fixable": false,
+      "references": [
+        "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:37]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:34]"
+      ]
+    },
+    {
+      "id": "F-038-03",
+      "rule_id": "REACT-A11Y-001",
+      "rule_path": "code_quality/rules/canonical/REACT-A11Y-001.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "title": "Doppia etichetta sull'input ricerca: `htmlFor` + `aria-label` ridondanti",
+      "description": "In Library.tsx righe 74-83, il `<label htmlFor='library-search'>` con `<span class='sr-only'>Cerca per titolo</span>` fornisce già l'accessible name all'input tramite l'associazione `htmlFor`. L'aggiunta di `aria-label='Cerca per titolo'` sull'`<input>` è ridondante: per la specifica ARIA, `aria-label` prende precedenza sull'etichetta associata tramite `<label>`, rendendo il `<label>` visivamente presente ma senza effetto sull'accessible name. Questo crea un pattern confuso per i manutentori e introduce un potenziale punto di divergenza futuro (se i testi vengono modificati solo in uno dei due posti). In questo caso i testi coincidono quindi non c'è danno a11y, ma il pattern è non-idiomatico.",
+      "location": "packages/app/src/components/Library/Library.tsx:74-83",
+      "suggestion": "Rimuovere `aria-label='Cerca per titolo'` dall'`<input>`. L'associazione `<label htmlFor='library-search'>` è sufficiente e idiomatica. Il `<span class='sr-only'>` dentro la label garantisce che il testo sia accessibile anche se la label non ha testo visibile oltre all'input stesso.",
+      "auto_fixable": true,
+      "references": [
+        "[^rule: code_quality/rules/canonical/REACT-A11Y-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:74]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:82]"
+      ]
+    },
+    {
+      "id": "F-038-04",
+      "rule_id": "TS-DESIGN-002",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-002.md",
+      "severity": "low",
+      "pass": "design",
+      "title": "Filtro in-memory — scelta corretta per il contesto attuale, ma senza documentazione del limite di scalabilità",
+      "description": "TS-DESIGN-002 segnala l'uso di filtro full-scan in-memory quando lo storage definisce indici. Il TSK-038 è consapevole di questa scelta (Note §TSK-038: 'Il contratto StoragePort.listRoms(filter) rimane disponibile per usi futuri') ma il commento nel codice (Library.tsx riga 55-56) non cita il limite di scalabilità né il riferimento alla decisione architetturale. Se in futuro la lista cresce (es. paginazione), un manutentore potrebbe non sapere dove si trova il punto di cambio. La scelta è architetturalmente giustificata per il dataset atteso (piccole collezioni personali), ma la documentazione inline è parziale: menziona il beneficio ('evita re-render inutili') senza menzionare il presupposto ('dataset piccolo, già caricato intero').",
+      "location": "packages/app/src/components/Library/Library.tsx:55-65",
+      "suggestion": "Estendere il commento inline per citare esplicitamente il presupposto architetturale: es. `// Filtro in-memory: dataset piccolo (libreria personale), già caricato. // Per dataset grandi: usare StoragePort.listRoms({platform, query}) — vedi architecture-overview §EP-002.`",
+      "auto_fixable": false,
+      "references": [
+        "[^rule: code_quality/rules/canonical/TS-DESIGN-002.md §Rationale]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:55]"
+      ]
+    }
+  ],
+  "checks_explicit": {
+    "filtro_in_memory_usememo": {
+      "result": "PASS",
+      "note": "useMemo con deps [roms, query, platform] a riga 57-65. Nessun round-trip asincrono su keystroke. availablePlatforms anch'esso memoizzato su [roms]. Corretto."
+    },
+    "a11y_label_ricerca": {
+      "result": "PASS_WITH_ADVISORY",
+      "note": "htmlFor + id correttamente collegati. aria-label ridondante segnalato come F-038-03 (low, advisory). Lo screen reader riceve il nome corretto in ogni caso."
+    },
+    "a11y_radiogroup_radio": {
+      "result": "PASS",
+      "note": "role=radiogroup con aria-label su <div>, role=radio + aria-checked su <button type='button'>. Bottone nativo gestisce Enter/Space natively: REACT-A11Y-001 soddisfatta. aria-checked booleano sincronizzato con stato `platform`."
+    },
+    "a11y_empty_state_role_status": {
+      "result": "PASS",
+      "note": "Stato 'nessun risultato' ha role=status (riga 110) — live region, annunciato correttamente da screen reader quando i filtri producono zero match."
+    },
+    "chip_dinamici_piattaforme_presenti": {
+      "result": "PASS",
+      "note": "availablePlatforms (riga 49-53) usa Set delle piattaforme presenti filtrato per PLATFORM_ORDER. Solo chip delle piattaforme nella libreria + 'Tutte'. Test unitario 'espone solo i chip delle piattaforme presenti' copre questo caso."
+    },
+    "empty_library_vs_no_results": {
+      "result": "PASS",
+      "note": "Distinzione corretta: `roms.length === 0` (riga 68-69) → 'Nessun gioco. Carica una ROM per iniziare.' senza UI filtro. `filtered.length === 0` (riga 109-113) con `roms.length > 0` → 'Nessun risultato per i filtri selezionati.' con role=status. Le due condizioni sono mutualmente esclusive by design."
+    },
+    "e2e_disambiguazione_gb": {
+      "result": "PASS",
+      "note": "app.e2e.ts riga 25: `page.getByRole('button', { name: 'tetris GB' })` usa accessible name del bottone tile (testo 'tetris' + badge 'GB'). Elimina il doppio match con il chip 'GB' del filtro che è anch'esso un button. Fix robusto: dipende dalla struttura semantica del tile, non da text-content fragile."
+    },
+    "nessuna_regressione_unit_esistenti": {
+      "result": "PASS",
+      "note": "Test esistente 'mostra i giochi presenti' aggiornato con within(grid) per disambiguare badge GBA dalla tile vs chip GBA dal filtro. La disambiguazione è corretta e il test continua a verificare il comportamento originale (badge visibile sulla tile). 71/71 verdi."
+    }
+  },
+  "summary": {
+    "total_findings": 4,
+    "by_severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 3
+    },
+    "blocking": 1,
+    "advisory": 3
+  },
+  "verdict": "conditional",
+  "verdict_rationale": "1 finding medium bloccante (F-038-01: rejection silente di listRoms — pattern TS-ROBUST-001 non rispettato al confine storage). 3 finding low advisory: F-038-02 (reset filtri su cambio storage), F-038-03 (aria-label ridondante), F-038-04 (commento presupposto scalabilità). Tutti i check espliciti su a11y (radiogroup/radio, label, empty-state role=status), filtro in-memory con useMemo, chip dinamici, distinzione libreria-vuota vs nessun-risultato, e2e GB disambiguation: PASS. Nessun finding critical/high. Nessuna violazione di scope. Il dev-agent deve risolvere F-038-01; F-038-02/03/04 sono raccomandati ma non bloccanti.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "previous_iter_rule_ids": [],
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "next_step": "feedback-router → dev-agent (fe): risolvere F-038-01 (aggiungere .catch con error state e role=alert in Library.tsx). F-038-02/03/04 raccomandati. max_diff_lines: 80. scope: packages/app/src/components/Library/Library.tsx. Segnalare al qa-dev test per error state (QA-TEST-001)."
+}

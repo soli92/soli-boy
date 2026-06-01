@@ -3,10 +3,12 @@
 // `fullscreenchange`, aggiornamento aria-label/aria-pressed, fallback API
 // assente (bottone disabilitato), cleanup listener su unmount.
 
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import type { RefObject } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EmulatorEngine } from "../../core/core-wrapper";
 import { Player } from "./Player";
+import { useFullscreen } from "./useFullscreen";
 
 function fakeEngine(): EmulatorEngine {
   return {
@@ -122,7 +124,8 @@ describe("Player — Schermo intero (TSK-035 / US-020)", () => {
 
     const exitBtn = screen.getByRole("button", { name: /esci da schermo intero/i });
     expect(exitBtn).toHaveAttribute("aria-pressed", "true");
-    expect(exitBtn).toHaveTextContent(/esci schermo intero/i);
+    // WCAG 2.5.3 Label in Name: testo visibile e accessible name coincidono.
+    expect(exitBtn).toHaveTextContent(/esci da schermo intero/i);
   });
 
   it("toggle ritorno: invoca exitFullscreen quando già in fullscreen", async () => {
@@ -185,6 +188,18 @@ describe("Player — Schermo intero (TSK-035 / US-020)", () => {
       "title",
       "Schermo intero non supportato dal browser",
     );
+  });
+
+  it("toggle() è no-op quando il ref è null (guard: niente exit per coincidenza null===null)", async () => {
+    const nullRef: RefObject<HTMLElement | null> = { current: null };
+    const { result } = renderHook(() => useFullscreen(nullRef));
+
+    await act(async () => {
+      await result.current.toggle();
+    });
+
+    expect(fs.requestFullscreen).not.toHaveBeenCalled();
+    expect(fs.exitFullscreen).not.toHaveBeenCalled();
   });
 
   it("rimuove il listener fullscreenchange su unmount", () => {

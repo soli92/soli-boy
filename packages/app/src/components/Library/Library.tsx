@@ -31,14 +31,27 @@ const PLATFORM_ORDER: Platform[] = ["GB", "GBC", "GBA", "ARCADE"];
 
 export function Library({ storage, onSelect }: LibraryProps) {
   const [roms, setRoms] = useState<RomRecord[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [platform, setPlatform] = useState<PlatformFilter>(ALL);
 
   useEffect(() => {
     let active = true;
-    void storage.listRoms().then((r) => {
-      if (active) setRoms(r);
-    });
+    // F-038-02: al cambio identità di `storage` resettiamo i filtri (UI coerente
+    // con il nuovo dataset) e lo stato di errore.
+    setQuery("");
+    setPlatform(ALL);
+    setError(null);
+    storage
+      .listRoms()
+      .then((r) => {
+        if (active) setRoms(r);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(`Impossibile caricare la libreria: ${msg}`);
+      });
     return () => {
       active = false;
     };
@@ -54,6 +67,9 @@ export function Library({ storage, onSelect }: LibraryProps) {
 
   // Filtro in-memory: case-insensitive sul titolo + match piattaforma.
   // `useMemo` evita re-render inutili durante la digitazione.
+  // F-038-04: presupposto architetturale — dataset piccolo già caricato
+  // interamente in memoria. Per dataset grandi esiste StoragePort.listRoms(filter)
+  // (architecture-overview §EP-002).
   const filtered = useMemo<RomRecord[]>(() => {
     if (!roms) return [];
     const q = query.trim().toLowerCase();
@@ -64,6 +80,12 @@ export function Library({ storage, onSelect }: LibraryProps) {
     });
   }, [roms, query, platform]);
 
+  if (error !== null)
+    return (
+      <p className="sb-note" role="alert">
+        {error}
+      </p>
+    );
   if (roms === null) return <p className="sb-note">Caricamento libreria…</p>;
   if (roms.length === 0)
     return <p className="sb-note">Nessun gioco. Carica una ROM per iniziare.</p>;
@@ -79,7 +101,6 @@ export function Library({ storage, onSelect }: LibraryProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cerca per titolo…"
-            aria-label="Cerca per titolo"
           />
         </label>
 

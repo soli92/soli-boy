@@ -315,3 +315,14 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 **Commit:** n/a (gate)
 **DoD:** pass — typecheck OK, 71/71 unit verdi (49 esistenti + 11 nuovi StubEngine + 11 fixture-test esistenti adattati al nuovo contratto), build OK
 **Note:** EmulatorEngine esteso con snapshot/restore + getSram/loadSram (ADR-006). EngineCapabilities aggiunto saveStates+sram. StubEngine: round-trip deterministico (JSON+magic header SOLISTUB1, tick monotono, SRAM con copie difensive). WasmBoyEngine: API native `saveState`/`loadState` su oggetto JS serializzato come JSON+magic WBSV1 (cross-engine reject onesto); SRAM via cartridgeRam dello save state (read) e patch+loadState (write). MgbaEngine: slot-based saveState/loadState con I/O su FS virtuale Emscripten via `FS.readFile`/`writeFile` (path = saveStatePath/<game>.ss0); SRAM via `getSave()` (read) e `FS.writeFile(saveName, data)` (write); reject onesto se API non disponibili o non c'è ROM caricata. Caveat: i save state mGBA non sono ancora verificati a runtime end-to-end (gap già noto, non introdotto qui). UnsupportedEngine rifiuta onestamente i 4 nuovi metodi. Nessuna estensione di StoragePort/SaveService/UI (TSK-031/032/033). Nessun asset protetto introdotto.
+
+## 2026-06-01 — review TSK-030 iter-1 → pass
+**Agent:** code-reviewer@2.12.0
+**Verdict:** pass (3 finding non-bloccanti: 1 medium, 2 low)
+**Report:** code_quality/reports/TSK-030-iter-1.json
+
+- 2026-06-01 21:45 — `review TSK-035 iter-1 → conditional` (0/0/1 medium + 3 low: F-035-01 toggle() null guard mancante [medium, blocking], F-035-02 cast HTMLElement non giustificato [low, advisory], F-035-03 dissonanza aria-label/testo visibile [low, advisory], F-035-04 commento useEffect dipendenza ref [low, advisory])
+  - Reviewer: code-reviewer@2.14.0 · Stack: typescript/react/vite (conf 0.97) · Report: code_quality/reports/TSK-035-iter-1.json
+
+- 2026-06-01 22:30 — `review TSK-038 iter-1 → conditional` (0/0/1 medium + 3 low: F-038-01 listRoms rejection silente [medium, blocking], F-038-02 filtri non resettati su cambio storage [low, advisory], F-038-03 aria-label ridondante su input [low, advisory], F-038-04 commento presupposto in-memory mancante [low, advisory])
+  - Reviewer: code-reviewer@2.15.0 · Stack: typescript/react/vite (conf 0.97) · Report: code_quality/reports/TSK-038-iter-1.json

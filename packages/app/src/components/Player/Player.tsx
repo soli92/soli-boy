@@ -124,7 +124,7 @@ export function Player({ engine, rom, title }: PlayerProps) {
               : "Schermo intero non supportato dal browser"
           }
         >
-          {fullscreen.isFullscreen ? "Esci schermo intero" : "Schermo intero"}
+          {fsLabel}
         </button>
       </div>
       {error && (
