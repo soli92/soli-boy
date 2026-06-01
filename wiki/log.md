@@ -273,3 +273,7 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 **DoD:** typecheck OK, 49 unit + 5 e2e verdi (4 stub + 1 REALE). Emulazione GB reale OK.
 **Esito:** gap emulatorjs-real-integration RISOLTO per GB (pivot WasmBoy, ADR-005). EmulatorJsEngine ora dead-code → rimozione in TSK-029. **Commit:** n/a (gate)
 [2026-06-01 18:10] gap-closed — emulatorjs-real-integration (GB via WasmBoy) — files touched: 1
+
+- 2026-06-01 18:25 — `review TSK-027 iter-1 → pass` (0/0/0)
+- 2026-06-01 18:25 — `review TSK-025 iter-1 → pass` (0/0/1 low: TS-ROBUST-001 promise play/pause)
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite (conf 0.95)
