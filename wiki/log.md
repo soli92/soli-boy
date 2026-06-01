@@ -244,3 +244,10 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 **Agente:** be-dev · **Code path:** ./packages/app/ (src/core/emulatorjs-engine.ts)
 **DoD:** pass — fix CQRL iter 2: load() reject su onerror + timeout su EJS_ready + cleanup. typecheck OK, 49 unit verdi. **Commit:** n/a (gate)
 - 2026-06-01 22:40 — `review TSK-021 iter-2 → pass` (0/0/0) · Reviewer: code-reviewer@2.12.0
+
+## 2026-06-01 23:05 — develop TSK-023 (override umano→agent, scope codice)
+**Agente:** be-dev (per override esplicito; TSK è consumer:human) · **Code path:** ./packages/app/vite.config.ts
+**DoD:** dev/preview Vite con COOP/COEP (SharedArrayBuffer ok), CDN pinnata; runbook aggiornato. e2e verdi.
+**Residui (umani/ops, deferred):** header prod web, crossorigin/self-host risorse CDN sotto COEP, vendoring core desktop/mobile (EP-006/007). **Commit:** n/a (gate)
+
+[2026-06-01 23:30] develop — TSK-023 (prod headers + hardening): vercel.json (COOP/COEP) + crossorigin sullo script EmulatorJS — files touched: 3

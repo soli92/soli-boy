@@ -95,6 +95,8 @@ export class EmulatorJsEngine implements EmulatorEngine {
         if (!this.loaderInjected) {
           const s = document.createElement("script");
           s.src = `${this.pathtodata}loader.js`;
+          // TSK-023: caricamento CDN robusto sotto COEP require-corp (jsdelivr invia CORS+CORP).
+          s.crossOrigin = "anonymous";
           s.onerror = () => {
             clearTimeout(timer);
             reject(new Error(`EmulatorJsEngine.load: caricamento loader fallito (${s.src}).`));

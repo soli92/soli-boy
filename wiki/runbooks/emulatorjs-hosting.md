@@ -62,3 +62,15 @@ Cross-Origin-Embedder-Policy: require-corp
 
 - Web dev: `npm run dev` con header COOP/COEP → caricare una ROM homebrew → verificare avvio, audio, pausa.
 - e2e: spec dedicata con ROM homebrew (chiude il gap `emulatorjs-real-integration`).
+
+## Stato (TSK-023)
+
+- **Dev/preview Vite**: header COOP/COEP configurati in `packages/app/vite.config.ts`
+  (`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`)
+  → SharedArrayBuffer disponibile. e2e verdi con isolation attiva.
+- **CDN web**: `EJS_pathtodata` pinnato a `@emulatorjs/emulatorjs@4.2.1` in `EmulatorJsEngine`.
+- **Produzione (Vercel)**: header COOP/COEP in `packages/app/vercel.json` (tutte le route).
+- **Residui (deferred)**:
+  crossorigin/self-host delle sottorisorse CDN (font/icone) sotto COEP; **vendoring** core
+  per build **desktop (Electron)/mobile (Capacitor)** offline (RF-24) — quando quei target
+  esisteranno (EP-006/007). Da validare con il provider scelto.
