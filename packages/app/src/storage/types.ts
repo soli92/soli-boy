@@ -20,8 +20,22 @@ export interface SaveStateRecord {
   romId: string;
   slot: number;
   snapshotBlob: Blob;
+  /**
+   * Core/engine che ha prodotto lo snapshot (ADR-006 §Conseguenze).
+   * Il formato dei save state è specifico per engine/versione: un payload
+   * prodotto da gambatte/WasmBoy NON è caricabile da mGBA. Memorizzato qui
+   * per consentire al SaveService di rifiutare un load cross-engine (US-016)
+   * e per validare l'import (US-019, TSK-033).
+   */
+  core: Core;
   createdAt: number;
 }
+
+/**
+ * Input per creare una nuova entry `saveStates` (TSK-031, US-016).
+ * `id` e `createdAt` sono derivati dall'adapter.
+ */
+export type SaveStateInput = Omit<SaveStateRecord, "id" | "createdAt">;
 
 export interface SramRecord {
   romId: string;

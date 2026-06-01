@@ -1,6 +1,7 @@
 // TSK-001 — IndexedDB adapter + object store `roms` (ADR-002, db_schemas/indexeddb-stores.md).
 // Implementazione locale dello StoragePort per l'asse `roms` (US-001/US-004).
 // Tutto on-device: nessun dato verso server esterni (US-033).
+// TSK-031 — aggiunto l'asse `saveStates`/`sram` (US-016/US-017, ADR-006 §Decisione p.2).
 
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type {
@@ -8,6 +9,7 @@ import type {
   RomFilter,
   RomInput,
   RomRecord,
+  SaveStateInput,
   SaveStateRecord,
   SramRecord,
 } from "./types";
@@ -102,4 +104,61 @@ export async function listRoms(filter: RomFilter = {}): Promise<RomRecord[]> {
   const q = filter.query?.trim().toLowerCase();
   if (!q) return rows;
   return rows.filter((r) => r.title.toLowerCase().includes(q));
+}
+
+// === saveStates (TSK-031, US-016) ==============================================
+
+/**
+ * Id deterministico di un save state: `<romId>:<slot>:<createdAt>`.
+ * Slot multipli per la stessa ROM coesistono perché `createdAt` discrimina
+ * i save state creati in momenti diversi sullo stesso slot (non si vuole
+ * sovrascrittura silenziosa; per "sostituire" lo slot, l'UI cancella prima).
+ */
+function saveStateId(romId: string, slot: number, createdAt: number): string {
+  return `${romId}:${slot}:${createdAt}`;
+}
+
+/**
+ * Persiste un nuovo save state. Ritorna l'id generato.
+ * L'entry memorizza `core/engine` per consentire al dominio (SaveService) di
+ * rifiutare un load cross-engine (ADR-006 §Conseguenze).
+ */
+export async function putSaveState(input: SaveStateInput): Promise<string> {
+  const createdAt = Date.now();
+  const id = saveStateId(input.romId, input.slot, createdAt);
+  const record: SaveStateRecord = { ...input, id, createdAt };
+  const db = await getDB();
+  await db.put("saveStates", record);
+  return id;
+}
+
+/** Elenca i save state di una ROM, ordinati per slot crescente. */
+export async function listSaveStates(romId: string): Promise<SaveStateRecord[]> {
+  const db = await getDB();
+  // Usa l'index `by_rom` (TS-DESIGN-002): evita full-scan dello store.
+  const rows = await db.getAllFromIndex("saveStates", "by_rom", romId);
+  return rows.sort((a, b) => a.slot - b.slot || a.createdAt - b.createdAt);
+}
+
+export async function getSaveState(id: string): Promise<SaveStateRecord | undefined> {
+  return (await getDB()).get("saveStates", id);
+}
+
+/** Rimuove un save state (idempotente). */
+export async function deleteSaveState(id: string): Promise<void> {
+  await (await getDB()).delete("saveStates", id);
+}
+
+// === SRAM (TSK-031, US-017) ====================================================
+
+/** Persiste (o sostituisce) la SRAM cartuccia per una ROM. */
+export async function putSram(romId: string, data: Blob): Promise<void> {
+  const db = await getDB();
+  const record: SramRecord = { romId, data, updatedAt: Date.now() };
+  await db.put("sram", record);
+}
+
+/** Recupera la SRAM cartuccia per una ROM, se presente. */
+export async function getSram(romId: string): Promise<SramRecord | undefined> {
+  return (await getDB()).get("sram", romId);
 }
