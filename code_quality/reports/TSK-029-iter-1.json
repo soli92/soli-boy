@@ -1,0 +1,7 @@
+{ "tsk_id":"TSK-029","stack_descriptor":{"language":"typescript","framework":"vite","version":"5.x","confidence":0.95},
+  "iter":1,"passes_run":["idiomaticity","design","robustness"],"findings":[],
+  "verdict":"pass",
+  "verdict_rationale":"Rimozione EmulatorJS pulita: nessun riferimento attivo residuo, dipendenza/script/dir eliminati, ADR-004 superseded, runbook storicizzato. Hardening WasmBoy (play/pause con .catch) chiude l'advisory TS-ROBUST-001 di TSK-025. typecheck + 49 unit + 5 e2e verdi. Nessuna finding.",
+  "summary":"Cleanup corretto e senza regressioni; superficie ridotta a un solo motore reale (WasmBoy) + Stub.",
+  "markers":{"no_progress":false,"regression":false,"loop_exhausted":false,"degraded":false},
+  "files_modified_by_fix":[],"generated_at":"2026-06-01T18:55:00+02:00","reviewer_version":"code-reviewer@2.12.0" }
