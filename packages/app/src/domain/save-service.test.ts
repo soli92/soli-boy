@@ -432,6 +432,31 @@ describe("SaveService.importSave (US-019 AC3 — file invalidi/non corrispondent
     if (!res.ok) expect(res.reason).toBe("invalid-file");
   });
 
+  it("F-033-02: saveState con core diverso dalla ROM target → 'format-mismatch' e nessuna entry persistita", async () => {
+    // ADR-006 §Conseguenze: l'import valida la compatibilità cross-engine.
+    // ROM target: GB (gambatte); envelope: saveState dichiarato mgba.
+    const romId = await seedRom("GBOnly", "gambatte");
+    const svc = new SaveService(indexedDbStorage);
+    const before = await svc.listSaveStates(romId);
+    const res = await svc.importSave(
+      JSON.stringify({
+        format: "soliboy-save",
+        version: 1,
+        kind: "saveState",
+        romId,
+        core: "mgba",
+        slot: 0,
+        createdAt: 0,
+        data: btoa("payload"),
+      }),
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("format-mismatch");
+    // Nessuna entry persistita (no storage cruft).
+    const after = await svc.listSaveStates(romId);
+    expect(after.length).toBe(before.length);
+  });
+
   it("non persiste entry se l'import fallisce (no scrittura orfana)", async () => {
     const romId = await seedRom("StillEmpty", "gambatte");
     const svc = new SaveService(indexedDbStorage);

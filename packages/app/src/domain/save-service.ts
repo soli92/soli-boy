@@ -510,12 +510,20 @@ export class SaveService {
     }
 
     if (envelope.kind === "saveState") {
-      // Note: il `core` salvato nel file deve coerentemente corrispondere a
-      // quello canonico della ROM (un saveState mGBA non ha senso su una ROM
-      // GB). Lasciamo che il guard cross-engine scatti al successivo
-      // `loadState` (rifiuto onesto in fase di load) per non aggiungere un
-      // codice di reject specifico di sola fase import: il file resta
-      // archiviato per ispezione/cancellazione.
+      // F-033-02 (ADR-006 §Conseguenze: "l'import valida la compatibilità"):
+      // il `core` dell'envelope deve coincidere con quello canonico della ROM
+      // target. Un saveState mGBA su una ROM GB sarebbe un'entry non caricabile
+      // (il guard cross-engine la rifiuterebbe in `loadState`): rifiutiamo ora,
+      // PRIMA di `putSaveState`, per evitare storage cruft / entry inutili.
+      // Reason riusata: `format-mismatch` (mantiene invariata la mappatura
+      // messaggi user-facing in Settings.tsx — vedi `handleImportFile`).
+      if (rom.core !== envelope.core) {
+        return {
+          ok: false,
+          reason: "format-mismatch",
+          detail: `Core dell'envelope "${envelope.core}" diverso da quello della ROM "${rom.core}".`,
+        };
+      }
       const id = await this.storage.putSaveState({
         romId: envelope.romId,
         slot: envelope.slot,

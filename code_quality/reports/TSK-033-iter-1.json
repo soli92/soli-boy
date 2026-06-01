@@ -1,0 +1,82 @@
+{
+  "tsk_id": "TSK-033",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version_min": "18",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "reviewed_commit": "cf44ef1",
+  "files_reviewed": [
+    "packages/app/src/domain/save-service.ts",
+    "packages/app/src/components/Settings/Settings.tsx",
+    "packages/app/src/components/Settings/Settings.data.test.tsx",
+    "packages/app/src/domain/save-service.test.ts",
+    "packages/app/src/App.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-033-01",
+      "rule_id": "REACT-IDIOM-001",
+      "rule_ref": "[^rule: code_quality/rules/canonical/REACT-IDIOM-001.md §Rationale]",
+      "severity": "low",
+      "blocking": false,
+      "file": "packages/app/src/components/Settings/Settings.tsx",
+      "lines": "~231-310",
+      "title": "Handler async nel corpo del componente senza useCallback — incoerenza con refreshSaveStates",
+      "description": "`handleExport`, `handleImportFile`, `handleImportChange` e `saveStateLabel` sono plain function definite nel corpo del componente e ricostruite a ogni render. `refreshSaveStates` usa invece correttamente `useCallback`. L'incoerenza non causa bug (gli handler non sono dependency di hook), ma viola la consistenza idiomatica e il pattern già stabilito nel codebase (F-032-1-I2 su SaveStatePanel.tsx). Attualmente nessuno di questi handler è passato come prop a child, ma il pattern non-memoized genera ricreazioni inutili e rende più fragile una futura refactoring che dovesse aggiungerli come dipendenza.",
+      "location_ref": "[^src5: packages/app/src/components/Settings/Settings.tsx:231-310]",
+      "suggestion": "Avvolgere almeno `handleExport` e `handleImportFile` in `useCallback` con dipendenze [saveService, selectedSaveStateId, currentRomId, refreshSaveStates]. `handleImportChange` può restare inline o wrappata in useCallback([]). `saveStateLabel` è una pura funzione senza closure — può essere estratta fuori dal componente."
+    },
+    {
+      "id": "F-033-02",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]",
+      "severity": "medium",
+      "blocking": false,
+      "file": "packages/app/src/domain/save-service.ts",
+      "lines": "~515-535",
+      "title": "Core-mismatch differito al loadState: entry persiste nel DB anche se incompatibile (ADR-006 §Conseguenze)",
+      "description": "ADR-006 §Conseguenze specifica: 'l'entry deve memorizzare `core`/`engine` e l'import validare la compatibilità'. L'implementazione persiste il saveState anche quando il `core` del file non corrisponde al core canonico della ROM (`storage.getRom` restituisce la ROM ma non viene confrontato `rom.core` con `envelope.core`). Il rifiuto è differito al successivo `loadState`. Il commento inline riconosce la scelta ('Lasciamo che il guard cross-engine scatti al successivo loadState') ma la decisione non è formalizzata né nel TSK né come deroga esplicita all'ADR. Conseguenza pratica: un file mGBA importato su una libreria GB produce un'entry 'zombie' nel DB — non caricabile, non cancellabile via UI standard (no UI delete in Settings), occupa storage. Nessun crash né claim falso; la robustezza all'import è ridotta rispetto al contratto ADR.",
+      "location_ref": "[^src5: packages/app/src/domain/save-service.ts:515-535]",
+      "suggestion": "Aggiungere la verifica del core all'import: se `storage.getRom(envelope.romId)` ritorna un rom con `.core` diverso da `envelope.core`, restituire `{ ok: false, reason: 'format-mismatch', detail: 'Core incompatibile: ...' }` (o un reason dedicato `'core-mismatch'` se il tipo `ImportSaveResult` viene esteso). In alternativa, formalizzare esplicitamente la deroga come decisione nell'ADR-006. Se la deroga è intenzionale (futura migrazione core aggiornando il core field), aggiornare anche la spec US-019 AC3."
+    }
+  ],
+  "verdict": "pass",
+  "no_progress": false,
+  "regression_detected": false,
+  "summary": {
+    "total_findings": 2,
+    "blocking": 0,
+    "medium": 1,
+    "low": 1,
+    "verified_positive": [
+      "Nessuna rete (export/import solo file locali, on-device — ADR-006 Invariante)",
+      "Formato versionato (SAVE_FILE_FORMAT + SAVE_FILE_VERSION): riconoscimento deterministico del file",
+      "Validazione strutturale robusta all'import: JSON malformato / format-mismatch / unsupported-version / rom-not-found tutti coperti con esiti ok:false espliciti, no throw non gestito (US-019 AC3)",
+      "Nessuna entry orfana su import KO: la persistenza avviene solo dopo verifica ROM (US-019 Business Rule)",
+      "Revoke ObjectURL immediato dopo click: no leak (pattern coerente con Library.tsx / TSK-039)",
+      "A11y: aria-label su select ('Salvataggio da esportare'), button ('Esporta salvataggio selezionato'), input ('Importa file di salvataggio'), role=group su sezione, role=status su OK / role=alert su KO (US-019 AC3)",
+      "Interface segregation SaveDataPort: componente testabile con fake minimali senza coupling a SaveService concreto (ADR-006 §Decisione p.3)",
+      "Backward-compat Props Settings: saveService e currentRom opzionali — nessun test legacy rotto",
+      "Round-trip export→import testato: loadState post-import verde, blob non corrotto in base64",
+      "Helper base64 cross-runtime documentati: chunking per payload grandi, fallback Node Buffer giustificato"
+    ]
+  },
+  "loop_status": {
+    "current_iter": 1,
+    "max_iterations": 3,
+    "exhausted": false
+  },
+  "next_step": "Nessuna azione bloccante. I 2 finding (F-033-01 low, F-033-02 medium) sono advisory. F-033-02 richiede una decisione di design (aggiungere guard core-mismatch all'import oppure formalizzare la deroga in ADR-006): rimandare al dev-agent fe nel prossimo TSK o al lead-architect per aggiornamento ADR. F-033-01 risolvibile opportunisticamente nel prossimo TSK fe.",
+  "generated_at": "2026-06-01",
+  "reviewer_version": "code-reviewer@2.15.0"
+}

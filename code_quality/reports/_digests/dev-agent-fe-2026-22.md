@@ -1,7 +1,43 @@
 # Digest settimanale code-review — dev-agent fe — 2026-W22
-<!-- aggiornato iter TSK-037: 2026-06-01 -->
+<!-- aggiornato iter TSK-033: 2026-06-01 -->
 
-Generato: 2026-06-01 (aggiornato TSK-037 iter-2: 2026-06-01) | Reviewer: code-reviewer@2.15.0
+Generato: 2026-06-01 (aggiornato TSK-033 iter-1: 2026-06-01) | Reviewer: code-reviewer@2.15.0
+
+## TSK-033 — Export/Import salvataggi (Settings 'Dati', US-019) — iter-1 → PASS
+
+**Verdict iter-1:** pass (0 finding blocking; 1 medium advisory + 1 low advisory)
+**Stack:** typescript/react/vite (conf 0.97)
+**Files toccati:** save-service.ts, Settings.tsx, Settings.data.test.tsx, save-service.test.ts, App.tsx
+
+### Finding (non-bloccanti)
+
+**F-033-01 [low, advisory] — Handler async senza useCallback — incoerenza con refreshSaveStates (REACT-IDIOM-001)**
+`Settings.tsx` — `handleExport`, `handleImportFile`, `handleImportChange` sono plain function nel corpo del componente (ricreate a ogni render). `refreshSaveStates` usa correttamente `useCallback`. Stesso pattern segnalato come F-032-1-I2 su SaveStatePanel. Nessun bug funzionale (gli handler non sono dependency di hook), ma incoerente e potenzialmente fragile su refactoring futura.
+Suggerimento: avvolgere `handleExport` e `handleImportFile` in `useCallback`; `saveStateLabel` estrarre fuori dal componente (pura, senza closure).
+
+**F-033-02 [medium, advisory] — Core-mismatch non bloccato all'import — entry zombie nel DB (TS-ROBUST-001)**
+`save-service.ts` — `importSave` persiste il saveState anche quando il `core` del file non corrisponde al core della ROM (il confronto `rom.core === envelope.core` non è effettuato). Il rifiuto è differito al `loadState`. ADR-006 §Conseguenze indica che "l'import valida la compatibilità". Il commento inline riconosce la scelta ma non è formalizzata come deroga deliberata. Conseguenza: file mGBA su libreria GB produce un'entry non caricabile nel DB (storage cruft, non cancellabile da UI Settings).
+Suggerimento: aggiungere `if (rom.core !== envelope.core) return { ok: false, reason: 'format-mismatch', detail: '...' }` dopo `getRom`, oppure formalizzare la deroga in ADR-006 e aggiornare US-019 AC3.
+
+### Cosa ha funzionato bene (da replicare)
+
+- Nessuna rete: export/import 100% on-device (File API + ObjectURL). Conforme ADR-006 Invariante e raw/tech_stack.md §Privacy.
+- Formato versionato con magic string `"soliboy-save"` + version: riconoscimento deterministico, rifiuto onesto di file di altri prodotti.
+- Validazione strutturale completa in `parseEnvelope`: ogni campo obbligatorio verificato per tipo; ogni fallimento mappato a reason distinto per UX comprensibile (US-019 AC3).
+- Nessuna entry orfana su import KO: persistenza avviene solo dopo verifica ROM (Business Rule US-019).
+- Revoke ObjectURL immediato dopo `click()`: pattern coerente con Library.tsx (approvato in TSK-039), no memory leak.
+- A11y completa: `aria-label` su select/button/input, `role="group"` sulla sezione, `role="status"` per OK e `role="alert"` per KO.
+- `SaveDataPort` ben segregata: Settings testabile con fake minimali, zero coupling a engine/SRAM.
+- Backward-compat Props: `saveService` e `currentRom` opzionali; sezione "Dati" disabilitata con nota onesta senza nascondere feature.
+- Round-trip export→import con verifica `loadState` post-import: blob non corrotto dal base64.
+- Helper `bytesToBase64`/`base64ToBytes` cross-runtime documentati (chunking, fallback Node Buffer giustificato con eslint-disable).
+- `currentRomSummary` con `useMemo([selected])` in App.tsx: nessuna istanza spurie, projection leggera (id+title, no Blob).
+
+### Prossimo step
+
+Nessuna azione bloccante. F-033-02 richiede decisione di design: aggiungere guard core-mismatch all'import **oppure** formalizzare deroga in ADR-006 + US-019 AC3. Delegare a dev-agent fe / lead-architect nel prossimo TSK. F-033-01 risolvibile opportunisticamente nel prossimo TSK fe (max_diff_lines: 80).
+
+---
 
 ## TSK-035 — Schermo intero (Fullscreen API) — iter-2 → PASS
 

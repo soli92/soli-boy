@@ -255,7 +255,11 @@ export function Settings({
     }
   }
 
-  async function handleExport() {
+  // F-033-01: memoizzazione per coerenza con `refreshSaveStates` (già
+  // memoizzato). Le deps coprono i valori effettivamente catturati;
+  // i setter di `useState` sono garantiti stabili da React e non vanno
+  // dichiarati. Comportamento invariato.
+  const handleExport = useCallback(async () => {
     if (!saveService || !selectedSaveStateId) return;
     setDataBusy(true);
     setDataMessage(null);
@@ -283,54 +287,60 @@ export function Settings({
     } finally {
       setDataBusy(false);
     }
-  }
+  }, [saveService, selectedSaveStateId]);
 
-  async function handleImportFile(file: File) {
-    if (!saveService) return;
-    setDataBusy(true);
-    setDataMessage(null);
-    try {
-      const res = await saveService.importSave(file);
-      if (res.ok) {
-        setDataMessage({
-          kind: "info",
-          text: `Salvataggio importato (${res.kind === "saveState" ? "save state" : "SRAM"}).`,
-        });
-        // Se l'import riguarda la ROM corrente, aggiorna l'elenco.
-        if (res.romId === currentRomId) {
-          await refreshSaveStates();
+  const handleImportFile = useCallback(
+    async (file: File) => {
+      if (!saveService) return;
+      setDataBusy(true);
+      setDataMessage(null);
+      try {
+        const res = await saveService.importSave(file);
+        if (res.ok) {
+          setDataMessage({
+            kind: "info",
+            text: `Salvataggio importato (${res.kind === "saveState" ? "save state" : "SRAM"}).`,
+          });
+          // Se l'import riguarda la ROM corrente, aggiorna l'elenco.
+          if (res.romId === currentRomId) {
+            await refreshSaveStates();
+          }
+        } else {
+          // US-019 AC3: avviso comprensibile per file non valido o non corrispondente.
+          // Mappa reason → testo user-facing (no leakage di campi tecnici).
+          const text =
+            res.reason === "invalid-file"
+              ? "File non valido o danneggiato."
+              : res.reason === "format-mismatch"
+                ? "Il file non è un salvataggio Soli-boy."
+                : res.reason === "unsupported-version"
+                  ? "Versione del file non supportata da questa versione dell'app."
+                  : "La ROM associata al salvataggio non è presente nella libreria.";
+          setDataMessage({ kind: "error", text });
         }
-      } else {
-        // US-019 AC3: avviso comprensibile per file non valido o non corrispondente.
-        // Mappa reason → testo user-facing (no leakage di campi tecnici).
-        const text =
-          res.reason === "invalid-file"
-            ? "File non valido o danneggiato."
-            : res.reason === "format-mismatch"
-              ? "Il file non è un salvataggio Soli-boy."
-              : res.reason === "unsupported-version"
-                ? "Versione del file non supportata da questa versione dell'app."
-                : "La ROM associata al salvataggio non è presente nella libreria.";
-        setDataMessage({ kind: "error", text });
+      } catch (e) {
+        // Difensivo: importSave non dovrebbe lanciare, ma l'I/O del File può.
+        setDataMessage({
+          kind: "error",
+          text: `Importazione fallita: ${(e as Error).message}`,
+        });
+      } finally {
+        setDataBusy(false);
+        // Permette di reimportare lo stesso file (gli `input[type=file]` non
+        // sparano `change` se il valore non cambia).
+        if (importInputRef.current) importInputRef.current.value = "";
       }
-    } catch (e) {
-      // Difensivo: importSave non dovrebbe lanciare, ma l'I/O del File può.
-      setDataMessage({
-        kind: "error",
-        text: `Importazione fallita: ${(e as Error).message}`,
-      });
-    } finally {
-      setDataBusy(false);
-      // Permette di reimportare lo stesso file (gli `input[type=file]` non
-      // sparano `change` se il valore non cambia).
-      if (importInputRef.current) importInputRef.current.value = "";
-    }
-  }
+    },
+    [saveService, currentRomId, refreshSaveStates],
+  );
 
-  function handleImportChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) void handleImportFile(file);
-  }
+  const handleImportChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) void handleImportFile(file);
+    },
+    [handleImportFile],
+  );
 
   const dataSectionAvailable = saveService !== undefined;
   const exportDisabled =
