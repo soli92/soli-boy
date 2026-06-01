@@ -1,0 +1,71 @@
+{
+  "tsk_id": "TSK-052",
+  "iter": 1,
+  "generated_at": "2026-06-01T21:50:57Z",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "commit": "5475158",
+  "stack_descriptor": {
+    "primary": "yaml/github-actions",
+    "secondary": "typescript/playwright",
+    "confidence": 0.95,
+    "mode": "degraded",
+    "note": "Stack GHA/YAML: regole canonical non disponibili per questo layer; applicato ruleset emergent (GHA-DESIGN-001, GHA-DESIGN-002, GHA-ROBUST-001, GHA-IDIOM-001). Regole TS/Playwright applicate su playwright.config.ts (confidence 0.97)."
+  },
+  "files_reviewed": [
+    ".github/workflows/ci.yml",
+    "packages/app/playwright.config.ts"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-052-01",
+      "rule_id": "GHA-ROBUST-001",
+      "rule_path": "code_quality/rules/emergent/GHA-ROBUST-001.md",
+      "tier": "emergent",
+      "severity": "low",
+      "category": "robustness",
+      "pass": "robustness",
+      "advisory": true,
+      "title": "Install condizionato Playwright: system deps non cachate su cache-hit",
+      "description": "Lo step 'Install Playwright browsers (Chromium only)' viene saltato completamente (`if: steps.playwright-cache.outputs.cache-hit != 'true'`), includendo `--with-deps` che installa le system deps di sistema (libglib, libnss, libatk, ecc.). Su un cache-hit il binario Chromium è ripristinato da cache ma le system deps non sono nel cache path (`~/.cache/ms-playwright`). Su `ubuntu-latest` questo funziona nella pratica perché le deps Chromium sono pre-installate sul runner GitHub. Tuttavia, se GitHub cambia l'immagine base (rimozione di una lib, aggiornamento incompatibile), il job fallirà con 'Missing system deps' in modo non ovvio: la cache hit è avvenuta ma il browser non si avvia. Il TSK dichiara questa assunzione correttamente, ma non è riportata nel YAML come commento inline (solo in TSK-052.md §Nota).",
+      "location": {
+        "file": ".github/workflows/ci.yml",
+        "line_start": 53,
+        "line_end": 55
+      },
+      "annotation_present_in_tsk": true,
+      "annotation_present_in_yaml": false,
+      "recommendation": "Aggiungere un commento YAML inline sullo step per rendere evidente l'assunzione sulle system deps del runner, in modo che un futuro manutentore non rimuova la condizione `if` senza comprenderne il trade-off. Esempio: `# Assunzione: ubuntu-latest include system deps Chromium pre-installate. Se job fallisce con 'Missing system deps' su cache hit, rimuovere la condizione if.`",
+      "blocking": false
+    }
+  ],
+  "positive_checks": [
+    "Tutti gli step preesistenti (checkout, setup-node, npm ci, typecheck, unit tests, e2e, build) mantenuti intatti e nell'ordine corretto — nessuna regressione strutturale.",
+    "Cache key Playwright usa `hashFiles('packages/app/package-lock.json')` + `runner.os`: sensata, deterministica, allineata alla cache npm di setup-node. restore-keys con fallback OS-only corretto.",
+    "Install condizionato `if: steps.playwright-cache.outputs.cache-hit != 'true'` sintatticamente corretto e semanticamente coerente con la logica di cache Actions.",
+    "upload-artifact@v4 con `if: failure()` posizionato correttamente: dopo lo step e2e e prima di Build, garantisce raccolta artefatti anche su failure e2e. `if: failure()` ignora le cancellazioni (comportamento atteso).",
+    "Path artifact `packages/app/playwright-report/` coerente con l'output del reporter `html` in playwright.config.ts (directory default Playwright HTML reporter). Catena reporter→artifact chiusa correttamente.",
+    "playwright.config.ts: reporter CI `[['line'], ['html', { open: 'never' }]]` — `open: 'never'` impedisce apertura browser nel runner (corretto per CI headless). Locale usa `list` (minimal, nessun overhead).",
+    "concurrency group `${{ github.workflow }}-${{ github.ref }}` con `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`: chiude finding F-049-01 (TSK-049-iter-1). Semantica corretta: cancella PR stale, non interrompe push main.",
+    "permissions: contents: read a livello workflow: chiude finding F-049-03. Minimo privilegio per CI read-only (nessun deploy, nessun commento PR, nessuna scrittura release).",
+    "timeout-minutes: 20 sul job: chiude finding F-049-02. Adeguato per typecheck+unit+playwright-install+e2e+build (tipicamente < 8 min; 2.5x slack).",
+    "ROM MIT verificate: dmg-acid2.gb (MIT, mattcurrie) e gba-tests-thumb.gba (MIT, jsmolka) presenti in `packages/app/public/test-roms/`. Include via `actions/checkout@v4`, nessun download esterno. Soddisfa AC US-043 'nessun download ROM/BIOS esterni durante il job'.",
+    "Pokemon Unbound (v2.1.1.1).gba presente sul filesystem locale ma gitignored (.gitignore:21 `packages/app/public/test-roms/*`). Non tracciato, non presente in CI. Gli e2e che usano file GBA referenziano `gba-tests-thumb.gba` (MIT) tramite default env. Nessuna violazione legale.",
+    "GHA-IDIOM-001: `npx playwright install` risolve il binario Playwright dal `node_modules` installato da `npm ci` (devDependency `@playwright/test: ^1.60.0`). Non usa `@latest` — conforme alla regola GHA-IDIOM-001."
+  ],
+  "verdict": "passed",
+  "summary": "TSK-052 chiude correttamente i 3 finding advisory di TSK-049-iter-1 (concurrency, timeout, permissions) e aggiunge cache browser Playwright e upload artifact e2e. Logica complessiva solida: 0 finding blocking, 1 finding low/advisory (F-052-01) su assenza di commento inline riguardo l'assunzione system deps su cache-hit — annotata nel TSK ma non nel YAML. La catena reporter html → path artifact è coerente. ROM MIT verificate, nessun download esterno in CI. Verdict: passed.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression": false,
+    "exhausted": false
+  },
+  "previous_findings_closed": ["F-049-01", "F-049-02", "F-049-03"],
+  "task_package": null
+}

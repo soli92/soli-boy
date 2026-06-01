@@ -1,5 +1,5 @@
 # Digest settimanale code-review — dev-agent fe — 2026-W22
-<!-- aggiornato iter TSK-033: 2026-06-01 -->
+<!-- aggiornato iter TSK-045: 2026-06-01 -->
 
 Generato: 2026-06-01 (aggiornato TSK-033 iter-1: 2026-06-01) | Reviewer: code-reviewer@2.15.0
 
@@ -222,3 +222,40 @@ Nessuna azione richiesta. TSK-037 review_status: passed.
 ### Prossimo step
 
 Nessuna azione bloccante. Finding F-041-1 advisory low: il dev-agent puo' aggiungere il guard DEV o il commento JSDoc inline al prossimo tocco del file. TSK-041 review_status: passed.
+
+---
+
+## TSK-045 — Web app manifest (PWA) + link in index.html (US-038/EP-010) — iter-1 → PASS
+
+**Verdict iter-1:** pass (0 finding blocking; 3 finding low/advisory)
+**Stack:** html5/json-vite-public-static (conf 0.97, asset-only mode)
+**Files toccati:** packages/app/public/manifest.webmanifest (nuovo), packages/app/index.html (+3 righe head)
+
+### Finding (non-bloccanti)
+
+**F-045-1-01 [low, advisory] — Icon entries senza `purpose` esplicito (PWA-DESIGN-001 emergent candidate)**
+`manifest.webmanifest:10-11` — Le entry `icon-192.png` e `icon-512.png` senza maskable non dichiarano `purpose`. Per la spec W3C l'assenza equivale a `"any"` implicito, ma accanto all'entry con `purpose: "maskable"` crea una coppia 512/512 dove il purpose va inferito. Lighthouse audit moderni raccomandano `purpose` esplicito su ogni entry.
+Suggerimento: aggiungere `"purpose": "any"` alle prime due icon entry (192 e 512 non-maskable).
+
+**F-045-1-02 [low, advisory] — Campo `id` assente — identity PWA legata a `start_url` (PWA-ROBUST-001 emergent candidate)**
+`manifest.webmanifest:1-19` — Senza `id`, i browser usano `start_url` come primary key. Con `start_url: "/"` stabile il rischio e' basso ma non assente: un cambio di path Vercel o aggiunta di query param invaliderebbe l'identity e forzherebbe reinstallazione.
+Suggerimento: aggiungere `"id": "/"` come prima chiave del manifest.
+
+**F-045-1-03 [low, advisory] — Campo `lang` assente — incoerenza con `<html lang="it">` (PWA-DESIGN-002 emergent candidate)**
+`manifest.webmanifest:1-19` — Il documento dichiara `lang="it"` ma il manifest non dichiara `lang`. Audit Lighthouse e store (ChromeOS/TWA) usano il campo per indicizzazione/presentazione. Non impatta Electron/Capacitor.
+Suggerimento: aggiungere `"lang": "it"` al manifest.
+
+### Cosa ha funzionato bene (da replicare)
+
+- Tutti i campi obbligatori presenti: `name`, `short_name`, `start_url`, `display`, `icons` (192+512+maskable), `theme_color`, `background_color`.
+- JSON valido verificato (python3 json.load). Asset referenziati verificati esistenti (icon-192.png + icon-512.png in public/icons/).
+- Coerenza `theme_color` perfetta: `#ff00cc` identico in manifest e `<meta name="theme-color">`.
+- Non interferenza favicon TSK-043 confermata: 6 tag favicon non toccati.
+- Non interferenza Electron/Capacitor confermata: manifest ignorato nelle shell native.
+- Assunzione palette annotata correttamente nel TSK e in wiki/gaps.md (gap `palette-brand-da-verificare` aperto — comportamento conforme a R.2).
+- Scope rispettato (R.8): solo i 2 path dichiarati nel frontmatter code_path.
+- Build tsc+vite OK, dist/manifest.webmanifest generato, 8/8 e2e Playwright Chromium verdi.
+
+### Prossimo step
+
+Nessuna azione bloccante. I 3 finding low/advisory sono risolvibili in modo opportunistico nel prossimo TSK fe che tocca manifest.webmanifest (max_diff_lines: 80, sono tutte aggiunte di campo). Gate palette: verificare con owner i valori hex prima del rilascio brand-definitivo.

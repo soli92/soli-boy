@@ -1,0 +1,45 @@
+{
+  "tsk_id": "TSK-043",
+  "iter": 1,
+  "generated_at": "2026-06-01T23:50:00+02:00",
+  "reviewer_version": "2.15.0",
+  "stack_descriptor": {
+    "primary": "html5/vite-public-static",
+    "context": ["vite 5.x", "react 18.3", "typescript"],
+    "confidence": 0.97,
+    "mode": "asset-only",
+    "note": "Modifica limitata a index.html (tag <link> statici nel <head>). Nessun TypeScript/React toccato. Pass idiomaticita' non applicabile al markup HTML statico. Pass design e robustness verificati su struttura, correttezza attributi HTML, coerenza asset path e relazione con TSK-045."
+  },
+  "findings": [
+    {
+      "id": "F-043-1-A1",
+      "pass": "robustness",
+      "severity": "low",
+      "disposition": "advisory",
+      "blocking": false,
+      "rule_ref": "code_quality/rules/canonical/REACT-A11Y-001.md",
+      "title": "apple-touch-icon: attributo sizes non standard per rel=apple-touch-icon",
+      "description": "L'elemento `<link rel=\"apple-touch-icon\" href=\"/icons/icon-180.png\" sizes=\"180x180\" />` usa l'attributo `sizes` che e' valido per `rel=icon` (HTML spec) ma non e' parte della specifica Apple per `apple-touch-icon`. Safari/iOS ignora `sizes` su `apple-touch-icon` e usa sempre il file referenziato dal primo tag `apple-touch-icon` trovato, indipendentemente dalla dimensione dichiarata. Il tag funziona correttamente (iOS usa icon-180.png), ma l'attributo e' semanticamente ridondante e potrebbe generare confusione nei developer successivi. Non introduce regressioni. Advisory non bloccante.",
+      "location": "packages/app/index.html:11",
+      "suggestion": "Rimuovere l'attributo `sizes` dal tag `<link rel=\"apple-touch-icon\">` per aderire alla convenzione Apple: `<link rel=\"apple-touch-icon\" href=\"/icons/icon-180.png\" />`. Se si vuole documentare la risoluzione, aggiungere un commento inline.",
+      "auto_fixable": true
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "high": 0,
+    "medium": 0,
+    "low": 1,
+    "blocking": 0,
+    "advisory": 1,
+    "notes": "Modifica minimale e corretta: 6 tag <link> aggiunti nel <head> di index.html. Tutti i 6 asset referenziati esistono in packages/app/public/ (verificati). Uso di type=image/svg+xml per SVG e type=image/png per PNG: conforme alla spec WHATWG. Ordering SVG-first (browser moderni) + PNG fallback 32/64 + supplementari 16/128: corretto per compatibilita' progressiva. Nessuna interferenza con data-theme=90s-party (attributo su <html>, fuori dallo scope di questi tag). Nessuna duplicazione con TSK-045: i tag <link rel=manifest> e <meta name=theme-color> sono stati aggiunti da TSK-045 in un commit successivo (5475158), non sono presenti nello scope di TSK-043 (commit 8c72442). Un finding low/advisory: sizes su apple-touch-icon e' ridondante per la spec Apple (Safari lo ignora) ma non introduce errori o regressioni. Build e 8/8 e2e verdi confermati dal log."
+  },
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression": false,
+    "previous_report": null
+  },
+  "task_package": null
+}

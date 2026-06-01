@@ -1,0 +1,59 @@
+{
+  "tsk_id": "TSK-047",
+  "iter": 1,
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "commit": "5475158",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "bundler": "vite",
+    "test_runner": "vitest",
+    "confidence": 0.97,
+    "mode": "stack-aware"
+  },
+  "findings": [
+    {
+      "id": "F-047-01",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "blocking": false,
+      "advisory": true,
+      "file": "packages/app/src/components/ThemeSelector/ThemeSelector.test.tsx",
+      "line": 89,
+      "title": "describe('useTheme') in ThemeSelector.test.tsx assente afterEach per data-theme — potenziale cross-contaminazione intra-file",
+      "description": "Il blocco `describe('useTheme (TSK-044 / US-036)')` in ThemeSelector.test.tsx (lines 89-143) esegue 4 test che scrivono su `document.documentElement.setAttribute('data-theme', ...)` tramite l'hook reale. A differenza di useTheme.test.ts (che ha un afterEach corretto con removeAttribute), questo describe non ripulisce l'attributo tra i test. I test useTheme di questo file sono eseguiti dal medesimo test runner (Vitest, jsdom condiviso per file) e possono propagare il data-theme dell'iterazione precedente al test successivo. Esempio: il test 'setTheme aggiorna data-theme E invoca port.save' (line 112) imposta data-theme='dark'; se un successivo test nello stesso describe verificasse il valore atteso iniziale del DOM, troverebbe 'dark' invece del valore di default. Al momento nessuno dei 4 test fa questo controllo intra-file in modo che la cross-contaminazione produca falsi positivi — ma la robustezza è fragile: basta aggiungere un test che verifica lo stato iniziale del DOM per ottenere un falso verde o un falso rosso. Correttivo minimo: aggiungere afterEach(() => document.documentElement.removeAttribute('data-theme')) al describe o allo scope di file, allineandosi al pattern già adottato in useTheme.test.ts.",
+      "suggestion": "Aggiungere in ThemeSelector.test.tsx, prima del describe('useTheme ...'), un afterEach(() => { document.documentElement.removeAttribute('data-theme'); }); oppure spostare l'afterEach a livello di file (fuori da qualsiasi describe) per coprire sia il describe ThemeSelector che il describe useTheme.",
+      "auto_fixable": false,
+      "ref_source": "packages/app/src/components/ThemeSelector/ThemeSelector.test.tsx:89-143"
+    }
+  ],
+  "positive_checks": [
+    "F-044-01 (parseTheme) completamente indirizzato: unit pura parseTheme con loop su UI_THEMES + 4 input invalidi (stringa assente, stringa vuota, case-errato, valore sconosciuto); path via port.load() stale con asserzione su state E data-theme; path via setTheme() con valore non valido con asserzione su state, DOM e port.save riceve valore normalizzato (non raw junk)",
+    "F-044-02 (save-reject) completamente indirizzato: test in useTheme.test.ts lines 194-229 verifica (1) stato in memoria aggiornato, (2) data-theme aggiornato, (3) console.warn chiamato, (4) warn con stringa esatta '[useTheme] port.save() rejected:' + oggetto Error — tutte e quattro le assi coperte",
+    "Pattern fake ThemePort in-memory rispettato: entrambi i file usano vi.fn tipizzati su ThemePort['load'] e ThemePort['save'], nessuna dipendenza da IndexedDB reale",
+    "afterEach in useTheme.test.ts: document.documentElement.removeAttribute(DATA_THEME_ATTR) — isolamento corretto tra test nel file esteso",
+    "Separazione di responsabilita' netta: ThemeSelector.test.tsx copre il componente UI (controlled select, event wiring, opzioni presenti); useTheme.test.ts copre il hook in isolamento (renderHook puro, no JSX)",
+    "import type { ThemePort } usato in entrambi i file — TS-IDIOM-001 rispettata",
+    "Nessun any implicito/esplicito, nessun non-null assertion — TS-IDIOM-002 rispettata",
+    "AC US-036 coperti: AC1 (data-theme='90s-party' al mount + opzioni presenti), AC3 (selezione alternate dark/cyberpunk), AC4 (port.load hydration + port.save persistence) — AC2 correttamente fuori scope unit (token CSS da @soli92/solids non verificabile a livello unit)",
+    "Nessun test tautologico: tutte le asserzioni sono su stato esterno (DOM, vi.fn calls, result.current.theme); il loop parseTheme su UI_THEMES testa il contratto reale della costante esportata",
+    "Nessuna duplicazione con i 6 smoke TSK-044 gia' presenti in ThemeSelector.test.tsx: i nuovi test in useTheme.test.ts approfondiscono scenari non coperti (stale value, case-sensitivity, save-reject, setTheme con input invalido)",
+    "Descrizioni test leggibili e tracciate con riferimenti espliciti (F-044-01, F-044-02, US-036, AC) — facilita la navigazione del fallimento in CI",
+    "act(async () => {...}) usato correttamente per aggiornamenti di stato hook; waitFor per asserzioni asincrone sul DOM — pattern Vitest/RTL idiomatico",
+    "187 unit test verdi (era 172 pre-TSK-047): +15 test, nessuna regressione dichiarata"
+  ],
+  "verdict": "passed",
+  "summary": "TSK-047 supera la review con 1 finding advisory low (non blocking). I due file di test coprono in modo completo e non tautologico tutti gli AC di US-036 verificabili a livello unit, i finding F-044-01 e F-044-02 del report TSK-044-iter-1, e i requisiti tecnici del TSK (fake port, jsdom, separazione componente/hook). Il solo finding riguarda la mancanza di afterEach per data-theme nel describe useTheme di ThemeSelector.test.tsx, che crea un potenziale di cross-contaminazione intra-file non ancora manifesto. Correttivo minimale e a basso rischio.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false
+  },
+  "next_step": "verdict passed — nessuna iterazione richiesta. F-047-01 (advisory/low) consegnato a qa-dev per fix opportunistico nella prossima wave."
+}

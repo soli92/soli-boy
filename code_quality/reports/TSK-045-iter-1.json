@@ -1,0 +1,76 @@
+{
+  "tsk_id": "TSK-045",
+  "iter": 1,
+  "generated_at": "2026-06-01T23:59:00+02:00",
+  "reviewer_version": "2.15.0",
+  "stack_descriptor": {
+    "primary": "html5/json-vite-public-static",
+    "context": ["vite 5.x", "react 18.3", "typescript", "web-app-manifest"],
+    "confidence": 0.97,
+    "mode": "asset-only",
+    "note": "Modifica limitata a manifest.webmanifest (JSON puro, W3C Web App Manifest) e index.html (3 righe aggiunte nel <head>: commento + <link rel=manifest> + <meta name=theme-color>). Nessun TypeScript/React toccato. Pass idiomaticita' verificata su struttura JSON manifest e HTML statico. Pass design e robustness verificate su campi PWA obbligatori/raccomandati, esistenza asset referenziati, coerenza theme-color, non-interferenza favicon (TSK-043) e shell native (Electron/Capacitor), assunzione palette annotata."
+  },
+  "findings": [
+    {
+      "id": "F-045-1-01",
+      "pass": "design",
+      "severity": "low",
+      "disposition": "advisory",
+      "blocking": false,
+      "rule_ref": "code_quality/rules/emergent/PWA-DESIGN-001.md",
+      "title": "Icon entries senza campo `purpose` esplicito — `any` implicito non dichiarato",
+      "description": "Le prime due icon entry del manifest (`icon-192.png` e `icon-512.png` senza maskable) non dichiarano il campo `purpose`. Per la spec W3C Web App Manifest, l'assenza di `purpose` equivale a `\"any\"` ma non e' dichiarato esplicitamente. Accanto all'entry 512 con `\"purpose\": \"maskable\"`, l'entry 512 senza `purpose` crea una coppia 512/512 dove il browser deve inferire quale usare per quale contesto. In alcuni launcher Android e nei Lighthouse audit moderni, la best practice e' una entry per purpose, con `purpose` sempre esplicito su ogni entry. Non introduce errori funzionali (le icone vengono caricate correttamente) ma e' sub-ottimale per robustezza e leggibilita'. Advisory non bloccante.",
+      "location": "packages/app/public/manifest.webmanifest:10-11",
+      "suggestion": "Aggiungere `\"purpose\": \"any\"` alle prime due entry icon (192 e 512 non-maskable): `{ \"src\": \"/icons/icon-192.png\", \"sizes\": \"192x192\", \"type\": \"image/png\", \"purpose\": \"any\" }` e `{ \"src\": \"/icons/icon-512.png\", \"sizes\": \"512x512\", \"type\": \"image/png\", \"purpose\": \"any\" }`. Lasciare invariata la terza entry con `\"purpose\": \"maskable\"`.",
+      "auto_fixable": true
+    },
+    {
+      "id": "F-045-1-02",
+      "pass": "robustness",
+      "severity": "low",
+      "disposition": "advisory",
+      "blocking": false,
+      "rule_ref": "code_quality/rules/emergent/PWA-ROBUST-001.md",
+      "title": "Campo `id` assente nel manifest — identity PWA legata a `start_url`",
+      "description": "Il manifest non dichiara il campo `id` (W3C spec, Chrome/Edge 96+). Senza `id`, i browser usano `start_url` come primary key dell'app PWA installata: se `start_url` cambia in futuro (aggiunta parametri, cambio base path per deploy su sottopath Vercel), il browser tratta la PWA come una nuova app e gli utenti devono reinstallarla. Con `start_url: \"/\"` e deploy su dominio root il rischio e' basso ma non assente. Advisory non bloccante.",
+      "location": "packages/app/public/manifest.webmanifest:1-19",
+      "suggestion": "Aggiungere `\"id\": \"/\"` come prima chiave del manifest (dopo `{`): rende l'identity stabile indipendentemente da variazioni future di `start_url`. Il valore `\"/\"` e' convenzionale quando `start_url` e' `/`.",
+      "auto_fixable": true
+    },
+    {
+      "id": "F-045-1-03",
+      "pass": "design",
+      "severity": "low",
+      "disposition": "advisory",
+      "blocking": false,
+      "rule_ref": "code_quality/rules/emergent/PWA-DESIGN-002.md",
+      "title": "Campo `lang` assente nel manifest — incoerenza con `<html lang=\"it\">`",
+      "description": "Il documento `index.html` dichiara `<html lang=\"it\" data-theme=\"90s-party\">` ma il manifest non dichiara il campo `lang`. Per audit Lighthouse PWA e per gli store di app (ChromeOS, Play Store via TWA) la coerenza tra `lang` del documento e `lang` del manifest e' raccomandata. L'omissione non causa errori funzionali e non impatta i contesti Electron/Capacitor. Advisory non bloccante.",
+      "location": "packages/app/public/manifest.webmanifest:1-19",
+      "suggestion": "Aggiungere `\"lang\": \"it\"` al manifest (dopo `id`, prima di `name`), coerentemente con `<html lang=\"it\">` in index.html.",
+      "auto_fixable": true
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "high": 0,
+    "medium": 0,
+    "low": 3,
+    "blocking": 0,
+    "advisory": 3,
+    "notes": "Manifest PWA strutturalmente corretto e completo. Campi obbligatori tutti presenti: name, short_name, start_url, display, icons (192+512+maskable), theme_color, background_color. JSON valido (verificato python3 json.load). Asset referenziati verificati esistenti: icon-192.png (7567 B) e icon-512.png (18833 B) in packages/app/public/icons/. Coerenza theme-color tra manifest (#ff00cc) e <meta name=theme-color content=#ff00cc>: perfetta. Non interferenza favicon TSK-043: confermata (6 tag favicon non toccati). Non interferenza Electron/Capacitor: confermata (il manifest e' ignorato nelle shell native). Assunzione palette (#0d0d0d / #ff00cc) annotata nel TSK e nel wiki/gaps.md (riga palette-brand-da-verificare ancora aperta): comportamento conforme a R.2. Build e 8/8 e2e Playwright Chromium verdi (commit 5475158). Tre finding low/advisory senza blocking: F-045-1-01 purpose implicito su icon entries, F-045-1-02 id assente (identity fragile su start_url), F-045-1-03 lang assente (incoerenza con html lang=it). Nessuna regressione su file non toccati dalla fix. Tre regole emergent candidate create: PWA-DESIGN-001, PWA-ROBUST-001, PWA-DESIGN-002 (gate umano per promozione, PATTERN §19.5)."
+  },
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression": false,
+    "previous_report": null
+  },
+  "task_package": null,
+  "emergent_rules_created": [
+    "code_quality/rules/emergent/PWA-DESIGN-001.md",
+    "code_quality/rules/emergent/PWA-ROBUST-001.md",
+    "code_quality/rules/emergent/PWA-DESIGN-002.md"
+  ]
+}

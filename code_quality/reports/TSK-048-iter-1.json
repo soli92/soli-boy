@@ -1,0 +1,49 @@
+{
+  "tsk_id": "TSK-048",
+  "iter": 1,
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "playwright",
+    "context": "e2e",
+    "confidence": 0.98,
+    "mode": "full"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-048-01",
+      "rule_id": "TS-IDIOM-002",
+      "tier": "canonical",
+      "severity": "low",
+      "advisory": true,
+      "blocking": false,
+      "title": "Non-null assertion `manifestHref!` senza commento giustificativo",
+      "location": "packages/app/e2e/brand.e2e.ts:18",
+      "description": "`getAttribute()` ritorna `string | null`. Il guard `expect(manifestHref).toBeTruthy()` rende l'assertion logicamente sicura, ma la regola TS-IDIOM-002 richiede un commento esplicito che ne giustifichi la sicurezza. In assenza di commento, la non-null assertion risulta opaca per chi legge il codice.",
+      "suggestion": "Aggiungere un commento inline dopo il guard: `// manifestHref è truthy dopo il guard expect sopra` oppure usare una type-guard esplicita (`if (!manifestHref) throw new Error('manifest href not found')`) che rende il flusso self-documenting.",
+      "rule_ref": "[^rule: code_quality/rules/canonical/TS-IDIOM-002.md §Rationale]",
+      "src_ref": "[^src5: packages/app/e2e/brand.e2e.ts:18]"
+    }
+  ],
+  "locator_correction_assessment": {
+    "verdict": "correct",
+    "original_spec": "getByLabel(\"Soli-boy\") (TSK-048 body §Test 3)",
+    "implemented": "getByAltText(\"Soli-boy\")",
+    "rationale": "getByLabel si applica ai form control (input/select/textarea via aria-label o htmlFor). TSK-046 ha implementato il logo come <img alt=\"Soli-boy\"> (role=img, non form control): getByAltText è il locator semanticamente corretto per alt text di <img>. La correzione è tecnicamente accurata, coerente con Playwright e con l'implementazione reale."
+  },
+  "summary": {
+    "findings_count": { "high": 0, "medium": 0, "low": 1 },
+    "blocking": 0,
+    "advisory": 1,
+    "no_progress": false,
+    "regression": false
+  },
+  "verdict": "passed",
+  "verdict_rationale": "0 finding blocking. 1 finding low/advisory (non-null assertion senza commento). I 3 test verificano artefatti reali a runtime (favicon href in DOM, manifest HTTP 200 + contenuto JSON name/icons, logo visibile via getByAltText). Locator robusti e allineati all'implementazione reale. Nessun flakiness evidente. Nessuna dipendenza da ?engine=real. Correzione locator getByLabel → getByAltText giudicata corretta e ben documentata."
+}

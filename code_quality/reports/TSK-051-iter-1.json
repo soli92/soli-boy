@@ -1,0 +1,116 @@
+{
+  "tsk_id": "TSK-051",
+  "iter": 1,
+  "generated_at": "2026-06-01T23:55:00+02:00",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "stack_descriptor": {
+    "language": "yaml",
+    "platform": "github-actions",
+    "runtime": "ubuntu-latest",
+    "node_version": "20",
+    "confidence": 0.95,
+    "detection_mode": "guided",
+    "degraded_mode": true,
+    "degraded_mode_note": "Nessuna regola canonical per stack GHA/YAML presente in code_quality/rules/canonical/. Finding citano regole emergent candidate (GHA-DESIGN-001, GHA-DESIGN-002, GHA-ROBUST-001) gia' presenti da TSK-049. Gate umano richiesto per promozione a canonical. Un finding emergente nuovo (GHA-IDIOM-001, pin vercel CLI) creato in questo run con status candidate."
+  },
+  "files_reviewed": [
+    ".github/workflows/cd-vercel.yml"
+  ],
+  "diff_commit": "8c72442",
+  "diff_lines_added": 114,
+  "diff_lines_removed": 0,
+  "passes": {
+    "idiomaticity": "1-finding-low",
+    "design": "clean",
+    "robustness": "clean"
+  },
+  "findings": [
+    {
+      "id": "F-051-01",
+      "rule_id": "GHA-IDIOM-001",
+      "rule_tier": "emergent",
+      "rule_ref": "code_quality/rules/emergent/GHA-IDIOM-001.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "file": ".github/workflows/cd-vercel.yml",
+      "lines": [89, 113],
+      "title": "npx vercel@latest non e' deterministico: eseguire con major pinned (vercel@^latest-major) o SHA-pinned",
+      "description": "I tre step `vercel pull`, `vercel build`, `vercel deploy` invocano `npx vercel@latest`: il tag `latest` risolve sempre all'ultima versione pubblicata su npm al momento del run. Questo implica che la versione della CLI Vercel usata nella pipeline puo' cambiare silenziosamente a ogni run (incluso al momento del deploy in produzione su tag `v*`) senza che il lockfile del progetto o il workflow YAML vengano modificati. Un breaking change nella CLI (es. cambio di formato degli artefatti `.vercel/output/`, rimozione di un flag, cambio di exit code) potrebbe causare un fallimento in produzione silenzioso o un comportamento divergente tra run successive.\n\nIl workflow annota in modo preciso il rationale della scelta (`vercel@latest` con 'vincolo major implicito via lockstep release Vercel'): il ragionamento e' parzialmente fondato (Vercel mantiene compatibilita' semver nella stessa major), ma `@latest` non equivale a pin sulla major — se Vercel rilascia vercel@v40 domani, npx vercel@latest usera' immediatamente v40. La correzione corretta e' usare `npx vercel@39` (o la major corrente) invece di `npx vercel@latest`. Alternativamente, installare vercel come devDependency con versione pinned in package.json e richiamarla tramite `npx vercel` (che usa la versione locale dal node_modules).\n\nL'impatto e' basso (Vercel e' storicamente molto attento alla compatibilita' CLI), ma il pattern non e' deterministico per definizione.",
+      "recommendation": "Sostituire `npx vercel@latest` con `npx vercel@<major>` (es. `npx vercel@39` se la major corrente e' 39) nei tre step `vercel pull`, `vercel build`, `vercel deploy`. In alternativa, aggiungere vercel come devDependency in packages/app/package.json con versione `^X.0.0` e richiamare semplicemente `npx vercel` (risolve la versione installata localmente via npm ci).\n```yaml\n# opzione A: pin major via npx\nnpx vercel@39 pull ...\nnpx vercel@39 build ...\nnpx vercel@39 deploy ...\n\n# opzione B: vercel come devDependency (piu' deterministico)\n# packages/app/package.json: \"devDependencies\": { \"vercel\": \"^39.0.0\" }\nnpx vercel pull ...\nnpx vercel build ...\nnpx vercel deploy ...\n```\nLa major da pinnare e' verificabile con `npm view vercel dist-tags.latest`.",
+      "auto_fixable": false,
+      "blocking": false,
+      "source_note": "Finding low advisory. Non bloccante: il workflow e' funzionalmente corretto e la pipeline di deploy e' operativa. Il rischio di breaking change involontario da aggiornamento @latest e' basso ma reale (non zero). Il rationale del TSK ('vincolo major implicito via lockstep') e' parzialmente errato: @latest segue sempre l'ultima versione pubblicata indipendentemente dalla major."
+    }
+  ],
+  "positive_notes": [
+    {
+      "id": "N-051-01",
+      "type": "positive",
+      "title": "Trigger prod/preview corretti e semanticamente distinti",
+      "description": "`push: tags: [v*]` per produzione e `pull_request: branches: [main]` per preview coprono esattamente la policy ratificata (gap `vercel-deploy-trigger-policy`). I due trigger sono mutuamente esclusivi (un tag v* non e' una PR, e una PR non e' un tag): non vi e' rischio di deploy PROD su una PR."
+    },
+    {
+      "id": "N-051-02",
+      "type": "positive",
+      "title": "--prod applicato correttamente solo sui tag, assente sulle PR",
+      "description": "L'espressione `${{ startsWith(github.ref, 'refs/tags/v') && '--prod' || '' }}` e' usata consistentemente in tutti e tre gli step che la richiedono (vercel pull con --environment, vercel build, vercel deploy). La logica e' corretta: `refs/tags/v*` sui push tag, assenza di `--prod` sulle PR. L'uso in `vercel pull --environment=production|preview` garantisce che anche le env vars Vercel scaricate siano quelle corrette per l'ambiente target."
+    },
+    {
+      "id": "N-051-03",
+      "type": "positive",
+      "title": "Nessun secret hardcoded, gestione via ${{ secrets.* }} corretta",
+      "description": "I tre secret VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID sono iniettati esclusivamente via `${{ secrets.* }}` nel blocco `env:` del job. Nei comandi shell i valori sono espansi come variabili d'ambiente (`${VERCEL_TOKEN}`) senza interpolazione YAML diretta. Non vi sono credenziali in chiaro nel file."
+    },
+    {
+      "id": "N-051-04",
+      "type": "positive",
+      "title": "actions/checkout@v4 e actions/setup-node@v4: pin SHA-less ma major-pinned (accettabile)",
+      "description": "Le action di prima parte GitHub (checkout, setup-node) sono pinnate alla major @v4, non a SHA. Per action ufficiali GitHub questo e' il pattern prevalente e accettabile: Vercel e GitHub garantiscono compatibilita' nella stessa major. Il rischio di supply-chain attack su action GitHub first-party e' significativamente inferiore a quello su action di terze parti."
+    },
+    {
+      "id": "N-051-05",
+      "type": "positive",
+      "title": "concurrency corretta: cancel-in-progress condizionale PR/tag",
+      "description": "`concurrency.group: cd-vercel-${{ github.ref }}` con `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` e' la soluzione ideale per un workflow CD ibrido: annulla i deploy preview obsoleti su PR (risparmio runner-minutes, deploy preview dell'ultimo commit), ma serializza (non cancella) i deploy di produzione su tag. Il pattern e' simmetrico a quello raccomandato da GHA-DESIGN-001 e migliora il comportamento gia' rilevato come assente in TSK-049."
+    },
+    {
+      "id": "N-051-06",
+      "type": "positive",
+      "title": "permissions: contents: read dichiarati esplicitamente",
+      "description": "Il workflow dichiara `permissions: contents: read` a livello workflow (minimo necessario per checkout del codice). La CLI Vercel non scrive sul repo, non commenta sulle PR, non pubblica release artifacts GitHub: il permesso e' minimo e corretto. Nota interna al workflow giustifica esplicitamente la scelta e anticipa il caso future (`pull-requests: write` solo se si vuole pubblicare preview URL come commento PR)."
+    },
+    {
+      "id": "N-051-07",
+      "type": "positive",
+      "title": "timeout-minutes: 15 dichiarato sul job",
+      "description": "Il job dichiara `timeout-minutes: 15`, eliminando il finding F-049-02 del workflow CI (timeout assente). Il valore 15 minuti e' appropriato per un workflow di deploy che non include e2e: npm ci + vercel pull/build/deploy sono operazioni tipicamente completate in 2-5 minuti, e 15 min offre 3x di slack per variabilita' runner."
+    },
+    {
+      "id": "N-051-08",
+      "type": "positive",
+      "title": "Architettura pull/build/deploy --prebuilt: separazione di responsabilita' corretta",
+      "description": "La scelta di 3 step espliciti (vercel pull → vercel build → vercel deploy --prebuilt) invece di un'unica action opaca (amondnet/vercel-action) offre visibilita' granulare nel log del workflow, separazione delle fasi (metadata, build, deploy), e la garanzia che la build avviene nel runner CI (non su Vercel infra remotamente) con il lockfile e le env di CI. `--prebuilt` su deploy garantisce che Vercel non riesegua la build."
+    },
+    {
+      "id": "N-051-09",
+      "type": "positive",
+      "title": "vercel.json non modificato: COOP/COEP preservati per cross-origin isolation WASM",
+      "description": "Il workflow non tocca `packages/app/vercel.json`. `vercel build` include il file nell'output `.vercel/output/` per default (comportamento documentato Vercel CLI). Gli header COOP/COEP richiesti dai core WASM con threading sono quindi propagati nel deploy senza intervento esplicito."
+    },
+    {
+      "id": "N-051-10",
+      "type": "positive",
+      "title": "Gate umano documentato per i secret: comportamento di fallimento atteso documentato",
+      "description": "L'header del workflow documenta esplicitamente i 3 secret da creare, il percorso UI GitHub (Settings → Secrets and variables → Actions), la fonte (vercel.com tokens / `vercel link`), e il comportamento atteso in caso di secret mancante ('il workflow fallira' in modo atteso al primo step che li usa'). La nota esplicita che questo non blocca CI ne' TSK-049/050. Conforme a R.14/R.15 (gate umano per la creazione dei secret)."
+    }
+  ],
+  "verdict": "pass",
+  "summary": "TSK-051 produce un workflow CD GitHub Actions strutturalmente eccellente. Trigger prod/preview corretti e mutuamente esclusivi (tag v* per PROD, PR su main per PREVIEW). Distinzione --prod applicata consistentemente in tutti e tre gli step Vercel (pull/build/deploy). Concurrency con cancel-in-progress condizionale: pattern ottimale per un CD ibrido (serializza i release, cancella i preview obsoleti). permissions: contents: read espliciti. timeout-minutes: 15 sul job. Architettura 3-step (pull/build/deploy --prebuilt) chiara e auditabile. vercel.json non toccato: COOP/COEP propagati. Secret gate umano documentato con comportamento di fallimento atteso. Un solo finding low advisory (F-051-01): npx vercel@latest non e' deterministico -- il rationale del TSK ('vincolo major implicito') e' parzialmente errato: @latest segue sempre l'ultima versione indipendentemente dalla major. Correzione raccomandata: pin della major (vercel@39 o devDependency). Non bloccante. Stack GHA/YAML privo di regole canonical: review in modalita' degradata (regole emergent candidate da TSK-049). Nuova regola emergent GHA-IDIOM-001 creata per il pattern npx @latest.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false
+  },
+  "next_step": "TSK-051 → review_status: passed. Finding low advisory F-051-01 (npx vercel@latest non deterministico): puo' essere risolto con un micro-task di improvement su EP-011 (sostituzione @latest con pin major negli step vercel pull/build/deploy, < 5 righe di diff). Non urgente: la pipeline e' operativa e il rischio breaking change Vercel CLI e' basso storicamente. Regola emergent GHA-IDIOM-001 creata con status: candidate: gate umano per eventuale promozione a canonical."
+}

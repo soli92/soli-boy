@@ -1,0 +1,93 @@
+{
+  "tsk_id": "TSK-046",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "mode": "full"
+  },
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-046-01",
+      "rule_id": "CSS-DESIGN-001",
+      "tier": "emergent",
+      "severity": "low",
+      "status": "advisory",
+      "blocking": false,
+      "file": "packages/app/src/components/Library/Library.tsx",
+      "lines": "30-34",
+      "title": "Classe sb-app-logo senza CSS associato — contratto dimensionale solo via inline style",
+      "description": "LOGO_STYLE è definito come costante module-level con height:'2rem', width:'auto', display:'block' e applicato via style={{}} inline. La classe sb-app-logo è introdotta senza regole CSS associate (documentato intenzionalmente nel commento). Lo stile inline fa sì che qualunque override da parte del design system richieda !important o la rimozione del prop style= — il contratto dimensionale del logo non è espresso nel layer CSS dove il DS opera (solids-theme.css, token sd-*). Questo è accettabile per lo scope zero-dep del TSK, ma il gap è rilevabile in sede di futura integrazione DS.",
+      "note": "Finding advisory — nessuna azione richiesta per questo TSK. La scelta è giustificata e documentata (sb-logo incompatibile con ratio 680x240 della variante horizontal, solids-theme.css fuori scope). Il gap è già tracciato come svg-react-import-strategy nel TSK; un follow-up può aggiungere .sb-app-logo in solids-theme.css o in un foglio di stile locale.",
+      "citation": "[^rule: code_quality/rules/emergent/CSS-DESIGN-001.md §Rationale] [^src5: packages/app/src/components/Library/Library.tsx:30]"
+    }
+  ],
+  "positive_observations": [
+    {
+      "id": "POS-046-01",
+      "category": "idiomaticity",
+      "description": "Import URL di default Vite (import logoUrl from '...svg') corretto per asset binari non-componente. Nessuna dipendenza runtime aggiuntiva (no vite-plugin-svgr). Coerente con tech_stack vincolo Vite."
+    },
+    {
+      "id": "POS-046-02",
+      "category": "idiomaticity",
+      "description": "LOGO_STYLE estratta come costante module-level tipizzata CSSProperties — evita object allocation ad ogni render (pattern corretto per stili statici in React)."
+    },
+    {
+      "id": "POS-046-03",
+      "category": "design",
+      "description": "Scelta variante horizontal giustificata con motivazione tecnica precisa: <img> isola l'SVG dal cascade CSS host e non eredita currentColor; la variante mono via <img> produrrebbe nero opaco illeggibile sui temi scuri (90s-party, dark). La motivazione è documentata sia nel commento di file che nel frontmatter TSK."
+    },
+    {
+      "id": "POS-046-04",
+      "category": "design",
+      "description": "Header renderizzato in tutti i branch di stato (error/loading/empty/populated) — branding coerente indipendentemente dallo stato della libreria. Struttura semantica corretta: <header> landmark wrappa il logo; <section aria-label='Libreria giochi'> come root in tutti i rami."
+    },
+    {
+      "id": "POS-046-05",
+      "category": "design",
+      "description": "Nessuna duplicazione con favicon/manifest: gli asset public/ (TSK-043/045) e src/assets/ servono contesti distinti. Il TSK documenta esplicitamente l'assenza di conflitto e cita US-039 AC."
+    },
+    {
+      "id": "POS-046-06",
+      "category": "a11y",
+      "description": "alt='Soli-boy' corretto: fornisce accessible name informativo per role=img. Il testo dell'alt non è testo nodale del DOM e non interferisce con getByText() degli e2e né con gli accessible name dei button delle tile ('titolo piattaforma'). Verificato: la tile usa <button>.sb-game con text content 'rom.title + rom.platform', non influenzato dall'alt del logo header."
+    },
+    {
+      "id": "POS-046-07",
+      "category": "a11y",
+      "description": "Header landmark <header> nell'albero degli stati ha role=banner nel contesto di <section> (non top-level): semanticamente corretto. La section ha aria-label='Libreria giochi' — landmark naming esplicito coerente con gli e2e esistenti."
+    },
+    {
+      "id": "POS-046-08",
+      "category": "robustness",
+      "description": "Test Library.test.tsx aggiornato correttamente: (1) +1 test 'mostra il logo Soli-boy nell'header' con findByRole('img',{name:'Soli-boy'}) e asserzione src=/soliboy-logo-horizontal/; (2) i 2 test precedenti che usavano screen.queryByRole('img') globale ora ristrettiti con within(grid) — adattamento corretto per evitare falsi positivi dovuti al nuovo logo. Nessuna regressione nei test esistenti."
+    },
+    {
+      "id": "POS-046-09",
+      "category": "robustness",
+      "description": "Gap svg-react-import-strategy tracciato come possibile miglioramento futuro — approccio theme-adaptive via inline SVG/svgr documentato come opzione non implementata. Gap non chiuso forzatamente ma riconosciuto con opzione zero-dep accettata."
+    }
+  ],
+  "verdict": "passed",
+  "summary": "TSK-046 implementa il logo brand nell'header della Library con qualita' alta. La scelta <img>+horizontal e' architetturalmente corretta e giustificata (isolamento currentColor, zero-dep, leggibilita' multi-tema). A11y verificata: alt='Soli-boy' corretto, nessuna collisione con accessible name delle tile ne' con selettori e2e. Semantica header/section corretta. Test aggiornati con rigore (scoping within(grid), +1 test dedicato). Unico finding: low/advisory CSS-DESIGN-001 su stile inline senza CSS class associata — accettabile per lo scope zero-dep del TSK, gap gia' documentato. Nessun finding blocking.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression": false,
+    "exhausted": false
+  },
+  "next_step": "TSK-046 → passed. Nessuna azione richiesta per il dev-agent. Follow-up opzionale: aggiungere .sb-app-logo in solids-theme.css (o foglio locale) quando il logo sara' integrato nel DS — fuori scope TSK-046.",
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "2.15.0",
+  "commit_ref": "8c72442"
+}
