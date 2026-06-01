@@ -1,7 +1,7 @@
 ---
 id: PWA-DESIGN-001
-tier: emergent
-status: candidate
+tier: canonical
+status: active
 applies_to: { language: json, context: [design, robustness], platform: web-app-manifest }
 severity_default: low
 auto_fixable: true

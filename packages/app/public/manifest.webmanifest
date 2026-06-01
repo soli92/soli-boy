@@ -1,4 +1,6 @@
 {
+  "id": "/",
+  "lang": "it",
   "name": "Soli-boy",
   "short_name": "Soli-boy",
   "description": "Emulatore retro multipiattaforma — web, desktop, mobile.",
@@ -7,13 +9,8 @@
   "background_color": "#0d0d0d",
   "theme_color": "#ff00cc",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

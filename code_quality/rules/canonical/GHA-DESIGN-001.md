@@ -1,7 +1,7 @@
 ---
 id: GHA-DESIGN-001
-tier: emergent
-status: candidate
+tier: canonical
+status: active
 applies_to: { language: yaml, context: [design, robustness], platform: github-actions }
 severity_default: minor
 auto_fixable: false

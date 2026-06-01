@@ -1,7 +1,7 @@
 ---
 id: CSS-DESIGN-001
-tier: emergent
-status: candidate
+tier: canonical
+status: active
 applies_to: { language: css, context: [design, robustness] }
 severity_default: low
 auto_fixable: false
