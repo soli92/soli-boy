@@ -15,7 +15,7 @@ const appRoot = path.resolve(dir, "..");
 const DATA = path.join(appRoot, "public/emulatorjs/data");
 const CDN = "https://cdn.emulatorjs.org/stable/data";
 // Core minimi per il Core web MVP (GB/GBC → gambatte). Aggiungere mgba/fbneo al bisogno.
-const CORES = ["gambatte-wasm.data"];
+const CORES = ["gambatte-wasm.data", "gambatte-thread-wasm.data"];
 
 async function dl(url, dest) {
   const res = await fetch(url);

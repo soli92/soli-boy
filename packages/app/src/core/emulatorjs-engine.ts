@@ -30,6 +30,7 @@ interface EjsWindow extends Window {
   EJS_gameUrl?: string;
   EJS_pathtodata?: string;
   EJS_startOnLoaded?: boolean;
+  EJS_threads?: boolean;
   EJS_ready?: () => void;
   EJS_emulator?: EjsInstance;
 }
@@ -82,6 +83,9 @@ export class EmulatorJsEngine implements EmulatorEngine {
     w.EJS_gameUrl = this.objectUrl = URL.createObjectURL(opts.rom);
     w.EJS_pathtodata = this.pathtodata;
     w.EJS_startOnLoaded = true;
+    // Usa il core non-threaded: evita la dipendenza dalla variante -thread-wasm e da
+    // SharedArrayBuffer/cross-origin isolation per il caricamento del runtime del core.
+    w.EJS_threads = false;
 
     // TSK-021 iter 2 (TS-ROBUST-001): distingui successo da errore e applica un timeout,
     // così un fallimento del loader / EJS_ready mai emesso non resta mascherato.
