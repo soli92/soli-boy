@@ -20,3 +20,5 @@ Destinata alle ROM usate dall'e2e di emulazione reale (**TSK-024**, engine `Emul
 | dmg-acid2.gb | Game Boy | github.com/mattcurrie/dmg-acid2 (v1.0) | MIT |
 
 > Per l'e2e GBA (TSK-028): aggiungere una ROM GBA libera come `free-gba-demo.gba` (o `SOLIBOY_E2E_GBA_ROM=<file>`) + whitelist in `.gitignore`.
+
+| gba-tests-thumb.gba | Game Boy Advance | github.com/jsmolka/gba-tests | MIT |

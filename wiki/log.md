@@ -293,3 +293,7 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 
 - 2026-06-01 19:35 — `review TSK-028 iter-1 → pass` (0/0/1 low: TS-IDIOM-002 cast/assertion; runtime GBA da validare, gap dedicato)
   - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite (conf 0.95)
+
+## 2026-06-01 19:45 — verify TSK-028 (GBA reale)
+**Agente:** qa-dev · **Note:** ROM GBA libera gba-tests-thumb.gba (MIT) → e2e MgbaEngine verde, mGBA rende il canvas. GBA REALE verificato. Gap gba-runtime-verification chiuso. 49 unit + 6 e2e verdi (stub + GB + GBA).
+[2026-06-01 19:45] gap-closed — gba-runtime-verification (GBA reale via mGBA) — files touched: 1

@@ -65,3 +65,5 @@ _(nessun gap registrato al bootstrap)_
 **Gap:** MgbaEngine (GBA, @thenick775/mgba-wasm MPL-2.0) implementato contro l'API documentata e registrato (selectEngine mgba→MgbaEngine), build/typecheck verdi, ma NON verificato a runtime: manca una ROM GBA libera in public/test-roms/ per l'e2e (emulation-gba.e2e.ts, skip finché assente).
 **Sospetta fonte:** ROM GBA homebrew/free (es. demo libere) da aggiungere + whitelist .gitignore.
 **Impatto:** non-bloccante; GB già reale. GBA da validare quando si fornisce una ROM libera (l'e2e passerà da skip a verde).
+
+**Risolto 2026-06-01:** ROM GBA libera ottenuta (gba-tests-thumb.gba, MIT, jsmolka/gba-tests). e2e reale verde: mGBA (MgbaEngine, ?engine=real) rende il canvas → **GBA reale verificato**. 6/6 e2e verdi (4 stub + GB WasmBoy + GBA mGBA).

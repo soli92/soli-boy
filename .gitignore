@@ -21,4 +21,5 @@ packages/app/test-results/
 packages/app/public/test-roms/*
 !packages/app/public/test-roms/README.md
 !packages/app/public/test-roms/dmg-acid2.gb
+!packages/app/public/test-roms/gba-tests-thumb.gba
 

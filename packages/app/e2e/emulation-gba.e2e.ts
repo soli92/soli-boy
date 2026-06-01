@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const GBA_ROM = process.env.SOLIBOY_E2E_GBA_ROM ?? "free-gba-demo.gba";
+const GBA_ROM = process.env.SOLIBOY_E2E_GBA_ROM ?? "gba-tests-thumb.gba";
 const romPath = path.resolve(dir, "../public/test-roms", GBA_ROM);
 const romTitle = GBA_ROM.replace(/\.[^.]+$/, "");
 
