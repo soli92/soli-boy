@@ -1,13 +1,12 @@
-// TSK-044 (US-036) — Test minimo di wiring per ThemeSelector + useTheme.
+// TSK-044 (US-036) — Test di wiring per ThemeSelector + useTheme (smoke + estesi).
 //
-// Scope: copertura "smoke" della pipa
+// Scope: copertura della pipa
 //   ThemeSelector (UI) ↔ useTheme (stato + DOM + porta)
 //
-// La copertura estesa (validazione opzioni, persistenza cross-session
-// completa, riapplicazione al reload) è di TSK-047 (vedi US-036). Qui ci
-// assicuriamo solo che la pipeline non sia "muta": data-theme applicato,
-// porta consultata al mount, save invocata al cambio, onThemeChange
-// propagata.
+// TSK-047 (US-036) estende la copertura con test aggiuntivi:
+// - render con theme="dark" → select mostra "Dark" selezionato
+// - cambio selezione verso "90s-party"
+// La copertura hook estesa (parseTheme, save-reject) è in useTheme.test.ts.
 
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -47,6 +46,39 @@ describe("ThemeSelector (TSK-044 / US-036)", () => {
   it("change su <select> invoca onThemeChange col nuovo valore", () => {
     const onThemeChange = vi.fn();
     render(<ThemeSelector theme="90s-party" onThemeChange={onThemeChange} />);
+    fireEvent.change(screen.getByLabelText("Tema dell'interfaccia"), {
+      target: { value: "cyberpunk" },
+    });
+    expect(onThemeChange).toHaveBeenCalledWith("cyberpunk");
+  });
+
+  // TSK-047 — test aggiuntivi componente (US-036 AC: selezione tema)
+
+  it("render con theme='dark' → select mostra 'Dark' come valore selezionato", () => {
+    render(<ThemeSelector theme="dark" onThemeChange={vi.fn()} />);
+    const sel = screen.getByLabelText(
+      "Tema dell'interfaccia",
+    ) as HTMLSelectElement;
+    expect(sel.value).toBe("dark");
+    // Verifica che le opzioni 90s-party, dark, cyberpunk siano presenti
+    const optionValues = Array.from(sel.options).map((o) => o.value);
+    expect(optionValues).toContain("90s-party");
+    expect(optionValues).toContain("dark");
+    expect(optionValues).toContain("cyberpunk");
+  });
+
+  it("cambio selezione verso '90s-party' → onThemeChange chiamato con '90s-party'", () => {
+    const onThemeChange = vi.fn();
+    render(<ThemeSelector theme="dark" onThemeChange={onThemeChange} />);
+    fireEvent.change(screen.getByLabelText("Tema dell'interfaccia"), {
+      target: { value: "90s-party" },
+    });
+    expect(onThemeChange).toHaveBeenCalledWith("90s-party");
+  });
+
+  it("cambio selezione verso 'cyberpunk' da 'dark' → onThemeChange chiamato con 'cyberpunk'", () => {
+    const onThemeChange = vi.fn();
+    render(<ThemeSelector theme="dark" onThemeChange={onThemeChange} />);
     fireEvent.change(screen.getByLabelText("Tema dell'interfaccia"), {
       target: { value: "cyberpunk" },
     });

@@ -8,7 +8,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? "line" : [["list"]],
+  // In CI: "line" per i log + "html" (in packages/app/playwright-report/) così
+  // l'artifact su failure di TSK-052 contiene il report navigabile. Locale: list.
+  reporter: process.env.CI
+    ? [["line"], ["html", { open: "never" }]]
+    : [["list"]],
   use: {
     baseURL: "http://localhost:4173",
     trace: "on-first-retry",
