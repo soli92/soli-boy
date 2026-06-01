@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!-- Soli-boy mockup | section=settings | theme=dark | device=mobile | design-system=@soli92/solids | 390px viewport -->
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soli-boy &mdash; Impostazioni &middot; Dark &middot; Mobile</title>
+<meta name="description" content="Soli-boy mockup | section=settings | theme=dark | device=mobile | design-system=@soli92/solids | 390px viewport">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="../assets/solids-theme.css">
+</head>
+<body>
+<h1 class="sr-only">Soli-boy Impostazioni &mdash; tema Dark, vista Mobile</h1>
+<main class="sb-app">
+<div class="device device-mobile"><div class="sd-card sb-frame">
+    <div class="sd-flex sd-items-center sd-gap-sm" style="margin-bottom:var(--sd-space-lg);">
+      <i class="ti ti-settings" style="font-size:20px;color:var(--sd-color-text-secondary)" aria-hidden="true"></i>
+      <span class="sb-title" style="font-size:var(--sd-text-xl);">Impostazioni</span>
+    </div>
+    <div class="sb-secs" style="grid-template-columns:repeat(1,1fr);">
+      <div class="sd-card sb-sec">
+        <p class="sb-lbl"><i class="ti ti-device-tv" aria-hidden="true"></i> Video</p>
+        <div class="sb-row"><span>Scala</span><select class="sb-sel"><option>2x</option><option>3x</option><option>Intero</option></select></div>
+        <div class="sb-row"><span>Aspect ratio</span><select class="sb-sel"><option>Originale</option><option>4:3</option></select></div>
+        <div class="sb-row"><span>Filtro</span><select class="sb-sel"><option>Nearest</option><option>Scanline</option></select></div>
+      </div>
+      <div class="sd-card sb-sec">
+        <p class="sb-lbl"><i class="ti ti-volume" aria-hidden="true"></i> Audio</p>
+        <div class="sb-row"><span>Volume</span><input type="range" min="0" max="100" value="75" step="1" class="sb-range" aria-label="Volume" /></div>
+        <div class="sb-row"><span>Muto</span><span class="sb-tog" role="switch" aria-checked="false"></span></div>
+      </div>
+      <div class="sd-card sb-sec">
+        <p class="sb-lbl"><i class="ti ti-cpu" aria-hidden="true"></i> BIOS</p>
+        <div class="sb-row"><span>GBA BIOS</span><span class="sd-badge sb-badge-success"><i class="ti ti-check" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i> Caricato</span></div>
+        <button class="sb-btn sb-full"><i class="ti ti-upload" aria-hidden="true"></i> Sostituisci file BIOS</button>
+      </div>
+      <div class="sd-card sb-sec">
+        <p class="sb-lbl"><i class="ti ti-device-gamepad" aria-hidden="true"></i> Controlli</p>
+        <div class="sb-row"><span>Gamepad</span><span style="font-size:12px;color:var(--sd-color-text-secondary);">Xbox &middot; connesso</span></div>
+        <div class="sb-row"><span>Vibrazione</span><span class="sb-tog on" role="switch" aria-checked="true"><span class="knob"></span></span></div>
+        <button class="sb-btn sb-full">Rimappa comandi</button>
+      </div>
+      <div class="sd-card sb-sec" style="grid-column:1/-1;">
+        <p class="sb-lbl"><i class="ti ti-database" aria-hidden="true"></i> Dati</p>
+        <div class="sd-flex sd-gap-sm sd-wrap">
+          <button class="sb-btn"><i class="ti ti-download" aria-hidden="true"></i> Esporta salvataggi</button>
+          <button class="sb-btn"><i class="ti ti-upload" aria-hidden="true"></i> Importa salvataggi</button>
+          <button class="sb-btn sb-danger"><i class="ti ti-trash" aria-hidden="true"></i> Svuota libreria</button>
+        </div>
+      </div>
+    </div>
+    <p class="sb-note"><i class="ti ti-info-circle" style="font-size:15px;vertical-align:-2px" aria-hidden="true"></i> Soli-boy non distribuisce ROM o BIOS. Carica solo file di tua propriet&agrave;.</p></div></div>
+</main>
+</body>
+</html>

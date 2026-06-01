@@ -24,8 +24,16 @@ Le linee guida di integrazione prevedono installazione come dipendenza, importaz
 
 L'adozione del design system supporta il requisito di usabilità RNF-04 (interfaccia accessibile da tastiera, conforme al design system aziendale). [^src: raw/2026-06-01-specifiche-funzionali.txt §4. Requisiti non funzionali]
 
+## Mockup di riferimento
+
+L'aspetto e la struttura dell'UI su SoliDS sono illustrati dai mockup statici del progetto (18 schermate, temi dark/cyberpunk), con token e classi fedeli ma valori colore approssimati rispetto al pacchetto reale `@soli92/solids`. [^src: raw/soliboy-mockups/README.md §IMPORTANTE per il progetto reale]
+
+Vedi [[2026-06-01-mockups-ui]] e [[temi-e-design-token-solids]].
+
 ## Concetti correlati
 [[libreria-di-gioco]]
+[[temi-e-design-token-solids]]
 
 ## Pagine collegate
 [[stack-tecnologico-soli-boy]]
+[[2026-06-01-mockups-ui]]

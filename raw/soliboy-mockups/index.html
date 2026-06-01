@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!-- Soli-boy mockups index | 18 screens = 3 sections x 2 themes x 3 devices -->
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soli-boy &mdash; Indice mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="assets/solids-theme.css">
+<style>
+  .wrap{max-width:1180px;margin:0 auto;padding:var(--sd-space-2xl) var(--sd-space-lg);}
+  h1{font-family:var(--sd-font-heading);font-size:var(--sd-text-2xl);margin:0 0 4px;}
+  .sub{color:var(--sd-color-text-secondary);font-size:14px;margin:0 0 var(--sd-space-xl);}
+  .switch{display:flex;gap:var(--sd-space-sm);margin-bottom:var(--sd-space-xl);}
+  h2{font-family:var(--sd-font-heading);font-size:var(--sd-text-lg);margin:var(--sd-space-xl) 0 var(--sd-space-md);display:flex;align-items:center;gap:8px;}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sd-space-md);}
+  .cell{background:var(--sd-color-bg-surface);border:1px solid var(--sd-color-border-muted);border-radius:var(--sd-radius-lg);overflow:hidden;}
+  .cell .cap{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--sd-color-border-muted);}
+  .cell .cap b{font-size:13px;font-weight:500;}
+  .cell .cap a{font-size:12px;color:var(--sd-color-primary-default);text-decoration:none;}
+  .frame{height:340px;background:var(--sd-color-bg-canvas);overflow:hidden;}
+  .frame iframe{width:200%;height:680px;border:0;transform:scale(0.5);transform-origin:top left;}
+  @media(max-width:760px){.row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Soli-boy &mdash; mockup UI</h1>
+  <p class="sub">18 schermate &middot; 3 sezioni &times; 2 temi (SoliDS dark / cyberpunk) &times; 3 dispositivi. Anteprime in scala; clicca &ldquo;Apri&rdquo; per la versione reale.</p>
+  <div class="switch">
+    <button class="sb-btn sb-btn-primary" onclick="document.documentElement.setAttribute('data-theme','dark')"><i class="ti ti-moon" aria-hidden="true"></i> Tema indice: dark</button>
+    <button class="sb-btn" onclick="document.documentElement.setAttribute('data-theme','cyberpunk')"><i class="ti ti-bolt" aria-hidden="true"></i> Tema indice: cyberpunk</button>
+  </div>
+  <div id="grid"></div>
+</div>
+<script>
+  const sections=[["library","Libreria","ti-layout-grid"],["player","Player","ti-player-play"],["settings","Impostazioni","ti-settings"]];
+  const themes=["dark","cyberpunk"];
+  const devices=["mobile","tablet","desktop"];
+  const grid=document.getElementById("grid");
+  for(const [sec,label,icon] of sections){
+    for(const theme of themes){
+      const h=document.createElement("h2");
+      h.innerHTML=`<i class="ti ${icon}" aria-hidden="true"></i> ${label} &middot; ${theme}`;
+      grid.appendChild(h);
+      const row=document.createElement("div"); row.className="row";
+      for(const dev of devices){
+        const file=`screens/${sec}-${theme}-${dev}.html`;
+        const cell=document.createElement("div"); cell.className="cell";
+        cell.innerHTML=`<div class="cap"><b>${dev}</b><a href="${file}" target="_blank">Apri &nearr;</a></div>`+
+                       `<div class="frame"><iframe loading="lazy" src="${file}" title="${sec} ${theme} ${dev}"></iframe></div>`;
+        row.appendChild(cell);
+      }
+      grid.appendChild(row);
+    }
+  }
+</script>
+</body>
+</html>

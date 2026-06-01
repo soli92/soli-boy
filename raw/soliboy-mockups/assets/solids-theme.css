@@ -1,0 +1,242 @@
+/* ============================================================================
+   Soli-boy — SoliDS theme tokens (mockup approximation)
+   Design system: @soli92/solids  (https://github.com/soli92/solids)
+   ----------------------------------------------------------------------------
+   NOTE FOR THE PROJECT / WIKI:
+   These CSS variables reproduce the *structure* of SoliDS semantic tokens
+   (--sd-color-*, --sd-space-*, --sd-radius-*, --sd-font-*). The hex values are
+   a plausible approximation of the SoliDS "dark" and "cyberpunk" themes used
+   only for these static mockups. In the real app you MUST instead import:
+       @import "@soli92/solids/css/index.css";
+   and select a theme with  <html data-theme="dark">  /  data-theme="cyberpunk".
+   Then delete the :root / [data-theme] blocks below.
+   ============================================================================ */
+
+:root,
+[data-theme="dark"] {
+  --sd-color-bg-canvas:#0f1115;
+  --sd-color-bg-surface:#171a21;
+  --sd-color-bg-elevated:#1e222b;
+  --sd-color-bg-hover:#262b35;
+  --sd-color-text-primary:#e8eaed;
+  --sd-color-text-secondary:#a8adb8;
+  --sd-color-text-tertiary:#6b7280;
+  --sd-color-border-default:#2a2f3a;
+  --sd-color-border-muted:#23272f;
+  --sd-color-border-strong:#3a4150;
+  --sd-color-primary-default:#3b82f6;
+  --sd-color-primary-hover:#2f6fe0;
+  --sd-color-primary-foreground:#ffffff;
+  --sd-color-primary-subtle:#16243d;
+  --sd-color-intent-success:#34d399;
+  --sd-color-intent-success-bg:#123524;
+  --sd-color-intent-danger:#f87171;
+  --sd-color-intent-danger-border:#5a2424;
+  /* accent ramps used for game tiles / buttons */
+  --sd-color-accent-1:#93c5fd; --sd-color-accent-1-bg:#16243d;   /* blue */
+  --sd-color-accent-2:#fcd34d; --sd-color-accent-2-bg:#3a2e10;   /* amber */
+  --sd-color-accent-3:#86efac; --sd-color-accent-3-bg:#123524;   /* green */
+  --sd-color-accent-4:#c4b5fd; --sd-color-accent-4-bg:#241c3d;   /* violet */
+  --sd-color-accent-5:#fca5a5; --sd-color-accent-5-bg:#3a1a1a;   /* red */
+  --sd-color-pad-a:#86efac; --sd-color-pad-a-bg:#123524;
+  --sd-color-pad-b:#f9a8d4; --sd-color-pad-b-bg:#3a1428;
+  --sd-screen-bg:#070d09;
+  --sd-screen-accent:#86efac;
+}
+
+[data-theme="cyberpunk"] {
+  --sd-color-bg-canvas:#0a0612;
+  --sd-color-bg-surface:#140b22;
+  --sd-color-bg-elevated:#1d1133;
+  --sd-color-bg-hover:#281748;
+  --sd-color-text-primary:#f0e9ff;
+  --sd-color-text-secondary:#b09ad6;
+  --sd-color-text-tertiary:#6f5a9e;
+  --sd-color-border-default:#3a2363;
+  --sd-color-border-muted:#2a1a47;
+  --sd-color-border-strong:#5a35a0;
+  --sd-color-primary-default:#ff2bd6;
+  --sd-color-primary-hover:#e024bd;
+  --sd-color-primary-foreground:#0a0612;
+  --sd-color-primary-subtle:#3a0b34;
+  --sd-color-intent-success:#7cff5e;
+  --sd-color-intent-success-bg:#123a12;
+  --sd-color-intent-danger:#ff5470;
+  --sd-color-intent-danger-border:#5a1f2e;
+  --sd-color-accent-1:#00e5ff; --sd-color-accent-1-bg:#06303a;   /* cyan */
+  --sd-color-accent-2:#faff00; --sd-color-accent-2-bg:#33330a;   /* yellow */
+  --sd-color-accent-3:#7cff5e; --sd-color-accent-3-bg:#123a12;   /* lime */
+  --sd-color-accent-4:#ff2bd6; --sd-color-accent-4-bg:#3a0b34;   /* magenta */
+  --sd-color-accent-5:#00e5ff; --sd-color-accent-5-bg:#06303a;   /* cyan */
+  --sd-color-pad-a:#00e5ff; --sd-color-pad-a-bg:#06303a;
+  --sd-color-pad-b:#faff00; --sd-color-pad-b-bg:#33330a;
+  --sd-screen-bg:#05010f;
+  --sd-screen-accent:#00e5ff;
+}
+
+/* ---- scale tokens (shared across themes) ---- */
+:root {
+  --sd-space-xs:4px; --sd-space-sm:8px; --sd-space-md:12px;
+  --sd-space-lg:20px; --sd-space-xl:28px; --sd-space-2xl:40px;
+  --sd-radius-sm:6px; --sd-radius-md:10px; --sd-radius-lg:14px; --sd-radius-full:999px;
+  --sd-font-body:'Inter',system-ui,sans-serif;
+  --sd-font-heading:'DM Sans','Inter',sans-serif;
+  --sd-font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --sd-text-xs:12px; --sd-text-sm:13px; --sd-text-base:15px;
+  --sd-text-lg:17px; --sd-text-xl:20px; --sd-text-2xl:26px;
+  --sd-layout-touch-target-min:44px;
+}
+[data-theme="cyberpunk"]{ --sd-radius-sm:4px; --sd-radius-md:6px; --sd-radius-lg:8px; }
+
+/* ---- base ---- */
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{
+  background:var(--sd-color-bg-canvas);
+  color:var(--sd-color-text-primary);
+  font-family:var(--sd-font-body);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+
+/* ============================================================================
+   SoliDS-style utility classes (sd-*) + Soli-boy component classes (sb-*)
+   ============================================================================ */
+.sd-flex{display:flex;}
+.sd-items-center{align-items:center;}
+.sd-between{justify-content:space-between;}
+.sd-center{justify-content:center;}
+.sd-gap-sm{gap:var(--sd-space-sm);}
+.sd-gap-md{gap:var(--sd-space-md);}
+.sd-wrap{flex-wrap:wrap;}
+
+.sd-card{
+  background:var(--sd-color-bg-surface);
+  border:1px solid var(--sd-color-border-muted);
+  border-radius:var(--sd-radius-lg);
+}
+
+/* app shell */
+.sb-app{max-width:1180px;margin:0 auto;padding:var(--sd-space-2xl) var(--sd-space-lg);}
+.sb-frame{padding:var(--sd-space-lg);}
+
+/* header */
+.sb-logo{
+  width:34px;height:34px;border-radius:var(--sd-radius-md);
+  background:var(--sd-color-primary-subtle);color:var(--sd-color-primary-default);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.sb-title{font-family:var(--sd-font-heading);font-weight:600;color:var(--sd-color-text-primary);}
+
+/* buttons */
+.sb-btn{
+  font-family:var(--sd-font-body);font-size:14px;min-height:var(--sd-layout-touch-target-min);
+  padding:0 14px;border-radius:var(--sd-radius-md);
+  border:1px solid var(--sd-color-border-strong);background:var(--sd-color-bg-elevated);
+  color:var(--sd-color-text-primary);cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.sb-btn:hover{background:var(--sd-color-bg-hover);}
+.sb-btn-primary{background:var(--sd-color-primary-default);border-color:var(--sd-color-primary-default);color:var(--sd-color-primary-foreground);font-weight:600;}
+.sb-btn-primary:hover{background:var(--sd-color-primary-hover);}
+.sb-icon{width:var(--sd-layout-touch-target-min);justify-content:center;padding:0;font-size:18px;}
+.sb-full{width:100%;justify-content:center;margin-top:8px;}
+.sb-danger{color:var(--sd-color-intent-danger);border-color:var(--sd-color-intent-danger-border);}
+
+/* search */
+.sb-search{position:relative;}
+.sb-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--sd-color-text-tertiary);font-size:16px;}
+.sb-search input{
+  width:100%;min-height:var(--sd-layout-touch-target-min);
+  padding:0 12px 0 36px;border-radius:var(--sd-radius-md);
+  border:1px solid var(--sd-color-border-default);background:var(--sd-color-bg-canvas);
+  color:var(--sd-color-text-primary);font-family:var(--sd-font-body);font-size:14px;
+}
+
+/* filter chips */
+.sd-badge.sb-chip{
+  font-size:13px;padding:6px 14px;border-radius:var(--sd-radius-full);
+  background:transparent;border:1px solid var(--sd-color-border-strong);
+  color:var(--sd-color-text-secondary);cursor:pointer;
+}
+.sb-chip-on{
+  background:var(--sd-color-primary-subtle)!important;
+  border-color:var(--sd-color-primary-default)!important;
+  color:var(--sd-color-primary-default)!important;
+}
+
+/* game grid + tiles */
+.sb-grid{display:grid;gap:var(--sd-space-md);}
+.sb-tile{
+  background:var(--sd-color-bg-elevated);border:1px solid var(--sd-color-border-muted);
+  border-radius:var(--sd-radius-md);padding:10px;
+}
+.sb-art{height:88px;border-radius:var(--sd-radius-sm);display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:30px;}
+.a-1{background:var(--sd-color-accent-1-bg);color:var(--sd-color-accent-1);}
+.a-2{background:var(--sd-color-accent-2-bg);color:var(--sd-color-accent-2);}
+.a-3{background:var(--sd-color-accent-3-bg);color:var(--sd-color-accent-3);}
+.a-4{background:var(--sd-color-accent-4-bg);color:var(--sd-color-accent-4);}
+.a-5{background:var(--sd-color-accent-5-bg);color:var(--sd-color-accent-5);}
+.sb-tt{font-size:14px;font-weight:500;margin:0;color:var(--sd-color-text-primary);}
+.sb-mt{font-size:12px;color:var(--sd-color-text-secondary);margin:2px 0 0;}
+.sb-add{
+  border-style:dashed;border-color:var(--sd-color-border-strong);
+  display:flex;align-items:center;justify-content:center;min-height:150px;
+  text-align:center;color:var(--sd-color-text-tertiary);font-size:24px;cursor:pointer;
+}
+.sb-add .sb-mt{color:var(--sd-color-text-tertiary);font-size:13px;}
+
+/* player */
+.sb-screen{
+  background:var(--sd-screen-bg);border:1px solid var(--sd-color-border-muted);
+  border-radius:var(--sd-radius-md);display:flex;align-items:center;justify-content:center;
+}
+.sb-hud{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--sd-color-text-tertiary);font-family:var(--sd-font-mono);
+}
+.sb-dpad{position:relative;width:120px;height:120px;}
+.dp{
+  position:absolute;width:44px;height:44px;background:var(--sd-color-bg-elevated);
+  border:1px solid var(--sd-color-border-strong);border-radius:var(--sd-radius-sm);
+  display:flex;align-items:center;justify-content:center;color:var(--sd-color-text-secondary);
+  font-size:20px;cursor:pointer;
+}
+.dp-center{position:absolute;top:44px;left:44px;width:32px;height:32px;background:var(--sd-color-bg-surface);}
+.sb-ab{position:relative;width:120px;height:120px;}
+.ab{
+  position:absolute;width:50px;height:50px;border-radius:var(--sd-radius-full);
+  font-size:18px;font-weight:600;border:none;cursor:pointer;font-family:var(--sd-font-heading);
+}
+.ab-b{bottom:8px;left:4px;background:var(--sd-color-pad-b-bg);color:var(--sd-color-pad-b);}
+.ab-a{top:8px;right:4px;background:var(--sd-color-pad-a-bg);color:var(--sd-color-pad-a);}
+.sb-pill{
+  min-height:36px;font-size:11px;letter-spacing:0.5px;padding:0 18px;
+  border-radius:var(--sd-radius-full);background:var(--sd-color-bg-elevated);
+  color:var(--sd-color-text-secondary);border:1px solid var(--sd-color-border-strong);
+  cursor:pointer;font-family:var(--sd-font-mono);
+}
+
+/* settings */
+.sb-secs{display:grid;gap:var(--sd-space-md);}
+.sb-sec{padding:16px;}
+.sb-lbl{font-size:13px;font-weight:500;color:var(--sd-color-text-secondary);margin:0 0 12px;display:flex;align-items:center;gap:6px;font-family:var(--sd-font-heading);}
+.sb-lbl i{font-size:16px;}
+.sb-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:6px 0;color:var(--sd-color-text-primary);}
+.sb-sel{min-height:36px;width:120px;border-radius:var(--sd-radius-sm);border:1px solid var(--sd-color-border-default);background:var(--sd-color-bg-canvas);color:var(--sd-color-text-primary);font-family:var(--sd-font-body);font-size:13px;padding:0 8px;}
+.sb-range{width:130px;accent-color:var(--sd-color-primary-default);}
+.sb-tog{width:38px;height:22px;border-radius:var(--sd-radius-full);background:var(--sd-color-bg-elevated);border:1px solid var(--sd-color-border-strong);position:relative;cursor:pointer;flex:0 0 auto;}
+.sb-tog.on{background:var(--sd-color-primary-default);border-color:var(--sd-color-primary-default);}
+.sb-tog .knob{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff;}
+.sd-badge.sb-badge-success{font-size:12px;padding:4px 10px;border-radius:var(--sd-radius-full);background:var(--sd-color-intent-success-bg);color:var(--sd-color-intent-success);}
+.sb-note{font-size:12px;color:var(--sd-color-text-tertiary);margin:var(--sd-space-lg) 0 0;display:flex;align-items:center;gap:6px;}
+
+/* device frames */
+.device{margin:0 auto;}
+.device-mobile{width:320px;}
+.device-mobile .sb-frame{border-radius:26px;border:1px solid var(--sd-color-border-default);background:var(--sd-color-bg-surface);}
+.device-tablet{width:740px;max-width:100%;}
+.device-desktop{width:100%;}
+
+/* responsive game grid per device handled inline per screen */

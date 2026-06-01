@@ -20,6 +20,18 @@
       "extractor": "textutil (docx->txt)",
       "title": "Soli-boy — Estensione alle piattaforme mobile (Android e iOS) v1.0",
       "images": []
+    },
+    {
+      "key": "2026-06-01-mockups-ui",
+      "source": "html-mockup",
+      "original": "raw/files.zip",
+      "primary_path": "raw/soliboy-mockups/README.md",
+      "screens_dir": "raw/soliboy-mockups/screens/",
+      "theme_css": "raw/soliboy-mockups/assets/solids-theme.css",
+      "extracted_at": "2026-06-01",
+      "extractor": "unzip",
+      "title": "Soli-boy — Mockup UI SoliDS (18 schermate: 3 sezioni x 2 temi x 3 dispositivi)",
+      "images": []
     }
   ]
 }
