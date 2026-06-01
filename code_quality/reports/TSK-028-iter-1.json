@@ -1,0 +1,11 @@
+{ "tsk_id":"TSK-028","stack_descriptor":{"language":"typescript","framework":"vite","version":"5.x","confidence":0.95},
+  "iter":1,"passes_run":["idiomaticity","design","robustness"],
+  "findings":[
+    {"rule_id":"TS-IDIOM-002","file":"packages/app/src/core/mgba-engine.ts","lines":"44-52","severity":"low","detected_by":["idiomaticity"],
+     "rationale":"Cast `as unknown as (...)` sull'import dinamico + non-null assertion `this.module!` nell'executor: assertion non validate a runtime, giustificate dal modulo esterno untyped ma da annotare.","fix_complexity":"low","auto_fixable":false}
+  ],
+  "verdict":"pass",
+  "verdict_rationale":"Adapter mGBA idiomatico e disaccoppiato (import dinamico → code-split; interfaccia MgbaModule minimale; load con FSInit/uploadRom(Promise)/loadGame + throw su !ok; sendInput guardato; setVolume clamp). capabilities.rewind=false conservativo. Una nota low su cast/assertion. NB: runtime GBA non verificato (gap gba-runtime-verification) — non è un code finding ma un gate di verifica.",
+  "summary":"Codice adapter mGBA pulito e ragionevole; build/typecheck verdi. Runtime da validare con ROM GBA libera (gap dedicato).",
+  "markers":{"no_progress":false,"regression":false,"loop_exhausted":false,"degraded":false},
+  "files_modified_by_fix":[],"generated_at":"2026-06-01T19:35:00+02:00","reviewer_version":"code-reviewer@2.12.0" }
