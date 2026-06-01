@@ -47,6 +47,26 @@ Nucleo condiviso funzionante nel browser.
   citava "Android e macOS"; macOS resta nella distribuzione desktop EP-006). Da
   validare con lo stakeholder.
 
+## Release cross-cutting — Identità & Delivery
+
+Epiche trasversali (non vincolate a una specifica release di prodotto: agiscono sui
+moduli già consegnati e abilitano i futuri).
+
+| EP | Titolo | Priorità | Confidence | Dipende da |
+|----|--------|----------|-----------|-----------|
+| EP-010 | Tema 90's e identità di brand | medium | 75% | — |
+| EP-011 | CI/CD | high | 55% | — |
+
+- **EP-010** completa l'identità visiva: tema `90s-party` di SoliDS reale (gap
+  `design-system-real-package` CHIUSO via TSK-040) + cablaggio dei brand asset
+  (favicon, app icon, manifest, logo header) già presenti in `raw/soliboy-brand/`.
+- **EP-011** introduce pipeline CI (typecheck/unit/e2e/build), branch protection
+  su `main` (R.14 VCS gate) e CD del frontend su Vercel preservando gli header
+  COOP/COEP richiesti dall'emulazione WASM ([[emulazione-via-core-wasm]]).
+  Tre gap aperti non-bloccanti su `wiki/gaps.md` da risolvere in architettura:
+  `ci-cd-pipeline-definition`, `branch-protection-policy`,
+  `vercel-deploy-trigger-policy`.
+
 ## Backlog emulazione (post ADR-005)
 - Sprint 4 (in corso): WasmBoy GB/GBC (real), GBA (mGBA), deprecazione EmulatorJS.
 - EP-009 (futura): **Supporto arcade** (FBNeo/MAME) via libretro/RetroArch web — rinviato (gap arcade-emulation-engine).

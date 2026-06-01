@@ -77,3 +77,21 @@ _(nessun gap registrato al bootstrap)_
 **Impatto:** non-bloccante; GB già reale. GBA da validare quando si fornisce una ROM libera (l'e2e passerà da skip a verde).
 
 **Risolto 2026-06-01:** ROM GBA libera ottenuta (gba-tests-thumb.gba, MIT, jsmolka/gba-tests). e2e reale verde: mGBA (MgbaEngine, ?engine=real) rende il canvas → **GBA reale verificato**. 6/6 e2e verdi (4 stub + GB WasmBoy + GBA mGBA).
+
+## 2026-06-01 — ci-cd-pipeline-definition
+**Origine:** product-manager @ definizione EP-011 (CI/CD)
+**Gap:** la wiki non documenta una pipeline CI/CD per soli-boy. Il repository non contiene `.github/workflows/`; lo stack ([[stack-tecnologico-soli-boy]]) elenca le tecnologie (TS, Vite, Vitest, Playwright) ma non i job CI specifici, la matrice OS/Node, il trigger (push/PR/tag), i runner e l'orchestrazione delle fasi (install → typecheck → unit → e2e → build). [[distribuzione-web-e-desktop]] cita solo che la SPA è servita come web app e incapsulata in Electron.
+**Sospetta fonte:** runbook/ADR ancora da scrivere per la pipeline (es. `wiki/runbooks/ci-pipeline.md`) + decisioni di topologia (GitHub Actions hosted vs self-hosted, parallelism, cache strategy).
+**Impatto:** non-bloccante per la definizione PM dell'epica (storia inquadrabile a livello "cosa", non "come"); bloccante per il TPM che dovrà scomporre in TSK senza inventare dettagli operativi (matrice, versioni, action specifiche). Risolvere in design/architettura prima del breakdown TSK.
+
+## 2026-06-01 — branch-protection-policy
+**Origine:** product-manager @ definizione EP-011 (CI/CD)
+**Gap:** la wiki cita R.14 "VCS gate umano" come vincolo della factory ma non documenta una policy esplicita di branch protection su `main` per soli-boy (chi può mergiare, quanti reviewer, status check obbligatori, linear history sì/no, signed commits sì/no, blocco force-push).
+**Sospetta fonte:** policy di governance del repo `soli92/soli-boy` (impostata via UI GitHub o `repository_rulesets`) ancora da definire e tracciare in wiki.
+**Impatto:** non-bloccante per definire la storia ("la main richiede CI verde prima del merge"); bloccante per implementazione tecnica esatta (numero approvers, status check names) → da definire con l'owner prima del TSK.
+
+## 2026-06-01 — vercel-deploy-trigger-policy
+**Origine:** product-manager @ definizione EP-011 (CD)
+**Gap:** [[distribuzione-web-e-desktop]] e `packages/app/vercel.json` (presente nel repo, solo header COOP/COEP) confermano Vercel come target di deploy ma la wiki non documenta la policy di Continuous Deployment: trigger (push su main? tag `v*`? release GitHub?), ambienti (preview vs production), gestione segreti, dominio.
+**Sospetta fonte:** decisione di product/owner + integrazione GitHub↔Vercel (project linking) da formalizzare in runbook.
+**Impatto:** non-bloccante per la storia ("deploy del frontend su Vercel con header COOP/COEP"); bloccante per gli AC operativi dei TSK → da definire prima del breakdown.
