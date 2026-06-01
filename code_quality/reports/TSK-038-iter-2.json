@@ -1,0 +1,118 @@
+{
+  "tsk_id": "TSK-038",
+  "iter": 2,
+  "generated_at": "2026-06-01T23:30:00+02:00",
+  "reviewer_version": "2.15.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "bundler": "vite",
+    "test_runner": "vitest",
+    "e2e_runner": "playwright",
+    "confidence": 0.97,
+    "mode": "full"
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Library/Library.tsx",
+    "packages/app/src/components/Library/Library.test.tsx"
+  ],
+  "commit_reviewed": "139dba7",
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [],
+  "resolution_checks": {
+    "F-038-01": {
+      "rule_id": "TS-ROBUST-001",
+      "title": "storage.listRoms() — promise rejection non gestita",
+      "status": "resolved",
+      "evidence": "Il blocco `void .then()` senza catch è stato sostituito con catena `.then().catch()` esplicita. Stato `error: string | null` aggiunto. Guardia `active` rispettata nel catch branch. Rendering condizionale `if (error !== null)` restituisce `<p className='sb-note' role='alert'>{error}</p>` prima del loading state. Test `mostra role=alert quando storage.listRoms rejecta` aggiunto in Library.test.tsx:45-58: usa `findByRole('alert')` e asserisce su stringa 'impossibile caricare la libreria' (case-insensitive) e messaggio originale 'IndexedDB indisponibile'. Conformità TS-ROBUST-001 soddisfatta.",
+      "references": [
+        "[^src5: packages/app/src/components/Library/Library.tsx:34]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:50-54]",
+        "[^src5: packages/app/src/components/Library/Library.tsx:83-88]",
+        "[^src5: packages/app/src/components/Library/Library.test.tsx:45-58]"
+      ]
+    },
+    "F-038-02": {
+      "rule_id": "TS-ROBUST-001",
+      "title": "Stato filtro non resettato al cambio di prop `storage`",
+      "status": "resolved",
+      "evidence": "Nel useEffect([storage]), prima del fetch, sono aggiunte le chiamate sincrone `setQuery('')`, `setPlatform(ALL)`, `setError(null)` con commento esplicativo (riga 40-44). I filtri vengono resettati coerentemente ad ogni cambio di identità di `storage`. L'incoerenza stato-UI segnalata in iter-1 è eliminata.",
+      "references": [
+        "[^src5: packages/app/src/components/Library/Library.tsx:40-44]"
+      ]
+    },
+    "F-038-03": {
+      "rule_id": "REACT-A11Y-001",
+      "title": "Doppia etichetta sull'input ricerca: htmlFor + aria-label ridondanti",
+      "status": "resolved",
+      "evidence": "La riga `aria-label='Cerca per titolo'` è stata rimossa dall'<input> (diff visibile in Library.tsx:101). Rimane solo l'associazione `<label htmlFor='library-search'><span className='sr-only'>Cerca per titolo</span>`. L'accessible name è fornito univocamente dal <label>. Il test `screen.getByLabelText(/cerca per titolo/i)` (Library.test.tsx:75) continua a passare, confermando che l'associazione htmlFor funziona correttamente.",
+      "references": [
+        "[^src5: packages/app/src/components/Library/Library.tsx:96-104]",
+        "[^src5: packages/app/src/components/Library/Library.test.tsx:75]"
+      ]
+    },
+    "F-038-04": {
+      "rule_id": "TS-DESIGN-002",
+      "title": "Filtro in-memory — presupposto architetturale non documentato",
+      "status": "resolved",
+      "evidence": "Il commento inline è stato esteso alle righe 70-72: '// F-038-04: presupposto architetturale — dataset piccolo già caricato / interamente in memoria. Per dataset grandi esiste StoragePort.listRoms(filter) / (architecture-overview §EP-002).' Il presupposto (dataset piccolo) e il punto di cambio (StoragePort con riferimento architetturale) sono ora documentati esplicitamente.",
+      "references": [
+        "[^src5: packages/app/src/components/Library/Library.tsx:70-72]"
+      ]
+    }
+  },
+  "checks_explicit": {
+    "no_progress_detection": {
+      "result": "NOT_TRIGGERED",
+      "note": "Iter-1 rule_ids: {TS-ROBUST-001, TS-ROBUST-001, REACT-A11Y-001, TS-DESIGN-002}. Iter-2 findings: 0. Tutti i finding risolti. No-progress condition (stesso set di rule_id 2 volte di fila) non si applica."
+    },
+    "regression_detection": {
+      "result": "NOT_TRIGGERED",
+      "note": "Il diff del commit 139dba7 tocca esclusivamente packages/app/src/components/Library/Library.tsx e Library.test.tsx — entrambi nel scope dichiarato del TSK (code_path: packages/app/src/components/Library/**). Nessun file fuori scope modificato. 73 unit + 6 e2e verdi dichiarati nel commit message. Nessuna regressione rilevabile."
+    },
+    "scope_violation": {
+      "result": "PASS",
+      "note": "Il commit tocca anche packages/app/src/components/Fullscreen/ (TSK-035, wave 5a batch fix). Nulla al di fuori dei code_path dei TSK inclusi nel commit. Per TSK-038 il diff è circoscritto a Library/. Scope violation = false."
+    },
+    "error_state_ux": {
+      "result": "PASS",
+      "note": "Il role=alert su <p> è corretto per un errore che compare al mount (non interattivo). Il testo espone il messaggio tecnico dell'errore (err.message) — per un'app personale questo è accettabile; in contesti con utenti finali non tecnici andrebbe mascherato. Non segnalato come finding in quanto non coperto da regole canonical attive e il contesto (app personale, dataset piccolo) mitiga il rischio."
+    },
+    "test_coverage_error_path": {
+      "result": "PASS",
+      "note": "Test aggiunto a Library.test.tsx:45-58: StoragePort fake con listRoms che lancia, render, findByRole('alert'), asserzione su testo. Copertura del percorso errore completa."
+    },
+    "test_count_delta": {
+      "result": "PASS",
+      "note": "Iter-1: 71 unit. Iter-2: 73 unit (delta +2). Il commit include fix per TSK-035 (+1 test guard ref null) e TSK-038 (+1 test error state). Delta coerente con le modifiche dichiarate."
+    }
+  },
+  "summary": {
+    "total_findings": 0,
+    "by_severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "blocking": 0,
+    "advisory": 0,
+    "resolved_from_iter_1": 4
+  },
+  "verdict": "passed",
+  "verdict_rationale": "Tutti e 4 i finding dell'iter-1 sono stati risolti nel commit 139dba7. F-038-01 (blocking, TS-ROBUST-001): .catch esplicito con error state e <p role=alert> aggiunto; test del percorso errore presente e corretto. F-038-02 (advisory, TS-ROBUST-001): reset filtri nel useEffect prima del fetch. F-038-03 (advisory, REACT-A11Y-001): aria-label ridondante rimosso dall'input. F-038-04 (advisory, TS-DESIGN-002): commento presupposto architetturale aggiunto con riferimento a StoragePort e architecture-overview §EP-002. No-progress = false. Regression = false. Nessun nuovo finding. Scope rispettato. Verdict: passed.",
+  "loop_status": {
+    "iter": 2,
+    "max_iterations": 3,
+    "previous_iter_rule_ids": ["TS-ROBUST-001", "TS-ROBUST-001", "REACT-A11Y-001", "TS-DESIGN-002"],
+    "current_iter_rule_ids": [],
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "next_step": "TSK-038 promosso a review_status: passed. Nessuna azione richiesta al dev-agent. Il qa-dev puo' considerare chiusa la segnalazione QA-TEST-001 (test error state presente in Library.test.tsx:45-58)."
+}

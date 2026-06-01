@@ -1,8 +1,19 @@
 # Digest settimanale code-review — dev-agent fe — 2026-W22
 
-Generato: 2026-06-01 | Reviewer: code-reviewer@2.14.0
+Generato: 2026-06-01 (aggiornato iter-2: 2026-06-01) | Reviewer: code-reviewer@2.14.0
 
-## TSK-035 — Schermo intero (Fullscreen API) — iter-1 → conditional
+## TSK-035 — Schermo intero (Fullscreen API) — iter-2 → PASS
+
+**Verdict iter-2:** pass (0 finding — tutti i 4 finding iter-1 risolti in commit 139dba7)
+**Verdict iter-1:** conditional (1 medium blocking + 3 low advisory) — superato
+
+---
+
+## TSK-035 — iter-1 — archivio finding (tutti risolti)
+
+**Verdict:** conditional (1 medium blocking + 3 low advisory)
+**Stack:** typescript/react/vite (conf 0.97)
+**Files toccati:** useFullscreen.ts, Player.tsx, Player.fullscreen.test.tsx, Player.test.tsx
 
 **Verdict:** conditional (1 medium blocking + 3 low advisory)
 **Stack:** typescript/react/vite (conf 0.97)
@@ -39,5 +50,13 @@ corrente, ma non documentato come vincolo esplicito (mono-target by design).
 
 ### Prossimo step
 
-Risolvere F-035-01 e F-035-03 (bloccanti al conditional). max_diff_lines: 80.
-Scope fix: useFullscreen.ts (riga 91) e Player.tsx (riga 127). Non toccare EmulatorEngine.
+~~Risolvere F-035-01 e F-035-03 (bloccanti al conditional). max_diff_lines: 80.~~
+**CHIUSO iter-2 — tutti i finding risolti. TSK-035 review_status: passed.**
+
+### Risoluzione iter-2 (commit 139dba7)
+
+- F-035-01: guard `if (!ref.current) return;` in toggle() — no-op esplicito, +1 test null-ref.
+- F-035-02: firma hook `RefObject<HTMLElement | null>`, cast rimosso da enter().
+- F-035-03: `{fsLabel}` come children del bottone — aria-label e testo visibile coincidono (WCAG 2.5.3).
+- F-035-04: commento `// ref identity è stabile (mono-target by design)` aggiunto.
+Verde: 73 unit, 6 e2e, typecheck, build.

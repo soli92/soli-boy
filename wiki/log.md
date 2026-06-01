@@ -28,6 +28,7 @@ Pagine create: 7 | Figure: 0 | Aggiornamenti: 3 (distribuzione-web-e-desktop, re
 
 [2026-06-01 13:00] plan — EP-001 created (6 stories) — files touched: 7
 [2026-06-01 13:00] plan — EP-002 created (3 stories) — files touched: 4
+[2026-06-01 23:30] review TSK-038 iter-2 → passed
 [2026-06-01 13:00] plan — EP-003 created (6 stories) — files touched: 7
 [2026-06-01 13:00] plan — EP-004 created (4 stories) — files touched: 5
 [2026-06-01 13:00] plan — EP-005 created (3 stories) — files touched: 4
@@ -326,3 +327,6 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 
 - 2026-06-01 22:30 — `review TSK-038 iter-1 → conditional` (0/0/1 medium + 3 low: F-038-01 listRoms rejection silente [medium, blocking], F-038-02 filtri non resettati su cambio storage [low, advisory], F-038-03 aria-label ridondante su input [low, advisory], F-038-04 commento presupposto in-memory mancante [low, advisory])
   - Reviewer: code-reviewer@2.15.0 · Stack: typescript/react/vite (conf 0.97) · Report: code_quality/reports/TSK-038-iter-1.json
+
+- 2026-06-01 22:50 — `review TSK-035 iter-2 → pass` (0 finding; tutti i 4 finding iter-1 risolti: F-035-01 guard toggle null [medium, blocking], F-035-02 firma hook HTMLElement [low], F-035-03 allineamento aria-label/testo WCAG 2.5.3 [low, blocking], F-035-04 commento mono-target [low])
+  - Reviewer: code-reviewer@2.14.0 · Commit: 139dba7 · Stack: typescript/react/vite (conf 0.97) · Report: code_quality/reports/TSK-035-iter-2.json

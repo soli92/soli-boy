@@ -1,0 +1,134 @@
+{
+  "tsk_id": "TSK-035",
+  "iter": 2,
+  "generated_at": "2026-06-01T22:50:00+02:00",
+  "reviewer_version": "2.14.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "bundler": "vite",
+    "test_runner": "vitest",
+    "confidence": 0.97,
+    "mode": "full"
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Player/useFullscreen.ts",
+    "packages/app/src/components/Player/Player.tsx",
+    "packages/app/src/components/Player/Player.fullscreen.test.tsx"
+  ],
+  "commit_under_review": "139dba7",
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [],
+  "resolution_map": [
+    {
+      "finding_id": "F-035-01",
+      "iter_raised": 1,
+      "severity": "medium",
+      "blocking": true,
+      "rule_id": "TS-ROBUST-001",
+      "resolution": "resolved",
+      "evidence": "Guard `if (!ref.current) return;` aggiunto in toggle() a useFullscreen.ts:95 prima del confronto fullscreenElement. Cast `as Element | null` rimosso dalla stessa riga. Nuovo test a Player.fullscreen.test.tsx:193-203 copre il path null-ref come no-op esplicito.",
+      "references": [
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:92-100]",
+        "[^src5: packages/app/src/components/Player/Player.fullscreen.test.tsx:193-203]"
+      ]
+    },
+    {
+      "finding_id": "F-035-03",
+      "iter_raised": 1,
+      "severity": "low",
+      "blocking": true,
+      "rule_id": "REACT-A11Y-001",
+      "resolution": "resolved",
+      "evidence": "Player.tsx:127 usa ora `{fsLabel}` come children del bottone (precedentemente `{fullscreen.isFullscreen ? 'Esci schermo intero' : 'Schermo intero'}`). aria-label={fsLabel} e testo visibile coincidono esattamente: WCAG 2.5.3 Label in Name soddisfatto. Test aggiornato a Player.fullscreen.test.tsx:128: `expect(exitBtn).toHaveTextContent(/esci da schermo intero/i)`.",
+      "references": [
+        "[^src5: packages/app/src/components/Player/Player.tsx:127]",
+        "[^src5: packages/app/src/components/Player/Player.fullscreen.test.tsx:127-128]"
+      ]
+    },
+    {
+      "finding_id": "F-035-02",
+      "iter_raised": 1,
+      "severity": "low",
+      "blocking": false,
+      "rule_id": "TS-IDIOM-002",
+      "resolution": "resolved",
+      "evidence": "Firma hook cambiata da `RefObject<Element | null>` a `RefObject<HTMLElement | null>` (useFullscreen.ts:44). Cast `const el = ref.current as HTMLElement | null` rimosso: ora `const el = ref.current` (useFullscreen.ts:76) — il tipo corretto è derivato dalla firma.",
+      "references": [
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:44]",
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:76]"
+      ]
+    },
+    {
+      "finding_id": "F-035-04",
+      "iter_raised": 1,
+      "severity": "low",
+      "blocking": false,
+      "rule_id": "TS-ROBUST-001",
+      "resolution": "resolved",
+      "evidence": "Commento `// ref identity è stabile (mono-target by design)` aggiunto a useFullscreen.ts:54 prima dell'useEffect con dipendenza [ref], documentando esplicitamente il comportamento e il vincolo mono-target.",
+      "references": [
+        "[^src5: packages/app/src/components/Player/useFullscreen.ts:54]"
+      ]
+    }
+  ],
+  "checks_explicit": {
+    "no_progress_detection": {
+      "result": "PASS",
+      "note": "Tutti e 4 i rule_id dell'iter-1 (TS-ROBUST-001 x2, REACT-A11Y-001, TS-IDIOM-002) risolti. Nessun rule_id rimasto invariato rispetto all'iter precedente. no_progress = false."
+    },
+    "regression_detection": {
+      "result": "PASS",
+      "note": "Diff commit 139dba7 limitato a packages/app/src/components/Player/. Nessun file fuori da Player/ toccato. Commit message: 73 unit + 6 e2e + typecheck + build verdi. Nessun nuovo finding in pass idiomaticità/design/robustezza sui file modificati."
+    },
+    "cleanup_fullscreenchange_on_unmount": {
+      "result": "PASS",
+      "note": "Invariato dall'iter-1: useFullscreen.ts:67-72 addEventListener con cleanup return. Test cleanup a Player.fullscreen.test.tsx:205-220 ancora presente e verde."
+    },
+    "fallback_api_assente": {
+      "result": "PASS",
+      "note": "Invariato dall'iter-1: isApiSupported() + supported=false + bottone disabled + title esplicativo."
+    },
+    "a11y_aria_label_aria_pressed": {
+      "result": "PASS",
+      "note": "F-035-03 risolto: testo visibile e aria-label ora coincidono via fsLabel. aria-pressed sincronizzato. WCAG 2.5.3 Label in Name: conforme."
+    },
+    "type_safety_no_unsafe_cast": {
+      "result": "PASS",
+      "note": "F-035-02 risolto: firma hook aggiornata a RefObject<HTMLElement | null>. Cast rimosso da enter() e toggle(). isApiSupported() usa `target as HTMLElement` internamente (coerente: il type del parametro rimane Element | null per compatibilità dell'helper privato, ma i chiamanti pubblici garantiscono ora HTMLElement tramite la firma corretta dell'hook). Nessun new unsafe cast introdotto."
+    },
+    "scope_no_modifica_engine": {
+      "result": "PASS",
+      "note": "Diff confermato: nessuna modifica fuori da Player/. EmulatorEngine, CoreWrapper, store engine non toccati."
+    }
+  },
+  "summary": {
+    "total_findings": 0,
+    "by_severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "blocking": 0,
+    "advisory": 0,
+    "resolved_from_iter1": 4
+  },
+  "verdict": "pass",
+  "verdict_rationale": "Tutti i finding dell'iter-1 risolti nel commit 139dba7. F-035-01 (guard toggle null, medium, blocking) e F-035-03 (allineamento label/testo WCAG 2.5.3, blocking) chiusi con fix mirati e copertura test aggiunta. F-035-02 (firma hook HTMLElement, low) e F-035-04 (commento mono-target, low) risolti come advisory. Nessuna regressione: scope di modifica limitato a Player/, 73 unit + 6 e2e verdi, typecheck e build clean. no_progress=false (4/4 finding risolti).",
+  "loop_status": {
+    "iter": 2,
+    "max_iterations": 3,
+    "previous_iter_rule_ids": ["TS-ROBUST-001", "TS-IDIOM-002", "REACT-A11Y-001", "TS-ROBUST-001"],
+    "current_iter_rule_ids": [],
+    "no_progress_detected": false,
+    "regression_detected": false,
+    "loop_exhausted": false
+  },
+  "next_step": "verdict=pass — nessuna azione richiesta. TSK-035 chiuso. Aggiornamento frontmatter review_status: passed."
+}
