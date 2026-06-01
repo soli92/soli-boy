@@ -300,3 +300,5 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 
 [2026-06-01 20:10] design — ADR-006 Salvataggi (EP-004) + note design EP-005/EP-002 in architecture-overview — files touched: 2
 [2026-06-01 20:10] execute — sprint 5 backlog post-MVP: TSK-030..039 (EP-004 salvataggi, EP-005 resa video, EP-002 libreria avanzata) — files touched: 10
+
+[2026-06-01 20:40] plan — TSK-040 (integrazione @soli92/solids reale) aperto in stato BLOCKED su Q_001: pacchetto non consumabile (npm pubblico 404; github:soli92/solids senza dist/). Q_001 hard in questions.md. — files touched: 3

@@ -66,6 +66,9 @@ il registry instrada l'arcade a "non ancora supportato". Vedi gap arcade-emulati
 | TSK-037 | Filtri base (nearest/scanline) | EP-005 | fe | P2 | todo | — |
 | TSK-038 | Ricerca + filtro piattaforma (Library) | EP-002 | fe | P1 | todo | — |
 | TSK-039 | Copertina gioco (upload/display) | EP-002 | fe | P2 | todo | TSK-038 |
+| TSK-040 | Integrare @soli92/solids reale | (cross) | fe | P2 | blocked | Q_001 |
+
+⛔ TSK-040 blocked su Q_001 (pacchetto @soli92/solids non consumabile: npm 404, github senza dist).
 
 DAG: EP-004 catena (030→031→{032,033}→034); EP-005 e EP-002 in parallelo (UI indipendenti).
 ADR-006 (salvataggi). EP-005/EP-002 design in architecture-overview.
