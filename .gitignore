@@ -14,3 +14,9 @@ dist/
 # Playwright
 packages/app/playwright-report/
 packages/app/test-results/
+
+# ROM di test: niente binari nel repo (copyright). Solo il README è tracciato.
+# Per abilitare una ROM LIBERA all'e2e, whitelistarla esplicitamente con:
+#   !packages/app/public/test-roms/<nome-rom-libera>
+packages/app/public/test-roms/*
+!packages/app/public/test-roms/README.md
