@@ -50,6 +50,15 @@ afterEach(() => {
 });
 
 describe("Library", () => {
+  // TSK-046 — US-039: l'header della Library mostra il logo brand.
+  it("mostra il logo Soli-boy nell'header (US-039)", async () => {
+    render(<Library storage={fakeStorage([rec("1", "Tetris", "GB")])} />);
+    // L'<img> deriva il suo accessible name dall'attributo alt.
+    const logo = await screen.findByRole("img", { name: "Soli-boy" });
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute("src", expect.stringMatching(/soliboy-logo-horizontal/));
+  });
+
   it("mostra i giochi con titolo e piattaforma", async () => {
     render(<Library storage={fakeStorage([rec("1", "Tetris", "GB"), rec("2", "Metroid", "GBA")])} />);
     expect(await screen.findByText("Tetris")).toBeInTheDocument();
@@ -206,9 +215,12 @@ describe("Library", () => {
       );
       // attendi il rendering
       await screen.findByText("Tetris");
-      expect(screen.queryByRole("img")).not.toBeInTheDocument();
-      // Iniziale del titolo come segnaposto, dentro un elemento .sb-art.
+      // TSK-046 — il logo Soli-boy nell'header è un <img> sempre presente:
+      // restringiamo la verifica "no <img>" alla griglia delle tile, dove
+      // la cover sarebbe stata renderizzata in caso di coverBlob.
       const grid = screen.getByRole("list", { name: /risultati libreria/i });
+      expect(within(grid).queryByRole("img")).not.toBeInTheDocument();
+      // Iniziale del titolo come segnaposto, dentro un elemento .sb-art.
       const tile = within(grid).getByRole("listitem");
       const art = tile.querySelector(".sb-art");
       expect(art).not.toBeNull();
@@ -230,9 +242,13 @@ describe("Library", () => {
     it("upload chiama setCover e poi mostra l'immagine sulla tile", async () => {
       const storage = fakeStorage([rec("1", "Tetris", "GB")]);
       render(<Library storage={storage} />);
-      // Pre-condizione: tile senza img.
+      // Pre-condizione: tile senza img (la griglia non contiene cover image).
+      // TSK-046 — l'header brand contiene un <img alt="Soli-boy"> sempre
+      // presente; lo escludiamo dalla verifica restringendoci alla <ul> dei
+      // risultati.
       await screen.findByText("Tetris");
-      expect(screen.queryByRole("img")).not.toBeInTheDocument();
+      const gridPre = screen.getByRole("list", { name: /risultati libreria/i });
+      expect(within(gridPre).queryByRole("img")).not.toBeInTheDocument();
 
       // L'input file è label-ato per ROM.
       const input = screen.getByLabelText(

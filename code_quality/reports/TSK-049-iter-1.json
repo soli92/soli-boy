@@ -1,0 +1,140 @@
+{
+  "tsk_id": "TSK-049",
+  "iter": 1,
+  "generated_at": "2026-06-01T23:30:00+02:00",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "stack_descriptor": {
+    "language": "yaml",
+    "platform": "github-actions",
+    "runtime": "ubuntu-latest",
+    "node_version": "20",
+    "confidence": 0.95,
+    "detection_mode": "guided",
+    "degraded_mode": true,
+    "degraded_mode_note": "Nessuna regola canonical per stack GHA/YAML presente in code_quality/rules/canonical/. Finding citano regole emergent candidate (GHA-DESIGN-001, GHA-DESIGN-002, GHA-ROBUST-001) create in questo run. Gate umano richiesto per promozione a canonical."
+  },
+  "files_reviewed": [
+    ".github/workflows/ci.yml"
+  ],
+  "diff_commit": "4e787d0",
+  "diff_lines_added": 44,
+  "diff_lines_removed": 0,
+  "passes": {
+    "idiomaticity": "clean",
+    "design": "2-findings-minor",
+    "robustness": "2-findings-minor-low"
+  },
+  "findings": [
+    {
+      "id": "F-049-01",
+      "rule_id": "GHA-DESIGN-001",
+      "rule_tier": "emergent",
+      "rule_ref": "code_quality/rules/emergent/GHA-DESIGN-001.md",
+      "severity": "minor",
+      "pass": "design",
+      "file": ".github/workflows/ci.yml",
+      "lines": [1, 8],
+      "title": "Mancante blocco `concurrency:` per cancellare run obsolete su PR",
+      "description": "Il workflow non dichiara un blocco `concurrency:`. Su una PR con push ravvicinati (rebase, fixup, force-push), ogni commit crea una run indipendente. Le run obsolete non vengono cancellate, consumano runner-minutes inutilmente e ritardano il feedback sulla run corrente (quella dell'ultimo commit). Un `concurrency` group con `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` annulla le run precedenti solo sulle PR, preservando le run su push a main (che potrebbero alimentare check post-merge di TSK-050 branch protection).",
+      "recommendation": "Aggiungere dopo il blocco `on:`, prima di `jobs:`:\n```yaml\nconcurrency:\n  group: ${{ github.workflow }}-${{ github.ref }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\n```\nQuesto cancella le run PR obsolete senza interrompere i run post-merge su main.",
+      "auto_fixable": false,
+      "blocking": false,
+      "source_note": "Finding advisory. Non bloccante: la pipeline e' funzionalmente corretta. L'assenza di concurrency e' un costo operativo (runner-minutes) e di latenza del feedback, non un errore di correttezza."
+    },
+    {
+      "id": "F-049-02",
+      "rule_id": "GHA-ROBUST-001",
+      "rule_tier": "emergent",
+      "rule_ref": "code_quality/rules/emergent/GHA-ROBUST-001.md",
+      "severity": "minor",
+      "pass": "robustness",
+      "file": ".github/workflows/ci.yml",
+      "lines": [9, 15],
+      "title": "Mancante `timeout-minutes` sul job `ci`",
+      "description": "Il job `ci` non dichiara `timeout-minutes`. Il default GitHub Actions e' 360 minuti (6 ore). Il workflow include `npx playwright install --with-deps chromium` (download ~100-150 MB) e l'e2e con engine WASM (WasmBoy/mGBA): step che possono bloccarsi per hang infrastrutturale, timeout DNS o race condition WASM in headless. Senza timeout esplicito, un job bloccato occupa il runner per 6 ore prima di essere terminato. Il TSK-049 stesso annota che i test real-engine potrebbero essere instabili per timing WASM: un timeout esplicito limita il blast radius di questi casi.",
+      "recommendation": "Aggiungere `timeout-minutes: 20` al job `ci`:\n```yaml\njobs:\n  ci:\n    runs-on: ubuntu-latest\n    timeout-minutes: 20\n    defaults:\n      run:\n        working-directory: packages/app\n```\nIl valore 20 min e' 2.5x il tempo atteso per checkout+setup+npm ci+typecheck+unit+e2e+build (stimato 6-8 min), con margine per variabilita' runner senza esporre all'hang silente.",
+      "auto_fixable": false,
+      "blocking": false,
+      "source_note": "Finding advisory. Non bloccante. Il rischio e' gestibile e la pipeline e' corretta; il timeout e' misura difensiva contro scenari infrastrutturali rari."
+    },
+    {
+      "id": "F-049-03",
+      "rule_id": "GHA-DESIGN-002",
+      "rule_tier": "emergent",
+      "rule_ref": "code_quality/rules/emergent/GHA-DESIGN-002.md",
+      "severity": "minor",
+      "pass": "design",
+      "file": ".github/workflows/ci.yml",
+      "lines": [1, 8],
+      "title": "Mancante blocco `permissions:` con privilegi minimi espliciti",
+      "description": "Il workflow non dichiara un blocco `permissions:`. Il `GITHUB_TOKEN` eredita i permessi di default del repo/org, che per repo pubblici con default 'read-only' sono gia' sufficienti; ma la dichiarazione esplicita e' defense-in-depth: se le impostazioni org vengono modificate o se il repo viene trasferito, il workflow mantiene il vincolo di minimo privilegio senza dipendere dalla configurazione esterna. Per questo workflow CI read-only (nessun deploy, nessuna pubblicazione di release, nessuna scrittura su PR) e' sufficiente `permissions: contents: read`.",
+      "recommendation": "Aggiungere dopo il blocco `on:` (o dopo `concurrency:` se aggiunto per F-049-01):\n```yaml\npermissions:\n  contents: read\n```",
+      "auto_fixable": false,
+      "blocking": false,
+      "source_note": "Finding advisory. Non bloccante. Il repo soli-boy e' pubblico e i default GITHUB_TOKEN per repo pubblici sono gia' read-only sulle operazioni non esplicitamente abilitate. La dichiarazione esplicita e' best practice di sicurezza difensiva."
+    },
+    {
+      "id": "F-049-04",
+      "rule_id": "GHA-ROBUST-001",
+      "rule_tier": "emergent",
+      "rule_ref": "code_quality/rules/emergent/GHA-ROBUST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "file": ".github/workflows/ci.yml",
+      "lines": [37, 37],
+      "title": "Cache browser Playwright assente: download Chromium a ogni run (deferred a TSK-052)",
+      "description": "`npx playwright install --with-deps chromium` scarica ogni volta ~100-150 MB di binari Chromium e relative librerie di sistema (`--with-deps`). Senza caching, ogni run spende 30-60 secondi extra per il download, con picchi in caso di CDN lenta. Playwright fornisce un pattern standard di caching via `actions/cache` su `~/.cache/ms-playwright` con key basata su `playwright --version`. Tuttavia, il TSK-049 stesso dichiara TSK-052 come task di caching dedicato: questo finding e' correttamente deferred e non blocca la definizione del workflow.",
+      "recommendation": "Implementare in TSK-052 il caching Playwright secondo il pattern ufficiale:\n```yaml\n- name: Cache Playwright browsers\n  uses: actions/cache@v4\n  with:\n    path: ~/.cache/ms-playwright\n    key: playwright-${{ runner.os }}-${{ hashFiles('packages/app/package-lock.json') }}\n```\nInserire lo step prima di `npx playwright install`. TSK-052 gia' tracciato come prerequisito logico.",
+      "auto_fixable": false,
+      "blocking": false,
+      "source_note": "Finding low, advisory. Correttamente deferred a TSK-052 come dichiarato nelle Dependencies del TSK. Segnalato per completezza e per fornire il pattern esatto a TSK-052."
+    }
+  ],
+  "positive_notes": [
+    {
+      "id": "N-049-01",
+      "type": "positive",
+      "title": "Trigger corretto e completo per il gate di qualita' US-040",
+      "description": "`push: branches: [main]` + `pull_request: branches: [main]` coprono esattamente i due scenari richiesti da US-040 AC3 (esito visibile sulla PR) e AC4 (fallimento propagato come status check). Il trigger `pull_request` attiva la pipeline su apertura, sincronizzazione e riapertura di PR verso main — comportamento atteso."
+    },
+    {
+      "id": "N-049-02",
+      "type": "positive",
+      "title": "`working-directory` monorepo corretto: `packages/app` applicato a livello job",
+      "description": "La dichiarazione `defaults.run.working-directory: packages/app` applica il working directory a tutti gli step `run:` del job senza doverlo ripetere su ogni step. Il path `cache-dependency-path: packages/app/package-lock.json` e' espresso dal root del repo (come richiesto da `actions/setup-node`) mentre `npm ci` gira gia' in `packages/app/` grazie al default. Pattern corretto per monorepo con singolo sub-package."
+    },
+    {
+      "id": "N-049-03",
+      "type": "positive",
+      "title": "`npm ci` (deterministico) e cache npm correttamente configurati",
+      "description": "`npm ci` installa esattamente le versioni del lock file senza risolvere nuovamente le dipendenze, garantendo build riproducibili. La cache npm via `actions/setup-node@v4` con `cache-dependency-path` puntuato al lock file corretto evita reinstallazioni complete ad ogni run quando il lock file non cambia. Configurazione ottimale per CI deterministico."
+    },
+    {
+      "id": "N-049-04",
+      "type": "positive",
+      "title": "Ordine step fail-fast: controlli economici prima di quelli costosi",
+      "description": "L'ordinamento typecheck -> unit tests -> playwright install -> e2e -> build rispetta il principio fail-fast: typecheck e unit tests (< 30s totali) falliscono prima di avviare l'installazione browser Playwright (30-60s) e l'e2e (piu' lungo). Se il typecheck fallisce, la pipeline si ferma prima di spendere tempo in operazioni piu' costose."
+    },
+    {
+      "id": "N-049-05",
+      "type": "positive",
+      "title": "Playwright solo Chromium: scope minimo corretto",
+      "description": "`npx playwright install --with-deps chromium` installa solo il browser necessario anziche' tutti e tre (chromium, firefox, webkit). Riduce il tempo di installazione e il consumo di disco. Coerente con la decisione ratificata nel TSK e con il fatto che l'app e' un emulatore browser-specifico (GameBoy in Chromium)."
+    },
+    {
+      "id": "N-049-06",
+      "type": "positive",
+      "title": "Nessun secret hardcoded, nessun token in chiaro",
+      "description": "Il workflow non contiene `env:` con token, password, o chiavi API. Non usa `secrets.*` (non necessario per CI read-only). L'assenza di secret hardcoded e' verificata positivamente."
+    }
+  ],
+  "verdict": "pass",
+  "summary": "TSK-049 produce un workflow CI GitHub Actions strutturalmente corretto, idiomatico e funzionalmente completo rispetto ai requisiti di US-040. Trigger push+PR su main, working-directory monorepo, npm ci deterministico, cache npm, step fail-fast (typecheck -> unit -> e2e -> build), Playwright solo Chromium: tutti verificati positivi. Nessun finding bloccante. Tre finding minor advisory (design + robustness): F-049-01 concurrency group assente (runner-minutes sprecati su PR rapide), F-049-02 timeout-minutes assente (hang silente fino a 6h in caso di infrastruttura KO), F-049-03 permissions espliciti assenti (defense-in-depth mancante). Un finding low advisory: F-049-04 cache browser Playwright assente (deferred correttamente a TSK-052 gia' pianificato). Stack GHA/YAML privo di regole canonical: review eseguita in modalita' degradata con regole emergent candidate create in questo run (GHA-DESIGN-001, GHA-DESIGN-002, GHA-ROBUST-001 -- gate umano per promozione).",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false
+  },
+  "next_step": "TSK-049 -> review_status: passed. Finding advisory non bloccanti: F-049-01/02/03 possono essere risolti in un micro-task dedicato (aggiunta concurrency + timeout-minutes + permissions al ci.yml, < 10 righe di diff, classificabile come improvement su EP-011). F-049-04 (cache Playwright) e' gia' correttamente tracciato in TSK-052. Tre regole emergent candidate create (GHA-DESIGN-001, GHA-DESIGN-002, GHA-ROBUST-001): gate umano per eventuale promozione a canonical prima del prossimo review di workflow CI."
+}

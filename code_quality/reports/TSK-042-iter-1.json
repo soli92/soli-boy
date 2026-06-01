@@ -1,0 +1,83 @@
+{
+  "tsk_id": "TSK-042",
+  "iter": 1,
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "commit": "4e787d0",
+  "stack_descriptor": {
+    "language": "binary/svg",
+    "framework": "vite-public-assets",
+    "framework_version": "n/a",
+    "runtime": "browser",
+    "confidence": 1.0,
+    "mode": "asset-only",
+    "note": "Task is a pure file-copy operation (no code logic). Stack detection not applicable for idiomaticity/design/robustness passes in the code sense. Checks scoped to constraint compliance, structural integrity, and downstream path correctness."
+  },
+  "passes": {
+    "idiomaticity": {
+      "applicable": false,
+      "note": "No code authored. Pass skipped — asset-copy task produces no TypeScript/React/CSS artifacts in this commit scope."
+    },
+    "design": {
+      "applicable": true,
+      "note": "Structural placement of assets reviewed: public/ vs src/assets/ split, path names, coverage of downstream references."
+    },
+    "robustness": {
+      "applicable": true,
+      "note": "Constraint compliance reviewed: R.1 (raw/ immutability), bit-identity, gitignore coverage, TSK code_path completeness."
+    }
+  },
+  "findings": [
+    {
+      "id": "F-042-01",
+      "severity": "low",
+      "rule_id": "asset.structure.code_path-incomplete",
+      "rule_tier": "emergent-candidate",
+      "title": "code_path frontmatter non dichiara packages/app/src/assets/",
+      "description": "Il frontmatter di TSK-042 dichiara in code_path solo i path sotto packages/app/public/ (icons/**, favicon.svg, favicon-32.png, favicon-64.png). Il task ha però anche consegnato packages/app/src/assets/soliboy-logo-horizontal.svg e packages/app/src/assets/soliboy-logo-mono.svg, entrambi descritti nel corpo del TSK (Technical Specs §src/assets/) e nei DoD. L'omissione è una discrepanza di documentazione, non un difetto funzionale: i file sono stati committati correttamente e sono bit-identici. Il code_path frontmatter serve al parallel scheduler (conflict detection §18) e alla tracciabilità; l'omissione non ha impatto operativo immediato dato che TSK-042 è l'unico writer di src/assets/ in questo sprint.",
+      "location": "management/kanban/EP-010-tema-90s-e-identita-di-brand/US-037-favicon-e-app-icon/TSK-042.md",
+      "location_detail": "frontmatter code_path[] — mancano entries packages/app/src/assets/soliboy-logo-horizontal.svg e packages/app/src/assets/soliboy-logo-mono.svg",
+      "auto_fixable": false,
+      "advisory": true,
+      "downstream_risk": "none — TSK-046 dichiara src/assets/* nel proprio code_path; nessun conflict scheduling atteso"
+    }
+  ],
+  "constraint_checks": {
+    "R1_raw_immutability": {
+      "result": "PASS",
+      "detail": "git show 4e787d0 --name-only: zero file sotto raw/. wiki/log.md (develop entry) conferma raw/ invariato."
+    },
+    "bit_identity": {
+      "result": "PASS",
+      "detail": "MD5 verificato su tutte e 16 le coppie raw/ → packages/app/: 12 PNG + 4 SVG. Ogni coppia presenta hash identico. Nessuna ricodifica, rendering pixel-art preservato."
+    },
+    "gitignore_coverage": {
+      "result": "PASS",
+      "detail": "Root .gitignore: nessun pattern PNG/SVG generico che colpisca public/ o src/assets/. Pattern test-roms/* (copyright) non interferisce. Tutti i 16 asset sono committabili e risultano tracciati nel commit 4e787d0."
+    },
+    "DS_Store_tracked": {
+      "result": "PASS",
+      "detail": "packages/app/public/.DS_Store presente su filesystem locale ma NON tracciato in git (git ls-files --error-unmatch: exit 1). Root .gitignore contiene .DS_Store. Nessuna azione richiesta."
+    },
+    "downstream_path_coverage": {
+      "result": "PASS",
+      "detail": "Tutti i path referenziati da TSK-043 (favicon.svg, favicon-32.png, favicon-64.png, icons/icon-{16,128,180}.png), TSK-045 (icons/icon-192.png, icons/icon-512.png) e TSK-046 (src/assets/soliboy-logo-{horizontal,mono}.svg) esistono nel filesystem e nel commit 4e787d0. Nessun path mancante."
+    },
+    "structural_placement": {
+      "result": "PASS",
+      "detail": "public/ assets (PNG + soliboy-icon.svg + favicon.svg): corretti per servizio statico Vite (copiati as-is nella root del dist). src/assets/ SVG logo: corretti per import React (TSK-046 userà ?react o ?url). La split public/ vs src/assets/ è coerente con il pattern Vite e con le spec TSK-042 §Technical Specs."
+    },
+    "asset_completeness": {
+      "result": "PASS",
+      "detail": "16 file consegnati: 3 in public/ (favicon.svg, favicon-32.png, favicon-64.png) + 11 in public/icons/ (icon-{16,32,48,64,128,180,192,256,512,1024}.png + soliboy-icon.svg) + 2 in src/assets/ (soliboy-logo-horizontal.svg, soliboy-logo-mono.svg). Tutti i DoD di TSK-042 spuntati. Nessun asset raw aggiuntivo non consegnato che fosse richiesto (logo-horizontal-{680,1360}.png non citati nel task spec — corretti a escluderli da public/ dato che TSK-046 non li referenzia)."
+    }
+  },
+  "verdict": "passed",
+  "summary": "TSK-042 supera la review senza finding blocking. L'operazione di copia rispetta tutti i vincoli normativi: R.1 (raw/ immutabile), bit-identity confermata su 16/16 file via MD5, nessun asset gitignored, struttura public/ vs src/assets/ corretta per i task downstream. L'unico finding (F-042-01, low, advisory) è una discrepanza di documentazione nel frontmatter code_path — non impatta la schedulazione né i task successivi. Build verde, tutti i path referenziati da TSK-043/045/046 presenti. Verdict: passed.",
+  "loop_status": {
+    "current_iter": 1,
+    "max_iter": 3,
+    "no_progress_risk": "n/a — first iteration"
+  },
+  "next_step": "Aggiornare frontmatter TSK-042 (review_status: passed). Nessun task_package richiesto — finding F-042-01 advisory low, nessun blocco. TSK-043, TSK-045, TSK-046 possono procedere."
+}

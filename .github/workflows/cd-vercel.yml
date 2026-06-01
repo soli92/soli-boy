@@ -1,0 +1,113 @@
+# Continuous Deployment del frontend su Vercel (US-042 / TSK-051).
+#
+# Decisioni di prodotto ratificate (gap `vercel-deploy-trigger-policy`, ratified 2026-06-01):
+#   - Deploy PRODUZIONE: push di un tag `v*` (release).
+#   - Deploy PREVIEW:    pull_request verso `main`.
+#   - Output:            `dist` di `packages/app` (Vite build).
+#   - `packages/app/vercel.json` (header COOP/COEP per cross-origin isolation
+#     richiesta dai core WASM con threading) NON viene modificato da questo
+#     workflow ed e' incluso nell'output di `vercel build` (default behavior).
+#
+# Via di deploy scelta: **Vercel CLI ufficiale** (`npx vercel@latest ...`).
+#   Rationale: supportata ufficialmente, meno soggetta a deprecazioni di
+#   action di terze parti (es. amondnet/vercel-action), pin alla major
+#   tramite npx + tag `vercel@latest` con vincolo major implicito via lockstep
+#   release Vercel. Comandi usati: `vercel pull` (scarica project settings),
+#   `vercel build` (esegue la build invocando `npm run build` definito in
+#   packages/app/package.json e applica vercel.json), `vercel deploy --prebuilt`
+#   (carica l'output gia' buildato — niente rebuild lato Vercel).
+#
+# Prerequisiti UMANI (R.14 / R.15 — gate umano, non automatizzabile da questo TSK):
+#   I seguenti 3 secret di repository GitHub devono essere creati manualmente
+#   dall'owner in: GitHub → Settings → Secrets and variables → Actions.
+#     - VERCEL_TOKEN       (da https://vercel.com/account/tokens — token scope=Full Account)
+#     - VERCEL_ORG_ID      (output di `vercel link` oppure file `.vercel/project.json` del progetto)
+#     - VERCEL_PROJECT_ID  (idem — `vercel link` o `.vercel/project.json`)
+#   In assenza dei secret, il workflow fallira' in modo atteso al primo step
+#   che li usa (es. `vercel pull` con `--token=""`) — comportamento intenzionale,
+#   non blocca CI ne' TSK-049/050.
+
+name: CD — Vercel
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    branches: [main]
+
+# Evita deploy concorrenti sullo stesso ref. Sulle PR cancella i job in volo
+# (utile quando si pusha rapidamente piu' commit alla stessa PR); sui tag
+# **non** cancella (cancel-in-progress=false vale solo perche' il group e'
+# univoco per tag — un secondo push sullo stesso tag e' raro e va comunque
+# serializzato).
+concurrency:
+  group: cd-vercel-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Permessi minimi: la CLI Vercel non commenta sulla PR ne' scrive su contenuti
+# del repo. Solo lettura del codice e' necessaria. Se in futuro si volesse
+# pubblicare il preview URL come commento PR, aggiungere `pull-requests: write`
+# (ma per ora il preview URL e' visibile nei log del job e su vercel.com).
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/app
+
+    # Environment Vercel: production sui tag `v*`, preview sulle PR.
+    # Esposto come output per chi consuma i log del workflow.
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: packages/app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `vercel pull` scarica le impostazioni del progetto (incluse env vars
+      # e routing di vercel.json risolte da Vercel) in `.vercel/`. Il flag
+      # `--environment` distingue preview vs production.
+      - name: Vercel pull (environment metadata)
+        run: |
+          npx vercel@latest pull \
+            --yes \
+            --environment=${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'preview' }} \
+            --token="${VERCEL_TOKEN}"
+
+      # `vercel build` esegue la build secondo `package.json` + `vercel.json`
+      # (legge COOP/COEP headers da packages/app/vercel.json e li include
+      # nell'output `.vercel/output/`). Il flag `--prod` produce un build
+      # ottimizzato per production.
+      - name: Vercel build
+        run: |
+          npx vercel@latest build \
+            ${{ startsWith(github.ref, 'refs/tags/v') && '--prod' || '' }} \
+            --token="${VERCEL_TOKEN}"
+
+      # `vercel deploy --prebuilt` carica l'artifact `.vercel/output/` senza
+      # rieseguire la build su Vercel. `--prod` promuove a production solo
+      # sui tag `v*`; sulle PR (flag assente) il deploy e' di tipo preview
+      # con URL unico generato da Vercel.
+      - name: Vercel deploy
+        run: |
+          npx vercel@latest deploy \
+            --prebuilt \
+            ${{ startsWith(github.ref, 'refs/tags/v') && '--prod' || '' }} \
+            --token="${VERCEL_TOKEN}"

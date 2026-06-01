@@ -1,0 +1,93 @@
+{
+  "tsk_id": "TSK-044",
+  "iter": 1,
+  "generated_at": "2026-06-01T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.15.0",
+  "commit": "4e787d0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "bundler": "vite",
+    "confidence": 0.97,
+    "mode": "stack-aware"
+  },
+  "findings": [
+    {
+      "id": "F-044-01",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "medium",
+      "blocking": false,
+      "advisory": true,
+      "file": "packages/app/src/components/ThemeSelector/useTheme.ts",
+      "line": 87,
+      "title": "Valore caricato da port.load() non validato contro UI_THEMES",
+      "description": "Il valore restituito da port.load() viene applicato direttamente a document.documentElement via setAttribute e impostato come stato React senza verificare che appartenga a UI_THEMES. Un valore stale o non riconosciuto (es. tema rimosso in una versione futura, corruzione dello store) produrrebbe: (a) un data-theme non riconosciuto da @soli92/solids → fallback silenzioso a token undefined; (b) il <select> senza opzione preselezionata (value non in options) → browser lo mostra vuoto o al primo elemento. Il pattern parallelo useVideoSettings adotta mergeWithDefaults per gestire versioni precedenti del payload persistito, ma non ha un guard enum equivalente. Aggiungere un parseTheme(raw: string): UiTheme — analogo a parseVideoFilter — che ritorna DEFAULT_UI_THEME se il valore non è incluso in UI_THEMES.",
+      "suggestion": "Aggiungere export function parseTheme(raw: string): UiTheme { return (UI_THEMES as readonly string[]).includes(raw) ? (raw as UiTheme) : DEFAULT_UI_THEME; } e usarla nel .then() del load: if (loaded) setThemeState(parseTheme(loaded));",
+      "auto_fixable": false,
+      "ref_source": "packages/app/src/components/ThemeSelector/useTheme.ts:87"
+    },
+    {
+      "id": "F-044-02",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "severity": "medium",
+      "blocking": false,
+      "advisory": true,
+      "file": "packages/app/src/components/ThemeSelector/ThemeSelector.test.tsx",
+      "line": null,
+      "title": "Ramo port.save() rejected non coperto da test",
+      "description": "useTheme.setTheme() contiene un branch .catch(err => console.warn(...)) sul save della porta (lines 112-115 di useTheme.ts). Questo ramo — che ha logica diagnostica esplicita — non è coperto da alcun test nel file ThemeSelector.test.tsx. I 4 test esistenti coprono: default, load-ok, load+setTheme ok, load-rejected. Il caso save-rejected è analogo al test load-rejected (stesso pattern console.warn spy) ma mancante. Segnalato a qa-dev per aggiunta del test in TSK-047.",
+      "suggestion": "Aggiungere: it('port.save() rejected → logga warning, stato resta aggiornato', async () => { const warn = vi.spyOn(console, 'warn').mockImplementation(() => {}); const port = makePort(null); port.save = vi.fn(async () => { throw new Error('quota piena'); }); const { result } = renderHook(() => useTheme(port)); await waitFor(() => expect(port.load).toHaveBeenCalled()); await act(async () => { result.current.setTheme('dark'); }); await waitFor(() => expect(warn).toHaveBeenCalledWith(expect.stringContaining('[useTheme] port.save() rejected:'), expect.any(Error))); expect(result.current.theme).toBe('dark'); warn.mockRestore(); });",
+      "auto_fixable": false,
+      "ref_source": "packages/app/src/components/ThemeSelector/useTheme.ts:112-115"
+    },
+    {
+      "id": "F-044-03",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "blocking": false,
+      "advisory": true,
+      "file": "packages/app/src/components/ThemeSelector/useTheme.ts",
+      "line": 47,
+      "title": "UseThemeResult.theme tipato string invece di UiTheme — asimmetria con UiTheme exportato",
+      "description": "UseThemeResult.theme è dichiarato come string (line 49) e lo stato interno è useState<string> (line 75), mentre UiTheme è già definito ed esportato nello stesso file. ThemeSelectorProps.theme è anch'esso string (scelta documentata per non vincolare i consumer). La scelta è coerente e documentata, ma crea una leggera asimmetria: il chiamante in App.tsx dichiara const { theme, setTheme } = useTheme(themePort) e passa theme a Settings, che accetta string — nessun narrowing statico garantisce che il valore sia uno dei temi supportati. L'issue è strettamente idiomatica (non blocking) e può essere indirizzata contestualmente a F-044-01 rendendo il return type UseThemeResult.theme: UiTheme se si introduce parseTheme.",
+      "suggestion": "Se F-044-01 viene risolto con parseTheme, allineare: stato interno useState<UiTheme>(DEFAULT_UI_THEME), UseThemeResult.theme: UiTheme, setTheme: (next: string) => void (il parametro resta string per compatibilità con onThemeChange di Settings, ma internamente si applica parseTheme prima di setThemeState).",
+      "auto_fixable": false,
+      "ref_source": "packages/app/src/components/ThemeSelector/useTheme.ts:47-52"
+    }
+  ],
+  "positive_checks": [
+    "Single source of truth data-theme: solo useTheme.useEffect applica setAttribute — ThemeSelector è puro (nessun side-effect DOM)",
+    "Pattern port analogo a useVideoSettings/makeVideoSettingsPort/ConfigPort: makeThemePort su ConfigPort, chiave 'ui-theme' (UI_THEME_KEY const, no magic string), export in storage/port.ts",
+    "port.load() rejection: console.warn esplicito, no swallow silenzioso, UI non si blocca",
+    "port.save() rejection: console.warn esplicito, no rollback UI (coerente con F-036-03)",
+    "cancelled flag: previene setState-after-unmount (StrictMode safe)",
+    "Guard typeof document === 'undefined' nell'effetto DOM: compatibile con Node test runner senza jsdom",
+    "useEffect([port]) one-shot al mount: idratazione senza flash/race grazie al cancelled flag",
+    "aria-label='Tema dell'interfaccia' sul <select>: REACT-A11Y-001 (native <select>, no role='button' workaround) — pienamente accessibile da tastiera nativamente",
+    "Props theme/onThemeChange opzionali in SettingsProps + guard (theme !== undefined && onThemeChange !== undefined): sezione 'Aspetto' non renderizzata senza wiring — test legacy intatti",
+    "ThemeSelector importa UI_THEMES da useTheme (single source of truth temi): nessuna duplicazione dell'elenco",
+    "import type { ThemePort } usato correttamente in useTheme.ts e theme-port.ts: TS-IDIOM-001 rispettata",
+    "Nessun any implicito/esplicito né non-null assertion: TS-IDIOM-002 rispettata",
+    "themePort memoizzato in App.tsx con useMemo([], []) — stabile tra render, deps di useEffect([port]) stabili",
+    "index.html: data-theme='90s-party' allineato al DEFAULT_UI_THEME — nessun flash visivo al caricamento iniziale prima dell'idratazione",
+    "Nessuna modifica all'engine (EmulatorEngine, WasmBoyEngine): scope circoscritto a layer fe, invariante engine-agnostico rispettata",
+    "171 unit test verdi, 8 e2e verdi, typecheck OK, build OK al commit 4e787d0"
+  ],
+  "verdict": "passed",
+  "summary": "TSK-044 supera la review con 3 finding advisory (tutti medium o low, nessuno blocking). Il design è solido: single source of truth per data-theme, pattern port coerente con useVideoSettings, gestione errori best-effort con console.warn, idratazione one-shot cancellation-safe, a11y corretta sul select, backward-compat Settings invariata. I finding riguardano: (F-044-01) assenza di un parseTheme() per validare il valore caricato da porta contro UI_THEMES — può produrre data-theme stale silenzioso su upgrade tema; (F-044-02) ramo port.save() rejected non testato — delegato a qa-dev per TSK-047; (F-044-03) tipo theme: string invece di UiTheme nell'interfaccia del hook — correggibile contestualmente a F-044-01.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false
+  },
+  "next_step": "verdict passed — nessuna iterazione richiesta. F-044-01 e F-044-03 raccomandati per TSK-047 (refactor contestuale). F-044-02 delegato a qa-dev per aggiunta test in TSK-047."
+}

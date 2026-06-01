@@ -5,11 +5,33 @@
 // per caricare una cover dall'utente (file input image/*) → setCover →
 // refresh della tile. Nessun fetch esterno (US-033 privacy on-device).
 // UI su classi solids.
+// TSK-046 — Logo Soli-boy nell'header della Library (US-039 / EP-010).
+// Variante scelta: HORIZONTAL (a colori del brand) importata come URL via Vite
+// e renderizzata come <img>. Motivazione: <img> isola il documento SVG e NON
+// eredita `currentColor` dal CSS host (perderemmo l'inchiostro su qualunque
+// tema), quindi la variante mono renderebbe nero opaco illeggibile su temi
+// scuri (es. `dark`, `90s-party`). La horizontal mantiene i colori del brand
+// ed è leggibile su qualsiasi tema. Una versione theme-adaptive via inline
+// SVG/svgr resta possibile miglioramento futuro (gap chiuso con opzione
+// zero-dep — niente nuove dipendenze npm). Vedi gap svg-react-import-strategy.
 
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import logoUrl from "../../assets/soliboy-logo-horizontal.svg";
 import type { Platform } from "../../domain/types";
 import type { CoverPort, StoragePort } from "../../storage/port";
 import type { RomRecord } from "../../storage/types";
+
+// TSK-046 — stile inline per il logo header. Non possiamo applicare la classe
+// `.sb-logo` esistente in solids-theme.css (è scoped per il box 34x34 del
+// brand mark, in conflitto con la ratio 680x240 dell'asset orizzontale).
+// solids-theme.css è fuori scope per questo TSK. Usiamo classe dedicata
+// `sb-app-logo` (no CSS associato → tutta la dimensione via inline style).
+const LOGO_STYLE: CSSProperties = {
+  height: "2rem",
+  width: "auto",
+  display: "block",
+};
 
 export interface LibraryProps {
   /**
@@ -119,18 +141,43 @@ export function Library({ storage, onSelect }: LibraryProps) {
     [storage],
   );
 
+  // TSK-046 — Header della Library con logo brand. Renderizzato in tutti gli
+  // stati (error/loading/empty/populated) per coerenza branding. L'alt="Soli-boy"
+  // fornisce l'accessible name all'<img> (role=img); l'alt NON è testo nodale
+  // → non interferisce con getByText() degli e2e/test esistenti.
+  const header = (
+    <header className="sd-flex sd-items-center sd-gap-md">
+      <img src={logoUrl} alt="Soli-boy" className="sb-app-logo" style={LOGO_STYLE} />
+    </header>
+  );
+
   if (error !== null)
     return (
-      <p className="sb-note" role="alert">
-        {error}
-      </p>
+      <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+        {header}
+        <p className="sb-note" role="alert">
+          {error}
+        </p>
+      </section>
     );
-  if (roms === null) return <p className="sb-note">Caricamento libreria…</p>;
+  if (roms === null)
+    return (
+      <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+        {header}
+        <p className="sb-note">Caricamento libreria…</p>
+      </section>
+    );
   if (roms.length === 0)
-    return <p className="sb-note">Nessun gioco. Carica una ROM per iniziare.</p>;
+    return (
+      <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+        {header}
+        <p className="sb-note">Nessun gioco. Carica una ROM per iniziare.</p>
+      </section>
+    );
 
   return (
     <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+      {header}
       <div className="sd-flex sd-items-center sd-gap-md sd-wrap">
         <label className="sb-search" htmlFor="library-search">
           <span className="sr-only">Cerca per titolo</span>

@@ -44,9 +44,24 @@ export const DEFAULT_UI_THEME: UiTheme = "90s-party";
  */
 export const DATA_THEME_ATTR = "data-theme";
 
+/**
+ * TSK-044 / F-044-01 — Validazione runtime di un valore tema proveniente da
+ * input non tipizzati (es. valore restituito da `port.load()` da una versione
+ * precedente o da uno store corrotto). Restituisce il valore se incluso in
+ * `UI_THEMES`, altrimenti `DEFAULT_UI_THEME`. Centralizzato qui — accanto a
+ * `UI_THEMES` — per evitare drift fra i consumatori (ThemeSelector, tests) e
+ * per essere riusabile dai test. Pattern allineato a `parseVideoFilter` di
+ * `useVideoSettings` (TSK-037 / F-037-01).
+ */
+export function parseTheme(raw: string): UiTheme {
+  return (UI_THEMES as readonly string[]).includes(raw)
+    ? (raw as UiTheme)
+    : DEFAULT_UI_THEME;
+}
+
 export interface UseThemeResult {
   /** Tema corrente (sempre definito; default applicato in attesa del load). */
-  theme: string;
+  theme: UiTheme;
   /** Aggiorna il tema, applica `data-theme` e — se presente la porta — persiste. */
   setTheme: (next: string) => void;
 }
@@ -72,7 +87,7 @@ export interface UseThemeResult {
  * (es. load asincrono dalla porta al mount).
  */
 export function useTheme(port?: ThemePort): UseThemeResult {
-  const [theme, setThemeState] = useState<string>(DEFAULT_UI_THEME);
+  const [theme, setThemeState] = useState<UiTheme>(DEFAULT_UI_THEME);
 
   // Idratazione dalla porta (one-shot al mount). `cancelled` evita setState
   // dopo unmount nei test che svolgono il render in <StrictMode> o smontano
@@ -84,7 +99,10 @@ export function useTheme(port?: ThemePort): UseThemeResult {
       .load()
       .then((loaded) => {
         if (cancelled) return;
-        if (loaded) setThemeState(loaded);
+        // F-044-01 — valore esterno non validato: se la porta restituisce un
+        // tema sconosciuto (schema legacy, corruzione store) cadiamo sul
+        // default canonico invece di propagare un `data-theme` non riconosciuto.
+        if (loaded) setThemeState(parseTheme(loaded));
       })
       .catch((err) => {
         if (cancelled) return;
@@ -106,11 +124,17 @@ export function useTheme(port?: ThemePort): UseThemeResult {
 
   const setTheme = useCallback(
     (next: string) => {
-      setThemeState(next);
+      // F-044-01 — `next` arriva dal DOM (es. `event.target.value` di un
+      // <select>) ed è quindi un valore esterno non validato: passa da
+      // `parseTheme` per coerenza con il path di idratazione (default su
+      // input sconosciuto, mai propagare un `data-theme` non riconosciuto).
+      const parsed = parseTheme(next);
+      setThemeState(parsed);
       if (port) {
-        // Best-effort: non blocchiamo la UI sull'I/O.
-        port.save(next).catch((err) => {
-          // Diagnostico: la UI resta su `next`; logghiamo perché la
+        // Best-effort: non blocchiamo la UI sull'I/O. Persistiamo il valore
+        // *normalizzato* per evitare di salvare junk nello store.
+        port.save(parsed).catch((err) => {
+          // Diagnostico: la UI resta su `parsed`; logghiamo perché la
           // persistenza è fallita (quota piena, DB chiuso da un altro tab, ecc.).
           console.warn("[useTheme] port.save() rejected:", err);
         });
