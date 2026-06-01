@@ -8,9 +8,8 @@ status: draft
 
 ## [APERTE]
 
-- **Q_001** (hard) — Come rendere consumabile `@soli92/solids` nel progetto?
-  Il CSS reale (`dist/css/*`) non è disponibile: npm pubblico → 404; install `github:soli92/solids` → manca `dist/` (artefatto di build non committato, nessun prepare). Serve UNA di: (a) pubblicare il pacchetto su un registry accessibile (npm/privato+token), (b) committare `dist/` nel repo soli92/solids, (c) fornire un tarball/dist buildato, (d) documentare build+toolchain di solids da eseguire. **Bloccante:** hard (TSK-040).
+_(vuota)_
 
 ## [RISOLTE]
 
-_(vuota)_
+- **Q_001** (hard) — Come rendere consumabile `@soli92/solids` nel progetto? → **RISOLTA 2026-06-01**: `npm i @soli92/solids` risolve dal registry (1.14.1, `dist/css/*` presente). Integrato in TSK-040 (`main.tsx` importa `@soli92/solids/css/index.css`). Gap `design-system-real-package` chiuso.

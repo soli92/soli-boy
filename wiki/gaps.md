@@ -51,6 +51,8 @@ _(nessun gap registrato al bootstrap)_
 **Sospetta fonte:** pacchetto npm `@soli92/solids` (privato) — da fornire/installare.
 **Impatto:** non-bloccante (UI ora leggibile/stilizzata); sostituire con `@import "@soli92/solids/css/index.css"` + rimuovere il tema approssimato quando il pacchetto è disponibile.
 
+**CHIUSO 2026-06-01 (TSK-040):** `npm i @soli92/solids` ora risolve dal registry (1.14.1, `dist/css/*` presente; Q_001 chiusa). `main.tsx` importa `@soli92/solids/css/index.css` (token/temi/utilities/shadcn reali, autoritativo); `solids-theme.css` ha perso i blocchi colore `:root`/`[data-theme]` approssimati e tiene solo classi app `sb-` + scale token di fallback. Build+test verdi (49 unit + 6 e2e). DS reale in produzione.
+
 
 **Aggiornamento 2026-06-01 (debug 2):** confermato che fallisce **anche in browser headed** (utente): "Error loading EmulatorJS runtime" / `EJS_Runtime is not defined`. NON è né versione né headless. Provati senza successo: self-host npm+CDN, `EJS_threads=false`, core variante threaded e non-threaded, build **coerente** stable (`emulator.min.zip` esteso in `data/`), min vs non-min. Sintomo costante: "Could not fetch core report JSON" + il runtime del core non si estrae/definisce. Cause residue da indagare (sessione dedicata): caricamento/decompressione del core EmulatorJS (modulo `compression/` + endpoint cores report), MIME `application/wasm`, eventuale necessità di un manifest `cores`/`version` specifico, o quirk noto di self-host EJS (consultare doc/community EmulatorJS). Engine config (threads=false, startOnLoaded, selettore, pathtodata locale) lasciata come base. Gap RESTA APERTO.
 

@@ -12,6 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@soli92/solids": "^1.14.1",
     "@thenick775/mgba-wasm": "^2.4.1",
     "idb": "^8.0.0",
     "react": "^18.3.1",
