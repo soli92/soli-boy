@@ -1,0 +1,298 @@
+Soli-boy
+Emulatore multipiattaforma per arcade e console handheld
+
+Documento di Specifiche Funzionali
+Versione 1.0 — Bozza
+Data: 1 giugno 2026
+Stato: in revisione
+
+Indice
+
+
+
+1. Introduzione
+1.1 Scopo del documento
+Il presente documento descrive le specifiche funzionali dell'applicazione Soli-boy, un emulatore di giochi per piattaforme arcade e console portatili distribuito sia come web application sia come applicazione desktop nativa. Il documento è rivolto al team di sviluppo, ai progettisti dell'interfaccia, ai responsabili di prodotto e agli stakeholder coinvolti nella validazione dei requisiti.
+1.2 Descrizione generale
+Soli-boy consente all'utente di caricare ed eseguire le proprie ROM e i propri file di gioco all'interno del browser oppure tramite un'applicazione desktop. L'emulazione è delegata a core maturi compilati in WebAssembly, mentre l'interfaccia utente fornisce una libreria di gioco organizzata, controlli di esecuzione, gestione dei salvataggi e configurazione dei comandi.
+L'obiettivo primario del progetto è la velocità di realizzazione: si predilige il riuso di motori di emulazione consolidati rispetto allo sviluppo di core proprietari, in modo da disporre rapidamente di un prodotto funzionante e affidabile.
+1.3 Obiettivi e ambito
+Piattaforme supportate al lancio:
+	•	Nintendo Game Boy (GB) e Game Boy Color (GBC)
+	•	Nintendo Game Boy Advance (GBA)
+	•	Giochi arcade tramite i core FBNeo e MAME
+Fuori ambito per la prima release: gioco online multiplayer, store integrato di contenuti, funzionalità social e supporto a console domestiche (NES/SNES/Sega), previste come possibili estensioni future.
+1.4 Definizioni e acronimi
+Termine
+Definizione
+ROM
+File contenente l'immagine di un gioco, fornito dall'utente.
+BIOS
+Firmware di sistema richiesto da alcune piattaforme (es. GBA) per la piena compatibilità.
+Core
+Motore di emulazione di una specifica piattaforma (es. mGBA, Gambatte, FBNeo).
+WASM
+WebAssembly, formato binario eseguibile ad alte prestazioni nel browser.
+Save state
+Istantanea completa dello stato dell'emulatore, ripristinabile in qualsiasi momento.
+SPA
+Single Page Application.
+IPC
+Inter-Process Communication, comunicazione tra processi in Electron.
+
+2. Attori e contesto d'uso
+Il sistema è pensato per un utilizzo prevalentemente individuale. Si individuano i seguenti attori principali.
+Attore
+Descrizione
+Obiettivi principali
+Giocatore
+Utente finale che carica ed esegue i propri giochi.
+Caricare ROM, giocare, salvare e riprendere le partite, configurare i comandi.
+Utente avanzato
+Giocatore esperto interessato a opzioni di configurazione fine.
+Gestire BIOS, shader, scaling, fast-forward, profili di controllo.
+Amministratore locale
+Utente che gestisce l'installazione desktop.
+Configurare percorsi dei file, aggiornare l'applicazione.
+
+3. Requisiti funzionali
+I requisiti sono identificati con il prefisso RF e classificati per priorità: Must (indispensabile al lancio), Should (atteso), Could (desiderabile).
+3.1 Gestione dei file di gioco
+ID
+Requisito
+Priorità
+RF-01
+L'utente può caricare una ROM dal proprio dispositivo tramite file picker o drag & drop.
+Must
+RF-02
+Il sistema riconosce automaticamente la piattaforma dall'estensione e dal contenuto del file.
+Must
+RF-03
+L'utente può caricare il proprio file BIOS per le piattaforme che lo richiedono (es. GBA).
+Must
+RF-04
+Le ROM caricate sono memorizzate localmente e ripresentate nella libreria agli avvii successivi.
+Should
+RF-05
+L'utente può rimuovere una ROM dalla libreria.
+Should
+RF-06
+Il sistema non distribuisce né include alcuna ROM o BIOS protetti da copyright.
+Must
+
+3.2 Libreria di gioco
+ID
+Requisito
+Priorità
+RF-07
+La libreria mostra i giochi caricati in una griglia con titolo e piattaforma.
+Must
+RF-08
+L'utente può filtrare e cercare i giochi per nome e per piattaforma.
+Should
+RF-09
+La libreria mostra l'eventuale anteprima o copertina associata al gioco.
+Could
+
+3.3 Esecuzione e controlli
+ID
+Requisito
+Priorità
+RF-10
+Il sistema avvia l'emulazione del gioco selezionato con il core appropriato.
+Must
+RF-11
+L'utente può mettere in pausa, riprendere e arrestare l'emulazione.
+Must
+RF-12
+Il sistema supporta i comandi da tastiera e da gamepad (Gamepad API).
+Must
+RF-13
+L'utente può rimappare i comandi e salvarne il profilo.
+Should
+RF-14
+Il sistema fornisce fast-forward e, dove supportato, rewind.
+Should
+RF-15
+Il sistema gestisce l'audio con controllo del volume e mute.
+Must
+
+3.4 Salvataggi
+ID
+Requisito
+Priorità
+RF-16
+L'utente può creare save state multipli e ripristinarli.
+Must
+RF-17
+Il sistema persiste i salvataggi in-game (SRAM) della cartuccia.
+Must
+RF-18
+I salvataggi sono conservati localmente e associati al gioco corretto.
+Must
+RF-19
+L'utente può esportare e importare i salvataggi come file.
+Should
+
+3.5 Resa video
+ID
+Requisito
+Priorità
+RF-20
+Il sistema offre modalità a schermo intero.
+Must
+RF-21
+L'utente può selezionare il fattore di scala e l'aspect ratio.
+Should
+RF-22
+Il sistema offre filtri/shader di base (es. nearest, smoothing, scanline).
+Could
+
+3.6 Funzionalità specifiche desktop (Electron)
+ID
+Requisito
+Priorità
+RF-23
+L'applicazione desktop accede al filesystem nativo per aprire e salvare file.
+Must
+RF-24
+I core di emulazione sono inclusi localmente per il funzionamento offline.
+Must
+RF-25
+L'applicazione supporta l'aggiornamento automatico delle versioni.
+Should
+
+4. Requisiti non funzionali
+ID
+Categoria
+Requisito
+RNF-01
+Prestazioni
+L'emulazione deve mantenere la velocità nativa (60 fps) su hardware desktop di fascia media.
+RNF-02
+Compatibilità
+Funzionamento sui browser desktop moderni (Chromium, Firefox, Safari recenti).
+RNF-03
+Portabilità
+Codebase condivisa tra versione web e desktop; pacchetti per Windows, macOS e Linux.
+RNF-04
+Usabilità
+Interfaccia conforme al design system aziendale, accessibile da tastiera.
+RNF-05
+Sicurezza
+Esecuzione del core in contesto isolato; nessun invio dei file dell'utente a server esterni.
+RNF-06
+Privacy
+Tutti i dati di gioco e i salvataggi restano sul dispositivo dell'utente.
+RNF-07
+Legale
+Nessuna distribuzione di contenuti protetti; avviso esplicito nell'interfaccia.
+RNF-08
+Manutenibilità
+Architettura modulare con separazione tra UI, motore di emulazione e persistenza.
+
+5. Stack tecnologico
+Lo stack è stato selezionato per massimizzare la velocità di sviluppo, riusando motori di emulazione consolidati e una base di codice condivisa tra web e desktop.
+5.1 Panoramica
+Livello
+Tecnologia
+Ruolo
+Linguaggio
+TypeScript
+Tipizzazione statica su tutta la codebase.
+Framework UI
+React
+Costruzione dell'interfaccia a componenti.
+Design system
+solids (soli92/solids) v1.14.1
+Componenti, token, icone e linee guida visive dell'applicazione.
+Build tool
+Vite
+Bundling, dev server e build di produzione.
+Emulazione
+EmulatorJS (core Libretro in WASM)
+Esecuzione dei giochi: Gambatte (GB/GBC), mGBA (GBA), FBNeo/MAME (arcade).
+Persistenza
+IndexedDB (via idb)
+Archiviazione locale di ROM, salvataggi e configurazioni.
+Input
+Gamepad API
+Supporto ai controller, identico su web e desktop.
+Shell desktop
+Electron
+Confezionamento dell'app nativa multipiattaforma.
+5.2 Design system: solids (soli92/solids)
+L'interfaccia utente dell'applicazione è costruita sopra il design system solids (repository soli92/solids, v1.14.1), che costituisce la fonte unica di verità per l'aspetto e il comportamento dei componenti visivi. L'adozione del design system garantisce coerenza visiva, accessibilità e riduzione dei tempi di sviluppo dell'interfaccia.
+Ambiti di utilizzo del design system:
+	•	Componenti UI: pulsanti, campi, menu, modali, schede e griglie utilizzati per la libreria di gioco, i controlli di esecuzione e i pannelli di configurazione.
+	•	Design token: colori, tipografia, spaziature e raggi di curvatura applicati in modo centralizzato tramite i token del sistema, evitando valori hard-coded.
+	•	Temi: gestione del tema chiaro/scuro coerente con i token del design system.
+	•	Accessibilità: utilizzo dei pattern accessibili forniti dal design system (focus, ruoli ARIA, navigazione da tastiera) a supporto del requisito RNF-04.
+	•	Coerenza cross-platform: gli stessi componenti del design system vengono riutilizzati sia nella versione web sia nella shell Electron, assicurando un'esperienza uniforme.
+Riferimento: il design system è distribuito tramite il repository soli92/solids (https://github.com/soli92/solids). La versione di riferimento per il progetto è la v1.14.1, rilasciata il 29 aprile 2026. L'integrazione prevede l'importazione dei componenti e dei token nei moduli UI e l'applicazione del tema a livello di root dell'applicazione.
+5.3 Linee guida di integrazione del design system
+	•	Installazione del design system solids (soli92/solids, v1.14.1) come dipendenza dell'applicazione.
+	•	Importazione dei fogli di stile/token a livello dell'entry point e definizione del tema applicativo.
+	•	Wrapping dell'albero React con l'eventuale provider di tema del design system.
+	•	Utilizzo esclusivo dei componenti e dei token del design system nei moduli UI, evitando stili custom non riconducibili ai token.
+	•	Estensione del design system, ove necessario, tramite componenti compositi costruiti sopra le primitive fornite, senza alterarne i token di base.
+
+6. Architettura
+6.1 Visione d'insieme
+L'applicazione è strutturata su tre livelli logici: interfaccia utente (React + solids), motore di emulazione (EmulatorJS/WASM) e persistenza locale (IndexedDB). La stessa SPA viene servita come applicazione web e incapsulata nella shell Electron per la distribuzione desktop.
+Livello
+Responsabilità
+Tecnologie
+Presentazione
+Libreria, player, configurazione, temi.
+React, solids
+Dominio/Servizi
+Riconoscimento piattaforma, gestione sessione di gioco, mapping comandi.
+TypeScript
+Emulazione
+Esecuzione del core e rendering audio/video.
+EmulatorJS, WASM, Gamepad API
+Persistenza
+ROM, save state, SRAM, configurazioni.
+IndexedDB (idb)
+Distribuzione desktop
+Filesystem nativo, IPC, packaging, aggiornamenti.
+Electron
+6.2 Struttura del progetto
+Organizzazione indicativa dei moduli:
+src/   core/            wrapper EmulatorJS e mapping estensione → core   storage/         accesso a IndexedDB (ROM, salvataggi, config)   components/      Library, Player, FileLoader, Settings (su solids)   theme/           configurazione tema e token del design system   App.tsx          composizione dell'applicazione electron/   main.ts          finestra principale e IPC filesystem   preload.ts       bridge sicuro verso il renderer
+6.3 Flusso di esecuzione di un gioco
+	•	L'utente carica una ROM (RF-01); il servizio di dominio ne riconosce la piattaforma (RF-02).
+	•	La ROM viene salvata in IndexedDB e aggiunta alla libreria (RF-04, RF-07).
+	•	All'avvio, il wrapper seleziona e inizializza il core corrispondente (RF-10).
+	•	Il core esegue il gioco e rende audio/video; gli input arrivano da tastiera o gamepad (RF-12).
+	•	Save state e SRAM vengono persistiti in IndexedDB e ripristinabili (RF-16, RF-17).
+
+7. Vincoli e considerazioni
+7.1 Vincoli legali
+	•	L'applicazione non include, non distribuisce e non fornisce alcun collegamento a ROM o BIOS protetti da copyright.
+	•	L'esecuzione avviene esclusivamente su file forniti dall'utente; l'interfaccia mostra un avviso esplicito in tal senso.
+7.2 Vincoli tecnici
+	•	Il BIOS GBA, ove necessario alla piena compatibilità, deve essere fornito dall'utente.
+	•	Per i core WASM con threading è richiesta la configurazione degli header Cross-Origin (COOP/COEP) sul server web.
+	•	Nella versione Electron i core devono essere inclusi localmente per garantire il funzionamento offline.
+7.3 Assunzioni
+	•	Il design system solids (soli92/solids, v1.14.1) è disponibile al team come dipendenza di progetto.
+	•	Gli utenti dispongono legittimamente dei file di gioco che intendono eseguire.
+
+8. Roadmap indicativa
+Fase
+Contenuto
+Esito
+1 — Proof of concept
+Esecuzione di una ROM GB nel browser tramite EmulatorJS.
+Validazione dell'approccio tecnico.
+2 — MVP web
+Libreria, player, salvataggi, supporto GB/GBC/GBA e arcade, UI su solids.
+Web application funzionante.
+3 — Versione desktop
+Incapsulamento in Electron, core offline, filesystem nativo.
+App nativa multipiattaforma.
+4 — Rifinitura
+Rimappatura comandi, shader, import/export salvataggi, aggiornamenti automatici.
+Prodotto completo per il lancio.

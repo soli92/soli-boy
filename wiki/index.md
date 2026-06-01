@@ -11,15 +11,48 @@ tags: [navigation]
 
 # Wiki Index
 
-Punto di ingresso navigabile alla wiki di **soli-boy**. Layout karpathy-style.
+Punto di ingresso navigabile alla wiki di **soli-boy** (emulatore multipiattaforma per
+arcade e console handheld). Layout karpathy-style.
 
-## Substrate (L2)
+## Dominio progetto
 
-- [Sources](sources/) — una pagina per ogni documento `raw/` ingerito.
-- [Concepts](concepts/) — concetti del dominio.
-- [Entities](entities/) — entità (tool, persone, prodotti, organizzazioni).
-- [Syntheses](syntheses/) — sintesi e analisi trasversali.
-- [Runbooks](runbooks/) — procedure operative.
-- [Incidents](incidents/) — registro incidenti append-only.
+### Sources
+- [[2026-06-01-specifiche-funzionali]] — Documento di Specifiche Funzionali v1.0.
+- [[2026-06-01-integrazione-mobile]] — Estensione alle piattaforme mobile (Android e iOS).
 
-_(wiki vuota al bootstrap — popolata da ingest successivi)_
+### Concepts
+- [[emulazione-via-core-wasm]] — riuso di core Libretro maturi in WebAssembly.
+- [[architettura-a-tre-livelli]] — UI / emulazione / persistenza.
+- [[persistenza-locale]] — dati di gioco e salvataggi on-device.
+- [[save-state-e-sram]] — istantanea dell'emulatore vs salvataggio in-game.
+- [[libreria-di-gioco]] — griglia, filtri e ricerca dei giochi.
+- [[distribuzione-web-e-desktop]] — SPA web + shell Electron + estensione mobile.
+- [[vincoli-legali-rom-bios]] — nessun contenuto protetto distribuito.
+- [[piattaforme-e-core-supportati]] — GB/GBC, GBA, arcade.
+- [[confezionamento-mobile-capacitor]] — Capacitor vs React Native per il mobile.
+- [[controlli-touch]] — input touch, controller BT, aptica su mobile.
+- [[emulazione-su-mobile]] — core WASM nel WebView, vincolo iOS.
+
+### Entities
+- [[solids]] — design system aziendale (soli92/solids v1.14.1).
+- [[emulatorjs]] — motore di emulazione (core Libretro WASM).
+- [[electron]] — shell desktop nativa.
+- [[indexeddb]] — persistenza locale (via idb).
+- [[capacitor]] — contenitore nativo mobile (Android/iOS).
+
+### Syntheses
+- [[requisiti-funzionali-soli-boy]] — RF-01..RF-25 e RNF-01..RNF-08 consolidati.
+- [[stack-tecnologico-soli-boy]] — overview stack + linee guida di integrazione.
+- [[requisiti-mobile-soli-boy]] — RFM-01..09 e RNFM-01..07 mobile.
+- [[roadmap-mobile-soli-boy]] — roadmap estesa con le fasi mobile.
+
+## Framework (factory llm-wiki++)
+
+### Concepts
+- [[factory-compression-layer]] · [[token-compression]] · [[knowledge-graph-codebase]]
+
+### Entities
+- [[julius-brussee]] · [[caveman]] · [[graphify]]
+
+### Syntheses
+- [[token-reduction-tools]]

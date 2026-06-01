@@ -1,0 +1,25 @@
+{
+  "version": "2.9",
+  "entries": [
+    {
+      "key": "2026-06-01-specifiche-funzionali",
+      "source": "pdf",
+      "original": "raw/Soli-boy_Specifiche_Funzionali.docx",
+      "artifact_txt": "raw/2026-06-01-specifiche-funzionali.txt",
+      "extracted_at": "2026-06-01",
+      "extractor": "textutil (docx->txt)",
+      "title": "Soli-boy — Documento di Specifiche Funzionali v1.0",
+      "images": []
+    },
+    {
+      "key": "2026-06-01-integrazione-mobile",
+      "source": "pdf",
+      "original": "raw/Soli-boy_Integrazione_Mobile.docx",
+      "artifact_txt": "raw/2026-06-01-integrazione-mobile.txt",
+      "extracted_at": "2026-06-01",
+      "extractor": "textutil (docx->txt)",
+      "title": "Soli-boy — Estensione alle piattaforme mobile (Android e iOS) v1.0",
+      "images": []
+    }
+  ]
+}

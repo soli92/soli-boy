@@ -1,0 +1,154 @@
+Soli-boy
+Estensione alle piattaforme mobile (Android e iOS)
+
+Documento Funzionale Integrativo
+Allegato alle Specifiche Funzionali v1.0
+Versione 1.0 — 1 giugno 2026
+
+Indice
+
+
+
+1. Scopo dell'integrazione
+Il presente documento integra le Specifiche Funzionali di Soli-boy (v1.0) estendendo l'ambito del prodotto alle piattaforme mobile. Oltre alle versioni web e desktop già previste, il prodotto dovrà essere disponibile come applicazione mobile nativa su Android e iOS.
+L'obiettivo è offrire la medesima esperienza di emulazione — caricamento delle proprie ROM, libreria, esecuzione, salvataggi — adattata ai dispositivi touch, mantenendo coerenza funzionale e visiva con le altre versioni grazie al design system solids.
+Nota terminologica: la richiesta originaria citava “Android e macOS”. Poiché macOS è un sistema desktop, in questo documento le piattaforme mobile sono intese come Android e iOS (il sistema mobile di Apple). Un eventuale target desktop macOS rientra nella distribuzione desktop Electron già descritta nelle specifiche di base.
+
+2. Piattaforme target
+Piattaforma
+Sistema
+Distribuzione prevista
+Mobile
+Android (versioni supportate correnti)
+Google Play Store / APK
+Mobile
+iOS (iPhone, eventualmente iPad)
+Apple App Store
+Desktop
+Windows, macOS, Linux
+Già coperta da Electron (specifiche di base)
+Web
+Browser moderni
+Già coperta (specifiche di base)
+
+Le versioni mobile sono considerate prioritarie al pari della versione desktop; le versioni web e desktop restano invariate rispetto alle specifiche di base.
+
+3. Approccio tecnologico
+Per massimizzare il riuso della codebase esistente (React + TypeScript + solids) ed essere coerenti con l'obiettivo di velocità di sviluppo, si valutano due strategie principali per il confezionamento mobile.
+3.1 Opzione A — Capacitor (consigliata)
+Capacitor incapsula la SPA web esistente in un contenitore nativo per Android e iOS, esponendo le API native (filesystem, gamepad, haptics) tramite plugin. È la via più rapida perché riutilizza quasi integralmente il codice React e i componenti solids già sviluppati.
+	•	Riuso massimo della codebase web e del design system.
+	•	Accesso al filesystem nativo per ROM, BIOS e salvataggi tramite plugin.
+	•	Un'unica logica applicativa condivisa tra web, desktop (Electron) e mobile (Capacitor).
+3.2 Opzione B — React Native
+Una riscrittura dell'interfaccia in React Native offrirebbe maggiore integrazione nativa, ma comporterebbe la perdita del riuso diretto dei componenti web solids e tempi più lunghi. È sconsigliata in prima battuta data la priorità sulla velocità.
+3.3 Emulazione su mobile
+I core EmulatorJS (WASM) restano il motore di emulazione anche su mobile, eseguiti all'interno del WebView del contenitore Capacitor. Vanno verificate le prestazioni su dispositivi di fascia media e l'inclusione locale dei core per il funzionamento offline.
+Vincolo iOS: su iOS l'esecuzione di WebAssembly avviene tramite il motore WebView di sistema; vanno verificati i limiti di JIT e prestazioni. Le politiche dell'App Store sugli emulatori sono cambiate di recente e vanno validate in fase di pubblicazione, assicurandosi che l'app non distribuisca contenuti protetti.
+
+4. Requisiti funzionali mobile
+Requisiti aggiuntivi identificati con prefisso RFM. I requisiti funzionali di base (RF-01…RF-25) restano validi e si applicano anche al mobile, salvo gli adattamenti seguenti.
+ID
+Requisito
+Priorità
+RFM-01
+L'app fornisce controlli touch su schermo (D-pad e pulsanti virtuali) per ogni piattaforma emulata.
+Must
+RFM-02
+I controlli touch sono configurabili per posizione, dimensione e opacità.
+Should
+RFM-03
+L'app supporta controller fisici Bluetooth tramite la Gamepad API.
+Should
+RFM-04
+L'app carica ROM e BIOS dal file system del dispositivo e dai provider cloud di sistema.
+Must
+RFM-05
+L'interfaccia è responsiva e ottimizzata per orientamento verticale e orizzontale.
+Must
+RFM-06
+L'app gestisce correttamente sospensione e ripresa, mettendo in pausa l'emulazione in background.
+Must
+RFM-07
+Salvataggi e libreria sono persistiti localmente sul dispositivo.
+Must
+RFM-08
+L'app offre feedback aptico opzionale sugli input touch.
+Could
+RFM-09
+L'app rispetta le aree sicure (notch, barre di sistema) su entrambe le piattaforme.
+Must
+
+5. Requisiti non funzionali mobile
+ID
+Categoria
+Requisito
+RNFM-01
+Prestazioni
+Mantenere velocità di gioco fluida su dispositivi mobile di fascia media.
+RNFM-02
+Compatibilità
+Supporto alle versioni di Android e iOS correntemente mantenute.
+RNFM-03
+Usabilità
+Interfaccia touch conforme alle linee guida solids e alle convenzioni di ciascuna piattaforma.
+RNFM-04
+Batteria
+Consumo energetico controllato; pausa automatica in background (RFM-06).
+RNFM-05
+Store compliance
+Conformità ai requisiti di pubblicazione di Google Play e Apple App Store.
+RNFM-06
+Privacy
+Dati e salvataggi restano sul dispositivo; nessun invio dei file utente a server esterni.
+RNFM-07
+Legale
+Nessuna distribuzione di ROM o BIOS protetti; avviso esplicito in app.
+
+6. Impatti sull'architettura
+L'aggiunta delle versioni mobile estende il modello di distribuzione condiviso. La logica applicativa, l'interfaccia React e i componenti solids restano condivisi; cambiano i contenitori di confezionamento per ciascun target.
+Target
+Contenitore
+Note
+Web
+Browser
+SPA servita staticamente.
+Desktop
+Electron
+Filesystem nativo, core offline.
+Mobile Android
+Capacitor
+WebView + plugin nativi, distribuzione Play Store.
+Mobile iOS
+Capacitor
+WebView + plugin nativi, distribuzione App Store.
+
+Componenti condivisi tra tutti i target:
+	•	Interfaccia utente React e design system solids.
+	•	Servizi di dominio (riconoscimento piattaforma, gestione sessione, mapping comandi).
+	•	Motore di emulazione EmulatorJS/WASM.
+	•	Logica di persistenza (astratta su un'interfaccia di storage adattata a IndexedDB/web e filesystem/nativo).
+
+7. Roadmap aggiornata
+La roadmap di base è estesa con le fasi mobile, da affrontare dopo il consolidamento del nucleo condiviso (MVP web).
+Fase
+Contenuto
+Esito
+1–2
+Proof of concept e MVP web (come da specifiche di base).
+Nucleo condiviso funzionante.
+3
+Versione desktop Electron.
+App desktop multipiattaforma.
+4
+Integrazione Capacitor e controlli touch (RFM-01/02).
+Build mobile funzionante in interno.
+5 — Android
+Ottimizzazione, test su dispositivi, pubblicazione Play Store.
+App Android pubblicata.
+6 — iOS
+Validazione WebAssembly/JIT, conformità App Store, pubblicazione.
+App iOS pubblicata.
+7
+Rifiniture comuni (controller, aptica, import/export salvataggi).
+Prodotto completo su tutti i target.
