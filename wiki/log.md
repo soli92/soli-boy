@@ -277,3 +277,8 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 - 2026-06-01 18:25 — `review TSK-027 iter-1 → pass` (0/0/0)
 - 2026-06-01 18:25 — `review TSK-025 iter-1 → pass` (0/0/1 low: TS-ROBUST-001 promise play/pause)
   - Reviewer: code-reviewer@2.12.0 · Stack: typescript/vite (conf 0.95)
+
+## 2026-06-01 18:45 — develop TSK-029
+**Agente:** be-dev · **Code path:** ./packages/app/
+**Note:** rimossi emulatorjs-engine.ts, scripts/setup-emulatorjs.mjs, dep @emulatorjs/emulatorjs, script setup:emu, gitignore+dir public/emulatorjs. ADR-004 → superseded by ADR-005; runbook emulatorjs-hosting marcato storico. Commenti core-wrapper/Player resi engine-agnostici. Hardening WasmBoy promise (TS-ROBUST-001 advisory di TSK-025: play/pause con .catch). COOP/COEP mantenuti (innocui, utili per audio WasmBoy).
+**DoD:** pass — nessun riferimento EmulatorJS attivo; typecheck OK, 49 unit + 5 e2e verdi. **Commit:** n/a (gate)

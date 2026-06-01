@@ -8,6 +8,8 @@ updated: 2026-06-01
 tags: [runbook, emulatorjs, hosting, wasm]
 ---
 
+> **STORICO / SUPERSEDED (2026-06-01):** EmulatorJS abbandonato — pivot a WasmBoy (ADR-005). Questo runbook resta come riferimento storico del tentativo self-host; non più in uso.
+
 # Runbook — Hosting EmulatorJS
 
 Procedura operativa a supporto di `design_&_architecture/decisions/ADR-004.md` (integrazione EmulatorJS reale).

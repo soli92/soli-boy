@@ -15,7 +15,7 @@ export interface LoadOptions {
   core: Core;
   /** BIOS opzionale, richiesto da alcune piattaforme (es. GBA). */
   bios?: Blob;
-  /** Nodo DOM in cui montare l'emulatore (TSK-022; usato da EmulatorJsEngine, ignorato da StubEngine). */
+  /** Nodo DOM in cui montare l'emulatore (TSK-022; usato dagli engine reali es. WasmBoy, ignorato da StubEngine). */
   container?: HTMLElement;
 }
 

@@ -9,8 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2e": "playwright test",
-    "setup:emu": "node scripts/setup-emulatorjs.mjs"
+    "e2e": "playwright test"
   },
   "dependencies": {
     "idb": "^8.0.0",
@@ -19,7 +18,6 @@
     "wasmboy": "^0.7.1"
   },
   "devDependencies": {
-    "@emulatorjs/emulatorjs": "^4.2.3",
     "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.1",

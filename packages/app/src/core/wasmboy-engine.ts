@@ -38,17 +38,23 @@ export class WasmBoyEngine implements EmulatorEngine {
   }
 
   start(): void {
-    void WasmBoy.play();
+    this.run(WasmBoy.play(), "play");
   }
   pause(): void {
-    void WasmBoy.pause();
+    this.run(WasmBoy.pause(), "pause");
   }
   resume(): void {
-    void WasmBoy.play();
+    this.run(WasmBoy.play(), "resume");
   }
   stop(): void {
-    void WasmBoy.pause();
+    this.run(WasmBoy.pause(), "stop");
     this.joypad = {};
+  }
+
+  /** TSK-029 (TS-ROBUST-001): interfaccia sync ma API WasmBoy async → non lasciare
+   *  la promise non gestita: logga l'errore invece di ingoiarlo. */
+  private run(p: Promise<void>, op: string): void {
+    p.catch((e) => console.error(`WasmBoyEngine.${op}:`, e));
   }
 
   setAudio(_settings: AudioSettings): void {

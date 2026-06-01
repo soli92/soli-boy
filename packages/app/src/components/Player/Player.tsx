@@ -28,7 +28,7 @@ export function Player({ engine, rom, title }: PlayerProps) {
   async function handlePlay() {
     setError(null);
     try {
-      // TSK-022: passa il nodo DOM all'engine (EmulatorJsEngine vi monta EmulatorJS).
+      // TSK-022: passa il nodo DOM all'engine (gli engine reali, es. WasmBoy, vi montano il canvas).
       if (wrapper.currentState === "idle")
         await wrapper.load({ ...rom, container: screenRef.current ?? undefined });
       wrapper.start();
