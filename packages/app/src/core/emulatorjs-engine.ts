@@ -47,7 +47,7 @@ const RETRO_BUTTON: Record<GameButton, number> = {
 };
 
 const DEFAULT_PATHTODATA =
-  "https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@4.2.1/data/";
+  "/emulatorjs/data/";
 
 export class EmulatorJsEngine implements EmulatorEngine {
   readonly capabilities = { rewind: false };
@@ -81,7 +81,7 @@ export class EmulatorJsEngine implements EmulatorEngine {
     w.EJS_core = opts.core;
     w.EJS_gameUrl = this.objectUrl = URL.createObjectURL(opts.rom);
     w.EJS_pathtodata = this.pathtodata;
-    w.EJS_startOnLoaded = false;
+    w.EJS_startOnLoaded = true;
 
     // TSK-021 iter 2 (TS-ROBUST-001): distingui successo da errore e applica un timeout,
     // così un fallimento del loader / EJS_ready mai emesso non resta mascherato.

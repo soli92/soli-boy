@@ -21,3 +21,6 @@ packages/app/test-results/
 packages/app/public/test-roms/*
 !packages/app/public/test-roms/README.md
 !packages/app/public/test-roms/dmg-acid2.gb
+
+# EmulatorJS self-hostato (rigenerabile via `npm run setup:emu`)
+packages/app/public/emulatorjs/

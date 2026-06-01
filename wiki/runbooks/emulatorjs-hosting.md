@@ -74,3 +74,12 @@ Cross-Origin-Embedder-Policy: require-corp
   crossorigin/self-host delle sottorisorse CDN (font/icone) sotto COEP; **vendoring** core
   per build **desktop (Electron)/mobile (Capacitor)** offline (RF-24) — quando quei target
   esisteranno (EP-006/007). Da validare con il provider scelto.
+
+## Self-host (TSK-024 / debug 2026-06-01)
+
+Il CDN sotto cross-origin isolation è bloccato da ORB/COEP. Soluzione: self-host same-origin.
+- `npm run setup:emu` (`scripts/setup-emulatorjs.mjs`): copia il pacchetto npm `@emulatorjs/emulatorjs/data`
+  + scarica `emulator.min.js` e i core (es. `gambatte-wasm.data`) da `cdn.emulatorjs.org/stable`
+  in `public/emulatorjs/data/` (gitignorato, rigenerabile).
+- `EJS_pathtodata = /emulatorjs/data/` (default di `EmulatorJsEngine`).
+- Residuo noto: `EJS_Runtime is not defined` (runtime core non caricato in headless) — vedi gap.
