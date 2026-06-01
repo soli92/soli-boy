@@ -1,0 +1,54 @@
+{
+  "tsk_id": "TSK-040",
+  "iter": 1,
+  "generated_at": "2026-06-01T20:55:00+02:00",
+  "reviewer_version": "code-reviewer@2.12.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "design_system": "@soli92/solids",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "files_reviewed": [
+    "packages/app/src/main.tsx",
+    "packages/app/src/styles/solids-theme.css",
+    "packages/app/package.json"
+  ],
+  "diff_lines_added": 18,
+  "diff_lines_removed": 74,
+  "passes": {
+    "idiomaticity": "clean",
+    "design": "1-finding-low",
+    "robustness": "clean"
+  },
+  "findings": [
+    {
+      "id": "F-040-1",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_tier": "emergent-candidate",
+      "rule_ref": "code_quality/rules/emergent/CSS-DESIGN-001.md",
+      "severity": "low",
+      "pass": "design",
+      "file": "packages/app/src/styles/solids-theme.css",
+      "lines": [111, 115, 127, 147, 148],
+      "title": "Dangling CSS custom property references — token contract non verificato",
+      "description": "Le classi .a-1/.a-2/.a-3/.a-4/.a-5 (righe 111-115), .sb-screen (riga 127) e .ab-a/.ab-b (righe 147-148) referenziano token custom property (--sd-color-accent-*-bg, --sd-color-accent-*, --sd-screen-bg, --sd-color-pad-*-bg, --sd-color-pad-*) che erano definite nei blocchi :root/[data-theme] rimossi da questo TSK. La rimozione è corretta secondo le specifiche; tuttavia, il contratto che @soli92/solids/css/index.css esporti effettivamente questi token non è esplicitato nel TSK né verificabile a build-time. Se la versione DS corrente o una futura non esporta questi token, le classi degraderanno silenziosamente (CSS var() fallback a empty string → colore transparent/ereditato) senza errore di build né test failure.",
+      "recommendation": "Aggiungere un commento nella sezione delle classi .a-* e .ab-* che documenti esplicitamente quali token sono attesi dal pacchetto DS reale (es. '-- Token forniti da @soli92/solids >= 1.14.1: --sd-color-accent-N, --sd-color-accent-N-bg, --sd-color-pad-a, --sd-color-pad-a-bg, --sd-color-pad-b, --sd-color-pad-b-bg, --sd-screen-bg, --sd-screen-accent'). In alternativa, aggiungere valori di fallback espliciti nelle var() delle classi in questione, es. var(--sd-color-accent-1-bg, #16243d). Questo rende il contratto leggibile e mitiga il rischio di regressione visiva silente su upgrade DS.",
+      "auto_fixable": false,
+      "blocking": false,
+      "source_note": "Regola emergente; bozza in code_quality/rules/emergent/CSS-DESIGN-001.md (status: candidate). Nessuna regola canonical corrispondente nell'attuale KB."
+    }
+  ],
+  "verdict": "pass",
+  "summary": "TSK-040 implementa correttamente la sostituzione del tema approssimato con il design system reale @soli92/solids@^1.14.1. Ordine di import in main.tsx idiomatico e coerente con il contratto (skin app → DS autoritativo → layout). Rimozione dei blocchi :root/[data-theme] colore approssimati pulita. Un solo finding low (advisory, non bloccante): le classi che usano token accent/pad/screen in solids-theme.css non documentano esplicitamente il contratto di export atteso dal pacchetto DS, creando rischio di degradazione visiva silente su futuri upgrade. Nessun finding su idiomaticita, robustezza, accessibilita o test.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false
+  },
+  "next_step": "TSK-040 → review_status: passed. Finding F-040-1 advisory low: il dev-agent puo aggiungere commento contratto o fallback espliciti in solids-theme.css in un task separato oppure inline al prossimo tocco del file. Nessuna azione bloccante richiesta."
+}

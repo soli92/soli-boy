@@ -302,3 +302,6 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 [2026-06-01 20:10] execute — sprint 5 backlog post-MVP: TSK-030..039 (EP-004 salvataggi, EP-005 resa video, EP-002 libreria avanzata) — files touched: 10
 
 [2026-06-01 20:40] plan — TSK-040 (integrazione @soli92/solids reale) aperto in stato BLOCKED su Q_001: pacchetto non consumabile (npm pubblico 404; github:soli92/solids senza dist/). Q_001 hard in questions.md. — files touched: 3
+
+- 2026-06-01 20:55 — `review TSK-040 iter-1 → pass` (0/0/1 low: CSS-DESIGN-001 token contratto non documentato; advisory non bloccante)
+  - Reviewer: code-reviewer@2.12.0 · Stack: typescript/react/vite + @soli92/solids (conf 0.97)
