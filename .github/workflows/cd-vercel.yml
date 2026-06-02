@@ -8,11 +8,11 @@
 #     richiesta dai core WASM con threading) NON viene modificato da questo
 #     workflow ed e' incluso nell'output di `vercel build` (default behavior).
 #
-# Via di deploy scelta: **Vercel CLI ufficiale** (`npx vercel@latest ...`).
+# Via di deploy scelta: **Vercel CLI ufficiale** (`npx vercel@54 ...`).
 #   Rationale: supportata ufficialmente, meno soggetta a deprecazioni di
-#   action di terze parti (es. amondnet/vercel-action), pin alla major
-#   tramite npx + tag `vercel@latest` con vincolo major implicito via lockstep
-#   release Vercel. Comandi usati: `vercel pull` (scarica project settings),
+#   action di terze parti (es. amondnet/vercel-action). Pin alla major 54
+#   (GHA-IDIOM-001 canonical): deterministico run-over-run; aggiornare
+#   consapevolmente su breaking change. Comandi usati: `vercel pull` (scarica project settings),
 #   `vercel build` (esegue la build invocando `npm run build` definito in
 #   packages/app/package.json e applica vercel.json), `vercel deploy --prebuilt`
 #   (carica l'output gia' buildato — niente rebuild lato Vercel).
@@ -86,7 +86,7 @@ jobs:
       # `--environment` distingue preview vs production.
       - name: Vercel pull (environment metadata)
         run: |
-          npx vercel@latest pull \
+          npx vercel@54 pull \
             --yes \
             --environment=${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'preview' }} \
             --token="${VERCEL_TOKEN}"
@@ -97,7 +97,7 @@ jobs:
       # ottimizzato per production.
       - name: Vercel build
         run: |
-          npx vercel@latest build \
+          npx vercel@54 build \
             ${{ startsWith(github.ref, 'refs/tags/v') && '--prod' || '' }} \
             --token="${VERCEL_TOKEN}"
 
@@ -107,7 +107,7 @@ jobs:
       # con URL unico generato da Vercel.
       - name: Vercel deploy
         run: |
-          npx vercel@latest deploy \
+          npx vercel@54 deploy \
             --prebuilt \
             ${{ startsWith(github.ref, 'refs/tags/v') && '--prod' || '' }} \
             --token="${VERCEL_TOKEN}"
