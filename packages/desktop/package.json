@@ -1,0 +1,30 @@
+{
+  "name": "@soli-boy/desktop",
+  "private": true,
+  "version": "0.4.0",
+  "description": "Soli-boy — shell desktop Electron (ADR-007). Renderer = dist/ di @soli-boy/app.",
+  "main": "build/main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:renderer": "npm --prefix ../app run build",
+    "build:main": "tsc -p tsconfig.json",
+    "build": "npm run build:renderer && npm run build:main",
+    "electron:dev": "npm run build:main && cross-env SOLIBOY_DEV_URL=http://localhost:5173 electron .",
+    "electron:start": "npm run build && electron .",
+    "smoke": "npm run build:main && cross-env SOLIBOY_SMOKE=1 electron .",
+    "dist": "npm run build && electron-builder",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "cross-env": "^7.0.3",
+    "electron": "^42.3.2",
+    "electron-builder": "^26.8.1",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
+  }
+}

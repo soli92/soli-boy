@@ -1,0 +1,43 @@
+# Soli-boy desktop packaging (ADR-007) — electron-builder.
+# Renderer = build di @soli-boy/app, riusata 1:1 (nessuna modifica al bundler Vite).
+appId: com.soli92.soliboy
+productName: Soli-Boy
+artifactName: Soli-Boy-${version}-${os}-${arch}.${ext}
+asar: true
+
+directories:
+  output: release
+  buildResources: build-resources
+
+# main.js + preload.js compilati (build/) + renderer statico in resources/renderer.
+files:
+  - build/**/*
+  - package.json
+extraResources:
+  - from: ../app/dist
+    to: renderer
+
+# Auto-update via GitHub Releases (ADR-008): electron-builder genera latest*.yml.
+publish:
+  provider: github
+  owner: soli92
+  repo: soli-boy
+
+win:
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  perMachine: false # per-user → auto-update senza privilegi admin (ADR-007)
+
+mac:
+  target:
+    - dmg
+    - zip # formato consigliato da electron-updater per il delta su macOS
+  category: public.app-category.games
+
+linux:
+  target:
+    - AppImage # auto-update supportato
+    - deb # secondario (auto-update non disponibile via apt — limite documentato in ADR-008)
+  category: Game

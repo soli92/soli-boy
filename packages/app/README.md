@@ -4,6 +4,9 @@ Codice applicativo Soli-boy (Vite + React + TypeScript). Per la panoramica del
 progetto vedi il [README di repo](../../README.md); qui sotto solo note
 operative per chi lavora dentro `packages/app/`.
 
+> **Runtime:** Node **>=22** (vedi `engines` + `.nvmrc` di repo). Le toolchain
+> aggiornate (Vite 8, Vitest 4, Capacitor 8) richiedono Node 22 LTS.
+
 ## Script
 
 ```bash
@@ -13,7 +16,35 @@ npm test           # unit/integration (vitest)
 npm run typecheck  # tsc --noEmit
 npm run build      # build produzione (vite build)
 npm run e2e        # end-to-end (playwright)
+npm run cap:sync   # sincronizza dist/ + plugin nelle piattaforme native (Capacitor)
+npm run cap:copy   # copia solo il web asset nelle piattaforme native
 ```
+
+## Shell mobile — Capacitor (TSK-059, EP-007, ADR-001)
+
+Capacitor è installato e configurato: `capacitor.config.ts` (`appId: com.soli92.soliboy`,
+`appName: Soli-boy`, `webDir: dist`). La SPA Vite è il renderer mobile (WebView), riusata
+1:1 come per il desktop. Plugin installati per i task successivi: `@capacitor/filesystem`
+(file picker), `@capacitor/app` (sospensione/ripresa), `@capacitor/haptics` (feedback aptico).
+
+### Prerequisiti nativi — gate umano (R.14)
+
+L'aggiunta delle piattaforme native e la verifica su device/emulatore **non** sono
+automatizzabili dall'agent (richiedono SDK/IDE nativi). Step a cura dell'owner:
+
+```bash
+# Prerequisiti: Android Studio + SDK, Xcode + CocoaPods, JDK 17+.
+npm run build                 # produce dist/ (renderer)
+npx cap add android           # scaffolding progetto Android (richiede Android SDK)
+npx cap add ios               # scaffolding progetto iOS (richiede Xcode + CocoaPods)
+npm run cap:sync              # sincronizza dist/ + plugin nelle piattaforme
+npx cap run android           # avvio su emulatore Android
+npx cap run ios               # avvio su simulatore iOS
+```
+
+DoD residua di TSK-059 (verifica su emulatore Android + simulatore iOS): gate umano,
+da eseguire quando l'ambiente nativo è disponibile. La configurazione e i plugin sono
+già pronti.
 
 ## Store submission — metadata (TSK-070, US-034)
 

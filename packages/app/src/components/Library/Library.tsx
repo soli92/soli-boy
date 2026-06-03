@@ -332,7 +332,12 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
       </span>
 
       <button type="button" className="sb-game" onClick={onSelect}>
-        <span className="sb-game-title">{rom.title}</span>
+        {/* Spazio esplicito fra titolo e badge: l'accessible name deve restare
+            "titolo platform" (es. "tetris GB"). Senza il nodo whitespace, il
+            calcolo accname di dom-accessibility-api concatena senza spazio
+            ("tetrisGB"), divergendo dal browser reale su cui poggiano gli e2e
+            (app.e2e.ts → getByRole button name "tetris GB"). */}
+        <span className="sb-game-title">{rom.title}</span>{" "}
         <span className="sd-badge">{rom.platform}</span>
       </button>
 

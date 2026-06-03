@@ -56,7 +56,10 @@ describe("Library", () => {
     // L'<img> deriva il suo accessible name dall'attributo alt.
     const logo = await screen.findByRole("img", { name: "Soli-boy" });
     expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute("src", expect.stringMatching(/soliboy-logo-horizontal/));
+    // Vite serve l'asset come URL col filename in dev oppure inline come data-URI
+    // SVG (asset sotto la soglia di inlining, default in Vite). Accettiamo entrambe
+    // le forme: l'invariante è che l'header mostri l'asset del logo orizzontale.
+    expect(logo.getAttribute("src")).toMatch(/soliboy-logo-horizontal|^data:image\/svg\+xml/);
   });
 
   it("mostra i giochi con titolo e piattaforma", async () => {
