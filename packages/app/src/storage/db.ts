@@ -149,8 +149,10 @@ function toMeta(r: RomRecord): RomMeta {
   // Distruzione per esclusione: il `coverBlob` (opzionale) resta nel meta.
   // Niente clone profondo del Blob → riferimento condiviso, ammissibile perché
   // il Blob è immutabile per contratto Web Platform.
-  const { fileBlob: _omitFileBlob, ...meta } = r;
-  void _omitFileBlob;
+  // F-3 (CQRL TSK-075 iter-1): il prefisso `_` sopprime il warning
+  // "declared but never read" sia in TS che in ESLint via convenzione nativa,
+  // rendendo superfluo il `void` esplicito (pattern idiomatico TS 5.x).
+  const { fileBlob: _fileBlob, ...meta } = r;
   return meta;
 }
 

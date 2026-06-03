@@ -684,6 +684,108 @@ describe("NativeFsAdapter — bridge.getBaseDir (TSK-077)", () => {
     expect(bridge.getBaseDirCalls).toBe(0);
     expect(bridge.calls).toEqual([]);
   });
+
+  // ── F-077-1-R1 (CQRL TSK-077 iter-1): output bridge invalido → fallback ────
+  // Se il main process risolvesse con `undefined`/`null`/`''` per bug, senza la
+  // guardia `typeof abs === 'string' && abs.length > 0` il then-handler
+  // produrrebbe path degeneri (es. `undefined/roms/index.json`,
+  // `/roms/index.json`). La guardia ricade sul fallback come il rejection
+  // handler — stessa semantica.
+  it("F-077-1-R1: bridge.getBaseDir() risolve stringa vuota → fallback esplicito", async () => {
+    const FALLBACK = "/tmp/fallback-on-empty";
+    class BridgeReturningEmpty extends InMemoryBridge {
+      async getBaseDir(): Promise<string> {
+        return "";
+      }
+    }
+    const bridge = new BridgeReturningEmpty();
+    const adapter = new NativeFsAdapter({ bridge, baseDir: FALLBACK });
+
+    await adapter.addRom(rom("Tetris", "TT", "GB", "gambatte"));
+
+    const writes = bridge.calls.filter(
+      (c): c is Extract<typeof c, { op: "writeFile" }> => c.op === "writeFile",
+    );
+    expect(writes.length).toBeGreaterThan(0);
+    for (const w of writes) {
+      // Invariante F-077-1-R1: nessun path "degenere" (root vuota → join
+      // partirebbe da `/roms/...`); tutti i path devono iniziare dal fallback.
+      expect(w.path.startsWith(`${FALLBACK}/`)).toBe(true);
+      expect(w.path.startsWith("/roms/")).toBe(false);
+    }
+  });
+
+  it("F-077-1-R1: bridge.getBaseDir() risolve undefined → fallback esplicito", async () => {
+    const FALLBACK = "/tmp/fallback-on-undef";
+    class BridgeReturningUndefined extends InMemoryBridge {
+      // Cast esplicito: simuliamo un main process buggy che viola il contratto
+      // di tipo (`Promise<string>`) restituendo undefined.
+      async getBaseDir(): Promise<string> {
+        return undefined as unknown as string;
+      }
+    }
+    const bridge = new BridgeReturningUndefined();
+    const adapter = new NativeFsAdapter({ bridge, baseDir: FALLBACK });
+
+    await adapter.addRom(rom("Tetris", "TT", "GB", "gambatte"));
+
+    const writes = bridge.calls.filter(
+      (c): c is Extract<typeof c, { op: "writeFile" }> => c.op === "writeFile",
+    );
+    expect(writes.length).toBeGreaterThan(0);
+    for (const w of writes) {
+      // Anti-regressione: nessun `undefined/...` come prefisso (sarebbe il
+      // sintomo di `normalizeToPosix(undefined) → 'undefined'`).
+      expect(w.path.startsWith("undefined/")).toBe(false);
+      expect(w.path.startsWith(`${FALLBACK}/`)).toBe(true);
+    }
+  });
+
+  // ── F-077-3-Q1 (CQRL TSK-077 iter-1): path NT-style dal bridge ────────────
+  // Il main process su Windows passa via IPC path assoluti NT-style
+  // (`C:\Users\foo\.soli-boy`). L'adapter applica `normalizeToPosix` al valore
+  // risolto: i path IPC composti devono contenere SOLO `/`, mai `\`. Analogo
+  // al test F-5 (POSIX contract sul costruttore) ma per il ramo lazy-resolved
+  // del bridge.
+  it("F-077-3-Q1: bridge.getBaseDir() ritorna path NT-style Windows → path IPC normalizzati a POSIX", async () => {
+    const WIN_ROOT = "C:\\Users\\foo\\.soli-boy";
+    const EXPECTED_PREFIX = "C:/Users/foo/.soli-boy"; // normalizzato POSIX
+    const bridge = new BridgeWithGetBaseDir(WIN_ROOT);
+    const adapter = new NativeFsAdapter({ bridge, baseDir: ".soli-boy" });
+
+    const id = await adapter.addRom(rom("Tetris", "TT", "GB", "gambatte"));
+
+    const writes = bridge.calls.filter(
+      (c): c is Extract<typeof c, { op: "writeFile" }> => c.op === "writeFile",
+    );
+    expect(writes.length).toBeGreaterThan(0);
+    for (const w of writes) {
+      // Invariante F-077-3-Q1: nessun separatore Windows nei path IPC.
+      expect(w.path).not.toContain("\\");
+      // Tutti i path devono partire dalla root normalizzata POSIX.
+      expect(w.path.startsWith(`${EXPECTED_PREFIX}/`)).toBe(true);
+    }
+
+    // Anche le mkdir sulle dir di collezione devono usare la root POSIX.
+    const mkdirs = bridge.calls.filter(
+      (c): c is Extract<typeof c, { op: "mkdir" }> => c.op === "mkdir",
+    );
+    expect(mkdirs.some((m) => m.path === `${EXPECTED_PREFIX}/roms` && m.recursive)).toBe(true);
+    for (const m of mkdirs) {
+      expect(m.path).not.toContain("\\");
+    }
+
+    // Round-trip: getRom deve leggere lo stesso path POSIX scritto (no `\`).
+    const got = await adapter.getRom(id);
+    expect(got?.title).toBe("Tetris");
+    const reads = bridge.calls.filter(
+      (c): c is Extract<typeof c, { op: "readFile" }> => c.op === "readFile",
+    );
+    expect(reads.some((r) => r.path === `${EXPECTED_PREFIX}/roms/${id}.bin`)).toBe(true);
+    for (const r of reads) {
+      expect(r.path).not.toContain("\\");
+    }
+  });
 });
 
 // ── Invariante privacy: zero chiamate di rete ────────────────────────────────

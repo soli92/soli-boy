@@ -132,9 +132,11 @@ export function selectAdapter(opts: SelectAdapterOptions = {}): StorageBundle {
       : (window as unknown as DesktopBridgeWindow));
 
   if (isDesktopRuntime(winRef)) {
-    // `isDesktopRuntime` ha già verificato la presenza del bridge — il narrow
-    // qui è safe (non-null assertion limitata a questo ramo).
-    const bridge = winRef!.soliboyDesktop as NativeFsBridge;
+    // F-077-2-I1 (CQRL TSK-077 iter-1): TS-IDIOM-002 esige commento inline su
+    // ogni `!`. `isDesktopRuntime(winRef)` ha già escluso `winRef === undefined`
+    // E garantito che `winRef.soliboyDesktop` sia un oggetto non-null (vedi
+    // implementazione sopra). Il narrow è quindi sicuro in questo ramo.
+    const bridge = winRef!.soliboyDesktop as NativeFsBridge; // safe: isDesktopRuntime() ha già verificato non-null
     const baseDir = opts.baseDir ?? DEFAULT_DESKTOP_BASE_DIR;
     const adapter = new NativeFsAdapter({ bridge, baseDir });
     // Stessa istanza per storage+config: NativeFsAdapter implementa

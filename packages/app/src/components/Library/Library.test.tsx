@@ -86,11 +86,44 @@ describe("Library", () => {
     expect(await screen.findByText(/nessun gioco/i)).toBeInTheDocument();
   });
 
-  it("selezione invoca onSelect", async () => {
+  // TSK-075 F-2 — `handleSelect` è asincrono: carica la ROM completa via
+  // `getRom(id)` al click e invoca `onSelect` solo dopo la risoluzione. I test
+  // devono attendere il microtask (waitFor), non asserire sincrono dopo il click.
+  it("selezione carica la ROM completa via getRom e invoca onSelect (F-2)", async () => {
     const onSelect = vi.fn();
-    render(<Library storage={fakeStorage([rec("1", "Tetris", "GB")])} onSelect={onSelect} />);
+    const storage = fakeStorage([rec("1", "Tetris", "GB")]);
+    render(<Library storage={storage} onSelect={onSelect} />);
     fireEvent.click(await screen.findByText("Tetris"));
-    expect(onSelect).toHaveBeenCalledOnce();
+    await waitFor(() => expect(onSelect).toHaveBeenCalledOnce());
+    expect(storage.getRom).toHaveBeenCalledWith("1");
+    // onSelect riceve il RomRecord completo (incluso fileBlob), non il solo meta.
+    const passed = (onSelect.mock.calls[0] as [RomRecord])[0];
+    expect(passed.id).toBe("1");
+    expect(passed.fileBlob).toBeInstanceOf(Blob);
+  });
+
+  it("non invoca onSelect se getRom ritorna undefined (ROM sparita nel frattempo) (F-2)", async () => {
+    const onSelect = vi.fn();
+    const storage = fakeStorage([rec("1", "Tetris", "GB")]);
+    storage.getRom = vi.fn(async () => undefined);
+    render(<Library storage={storage} onSelect={onSelect} />);
+    fireEvent.click(await screen.findByText("Tetris"));
+    await waitFor(() => expect(storage.getRom).toHaveBeenCalledWith("1"));
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("non invoca onSelect se getRom rigetta (no-op fail-soft) (F-2)", async () => {
+    const onSelect = vi.fn();
+    const storage = fakeStorage([rec("1", "Tetris", "GB")]);
+    storage.getRom = vi.fn(async () => {
+      throw new Error("io");
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<Library storage={storage} onSelect={onSelect} />);
+    fireEvent.click(await screen.findByText("Tetris"));
+    await waitFor(() => expect(storage.getRom).toHaveBeenCalledWith("1"));
+    expect(onSelect).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("mostra role=alert quando storage.listRomsMeta rejecta (F-038-01)", async () => {

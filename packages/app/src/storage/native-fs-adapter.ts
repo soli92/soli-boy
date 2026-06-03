@@ -323,6 +323,10 @@ export class NativeFsAdapter
    *     sul fallback per evitare di rompere l'intera persistenza al primo
    *     errore IPC. La memoizzazione resta valida (il rigetto è stato
    *     "consumato" dal catch interno alla Promise risolta).
+   *   - **Guardia output bridge (F-077-1-R1)**: anche il ramo di RESOLVE
+   *     valida il valore ricevuto (`typeof abs === 'string' && length > 0`).
+   *     Se il main risolvesse con `undefined`/`null`/`''` per bug, cadiamo
+   *     sul fallback invece di propagare path degeneri ai path helpers.
    */
   private resolveBaseDir(): Promise<string> {
     if (this.resolvedBaseDirPromise) return this.resolvedBaseDirPromise;
@@ -330,7 +334,15 @@ export class NativeFsAdapter
     const fallback = this.fallbackBaseDir;
     const p: Promise<string> = bridgeGetBaseDir
       ? bridgeGetBaseDir().then(
-          (abs) => normalizeToPosix(abs),
+          // F-077-1-R1 (CQRL TSK-077 iter-1): validiamo il valore risolto dal
+          // bridge prima di propagarlo ai path helpers. Un bug nel main
+          // process potrebbe risolvere con `undefined`/`null`/`''`: senza
+          // questa guardia `normalizeToPosix` produrrebbe path degeneri (es.
+          // `undefined/roms/index.json`) che `joinPath` comporrebbe
+          // silenziosamente. Tipizzato `unknown` per coprire anche bridge
+          // stub di test che eludono il contratto.
+          (abs: unknown) =>
+            typeof abs === "string" && abs.length > 0 ? normalizeToPosix(abs) : fallback,
           // Errore IPC: ripieghiamo sul valore convenzionale piuttosto che
           // far esplodere ogni operazione FS successiva. La Promise risolta
           // resta cacheata: niente retry-storm su IPC instabili.

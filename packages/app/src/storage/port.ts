@@ -39,8 +39,15 @@ export interface StoragePort {
    *
    * Parità semantica IDB ↔ NativeFs: entrambi gli adapter implementano lo
    * stesso filtro e la stessa shape `RomMeta` (vedi `./types.ts §RomMeta`).
-   * Su IDB il costo è equivalente a `listRoms` (l'idb deserializza il record
-   * intero comunque) ma l'interfaccia resta omogenea per il dominio.
+   *
+   * @remarks
+   * Su IDB il costo è identico a `listRoms` (il record è già materializzato in
+   * memoria da IndexedDB, lo strip avviene a valle): il beneficio prestazionale
+   * di questo path è ESCLUSIVO del path `NativeFsAdapter`, dove evita N IPC
+   * `readFile` sui `fileBlob` per il rendering della Library. I consumer su
+   * dataset grandi non devono aspettarsi un costo `O(meta)` quando il backend
+   * è IDB — la complessità è `O(full-scan)` come `listRoms`; l'omogeneità
+   * dell'interfaccia è il vero contratto qui (F-1 CQRL TSK-075 iter-1).
    *
    * Per il `fileBlob` di una specifica ROM (es. caricamento Player) usare
    * `getRom(id)` (lazy on-demand).
