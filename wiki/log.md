@@ -481,3 +481,19 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
   - F-074-2 (low, TS-DESIGN-001): asimmetria contratto IPC — fs:unlink lancia ENOENT, fs:stat restituisce {exists:false}; documentata ma non omogenea.
   - F-074-3 (low, TS-ROBUST-001): ensuredDirs cache per-istanza senza invalidazione — falso negativo se dir rimossa esternamente a runtime.
   - guardPath prefix-match + trailing-sep corretto; contextIsolation:true/nodeIntegration:false/sandbox:true OK; delete reale testato; DoD F-3/F-4/F-5 TSK-054 assorbiti.
+
+[2026-06-03] review TSK-073 iter-2 → conditional
+  - Reviewer: code-reviewer@2.17 · Stack: typescript/playwright (conf 0.95)
+  - Finding: {high:0, medium:0, low:1} · Report: code_quality/reports/TSK-073-iter-2.json
+  - F-2 (medium, QA-TEST-001): CHIUSA — waitForTimeout sostituiti con expect(html).toHaveAttribute event-driven.
+  - F-3 (medium, TS-DESIGN-001): CHIUSA — VALID_THEMES = UI_THEMES import diretto da useTheme.ts (SSOT verificata).
+  - F-4 (low, TS-ROBUST-001): CHIUSA — console.warn aggiunto in entrambi i rami onerror di clearThemeInDB.
+  - F-1 (low, TS-ROBUST-001): APERTA degradata medium→low — waitForLoadState(domcontentloaded) riduce race ma non copre React useEffect mount asincrono; path normale safe, rischio residuo teorico per caller futuri.
+[2026-06-03] review TSK-074 iter-2 → passed
+  - Reviewer: code-reviewer@2.17.0 · Stack: typescript/electron-ipc (conf 0.95)
+  - Finding iter-2: {high:0, medium:0, low:0} · Report: code_quality/reports/TSK-074-iter-2.json
+  - F-074-1 (medium): CLOSED — guardExistingPath() introdotta e applicata a tutti gli handler su path esistenti (fs:readFile/unlink/readdir/stat); fail-closed su ELOOP/EPERM; fallback ENOENT corretto; limite residuo su fs:writeFile/mkdir documentato e accettato.
+  - F-074-2 (low): CLOSED — asimmetria ENOENT documentata con JSDoc in main.ts:220-230 e preload.ts §unlink.
+  - F-074-3 (low): CLOSED — JSDoc esteso su ensuredDirs (22 righe, native-fs-adapter.ts:295-312) + cross-reference in addRom.
+  - Gap test symlink: non bloccante — assenza harness main process Electron (structural constraint); tracciato come DEBT-074-A in report iter-2.
+  - Open debt: DEBT-074-A (QA-TEST-001, low) harness main process per guardExistingPath; DEBT-074-B (TS-ROBUST-001, low) realpath parent su fs:writeFile/mkdir.
