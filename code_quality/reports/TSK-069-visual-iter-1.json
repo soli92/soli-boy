@@ -1,0 +1,40 @@
+{
+  "tsk_id": "TSK-069",
+  "iter": 1,
+  "verdict": "pass",
+  "screenshots": [
+    { "viewport": "mobile",  "theme": "light", "path": "code_quality/reports/TSK-069-visual-iter-1/mobile-light.png",  "bytes": 166297 },
+    { "viewport": "mobile",  "theme": "dark",  "path": "code_quality/reports/TSK-069-visual-iter-1/mobile-dark.png",   "bytes": 166297 },
+    { "viewport": "desktop", "theme": "light", "path": "code_quality/reports/TSK-069-visual-iter-1/desktop-light.png", "bytes": 174341 },
+    { "viewport": "desktop", "theme": "dark",  "path": "code_quality/reports/TSK-069-visual-iter-1/desktop-dark.png",  "bytes": 174341 }
+  ],
+  "checks": {
+    "visual_regression": { "status": "skip", "diff_pixels": 0, "baseline_path": null },
+    "axe_a11y": { "status": "skip", "violations": [] },
+    "interaction_test": { "status": "skip", "scenarios": [] }
+  },
+  "critic_findings": [
+    {
+      "description": "Tema dark NON esercitato dalla matrice: gli screenshot light/dark sono byte-identici (stesso md5). L'app usa un theme selector esplicito persistito (TSK-044), non prefers-color-scheme, quindi emulateMedia({colorScheme}) non commuta il tema. La copertura dark del PrivacyNotice resta un blind-spot della verifica corrente — è una limitazione del render harness, non un difetto del componente.",
+      "viewport": "desktop",
+      "theme": "dark",
+      "severity": "minor",
+      "fix_hint": "Adattare il runner del visual oracle per soli-boy: settare il tema applicativo (config IndexedDB 'theme'='dark' o via theme selector) prima dello screenshot dark, invece di affidarsi a colorScheme. In alternativa, dichiarare themes: [light] in fe_correctness finché il toggle non è pilotabile headless."
+    },
+    {
+      "description": "Contrasto del corpo testo del banner: il paragrafo informativo appare in grigio tenue sullo sfondo scuro della card, in particolare a viewport mobile (375px) dove il testo è denso. Possibile rischio WCAG AA su contrasto testo secondario.",
+      "viewport": "mobile",
+      "theme": "light",
+      "severity": "minor",
+      "fix_hint": "Verificare il contrasto del testo del banner con axe-a11y (fe_correctness.checks: [axe-a11y]); se < 4.5:1 alzare il token colore del testo secondario nel solids design system per il banner."
+    },
+    {
+      "description": "Il testo privacy compare due volte nella stessa schermata iniziale: banner di primo avvio (variant=banner) in alto + sezione Settings → Privacy (variant=section) più in basso, entrambe renderizzate sulla root. È coerente con la DoD (banner all'avvio + sempre consultabile in Settings), ma visivamente ridondante a primo impatto.",
+      "viewport": "desktop",
+      "theme": "light",
+      "severity": "trivial",
+      "fix_hint": "By-design: nessuna azione richiesta. Eventualmente collassare la sezione Settings finché il banner è attivo (nice-to-have)."
+    }
+  ],
+  "next_action": "done"
+}

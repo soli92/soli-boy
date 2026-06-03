@@ -15,6 +15,12 @@ dist/
 packages/app/playwright-report/
 packages/app/test-results/
 
+# Visual Oracle (v2.17) — runner Bash/JS generati (rebuildable) + cartelle screenshot PNG.
+# I report .json/.md restano versionati; solo i binari PNG e i runner sono ignorati.
+.factory-runners/
+code_quality/reports/*-visual-iter-*/
+code_quality/reports/*-visual-baseline/
+
 # ROM di test: niente binari nel repo (copyright). Solo il README è tracciato.
 # Per abilitare una ROM LIBERA all'e2e, whitelistarla esplicitamente con:
 #   !packages/app/public/test-roms/<nome-rom-libera>
