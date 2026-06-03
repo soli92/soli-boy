@@ -1,0 +1,83 @@
+{
+  "tsk_id": "TSK-077",
+  "iter": 2,
+  "generated_at": "2026-06-03T17:56:00Z",
+  "reviewer_version": "2.12.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "runtime": "electron + browser (renderer)",
+    "framework": ["electron", "vitest"],
+    "confidence": 0.97,
+    "detected_from": [
+      "packages/desktop/electron/main.ts",
+      "packages/desktop/electron/preload.ts",
+      "packages/app/src/storage/native-fs-adapter.ts",
+      "packages/app/src/storage/select-adapter.ts",
+      "packages/app/src/storage/native-fs-adapter.test.ts"
+    ]
+  },
+  "scope": {
+    "files_reviewed": [
+      "packages/app/src/storage/native-fs-adapter.ts",
+      "packages/app/src/storage/select-adapter.ts",
+      "packages/app/src/storage/native-fs-adapter.test.ts"
+    ]
+  },
+  "verdict": "pass",
+  "summary": "Tutti e tre i finding conditional di iter-1 risultano chiusi. F-077-1-R1 (medium): resolveBaseDir() ora tipizza abs come `unknown` e applica la guardia `typeof abs === 'string' && abs.length > 0 ? normalizeToPosix(abs) : fallback` prima di propagare il valore ai path helpers; due test espliciti coprono i rami '' e undefined. F-077-2-I1 (low): il commento giustificativo è stato spostato come blocco block-comment immediatamente sopra la riga dell'assertion con aggiunta di un end-of-line comment `// safe: ...` direttamente inline sull'assertion. F-077-3-Q1 (low): aggiunto un test dedicato nel describe 'bridge.getBaseDir (TSK-077)' che inietta 'C:\\Users\\foo\\.soli-boy' da getBaseDir() e verifica assenza di '\\' in tutti i path IPC (writeFile + mkdir + readFile), coprendo il ramo lazy-resolved su path NT-style. Suite complessiva: 43 test, tutti pass (vitest v4.1.8, Node 24). Nessun finding nuovo. Nessuna regressione. Nessun no-progress.",
+  "findings": [],
+  "findings_closed_from_iter_1": [
+    {
+      "id": "F-077-1-R1",
+      "severity": "medium",
+      "pass": "robustness",
+      "rule_id": "TS-ROBUST-001",
+      "status": "closed",
+      "closure_evidence": "native-fs-adapter.ts:344-345 — il then-handler ora accetta `abs: unknown` e applica `typeof abs === 'string' && abs.length > 0 ? normalizeToPosix(abs) : fallback`. Il commento JSDoc del metodo (riga 326-329) cita esplicitamente F-077-1-R1 come motivazione della guardia. Due test coprono i rami degeneri: 'F-077-1-R1: bridge.getBaseDir() risolve stringa vuota → fallback esplicito' (riga 694) e 'F-077-1-R1: bridge.getBaseDir() risolve undefined → fallback esplicito' (riga 718). Entrambi verificano che i path writeFile partano dal FALLBACK e non dal valore degenere. I 43 test della suite passano.",
+      "references": [
+        "[^src5: packages/app/src/storage/native-fs-adapter.ts:344]",
+        "[^src5: packages/app/src/storage/native-fs-adapter.test.ts:694]",
+        "[^src5: packages/app/src/storage/native-fs-adapter.test.ts:718]"
+      ]
+    },
+    {
+      "id": "F-077-2-I1",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "rule_id": "TS-IDIOM-002",
+      "status": "closed",
+      "closure_evidence": "select-adapter.ts:135-139 — il fix ha adottato l'approccio dual-comment: (a) un blocco di commento precede l'assertion (righe 135-138) che documenta in dettaglio perché isDesktopRuntime(winRef) garantisce il narrow, e (b) un end-of-line comment `// safe: isDesktopRuntime() ha già verificato non-null` è ora direttamente sulla riga 139 dell'assertion (`const bridge = winRef!.soliboyDesktop as NativeFsBridge;`). La regola TS-IDIOM-002 richiede che il commento giustificativo sia 'inline sull'assertion'; il commento EOL sulla stessa riga dell'assertion soddisfa il requisito. La scelta di mantenere anche il blocco sopra è sovra-specificazione documentativa accettabile.",
+      "references": [
+        "[^src5: packages/app/src/storage/select-adapter.ts:139]"
+      ]
+    },
+    {
+      "id": "F-077-3-Q1",
+      "severity": "low",
+      "pass": "robustness",
+      "rule_id": "QA-TEST-001",
+      "status": "closed",
+      "closure_evidence": "native-fs-adapter.test.ts:750-788 — aggiunto il test 'F-077-3-Q1: bridge.getBaseDir() ritorna path NT-style Windows → path IPC normalizzati a POSIX' nel describe 'bridge.getBaseDir (TSK-077)'. Il test usa BridgeWithGetBaseDir con WIN_ROOT = 'C:\\Users\\foo\\.soli-boy', esegue addRom + getRom, e verifica: (1) tutti i path writeFile non contengono '\\' e iniziano con 'C:/Users/foo/.soli-boy/', (2) tutte le mkdir non contengono '\\', (3) inclusa la mkdir di roms con recursive=true, (4) tutti i path readFile non contengono '\\'. Il test copre esattamente il ramo combinato 'bridge.getBaseDir + path NT-style' identificato in F-077-3-Q1.",
+      "references": [
+        "[^src5: packages/app/src/storage/native-fs-adapter.test.ts:750]"
+      ]
+    }
+  ],
+  "positive_patterns": [
+    "Guardia output bridge tipizzata `unknown`: la firma `(abs: unknown)` nel then-handler è più robusta di `(abs: string)` perché cattura esplicitamente nel tipo system la possibilità di violazione del contratto. Scelta corretta per la boundary IPC.",
+    "Commento F-077-1-R1 nel JSDoc di resolveBaseDir: il JSDoc del metodo documenta la guardia col suo id finding (riga 326), rendendo la motivazione tracciabile a chi leggerà il codice senza accesso ai report CQRL.",
+    "Test NT-style ha round-trip completo: il test F-077-3-Q1 verifica non solo writeFile e mkdir ma anche readFile (via getRom), coprendo l'intera pipeline path dal bridge ai path helpers.",
+    "Suite complessiva 43 test tutti pass (vitest v4.1.8, Node 24.16.0): nessuna regressione introdotta dalle fix."
+  ],
+  "loop_status": {
+    "previous_iter": 1,
+    "previous_verdict": "conditional",
+    "no_progress_risk": false,
+    "regression_detected": false,
+    "findings_from_prev_iter": ["F-077-1-R1", "F-077-2-I1", "F-077-3-Q1"],
+    "findings_closed": ["F-077-1-R1", "F-077-2-I1", "F-077-3-Q1"],
+    "findings_still_open": [],
+    "findings_new": []
+  },
+  "task_package": null
+}

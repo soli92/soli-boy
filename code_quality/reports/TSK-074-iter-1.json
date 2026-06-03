@@ -1,0 +1,70 @@
+{
+  "tsk_id": "TSK-074",
+  "iter": 1,
+  "generated_at": "2026-06-03T17:56:00Z",
+  "reviewer_version": "code-reviewer v2.17",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": ["electron-ipc", "vitest"],
+    "context": ["desktop-bridge", "ipc-security", "filesystem-guard", "storage-adapter"],
+    "confidence": 0.95,
+    "mode": "full"
+  },
+  "verdict": "conditional",
+  "summary": "TSK-074 è complessivamente solido: guardPath è corretto nella sua forma attuale (prefix-match con trailing-sep, path.resolve), contextIsolation:true/nodeIntegration:false/sandbox:true confermati, delete reale implementato e testato, DoD finding TSK-054 (F-3/F-5) assorbiti correttamente. Tre finding aperti: (F-074-1) guardPath non copre symlink — un file all'interno di FS_BASE_DIR che è un symlink verso /etc o ~/ può essere letto/scritto liberamente; l'assenza di realpath() prima del confronto lascia questa finestra aperta su filesystem con link simbolici fuori dalla base dir. (F-074-2) fs:unlink lancia ENOENT quando il file non esiste: il contratto IPC diverge da fs:stat che invece restituisce {exists:false} senza throw — l'asimmetria è documentata ma non verificata nel test del canale IPC (solo il consumer tryUnlink la maschera). (F-074-3) ensuredDirs è una cache per-istanza non thread-safe per scritture concorrenti cross-istanza; la nota inline ammette la race condition read-modify-write sul manifest, ma ensuredDirs la amplifica silenziosamente restituendo 'già fatto' per mkdir su dir effettivamente non ancora create dall'altra istanza.",
+  "findings": [
+    {
+      "id": "F-074-1",
+      "severity": "medium",
+      "pass": "robustness",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "title": "guardPath non risolve symlink — path traversal via symlink all'interno della base dir",
+      "description": "guardPath (main.ts:105-113) usa path.resolve(target) che normalizza '..' e separatori ma NON dereferenzia link simbolici. Scenario: se ~/.soli-boy/roms/evil è un symlink verso /etc, allora path.resolve('~/.soli-boy/roms/evil') = '/home/user/.soli-boy/roms/evil' che passa il check (startsWith rootWithSep), ma il readFile/unlink/readdir successivo derefenzia il symlink e opera su /etc. Questo è il classico symlink-based path traversal. path.resolve() risolve .., varianti Unicode e separatori ma non segue i symlink: per quello serve fs.realpath() (o fs.realpathSync()). Il rischio è confinato a chi può creare symlink dentro ~/.soli-boy (il processo stesso o l'utente locale) — non un attaccante remoto in assenza di SSRF. Su desktop single-user il rischio è basso, ma la funzione dichiara esplicitamente di 'impedire path traversal verso aree del filesystem fuori dallo storage applicativo' (JSDoc main.ts:97) senza coprire questa classe. Soluzione: aggiungere un passo realpath() per i path esistenti prima del confronto (con fallback al path risolto se il file non esiste ancora — mkdir/writeFile creano nuovi path). Nota: il rischio non è elevato (attaccante = stesso utente locale che ha già pieno accesso a ~/.soli-boy), ma il contratto di sicurezza dichiarato è incompleto.",
+      "location": "packages/desktop/electron/main.ts:105-113 (guardPath)",
+      "note": "Finding di sicurezza sul guardPath come richiesto dalla consegna. Non classificato 'high' perché il vettore richiede accesso locale pre-esistente (stesso utente owner della home). Segnalare al dev-agent: aggiungere realpath() per path esistenti, fallback a resolved per path nuovi."
+    },
+    {
+      "id": "F-074-2",
+      "severity": "low",
+      "pass": "design",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "title": "Asimmetria contratto IPC: fs:unlink lancia ENOENT, fs:stat restituisce {exists:false}",
+      "description": "Il canale IPC fs:unlink (main.ts:144-147) propaga l'ENOENT dal Node fs/promises.unlink: se il file non esiste, il renderer riceve un rejection. Il canale IPC fs:stat (main.ts:162-180) invece intercetta ENOENT e restituisce {exists:false, size:0, isDirectory:false} senza throw. Questa asimmetria è parzialmente documentata nel JSDoc di preload.ts ('Solleva se il file non esiste — il consumer è responsabile della gestione idempotente lato adapter') ma non riflette una scelta di design esplicita confrontata con fs:stat. Il consumer NativeFsAdapter.tryUnlink() maschera correttamente l'ENOENT via isNotFoundError, quindi il comportamento runtime è corretto. Il problema è di contract design: un consumatore futuro del bridge (estensione, test e2e) che chiami window.soliboyDesktop.unlink() direttamente su un path mancante ottiene un rejection non documentato a livello IPC salvo leggere il JSDoc in preload. Valutare: allineare fs:unlink a restituire void sia su file esistente sia su ENOENT (come fa unlink su Linux con O_NONBLOCK semantics), oppure documentare esplicitamente la differenza in main.ts.",
+      "location": "packages/desktop/electron/main.ts:144-147 (fs:unlink handler) vs :162-180 (fs:stat handler)",
+      "note": "Non bloccante: il consumer primario (tryUnlink) gestisce correttamente. Finding di design per consumatori futuri del bridge."
+    },
+    {
+      "id": "F-074-3",
+      "severity": "low",
+      "pass": "robustness",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "title": "ensuredDirs cache per-istanza: falso negativo su mkdir in scenario multi-istanza",
+      "description": "NativeFsAdapter.ensuredDirs (native-fs-adapter.ts:294, utilizzato in ensureDir:421-425) è un Set<string> per-istanza. La logica è: se la dir è già nell'insieme, salta la chiamata mkdir IPC. Il commento in addRom documenta la race condition nota sul manifest read-modify-write tra due istanze concorrenti. La cache ensuredDirs amplifica questa race in modo silenzioso: se istanza A e istanza B sono create simultaneamente (scenario: doppio drag&drop), A esegue mkdir(roms/) e lo aggiunge al suo ensuredDirs; B ha il suo Set vuoto e fa la propria mkdir(roms/) — corretto. Ma se A viene riusata dopo che una forza esterna (es. processo OS) ha rimosso la directory, ensuredDirs dice 'già fatto' e salta mkdir; il writeFile successivo fallisce con ENOENT. Il problema è che ensuredDirs non ha TTL né invalidazione. Il rischio è basso in MVP single-process (la UI non permette rimozione di ~/.soli-boy/roms/ mentre l'app è aperta), ma il commento di addRom (riga 468-469) identifica il pattern corretto: 'Mitigazione: l'app esegue ingest da UI seriale'. La cache ensuredDirs non è menzionata in quel commento, creando documentazione incompleta sulla resilienza.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:294 (ensuredDirs) + :421-425 (ensureDir)",
+      "note": "Low: scenario di fallimento richiede che una directory venga rimossa esternamente mentre l'app è in esecuzione. Il commento su addRom va esteso per coprire anche ensuredDirs."
+    }
+  ],
+  "absorbed_findings_from_tsk054": {
+    "F-3": "risolto — isNotFoundError usa type-guard strutturato (typeof err !== 'object' || err === null) prima del cast (native-fs-adapter.ts:818-823)",
+    "F-4": "risolto — removeRom e deleteSaveState eseguono unlink reale; i test (189-235, 387-409) verificano assenza blob + assenza entry manifest residue",
+    "F-5": "risolto — normalizeToPosix() nel costruttore + joinPath POSIX-only; test dedicato F-5 (474-494)"
+  },
+  "dod_verification": {
+    "bridge_ipc_unlink_mkdir_readdir_stat": "OK — 4 handler in main.ts:144-180 con guardPath",
+    "context_isolation_node_integration": "OK — createWindow: contextIsolation:true, nodeIntegration:false, sandbox:true (main.ts:216-222)",
+    "remove_rom_delete_savestate_real_delete": "OK — tryUnlink in removeRom (559-569) e deleteSaveState (632-639); test anti-tombstone presenti",
+    "path_traversal_guard": "OK (con caveat symlink — F-074-1)",
+    "zero_network": "OK — invariante verificata in test (networkSpies fetch stub)",
+    "typecheck_tests": "OK — tsc --noEmit clean entrambi i package; 43/43 test native-fs-adapter pass"
+  },
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "next_step": "conditional — F-074-1 (medium, symlink guard) richiede fix nel guardPath; F-074-2 e F-074-3 sono low e possono essere indirizzati in follow-up. Task package per dev-agent: (1) aggiungere realpath() step in guardPath per path esistenti con fallback al resolved per path nuovi; (2) documentare asimmetria ENOENT in main.ts §fs:unlink; (3) aggiungere commento ensuredDirs su limite invalidazione."
+}

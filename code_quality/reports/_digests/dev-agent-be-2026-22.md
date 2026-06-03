@@ -61,3 +61,26 @@ Azione consigliata: aggiungere 1 test nella suite `bridge.getBaseDir` con NT-sty
 - Fallback su rejection IPC corretto e cacheato: nessun retry-storm.
 - Single source of truth `FS_BASE_DIR` rispettato: handler `fs:getBaseDir` riusa la costante di `guardPath`, nessuna ricalcolazione.
 - Compatibilità retro-bridge documentata e testata (bridge senza `getBaseDir?` → fallback convenzionale).
+
+---
+
+## TSK-055 iter-1 — pass (2026-06-03)
+
+**Scope:** Selezione runtime `StorageAdapter` (IndexedDB vs NativeFsAdapter), factory `selectAdapter()`, predicato `isDesktopRuntime()`, wiring `App.tsx` (EP-006/US-023, ADR-002).
+**File toccati (core):** select-adapter.ts, select-adapter.test.ts, App.tsx.
+
+### Pattern positivi (non finding)
+
+- Predicato `isDesktopRuntime()` difensivo e corretto: tripla guardia su `!!win`, `typeof soliboyDesktop === 'object'`, `!== null`. Il falso positivo `typeof null === 'object'` è esplicitamente testato e chiuso.
+- Finding F-077-2-I1 (TS-IDIOM-002, low) della review TSK-077 è stato risolto: il commento giustificativo `// safe: isDesktopRuntime() ha già verificato non-null` è ora inline sulla stessa riga della non-null assertion.
+- `DesktopBridgeWindow` locale: nessuna augmentazione globale di `Window` — il contratto desktop non trapela verso consumer non-storage (ADR-002 invariante rispettato).
+- Tipo di ritorno `StorageBundle` uniforme su entrambi i rami; `tsc --noEmit` pulito, 9/9 test passano (vitest Node 24).
+- Factory sincrona garantita; wiring `App.tsx` minimale (singleton di modulo, nessun impatto dominio).
+
+### Finding F-055-1-D1 (low) — TS-DESIGN-001
+
+`SelectAdapterOptions.windowRef` è un campo esclusivamente di test esportato nell'interfaccia pubblica del modulo senza annotazione `@visibleForTesting`. Superfice pubblica allargata non necessaria al contratto runtime. Azione suggerita: aggiungere JSDoc `@internal` / `@visibleForTesting` sul campo.
+
+### Finding F-055-2-Q1 (low) — QA-TEST-001
+
+La natura non-singleton di `selectAdapter()` (ogni chiamata costruisce una nuova istanza) non è documentata nel JSDoc della funzione né testata esplicitamente. Il singleton di modulo in `App.tsx` è corretto, ma la mancanza di documentazione sul contratto di unicità è un rischio di manutenibilità. Azione suggerita: aggiungere nota JSDoc + test opzionale che verifica istanze distinte su chiamate multiple.

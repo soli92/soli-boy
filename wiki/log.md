@@ -466,3 +466,18 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
   - Memoizzazione, single-flight, lazyness, fallback rejection, copertura test principale: tutti eccellenti.
 
 [2026-06-03] review TSK-075 iter-1 → conditional
+[2026-06-03] review TSK-075 iter-2 → passed
+[2026-06-03] review TSK-073 iter-1 → conditional
+
+[2026-06-03] review TSK-077 iter-1 → conditional
+[2026-06-03] review TSK-077 iter-2 → passed
+
+[2026-06-03] review TSK-055 iter-1 → passed
+
+[2026-06-03] review TSK-074 iter-1 → conditional
+  - Reviewer: code-reviewer@2.17.0 · Stack: typescript/electron-ipc (conf 0.95)
+  - Finding: {high:0, medium:1, low:2} · Report: code_quality/reports/TSK-074-iter-1.json
+  - F-074-1 (medium, TS-ROBUST-001): guardPath non copre symlink — un symlink dentro FS_BASE_DIR che punta fuori dalla base dir bypassa il prefix-match (path.resolve non dereferenzia link simbolici).
+  - F-074-2 (low, TS-DESIGN-001): asimmetria contratto IPC — fs:unlink lancia ENOENT, fs:stat restituisce {exists:false}; documentata ma non omogenea.
+  - F-074-3 (low, TS-ROBUST-001): ensuredDirs cache per-istanza senza invalidazione — falso negativo se dir rimossa esternamente a runtime.
+  - guardPath prefix-match + trailing-sep corretto; contextIsolation:true/nodeIntegration:false/sandbox:true OK; delete reale testato; DoD F-3/F-4/F-5 TSK-054 assorbiti.

@@ -1,0 +1,96 @@
+{
+  "tsk_id": "TSK-073",
+  "iter": 1,
+  "reviewer_version": "code-reviewer v2.17",
+  "generated_at": "2026-06-03T00:00:00Z",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "playwright",
+    "runtime": "node",
+    "confidence": 0.95,
+    "stack_mode": "guided",
+    "stack_notes": "TypeScript + Playwright e2e harness. Nessun componente React direttamente in scope (tooling-only, TSK scope qa). IndexedDB browser API testata via page.evaluate."
+  },
+  "verdict": "conditional",
+  "summary": "Il helper set-theme.ts e il test anti-regressione sono ben strutturati, fail-loud per disegno e allineati alla single-source-of-truth TSK-044. Tre finding bloccanti/significativi richiedono fix prima di iter-2: (F-1) race condition potenziale nel flow IDB di setThemeViaDB quando la pagina non è ancora navigata (l'open senza versione su un DB non ancora creato dall'app non triggera l'upgrade handler — il DB aperto risulta vuoto, il check objectStoreNames.contains fallisce, e il FAIL-LOUD è comunque corretto ma la causa è un race nella sequenza di navigazione); (F-2) uso di waitForTimeout con magic number 300 ms nel test e2e — pattern flaky-prone; (F-3) VALID_THEMES in set-theme.ts è una costante ridondante rispetto a UI_THEMES in useTheme.ts e non è derivata da essa, creando un secondo punto di aggiornamento quando si aggiunge un tema. Un finding di bassa severità (F-4) riguarda clearThemeInDB che swallowa silenziosamente gli errori IDB in modo best-effort senza log, divergendo dalla filosofia fail-loud dichiarata nel file.",
+  "findings": [
+    {
+      "id": "F-1",
+      "severity": "medium",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "title": "Race condition latente: setThemeViaDB apre IDB senza versione prima che l'app abbia inizializzato il DB",
+      "location": "packages/app/e2e/helpers/set-theme.ts:79-83,99-101",
+      "description": "La guardia `if (!currentUrl || currentUrl === 'about:blank') { await page.goto(appUrl); }` naviga sull'app solo se la pagina è su about:blank. Se il test chiama setThemeViaDB su una pagina navigata (es. dopo clearThemeInDB ma senza page.reload) il controllo passa, poi la page.evaluate apre il DB senza specificare la versione (`indexedDB.open(dbName)` senza secondo argomento). Il comportamento spec è: se il DB esiste già (aperto dall'app), si ottiene la versione corrente, tutto OK. Se però il DB non esiste ancora nell'origine corrente (primo avvio in un nuovo contesto di storage, es. context isolato Playwright), l'open senza versione crea un DB versione 1 *senza* triggerare l'upgrade handler dell'app — lo store 'config' non viene creato, e il check objectStoreNames.contains('config') ritorna false. Il FAIL-LOUD scatta correttamente (il messaggio è utile) ma il piano di recovery indicato all'utente ('aggiornare CONFIG_STORE_NAME') è fuorviante: il vero problema è la sequenza di navigazione. La guardia dovrebbe aspettare non solo che la pagina sia navigata ma che l'app abbia completato almeno un getDB(), cioè aspettare che il DOM sia stabile (waitForLoadState o un selector applicativo) *prima* di invocare page.evaluate IDB. In test.beforeEach di theme-dark-regression.e2e.ts viene fatto page.goto('/') + waitForSelector('body'), ma setThemeViaDB non dipende da questa pre-condizione — un futuro caller che invochi setThemeViaDB senza page.goto preventivo (es. su un context fresco) otterrà un errore con messaggio fuorviante.",
+      "recommendation": "Aggiungere in setThemeViaDB, dopo la guardia goto, un `await page.waitForLoadState('domcontentloaded')` (o il selector applicativo radice) in modo da garantire che il DB sia stato inizializzato dall'app prima di aprirlo via page.evaluate. Oppure documentare esplicitamente nella JSDoc che il caller deve garantire `page.goto` + load state prima di chiamare setThemeViaDB, e aggiornare il messaggio di errore del FAIL-LOUD per indicare la causa corretta (DB non inizializzato, non chiave sbagliata).",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-2",
+      "severity": "medium",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "title": "waitForTimeout con magic number 300ms — pattern flaky-prone nelle screenshot",
+      "location": "packages/app/e2e/theme-dark-regression.e2e.ts:48,55,79,84",
+      "description": "Il test usa `page.waitForTimeout(300)` quattro volte come buffer per 'completare eventuali transizioni CSS' prima di acquisire lo screenshot. Questo è il pattern classico di flakiness e2e: su runner CI lenti o carichi, 300ms potrebbero non essere sufficienti; su runner veloci, aggiungono latenza inutile. Il resto del codebase (app.e2e.ts) usa interamente asserzioni basate su locator visibili (`expect(locator).toBeVisible()`, `waitForSelector`) senza timeout fissi. Playwright best practice prescrive `waitForFunction` (già usato correttamente in setThemeViaDB per l'asserzione data-theme) oppure l'asserzione su un locator stabile. In setThemeViaDB post-reload, l'helper già aspetta il data-theme corretto tramite waitForFunction: il test potrebbe omettere i 300ms dopo setThemeViaDB e aspettare invece un elemento UI stabile (es. `page.waitForSelector('[data-theme]')` o direttamente `expect(page.locator('html')).toHaveAttribute('data-theme', theme)`) prima dello screenshot. Per setThemeViaSelector, il 300ms è ancora meno giustificato: assertThemeApplied già verifica il data-theme post-selezione.",
+      "recommendation": "Sostituire i quattro `await page.waitForTimeout(300)` con `await page.waitForFunction(attr => document.documentElement.getAttribute('data-theme') !== null, 'data-theme')` oppure con `await expect(page.locator('html')).toHaveAttribute('data-theme', theme)` (usando il `theme` locale). In alternativa, attribuire `page.waitForLoadState('networkidle')` se le transizioni CSS dipendono da risorse di rete. Evitare magic number fissi in ms.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-3",
+      "severity": "medium",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "title": "VALID_THEMES duplica UI_THEMES di useTheme.ts — due punti di aggiornamento divergenti",
+      "location": "packages/app/e2e/helpers/set-theme.ts:45-46",
+      "description": "La costante `VALID_THEMES = ['90s-party', 'dark', 'cyberpunk'] as const` in set-theme.ts è definita inline e non deriva da `UI_THEMES` esportata da `src/components/ThemeSelector/useTheme.ts`. I commenti nel file dichiarano correttamente la single source of truth (UI_THEMES in useTheme.ts), ma non la rispettano strutturalmente: i valori sono copiati letteralmente. Quando verrà aggiunto un quarto tema (es. 'light' o 'neon'), il dev dovrà aggiornare sia useTheme.ts sia set-theme.ts (e VALID_THEMES nel runbook). La regola TS-DESIGN-001 copre l'isolamento di codice test-only dai moduli di produzione, ma il principio DRY è applicabile: set-theme.ts è un helper di test, non un modulo di produzione, quindi importare da useTheme.ts è accettabile. Il rischio concreto è che il fail-loud di assertValidTheme non scatti per un nuovo tema non ancora censito in VALID_THEMES se il dev dimentica di aggiornare set-theme.ts — e il blind-spot ritorna.",
+      "recommendation": "Importare `UI_THEMES` da `../../src/components/ThemeSelector/useTheme` e derivare VALID_THEMES da essa: `export const VALID_THEMES = UI_THEMES;`. In alternativa, documentare esplicitamente nel JSDoc di VALID_THEMES che è una copia intenzionale (con motivazione — es. evitare dipendenze da src/ negli helper e2e per isolamento) e aggiungere un commento '// sync with useTheme.ts › UI_THEMES' che funge da reminder. La prima opzione (import) è preferita per garantire la sincronizzazione automatica.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-4",
+      "severity": "low",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "title": "clearThemeInDB swallowa silenziosamente errori IDB senza log — diverge dalla filosofia fail-loud",
+      "location": "packages/app/e2e/helpers/set-theme.ts:236-241",
+      "description": "clearThemeInDB su req.onerror e tx.onerror chiama `resolve()` silenziosamente con commento 'best-effort: non blocchiamo il test su errori di clear'. Per una funzione di setup/teardown da usare in beforeEach questo è difendibile: un errore nel clear non dovrebbe bloccare tutti i test del suite. Tuttavia, il file dichiara esplicitamente la filosofia fail-loud (header del file, commenti su setThemeViaDB, assertThemeApplied). Un errore silenzioso in clearThemeInDB può mascherare un problema di stato (es. DB non raggiungibile, context isolato senza storage) che poi causa un fallimento non ovvio nel test successivo. Il commento 'best-effort' è presente ma non segnala il problema con console.warn come fa useTheme al riguardo di port.save() rejects.",
+      "recommendation": "Aggiungere un `console.warn('[set-theme] clearThemeInDB: errore IDB (best-effort, il test continua):', req.error)` nei rami onerror, allineando il comportamento a quello di useTheme.ts che usa console.warn per fallimenti di persistenza best-effort. Non lanciare un errore (il best-effort è corretto per il teardown), ma rendere visibile il problema nei log.",
+      "auto_fixable": true
+    }
+  ],
+  "positives": [
+    "La strategia IDB+reload è corretta nel caso happy-path: page.evaluate con Promise che si risolve al tx.oncomplete è genuinamente race-free rispetto al commit IDB. Il successivo waitForFunction su data-theme è deterministico (polling event-driven, non sleep fisso).",
+    "assertThemeApplied è esposta come funzione interna e riutilizzata sia da setThemeViaDB sia da setThemeViaSelector — buona fattorizzazione, nessuna duplicazione della logica di verifica.",
+    "Le costanti SOLI_BOY_DB_NAME, CONFIG_STORE_NAME, UI_THEME_KEY, DATA_THEME_ATTR sono esportate con JSDoc precisi che citano il file sorgente canonico — facilita la tracciabilità e l'aggiornamento futuro.",
+    "Il test anti-regressione usa confronto md5 in-memory senza baseline committata, scelta corretta e documentata esplicitamente: evita il falso-negativo dei test toMatchSnapshot con baseline obsoleta.",
+    "Il test di fail-loud (setThemeViaDB lancia su tema non valido) usa @ts-expect-error con commento intenzionale — idiomatico TypeScript per test negativi tipizzati.",
+    "Il runbook visual-oracle-installation.md è stato aggiornato con la sezione 'Pilotaggio tema in soli-boy (convenzione TSK-073)' — DoD rispettato.",
+    "setThemeViaSelector usa page.getByLabel con aria-label canonico invece di un selector CSS fragile — idiomatico Playwright e resiliente ai refactoring UI.",
+    "Il commento header del file documenta il problema (blind-spot), la soluzione, la sequenza e il comportamento fail-loud in modo esaustivo — eccellente come documentazione di contesto per il visual oracle."
+  ],
+  "loop_status": {
+    "previous_iter": null,
+    "no_progress_detected": false,
+    "regression_detected": false,
+    "iterations_remaining": 2
+  },
+  "task_package": {
+    "tsk_id": "TSK-073",
+    "iter": 1,
+    "verdict": "conditional",
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 80,
+      "blast_radius_warning": [],
+      "blast_radius_note": "Graphify pre-check non applicato (blast radius check non disponibile per questo run). I file toccati (e2e/helpers/set-theme.ts, e2e/theme-dark-regression.e2e.ts) sono tooling-only e non hanno downstream di produzione."
+    },
+    "findings_to_fix": ["F-1", "F-2", "F-3"],
+    "findings_low_effort": ["F-4"],
+    "priority_order": "F-3 (import UI_THEMES) → F-2 (rimuovi waitForTimeout) → F-1 (waitForLoadState in setThemeViaDB) → F-4 (console.warn in clearThemeInDB)"
+  }
+}

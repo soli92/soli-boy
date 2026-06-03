@@ -1,0 +1,80 @@
+{
+  "tsk_id": "TSK-055",
+  "iter": 1,
+  "generated_at": "2026-06-03T15:56:53Z",
+  "reviewer_version": "code-reviewer@2.12.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "runtime": "browser+electron",
+    "confidence": 0.97,
+    "mode": "stack-aware"
+  },
+  "files_reviewed": [
+    "packages/app/src/storage/select-adapter.ts",
+    "packages/app/src/storage/select-adapter.test.ts",
+    "packages/app/src/App.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "verdict": "pass",
+  "summary": "La factory `selectAdapter()` e il predicato `isDesktopRuntime()` sono idiomatici, corretti e ben testati. Il predicato gestisce correttamente `typeof null`, assenza di `window` e il bridge `window.soliboyDesktop`. Il tipo di ritorno `StorageBundle` è coerente con `SaveStoragePort`+`ConfigPort` su entrambi i rami. Il contratto desktop non trasuda verso consumer non-storage. I finding F-077-2-I1 (TS-IDIOM-002, commento inline su `!`) rilevato nel TSK-077 precedente è stato chiuso: il commento inline è ora presente sulla stessa riga dell'assertion. Restano due finding di bassa severità relativi alla copertura del ramo desktop a livello di runtime-integration e a una dipendenza di modulo-load che non ammette lazy re-evaluation.",
+  "findings": [
+    {
+      "id": "F-055-1-D1",
+      "severity": "low",
+      "pass": "design",
+      "rule_id": "TS-DESIGN-001",
+      "rule_ref": "code_quality/rules/canonical/TS-DESIGN-001.md §Rationale",
+      "title": "Opzione `windowRef` esportata nella firma pubblica di `SelectAdapterOptions` è un hook esclusivamente di test",
+      "description": "L'interfaccia `SelectAdapterOptions` è esportata (superficie pubblica) e include `windowRef?: DesktopBridgeWindow`. Questo campo esiste esclusivamente per facilitare il mock nei test (come dichiarato dal JSDoc stesso). In produzione nessun consumer chiamante la factory passerà mai `windowRef`. L'esportazione espande la superficie pubblica del modulo storage con un dettaglio di testabilità, potenzialmente confondente per futuri consumer della factory.",
+      "location": {
+        "file": "packages/app/src/storage/select-adapter.ts",
+        "lines": "104-107"
+      },
+      "affected_code_ref": "[^src5: packages/app/src/storage/select-adapter.ts:104]",
+      "suggestion": "Documentare `windowRef` con `@internal` o `@visibleForTesting` nel JSDoc, oppure non esportare `SelectAdapterOptions` direttamente (usare un parametro opzionale overloaded o mantenerla interna). Il campo è legittimo come pattern di iniezione per test, ma la sua presenza nell'API pubblica esportata merita una dichiarazione esplicita d'intento.",
+      "auto_fixable": false,
+      "false_positive_risk": "low"
+    },
+    {
+      "id": "F-055-2-Q1",
+      "severity": "low",
+      "pass": "robustness",
+      "rule_id": "QA-TEST-001",
+      "rule_ref": "code_quality/rules/canonical/QA-TEST-001.md §Rationale",
+      "title": "Nessun test verifica che la stessa istanza `NativeFsAdapter` sia usata sia come `storage` sia come `config` in caso di chiamate concorrenti a `selectAdapter()`",
+      "description": "Il test `con window.soliboyDesktop presente ritorna un NativeFsAdapter` verifica l'identità `bundle.config === bundle.storage` (stessa istanza). Tuttavia, `selectAdapter()` è chiamata una volta a modulo-load in `App.tsx` (singleton di modulo): non c'è un test che verifichi il comportamento se due chiamate indipendenti a `selectAdapter()` con lo stesso `windowRef` producono istanze distinte (behaviour corretto, ma non documentato). La factory è stateless — ogni invocazione costruisce un nuovo `NativeFsAdapter`. Se in futuro un consumer chiama `selectAdapter()` due volte (es. per un lazy re-init post-HMR), ottiene due istanze separate con `resolvedBaseDirPromise` distinte, il che è semanticamente corretto ma potenzialmente sorprendente. Non è un bug nella forma attuale (la chiamata è una sola a modulo-load), ma la assenza di un commento esplicito sulla natura non-singleton della factory è un rischio di manutenibilità.",
+      "location": {
+        "file": "packages/app/src/storage/select-adapter.ts",
+        "lines": "127-149"
+      },
+      "affected_code_ref": "[^src5: packages/app/src/storage/select-adapter.ts:127]",
+      "suggestion": "Aggiungere nel JSDoc di `selectAdapter()` una nota esplicita che la factory NON è idempotente (ogni chiamata costruisce una nuova istanza di `NativeFsAdapter`); il singleton di modulo in `App.tsx` è la sede corretta per garantire l'unicità. Opzionalmente, un test che verifica che due chiamate producono istanze `NativeFsAdapter` distinte (`.storage !== bundle2.storage`) chiarisce il contratto per i futuri maintainer.",
+      "auto_fixable": false,
+      "false_positive_risk": "low"
+    }
+  ],
+  "positives": [
+    "Predicato `isDesktopRuntime()`: tripla guardia `!!win && typeof win.soliboyDesktop === 'object' && win.soliboyDesktop !== null` è idiomatica e chiude correttamente il falso positivo classico `typeof null === 'object'`. Testato con 4 varianti (undefined, null cast, assente, oggetto valido).",
+    "Assenza di augmentazione globale di `Window`: `DesktopBridgeWindow` è una interfaccia locale privata del modulo — il contratto desktop non trasuda verso consumer non-storage (ADR-002 invariante di disaccoppiamento renderer rispettato).",
+    "Finding F-077-2-I1 (TS-IDIOM-002) risolto: la non-null assertion `winRef!` su `select-adapter.ts:139` ha il commento giustificativo inline (`// safe: isDesktopRuntime() ha già verificato non-null`) sulla stessa riga, conforme a TS-IDIOM-002.",
+    "Tipo di ritorno `StorageBundle` con `SaveStoragePort` + `ConfigPort` è coerente su entrambi i rami (typecheck `tsc --noEmit` pulito, 0 errori).",
+    "Factory sincrona garantita: nessun `await` nel corpo di `selectAdapter()`; la lazyness di `resolveBaseDir()` è confinata a `NativeFsAdapter` (TSK-077, già reviewato).",
+    "Copertura test: 9/9 test passano (vitest Node 24). DoD TSK-055 completo: ramo web, ramo desktop, assenza window, null-guard, baseDir override.",
+    "Wiring `App.tsx` additivo e minimale: un solo punto di chiamata a modulo-load, nessuna modifica al dominio (`SaveService`/hook consumano solo le porte).",
+    "Commento di deviazione vs testo TSK (`window.electronAPI` → `window.soliboyDesktop`) ben documentato inline con riferimento al preload effettivo."
+  ],
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "previous_finding_ids": [],
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "task_package": null
+}
