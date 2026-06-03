@@ -71,8 +71,8 @@ let clickSpy: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   createSpy = vi.fn(() => "blob:mock/1");
   revokeSpy = vi.fn();
-  URL.createObjectURL = createSpy;
-  URL.revokeObjectURL = revokeSpy;
+  URL.createObjectURL = createSpy as unknown as typeof URL.createObjectURL;
+  URL.revokeObjectURL = revokeSpy as unknown as typeof URL.revokeObjectURL;
   // Spy su HTMLAnchorElement.prototype.click → niente navigazione in jsdom.
   clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 });
