@@ -175,6 +175,38 @@ Solo se `factory.config.yaml` esiste:
   un ADR la citi nel proprio `pending_clarification:` frontmatter. Mismatch →
   **WARNING orphan-pending-clarification**.
 
+### 4n — Granularità TSK FE (State Matrix DoD, v2.17, opt-in)
+
+**WARNING-only — mai ERROR**, mai `heal-eligible` (la scomposizione è decisione del TPM/Arch,
+giudizio semantico). Il lint informa, non blocca.
+
+**Trigger (AND — tutte e 5 vere)**:
+
+```
+TSK.layer == 'fe'
+AND factory.config.yaml.fe_correctness.granularity_lint == true
+AND TSK ha sezione '## DoD FE — stati obbligatori'
+AND TSK.estimate > granularity.max_estimate_hours
+AND states_checked(TSK) > granularity.max_states
+```
+
+L'AND (non OR, a differenza del prompt preventivo in `scrivi-task`) è curativo: il warning
+cattura solo il caso patologico «grosso E complesso UI», riducendo i falsi positivi.
+
+- `states_checked(TSK)` = righe che matchano `^\s*-\s*\[x\]\s+` dentro la sezione `## DoD FE —
+  stati obbligatori`. Sezione assente → `states_checked == 0` → check no-op.
+- **Gate**: `fe_correctness.granularity_lint: false` (default) o blocco assente → no-op totale.
+- Soglie `fe_correctness.granularity.{max_estimate_hours, max_states}` (default `{8, 3}`),
+  confronto **strict `>`** (boundary == soglia → no warning).
+
+**Output** (sezione `## WARNING (igiene)`):
+
+```
+- [WARNING][granularity][4n] TSK-051: ha estimate: 16h (> 8) e copre 5 stati FE (> 3): considerare scomposizione.
+```
+
+«4n» segue la serie alfabetica; non collide con i check esistenti.
+
 ## Citation audit (periodico)
 
 Per ogni `[^src: <path> §<sez>]` in `wiki/**`:

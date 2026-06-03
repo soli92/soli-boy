@@ -38,7 +38,7 @@ Moduli implementati (Wave 1):
 - `src/domain/` — riconoscimento piattaforma → core di emulazione.
 - `src/components/` — componenti UI su solids (es. avviso legale).
 
-## Gestione del progetto (Agentic Factory llm-wiki++ v2.15)
+## Gestione del progetto (Agentic Factory llm-wiki++ v2.17)
 
 Oltre a essere l'app, questo repo è gestito come **Agentic Factory**: una knowledge base
 wiki-style + pipeline multi-agente (ingest → planning → design → task → sviluppo) governata
@@ -53,9 +53,14 @@ packages/app/            L5 — codice dell'applicazione
 memory/ code_quality/    side-channel (memoria, regole/report qualità)
 ```
 
-Comandi factory: `/run` · `/sync-docs` · `/query` · `/dev` · `/review` · `/kanban-publish`
-· `/premortem` · `/compression` · `/graphify-sync`. Quick start in [`CLAUDE.md`](CLAUDE.md),
-configurazione in [`factory.config.yaml`](factory.config.yaml).
+Comandi factory: `/run` · `/sync-docs` · `/query` · `/dev` · `/review` · `/visual-oracle`
+· `/kanban-publish` · `/premortem` · `/compression` · `/graphify-sync`. Quick start in
+[`CLAUDE.md`](CLAUDE.md), configurazione in [`factory.config.yaml`](factory.config.yaml).
+
+> **v2.17 — FE Visual Oracle** (ON): i TSK frontend passano da una verifica visiva
+> (render headless Playwright + screenshot multi-viewport/tema + critica) prima della code
+> review. Ordering `develop → visual-oracle → review`. Vedi
+> [`wiki/runbooks/visual-oracle-installation.md`](wiki/runbooks/visual-oracle-installation.md).
 
 ## Stato del progetto
 

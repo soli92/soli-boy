@@ -1,0 +1,89 @@
+---
+description: Loop di verifica visiva per TSK FE — 5 fasi (Bootstrap → Render → Screenshot → Critica → Diff+Loop). Istanza del pattern evaluator-optimizer. Opt-in via fe_correctness.enabled.
+globs:
+alwaysApply: false
+---
+
+> **Adapter Cursor** del costrutto definito in `PATTERN.md` (agent-agnostic).
+> Tool mapping runtime: `Read`→`@<file>` mention · `Write`/`Edit`→Apply (agent mode) ·
+> `Bash`→Terminal embedded · `Agent(subagent_type=...)`→Compose/sequential rule activation ·
+> skill reference `[[name]]`→`[name](mdc:.cursor/rules/skills/name.mdc)`.
+> Il **contenuto** (responsabilità, scope di scrittura, gate, regole §2/§7) è IDENTICO al `.claude/`.
+
+# Protocollo Visual Oracle — loop di verifica visiva per TSK FE
+
+Loop chiuso di verifica del rendering per TSK FE: renderizza il componente in un browser
+headless (Playwright), cattura screenshot su una matrice viewport × tema, lascia che il
+critic LLM multimodale confronti il rendering con la specifica del TSK e produca difetti
+azionabili, poi itera bounded fino a convergenza. È una **variante opzionale di Develop FE**
+(PATTERN §3 «Develop» — «Visual Verification»), attivata solo da
+`factory.config.yaml.fe_correctness.enabled: true`. A flag spento la skill è **no-op**.
+
+**Single-writer** del campo frontmatter `visual_status:` del TSK. Ordering nel pipeline:
+**develop → visual-oracle → review**.
+
+## Prerequisiti
+
+- `fe_correctness.enabled: true` (master gate — STOP no-op altrimenti).
+- TSK target con `layer: fe`.
+- Playwright nel project host (già in `packages/app`). Fail-loud se assente.
+- `code_path` del TSK risolvibile.
+
+## Costanti
+
+```
+MAX_ITERATIONS = fe_correctness.max_iterations   # bound loop conditional (default 3)
+REPORTS_DIR    = "code_quality/reports"          # side-channel, slug `visual`
+RUNNER_DIR     = ".factory-runners"              # script Bash generati, gitignored
+```
+
+## Fase 1 — Bootstrap
+
+1. Read `fe_correctness`. `enabled: false` → ABORT pulito.
+2. Read TSK (frontmatter + body). Verifica `layer == fe` (altrimenti STOP no-op).
+3. Verifica Playwright via Terminal: `npx playwright --version`. Exit `!= 0` → **STOP
+   fail-loud** verbatim: *«Visual oracle richiede Playwright. Eseguire: `npm i -D
+   @playwright/test && npx playwright install --with-deps chromium`. Vedi runbook.»* Nessun
+   degrado silenzioso.
+4. Risolve `code_path`; calcola `current_iter`; crea
+   `code_quality/reports/<TSK-id>-visual-iter-<N>/`.
+
+## Fase 2 — Render Headless
+
+Genera uno script runner Bash in `.factory-runners/` (gitignored), avvia dev-server/bundle,
+naviga alla pagina target. Fail-loud se il browser headless non è avviabile.
+
+## Fase 3 — Screenshot Multi-Viewport/Tema
+
+Matrice `viewports × themes` (default `[{mobile,375},{desktop,1280}] × [light,dark]` → 4).
+Per cella: `setViewportSize` + `emulateMedia({colorScheme})` + `screenshot`. Naming
+`<viewport>-<theme>.png`.
+
+## Fase 3-bis — Structured Checks (opt-in)
+
+Gate `fe_correctness.checks: []` (default → skip). Id: `visual-regression` (diff vs baseline),
+`axe-a11y` (scan axe-core), `interaction-test` (file `interaction_test_spec`). Qualsiasi
+`fail` binario → `reject` automatico; tutti `pass`/`skip` → Fase 4.
+
+## Fase 4 — Critica Visiva
+
+Critic = **stesso `fe-dev`** in passata multimodale (legge i PNG via Read). Prompt verbatim:
+*«Confronta il rendering con la specifica del TSK e produce una lista di difetti azionabili.»*
+Confronta con body/Technical Specs + `visual_reference:` se presente. Produce `critic_findings`.
+
+## Fase 5 — Diff Azionabile + Loop bounded
+
+| `verdict` | `visual_status` | `next_action` | Comportamento |
+|---|---|---|---|
+| `pass` | `pass` | `done` | TSK → `status: done`; pronto per review. |
+| `conditional` | `conditional` | `loop` | Ri-dispatch fe-dev coi difetti; bounded `MAX_ITERATIONS`. |
+| `reject` | `reject` | `escalate-human` | Gate umano; TSK resta `in-progress`. |
+
+Esaurito il bound senza `pass` → forza `reject` + gate umano (PATTERN §7 r.16). Output: report
+JSON + digest `.md` in `code_quality/reports/`, edit del solo `visual_status:` (single-writer),
+append a `wiki/log.md`.
+
+Pattern evaluator-optimizer, stessa famiglia di [code-review-protocol](mdc:.cursor/rules/skills/code-review-protocol.mdc);
+qui producer ed evaluator sono lo stesso `fe-dev`. Ordering develop → visual-oracle → review.
+
+[^src: raw/factory-bootstrap.md §1.quinquies] [^src: PATTERN.md §3]

@@ -97,6 +97,7 @@ scheduler:
     publish: false
     sync:    true
     review:  true
+    visual-oracle: true  # v2.17 — sub-step di L2 (develop); attivo perché fe_correctness.enabled: true
 
 # Code Quality Review Layer (PATTERN §19) — ON.
 code_quality:
@@ -125,6 +126,35 @@ code_quality:
     path: ./code_quality/reports/
     retain_iterations: 5
     digest_cadence: weekly
+
+# FE Visual Oracle (v2.17, PATTERN §3 variante di Develop FE) — ON.
+# Loop di verifica visiva su TSK FE: render headless (Playwright) + screenshot
+# multi-viewport/tema + critica multimodale LLM vs spec TSK (evaluator-optimizer,
+# come CQRL). Ordering: develop → visual-oracle → review.
+#
+# enabled            : master switch — Fase 4-bis Visual Verification in dev-protocol
+# max_iterations     : bound loop conditional (analogo R.Q4 di CQRL)
+# viewports / themes : matrice cartesiana degli screenshot
+# checks             : opt-in [visual-regression | axe-a11y | interaction-test] (Fase 3-bis)
+# state_matrix_inject: scrivi-task inietta "## DoD FE — stati obbligatori" nei TSK FE
+# granularity_lint   : Lint Check 4n WARNING-only su granularità TSK FE
+# dispatch_gate      : Orchestrator Oracle Pre-Check FE prima del dispatch
+fe_correctness:
+  enabled: true
+  max_iterations: 3
+  viewports:
+    - { name: mobile,  width: 375  }
+    - { name: desktop, width: 1280 }
+  themes:
+    - light
+    - dark
+  checks: []
+  state_matrix_inject: false
+  granularity_lint: false
+  granularity:
+    max_estimate_hours: 8
+    max_states: 3
+  dispatch_gate: false
 
 # === Compression Layer (PATTERN §20) — ENTRAMBI gli assi ON =======================
 compression:

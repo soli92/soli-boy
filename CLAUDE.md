@@ -1,6 +1,6 @@
 # CLAUDE.md — soli-boy
 
-Questo repo è una **Agentic Factory llm-wiki++ v2.15** scaffoldata da `factory-bootstrap`.
+Questo repo è una **Agentic Factory llm-wiki++ v2.17** scaffoldata da `factory-bootstrap`.
 Segue il contratto universale definito in [`PATTERN.md`](PATTERN.md) (agent-agnostic,
 multi-adapter, compression layer a due assi).
 
@@ -16,6 +16,7 @@ Vedi [`factory.config.yaml`](factory.config.yaml):
 | VCS / kanban | GitHub (`soli92/soli-boy`, push-only mirror) |
 | Parallel scheduler | ON |
 | Code Quality Review (CQRL) | ON |
+| FE Visual Oracle (v2.17) | ON — `fe_correctness.enabled: true`, Playwright in `packages/app` |
 | Compression OUTPUT (Caveman) | ON — `conservative` |
 | Compression CONTEXT (Graphify) | ON — `graphify-cloud`, target `app` |
 
@@ -49,6 +50,9 @@ adapter contemporaneamente.
 - Topologia / routing: `/topology`
 - Consumare un TSK con dev-agent: `/dev <TSK-id>`
 - Code review di un TSK done: `/review <TSK-id>` (loop bounded da `max_iterations: 3`)
+- **Visual oracle su TSK FE**: `/visual-oracle <TSK-id> [--dry-run]` — render headless +
+  screenshot multi-viewport/tema + critica visiva (ordering `develop → visual-oracle →
+  review`; vedi [`wiki/runbooks/visual-oracle-installation.md`](wiki/runbooks/visual-oracle-installation.md))
 - Pubblicare kanban su GitHub: `/kanban-publish [show|run|dry-run]`
 - Premortem su epica/feature: `/premortem`
 - **Compression output**: `/compression [show|set|policy|dry-run]`
