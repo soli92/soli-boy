@@ -5,7 +5,7 @@
   "description": "Soli-boy — shell desktop Electron (ADR-007). Renderer = dist/ di @soli-boy/app.",
   "main": "build/main.js",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build:renderer": "npm --prefix ../app run build",

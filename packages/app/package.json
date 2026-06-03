@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Soli-boy — emulatore multipiattaforma (web/desktop/mobile). Codebase condivisa (ADR-001).",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "vite",
