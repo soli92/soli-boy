@@ -4,6 +4,9 @@ import { Library } from "./components/Library/Library";
 import { Player } from "./components/Player/Player";
 import { Settings } from "./components/Settings/Settings";
 import { LegalNotice } from "./components/LegalNotice";
+import { PrivacyNotice } from "./components/PrivacyNotice/PrivacyNotice";
+import { makePrivacyAckPort } from "./components/PrivacyNotice/privacy-port";
+import { usePrivacyAck } from "./components/PrivacyNotice/usePrivacyAck";
 import {
   indexedDbConfig,
   indexedDbStorage,
@@ -70,6 +73,16 @@ export function App() {
   const themePort = useMemo(() => makeThemePort(indexedDbConfig), []);
   const { theme, setTheme } = useTheme(themePort);
 
+  // TSK-069 (US-033) — Stato presa visione informativa privacy on-device.
+  // Stesso pattern di `useTheme`: porta concreta (IndexedDB `config`, chiave
+  // canonica `"privacy-ack"`) memoizzata, hook che idrata al mount. Il banner
+  // è renderizzato SOLO se l'utente non ha ancora cliccato "Ho capito" in una
+  // sessione precedente; la sezione "Privacy" di Settings resta sempre
+  // disponibile (vedi `PrivacyNotice variant="section"`).
+  const privacyPort = useMemo(() => makePrivacyAckPort(indexedDbConfig), []);
+  const { acknowledged: privacyAck, acknowledge: ackPrivacy } =
+    usePrivacyAck(privacyPort);
+
   // TSK-032 (US-016 / ADR-006) — SaveService composto al livello App e iniettato
   // nel Player. Lo `storage` (IndexedDBAdapter) implementa già `SaveStoragePort`
   // (port.ts §SaveStoragePort): nessun nuovo adapter, niente storage paralleli.
@@ -109,6 +122,15 @@ export function App() {
       <header className="sd-flex sd-items-center sd-between">
         <span className="sb-title">Soli-boy</span>
       </header>
+
+      {/* TSK-069 (US-033) — Banner privacy on-device al primo avvio.
+          Non bloccante (non è un paywall, vedi TSK-069 §Technical Specs):
+          l'utente può comunque interagire con FileLoader/Library/Settings.
+          Reso sopra il FileLoader per dare visibilità prima di qualsiasi
+          azione che tocchi i file utente. Si nasconde dopo l'ack. */}
+      {!privacyAck && (
+        <PrivacyNotice variant="banner" onAcknowledge={ackPrivacy} />
+      )}
 
       <FileLoader storage={storage} onImported={() => setRefresh((n) => n + 1)} />
 
