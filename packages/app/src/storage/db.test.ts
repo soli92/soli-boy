@@ -8,6 +8,7 @@ import {
   addRom,
   getRom,
   listRoms,
+  listRomsMeta,
   removeRom,
   closeDB,
   putSaveState,
@@ -67,6 +68,32 @@ describe("storage roms", () => {
     expect(await getRom(id)).toBeUndefined();
     await removeRom(id); // idempotente, nessun errore
     expect(await listRoms()).toHaveLength(0);
+  });
+});
+
+// TSK-075 — listRomsMeta su IDB: stessa shape/filtro di listRoms ma senza
+// fileBlob (parità semantica con NativeFsAdapter.listRomsMeta).
+describe("storage roms metadata-only (TSK-075)", () => {
+  it("ritorna i metadati senza fileBlob", async () => {
+    await addRom(rom("Tetris", "AAA", "GB", "gambatte"));
+    const meta = await listRomsMeta();
+    expect(meta).toHaveLength(1);
+    expect((meta[0] as Record<string, unknown>).fileBlob).toBeUndefined();
+    expect(meta[0].title).toBe("Tetris");
+    expect(meta[0].platform).toBe("GB");
+    expect(meta[0].addedAt).toBeTypeOf("number");
+  });
+
+  it("filtra per piattaforma e per query (parità con listRoms)", async () => {
+    await addRom(rom("Super Mario Land", "m", "GB", "gambatte"));
+    await addRom(rom("Metroid Fusion", "f", "GBA", "mgba"));
+    expect(await listRomsMeta({ platform: "GB" })).toHaveLength(1);
+    expect((await listRomsMeta({ query: "mario" }))[0].title).toBe("Super Mario Land");
+    expect(await listRomsMeta({ query: "zzz" })).toHaveLength(0);
+  });
+
+  it("nessuna ROM → []", async () => {
+    expect(await listRomsMeta()).toEqual([]);
   });
 });
 

@@ -15,6 +15,25 @@ export interface RomRecord {
 /** Dati per aggiungere una ROM; `id` e `addedAt` sono derivati dall'adapter. */
 export type RomInput = Omit<RomRecord, "id" | "addedAt">;
 
+/**
+ * Vista "metadata-only" del `RomRecord`, esposta da `StoragePort.listRomsMeta`
+ * (TSK-075). Esclude il `fileBlob` — il binario della ROM, dimensione KB-MB,
+ * costo IPC eager su NativeFsAdapter (vedi `code_quality/reports/TSK-054-iter-1.json` §F-2).
+ *
+ * Cosa è incluso vs escluso (decisione esplicita TSK-075):
+ *  - inclusi: id, title, platform, core, addedAt, **coverBlob?** (opzionale).
+ *  - esclusi: fileBlob.
+ *
+ * `coverBlob` resta nel meta perché la Library lo renderizza nelle tile (`<img>`);
+ * è un payload piccolo (immagine, tipicamente decine di KB) e opzionale (assente
+ * per ROM senza cover → zero IPC). Il vero costo F-2 erano gli N round-trip su
+ * `fileBlob` (ROM binari) che la UI NON consumava — quelli sono eliminati.
+ *
+ * Per ottenere il `RomRecord` completo (incluso `fileBlob`) usare `getRom(id)`
+ * (path lazy on-demand, es. quando il Player seleziona una ROM).
+ */
+export type RomMeta = Omit<RomRecord, "fileBlob">;
+
 export interface SaveStateRecord {
   id: string;
   romId: string;

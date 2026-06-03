@@ -7,10 +7,11 @@ import { LegalNotice } from "./components/LegalNotice";
 import { PrivacyNotice } from "./components/PrivacyNotice/PrivacyNotice";
 import { makePrivacyAckPort } from "./components/PrivacyNotice/privacy-port";
 import { usePrivacyAck } from "./components/PrivacyNotice/usePrivacyAck";
-import {
-  indexedDbConfig,
-  indexedDbStorage,
-} from "./storage/indexeddb-adapter";
+// TSK-055 — punto unico di selezione runtime: IndexedDB su web/mobile,
+// NativeFsAdapter su desktop Electron (rileva `window.soliboyDesktop`).
+// I servizi di dominio consumano solo le porte (`SaveStoragePort`/`ConfigPort`):
+// nessun consumatore deve sapere quale backend di persistenza è attivo.
+import { selectAdapter } from "./storage/select-adapter";
 import { StubEngine } from "./core/stub-engine";
 import { selectEngine } from "./core/engine-registry";
 import {
@@ -35,9 +36,16 @@ const REAL_ENGINE =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("engine") === "real";
 
-// Composizione del Core web MVP. Storage reale (IndexedDB).
+// TSK-055 — Bundle storage+config selezionato a runtime una sola volta a
+// modulo-load. Su web/mobile coincide con i singleton storici IndexedDB
+// (comportamento invariato); su desktop Electron è il `NativeFsAdapter`
+// iniettato col bridge `window.soliboyDesktop` (TSK-053). Il dominio non
+// vede la differenza: consuma `SaveStoragePort`/`ConfigPort`.
+const { storage: selectedStorage, config: selectedConfig } = selectAdapter();
+
+// Composizione del Core web MVP. Storage reale via `selectAdapter()`.
 export function App() {
-  const storage = indexedDbStorage;
+  const storage = selectedStorage;
   const stub = useMemo(() => new StubEngine(), []);
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
@@ -59,7 +67,7 @@ export function App() {
   // restando sincronizzati in sessione. La porta concreta (IndexedDB `config`,
   // chiave `video-settings`) idrata al mount e persiste su `setValue`.
   const videoPort = useMemo(
-    () => makeVideoSettingsPort(indexedDbConfig),
+    () => makeVideoSettingsPort(selectedConfig),
     [],
   );
   const { value: videoSettings, setValue: setVideoSettings } =
@@ -70,7 +78,7 @@ export function App() {
   // chiave canonica `"ui-theme"`) memoizzata, hook che idrata al mount e
   // applica `data-theme` al `<html>`. La preferenza è passata a Settings via
   // prop opzionali — sezione "Aspetto" attiva solo qui (test legacy intatti).
-  const themePort = useMemo(() => makeThemePort(indexedDbConfig), []);
+  const themePort = useMemo(() => makeThemePort(selectedConfig), []);
   const { theme, setTheme } = useTheme(themePort);
 
   // TSK-069 (US-033) — Stato presa visione informativa privacy on-device.
@@ -79,7 +87,7 @@ export function App() {
   // è renderizzato SOLO se l'utente non ha ancora cliccato "Ho capito" in una
   // sessione precedente; la sezione "Privacy" di Settings resta sempre
   // disponibile (vedi `PrivacyNotice variant="section"`).
-  const privacyPort = useMemo(() => makePrivacyAckPort(indexedDbConfig), []);
+  const privacyPort = useMemo(() => makePrivacyAckPort(selectedConfig), []);
   const { acknowledged: privacyAck, acknowledge: ackPrivacy } =
     usePrivacyAck(privacyPort);
 

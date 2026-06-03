@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import logoUrl from "../../assets/soliboy-logo-horizontal.svg";
 import type { Platform } from "../../domain/types";
 import type { CoverPort, StoragePort } from "../../storage/port";
-import type { RomRecord } from "../../storage/types";
+import type { RomMeta, RomRecord } from "../../storage/types";
 
 // TSK-046 — stile inline per il logo header. Non possiamo applicare la classe
 // `.sb-logo` esistente in solids-theme.css (è scoped per il box 34x34 del
@@ -40,7 +40,17 @@ export interface LibraryProps {
    * (consumer ROM-only non vedono setCover); qui le componiamo nel prop.
    */
   storage: StoragePort & CoverPort;
-  /** Invocato alla selezione di un gioco. */
+  /**
+   * Invocato alla selezione di un gioco. Riceve il `RomRecord` **completo**
+   * (incluso `fileBlob`) caricato lazy via `storage.getRom(id)`: la Library
+   * stessa lista solo i metadati (TSK-075, F-2 CQRL TSK-054), il `fileBlob`
+   * viene materializzato on-demand al click — è ciò di cui il Player necessita.
+   *
+   * Se `getRom` fallisce o ritorna `undefined` (ROM rimossa nel frattempo),
+   * il click è no-op (l'errore viene loggato in console — non vogliamo
+   * smontare la libreria per un evento puntuale non-fatale, parità con la
+   * gestione di `coverError`).
+   */
   onSelect?: (rom: RomRecord) => void;
 }
 
@@ -61,8 +71,12 @@ const PLATFORM_LABELS: Record<PlatformFilter, string> = {
 const PLATFORM_ORDER: Platform[] = ["GB", "GBC", "GBA", "ARCADE"];
 
 export function Library({ storage, onSelect }: LibraryProps) {
-  const [roms, setRoms] = useState<RomRecord[] | null>(null);
-  // `error` è riservato ESCLUSIVAMENTE al fallimento di listRoms (smonta la
+  // TSK-075 — la Library lista i **metadati** (senza fileBlob). Sul NativeFsAdapter
+  // elimina N round-trip IPC `readFile` sui binari ROM al caricamento (F-2 CQRL
+  // TSK-054). Il `fileBlob` viene caricato lazy via `storage.getRom(id)` al click
+  // (vedi handler `handleSelect` sotto).
+  const [roms, setRoms] = useState<RomMeta[] | null>(null);
+  // `error` è riservato ESCLUSIVAMENTE al fallimento di listRomsMeta (smonta la
   // griglia): F-039-01 separa l'errore non-fatale dell'upload copertina in
   // `coverError`, che viene reso come alert sopra la <ul> senza smontarla
   // (l'utente non perde lista/filtri/scroll).
@@ -80,7 +94,7 @@ export function Library({ storage, onSelect }: LibraryProps) {
     setError(null);
     setCoverError(null);
     storage
-      .listRoms()
+      .listRomsMeta()
       .then((r) => {
         if (active) setRoms(r);
       })
@@ -105,9 +119,9 @@ export function Library({ storage, onSelect }: LibraryProps) {
   // Filtro in-memory: case-insensitive sul titolo + match piattaforma.
   // `useMemo` evita re-render inutili durante la digitazione.
   // F-038-04: presupposto architetturale — dataset piccolo già caricato
-  // interamente in memoria. Per dataset grandi esiste StoragePort.listRoms(filter)
+  // interamente in memoria. Per dataset grandi esiste StoragePort.listRomsMeta(filter)
   // (architecture-overview §EP-002).
-  const filtered = useMemo<RomRecord[]>(() => {
+  const filtered = useMemo<RomMeta[]>(() => {
     if (!roms) return [];
     const q = query.trim().toLowerCase();
     return roms.filter((r) => {
@@ -116,6 +130,25 @@ export function Library({ storage, onSelect }: LibraryProps) {
       return true;
     });
   }, [roms, query, platform]);
+
+  // TSK-075 — selezione: la Library tiene solo metadati; il `fileBlob` serve al
+  // Player → lo materializziamo on-demand qui via `getRom(id)`. Path lazy: una
+  // singola `readFile` IPC al click invece di N readFile al caricamento.
+  // Se la ROM è sparita (race con removeRom) o `getRom` fallisce, no-op
+  // graceful (log in console — non scaliamo a `error` che smonterebbe la lista).
+  const handleSelect = useCallback(
+    async (meta: RomMeta) => {
+      if (!onSelect) return;
+      try {
+        const full = await storage.getRom(meta.id);
+        if (full) onSelect(full);
+        else console.warn(`Library: ROM ${meta.id} non trovata al momento del click`);
+      } catch (err: unknown) {
+        console.warn(`Library: getRom(${meta.id}) fallito:`, err);
+      }
+    },
+    [storage, onSelect],
+  );
 
   // TSK-039 — handler upload copertina: persiste via setCover, poi aggiorna
   // localmente la entry in `roms` per refreshare la tile senza ri-listare
@@ -229,7 +262,7 @@ export function Library({ storage, onSelect }: LibraryProps) {
             <li key={rom.id}>
               <GameTile
                 rom={rom}
-                onSelect={() => onSelect?.(rom)}
+                onSelect={() => void handleSelect(rom)}
                 onCoverChange={(file) => void handleCoverChange(rom.id, file)}
               />
             </li>
@@ -277,7 +310,12 @@ function PlatformChip({ value, current, onSelect, label }: PlatformChipProps) {
 // - L'input file è etichettato con "Cambia copertina di <titolo>".
 
 interface GameTileProps {
-  rom: RomRecord;
+  /**
+   * TSK-075 — la tile riceve `RomMeta` (no `fileBlob`): per renderizzare basta
+   * titolo/piattaforma + coverBlob. Il `fileBlob` viene caricato dalla
+   * Library al click via `getRom(id)`.
+   */
+  rom: RomMeta;
   onSelect: () => void;
   onCoverChange: (file: File) => void;
 }

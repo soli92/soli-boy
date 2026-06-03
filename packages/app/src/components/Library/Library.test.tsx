@@ -24,11 +24,20 @@ function rec(
   };
 }
 
+// TSK-075 — fake storage esteso con `listRomsMeta` (path metadata-only usato
+// dalla Library) e `getRom` funzionante (la Library lo invoca lazy al click di
+// selezione, per fornire il `fileBlob` completo al consumer onSelect).
 function fakeStorage(rows: RomRecord[]): StoragePort & CoverPort {
   return {
     addRom: vi.fn(async () => "x"),
     listRoms: vi.fn(async () => rows),
-    getRom: vi.fn(async () => undefined),
+    listRomsMeta: vi.fn(async () =>
+      rows.map(({ fileBlob: _omit, ...meta }) => {
+        void _omit;
+        return meta;
+      }),
+    ),
+    getRom: vi.fn(async (id: string) => rows.find((r) => r.id === id)),
     removeRom: vi.fn(async () => {}),
     setCover: vi.fn(async () => {}),
   };
@@ -84,10 +93,13 @@ describe("Library", () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it("mostra role=alert quando storage.listRoms rejecta (F-038-01)", async () => {
+  it("mostra role=alert quando storage.listRomsMeta rejecta (F-038-01)", async () => {
+    // TSK-075 — il fallimento è ora su `listRomsMeta` (path lazy della UI),
+    // non più su `listRoms`: stessa semantica di failure mode, stesso role=alert.
     const failing: StoragePort & CoverPort = {
       addRom: vi.fn(async () => "x"),
-      listRoms: vi.fn(async () => {
+      listRoms: vi.fn(async () => []),
+      listRomsMeta: vi.fn(async () => {
         throw new Error("IndexedDB indisponibile");
       }),
       getRom: vi.fn(async () => undefined),
@@ -267,9 +279,16 @@ describe("Library", () => {
     });
 
     it("se setCover fallisce mostra role=alert e non aggiorna la tile", async () => {
+      const rows = [rec("1", "Tetris", "GB")];
       const storage: StoragePort & CoverPort = {
         addRom: vi.fn(async () => "x"),
-        listRoms: vi.fn(async () => [rec("1", "Tetris", "GB")]),
+        listRoms: vi.fn(async () => rows),
+        listRomsMeta: vi.fn(async () =>
+          rows.map(({ fileBlob: _omit, ...meta }) => {
+            void _omit;
+            return meta;
+          }),
+        ),
         getRom: vi.fn(async () => undefined),
         removeRom: vi.fn(async () => {}),
         setCover: vi.fn(async () => {

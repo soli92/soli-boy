@@ -1,4 +1,5 @@
 // TSK-013 — test LibraryService con StoragePort fake.
+// TSK-075 — fake esteso con `listRomsMeta` (variante metadata-only).
 import { describe, expect, it, vi } from "vitest";
 import type { StoragePort } from "../storage/port";
 import type { RomFilter, RomRecord } from "../storage/types";
@@ -13,6 +14,14 @@ function fakeStorage(rows: RomRecord[]): StoragePort {
     addRom: vi.fn(async () => "x"),
     listRoms: vi.fn(async (f?: RomFilter) =>
       rows.filter((r) => !f?.platform || r.platform === f.platform),
+    ),
+    listRomsMeta: vi.fn(async (f?: RomFilter) =>
+      rows
+        .filter((r) => !f?.platform || r.platform === f.platform)
+        .map(({ fileBlob: _omit, ...meta }) => {
+          void _omit;
+          return meta;
+        }),
     ),
     getRom: vi.fn(async () => undefined),
     removeRom: vi.fn(async () => {}),

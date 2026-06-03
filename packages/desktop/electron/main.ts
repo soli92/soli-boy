@@ -14,9 +14,10 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, session } from "electron";
 import type { OpenDialogOptions, SaveDialogOptions } from "electron";
 import { autoUpdater } from "electron-updater";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import * as path from "node:path";
+import * as os from "node:os";
 
 const DEV_URL = process.env.SOLIBOY_DEV_URL; // settato da electron:dev (es. http://localhost:5173)
 const IS_SMOKE = process.env.SOLIBOY_SMOKE === "1"; // avvio → ready → quit per smoke test CI/locale
@@ -76,16 +77,108 @@ function registerAppProtocol(): void {
   });
 }
 
-/** Canali IPC del filesystem nativo (TSK-053 → consumati da NativeFsAdapter TSK-054). */
+/**
+ * Base directory consentita per le operazioni filesystem IPC.
+ *
+ * Tutti i path forniti dal renderer attraverso `fs:*` devono risolvere dentro
+ * questa root: garantisce l'invariante privacy ADR-002 (nessun dato lascia il
+ * dispositivo) e impedisce path traversal verso aree del filesystem fuori
+ * dallo storage applicativo. Il renderer non ha alcun modo per influenzare la
+ * scelta della base dir: viene risolta lato main process una sola volta.
+ *
+ * Convenzione: `~/.soli-boy/` (cfr. TSK-074 §Technical Specs). `path.resolve`
+ * normalizza separatori platform-specific in modo coerente con il filesystem
+ * nativo (POSIX su macOS/Linux, NT su Windows).
+ */
+const FS_BASE_DIR = path.resolve(os.homedir(), ".soli-boy");
+
+/**
+ * Path traversal guard: confina `target` a `FS_BASE_DIR`.
+ *
+ * Usa `path.resolve` per normalizzare `..`, link simbolici di prefisso e
+ * separatori; controlla che il risultato inizi con la root (o sia la root
+ * stessa). Il separatore di sistema viene aggiunto al confronto per evitare
+ * il falso-positivo `/base-dir-evil` rispetto a `/base-dir` (prefix-match
+ * naive). In caso di violazione lancia un errore tipato (loggabile ma non
+ * sensibile: contiene solo il path richiesto, non quello assoluto risolto).
+ */
+function guardPath(target: string): string {
+  const resolved = path.resolve(target);
+  const root = FS_BASE_DIR;
+  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
+  if (resolved !== root && !resolved.startsWith(rootWithSep)) {
+    throw new Error(`fs: path fuori dalla base dir consentita (~/.soli-boy/): ${target}`);
+  }
+  return resolved;
+}
+
+/** Canali IPC del filesystem nativo (TSK-053 / TSK-074 → consumati da NativeFsAdapter). */
 function registerFsIpc(): void {
+  // TSK-077: espone al renderer la base dir assoluta autoritativa. Il
+  // `NativeFsAdapter` (TSK-055) compone i path relativi sulla convenzione
+  // `.soli-boy` ma il main process confina già le scritture a `FS_BASE_DIR`
+  // (path.resolve(os.homedir(), ".soli-boy")). Esporre questo path al renderer
+  // permette all'adapter di comporre path assoluti coerenti con `guardPath`,
+  // eliminando il disallineamento renderer ↔ main. **Riusa la STESSA costante
+  // `FS_BASE_DIR`** già usata da `guardPath`: single source of truth (non
+  // ricalcolare `os.homedir()/.soli-boy` qui sotto, pena divergenza silenziosa).
+  ipcMain.handle("fs:getBaseDir", async (): Promise<string> => {
+    return FS_BASE_DIR;
+  });
+
   ipcMain.handle("fs:readFile", async (_e, filePath: string): Promise<Uint8Array> => {
-    const buf = await readFile(filePath);
+    const safe = guardPath(filePath);
+    const buf = await readFile(safe);
     return new Uint8Array(buf);
   });
 
   ipcMain.handle("fs:writeFile", async (_e, filePath: string, data: Uint8Array): Promise<void> => {
-    await writeFile(filePath, Buffer.from(data));
+    const safe = guardPath(filePath);
+    await writeFile(safe, Buffer.from(data));
   });
+
+  // TSK-074: primitive aggiuntive per il delete reale e la gestione directory
+  // del NativeFsAdapter. Tutti i path passano dalla guard `guardPath` per
+  // mantenere l'invariante privacy (ADR-002).
+
+  ipcMain.handle("fs:unlink", async (_e, filePath: string): Promise<void> => {
+    const safe = guardPath(filePath);
+    await unlink(safe);
+  });
+
+  ipcMain.handle(
+    "fs:mkdir",
+    async (_e, dirPath: string, opts?: { recursive?: boolean }): Promise<void> => {
+      const safe = guardPath(dirPath);
+      await mkdir(safe, { recursive: opts?.recursive === true });
+    },
+  );
+
+  ipcMain.handle("fs:readdir", async (_e, dirPath: string): Promise<string[]> => {
+    const safe = guardPath(dirPath);
+    return readdir(safe);
+  });
+
+  ipcMain.handle(
+    "fs:stat",
+    async (
+      _e,
+      filePath: string,
+    ): Promise<{ exists: boolean; size: number; isDirectory: boolean }> => {
+      const safe = guardPath(filePath);
+      try {
+        const st = await stat(safe);
+        return { exists: true, size: st.size, isDirectory: st.isDirectory() };
+      } catch (err) {
+        // Convenzione contratto: file mancante → exists:false (no throw).
+        // Altri errori (permessi, IO) si propagano: vogliamo segnalarli.
+        if ((err as NodeJS.ErrnoException)?.code === "ENOENT") {
+          return { exists: false, size: 0, isDirectory: false };
+        }
+        throw err;
+      }
+    },
+  );
 
   ipcMain.handle("fs:showOpenDialog", async (_e, options: OpenDialogOptions): Promise<string[]> => {
     const result = await dialog.showOpenDialog(options);

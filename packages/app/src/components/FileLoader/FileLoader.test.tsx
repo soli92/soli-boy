@@ -1,14 +1,16 @@
 // TSK-003 — test FileLoader (US-001) con StoragePort fake.
+// TSK-075 — fake esteso con `listRomsMeta` (variante metadata-only).
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { StoragePort } from "../../storage/port";
-import type { RomRecord } from "../../storage/types";
+import type { RomMeta, RomRecord } from "../../storage/types";
 import { FileLoader } from "./FileLoader";
 
 function fakeStorage(): StoragePort {
   return {
     addRom: vi.fn(async () => "id-1"),
     listRoms: vi.fn(async () => [] as RomRecord[]),
+    listRomsMeta: vi.fn(async () => [] as RomMeta[]),
     getRom: vi.fn(async () => undefined),
     removeRom: vi.fn(async () => {}),
   };

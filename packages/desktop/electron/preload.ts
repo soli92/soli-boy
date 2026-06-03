@@ -14,11 +14,45 @@ export interface UpdateEvent {
 }
 
 const api = {
+  /**
+   * TSK-077: ritorna il path assoluto della base dir applicativa (root
+   * autoritativa del main process, equivalente a `path.resolve(os.homedir(),
+   * ".soli-boy")` — stessa costante usata da `guardPath`). Il renderer non
+   * conosce `os.homedir()` (nodeIntegration:false): questa è l'unica via per
+   * comporre path assoluti coerenti con il guard del main. `NativeFsAdapter`
+   * la consuma in modo lazy+memoizzato così la factory `selectAdapter()` resta
+   * sincrona.
+   */
+  getBaseDir: (): Promise<string> => ipcRenderer.invoke("fs:getBaseDir"),
   /** Legge un file dal filesystem nativo. */
   readFile: (filePath: string): Promise<Uint8Array> => ipcRenderer.invoke("fs:readFile", filePath),
   /** Scrive un file sul filesystem nativo. */
   writeFile: (filePath: string, data: Uint8Array): Promise<void> =>
     ipcRenderer.invoke("fs:writeFile", filePath, data),
+  /**
+   * Rimuove un file dal filesystem nativo (TSK-074).
+   * Solleva se il file non esiste (ENOENT) — il consumer è responsabile della
+   * gestione idempotente lato adapter.
+   */
+  unlink: (filePath: string): Promise<void> => ipcRenderer.invoke("fs:unlink", filePath),
+  /**
+   * Crea una directory (TSK-074). Con `{ recursive: true }` crea anche i
+   * parent mancanti e non solleva se la dir esiste già (parità `fs.mkdir`).
+   */
+  mkdir: (dirPath: string, opts?: { recursive?: boolean }): Promise<void> =>
+    ipcRenderer.invoke("fs:mkdir", dirPath, opts),
+  /**
+   * Elenca il contenuto di una directory (TSK-074). Ritorna solo i nomi
+   * relativi (no path assoluti). Solleva se la dir non esiste.
+   */
+  readdir: (dirPath: string): Promise<string[]> => ipcRenderer.invoke("fs:readdir", dirPath),
+  /**
+   * Stat strutturato (TSK-074). Per file mancanti ritorna
+   * `{ exists: false, size: 0, isDirectory: false }` invece di sollevare
+   * (contratto stabile per consumer come NativeFsAdapter).
+   */
+  stat: (filePath: string): Promise<{ exists: boolean; size: number; isDirectory: boolean }> =>
+    ipcRenderer.invoke("fs:stat", filePath),
   /** Apre il dialog nativo di selezione file. Ritorna i path scelti ([] se annullato). */
   showOpenDialog: (options: OpenDialogOptions): Promise<string[]> =>
     ipcRenderer.invoke("fs:showOpenDialog", options),
