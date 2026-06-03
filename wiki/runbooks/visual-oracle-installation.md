@@ -72,6 +72,53 @@ binari Chromium scaricati altrove (stessa versione di `@playwright/test`), oppur
 `PLAYWRIGHT_BROWSERS_PATH` su un percorso condiviso. Il fail-loud della skill resta la
 salvaguardia: mai render senza browser reale.
 
+## Pilotaggio tema in soli-boy (convenzione TSK-073)
+
+> **Importante — soli-boy non usa `prefers-color-scheme`.**
+>
+> Il tema UI è gestito da un theme selector esplicito persistito in IndexedDB
+> (TSK-044, `makeThemePort` / `useTheme`). Di conseguenza `page.emulateMedia({ colorScheme })`
+> **non commuta il tema** e produce screenshot light/dark byte-identici (blind-spot).
+
+### Come pilotare il tema negli script del visual oracle
+
+Usa l'helper `packages/app/e2e/helpers/set-theme.ts` (TSK-073):
+
+```typescript
+import { setThemeViaDB } from "../helpers/set-theme";
+
+// Prima della navigazione: imposta il tema in IndexedDB
+await setThemeViaDB(page, "dark", "/");   // oppure "90s-party", "cyberpunk"
+const screenshot = await page.screenshot({ fullPage: true });
+```
+
+**Strategia consigliata** (`setThemeViaDB`): scrive la chiave canonica `"ui-theme"`
+nello store `config` del DB `soli-boy` prima della navigazione, via `page.addInitScript`.
+L'app legge il valore al mount e applica `data-theme` su `<html>`.
+
+**Strategia alternativa** (`setThemeViaSelector`): pilota il `<select aria-label="Tema dell'interfaccia">`
+dopo la navigazione. Utile per test di interazione utente.
+
+Entrambe le funzioni sono **fail-loud**: lanciano un errore esplicito se il tema non viene
+applicato correttamente (il `data-theme` sul `<html>` non corrisponde al valore atteso),
+evitando il ripresentarsi silenzioso del blind-spot.
+
+### Chiave canonica (single source of truth)
+
+| Costante | Valore | File sorgente |
+|---|---|---|
+| `SOLI_BOY_DB_NAME` | `"soli-boy"` | `src/storage/db.ts › DB_NAME` |
+| `CONFIG_STORE_NAME` | `"config"` | `src/storage/db.ts › SoliBoyDB` |
+| `UI_THEME_KEY` | `"ui-theme"` | `src/components/ThemeSelector/theme-port.ts › UI_THEME_KEY` |
+| `DATA_THEME_ATTR` | `"data-theme"` | `src/components/ThemeSelector/useTheme.ts › DATA_THEME_ATTR` |
+| Temi validi | `["90s-party", "dark", "cyberpunk"]` | `src/components/ThemeSelector/useTheme.ts › UI_THEMES` |
+
+### Anti-regressione
+
+Il test `packages/app/e2e/theme-dark-regression.e2e.ts` (TSK-073) verifica che
+screenshot dark ≠ light (md5 diff > 0). Se il test fallisce, il blind-spot è rientrato
+e l'helper va aggiornato.
+
 ## Note
 
 - I runner Bash generati dalla skill vivono in `.factory-runners/` (gitignored), non

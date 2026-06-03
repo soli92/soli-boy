@@ -1,0 +1,128 @@
+{
+  "tsk_id": "TSK-077",
+  "iter": 1,
+  "generated_at": "2026-06-03T00:00:00Z",
+  "reviewer_version": "2.12.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "runtime": "electron + browser (renderer)",
+    "framework": ["electron", "vitest"],
+    "confidence": 0.97,
+    "detected_from": [
+      "packages/desktop/electron/main.ts",
+      "packages/desktop/electron/preload.ts",
+      "packages/app/src/storage/native-fs-adapter.ts",
+      "packages/app/src/storage/select-adapter.ts"
+    ]
+  },
+  "scope": {
+    "files_reviewed": [
+      "packages/desktop/electron/main.ts",
+      "packages/desktop/electron/preload.ts",
+      "packages/app/src/storage/native-fs-adapter.ts",
+      "packages/app/src/storage/select-adapter.ts",
+      "packages/app/src/storage/native-fs-adapter.test.ts",
+      "packages/app/src/storage/select-adapter.test.ts"
+    ]
+  },
+  "verdict": "conditional",
+  "summary": "L'implementazione TSK-077 è complessivamente ben progettata: la memoizzazione lazy su Promise risolve correttamente il problema single-flight, il single source of truth con FS_BASE_DIR è rispettato, e la copertura test dei rami critici (bridge presente/assente/rigetto, concorrenza, lazyness) è eccellente. Emerge un finding medium su un rischio di tainted path injection silenzioso nella coda del rejection del bridge, e due finding low su una non-null assertion non documentata e su un ramo di test assente nel bridge pre-TSK-077 con getBaseDir opzionale che ritorna un path Windows-style. Nessun finding critico.",
+  "findings": [
+    {
+      "id": "F-077-1-R1",
+      "severity": "medium",
+      "pass": "robustness",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "title": "Fallback su rejection non valida l'output del bridge: path non-stringa o vuoto accettato silenziosamente",
+      "description": "In `resolveBaseDir()` il ramo `.then(abs => normalizeToPosix(abs), () => fallback)` normalizza il valore restituito dal bridge (`abs`) senza validarne il tipo o la non-vacuità prima di propagarlo ai path helpers. Se il bridge restituisce una Promise che si risolve con un valore non-string (es. `undefined`, `null`, `''`) per un bug nel main process, `normalizeToPosix` riceve il valore senza lanciare, e `joinPath` compone path degeneri come `'/roms/index.json'` (da `normalizeToPosix(undefined)` → `'undefined'`) o simili. Il risultato è che il guardPath del main riceve path plausibili ma errati, che potrebbero non superare la guard (comportamento corretto), oppure — nel caso di bridge stub di test che restituiscono string non assolute — comporre path che il main risolve in modo inatteso. Il rejection-fallback è corretto; il problema è il ramo di resolve, non il ramo di reject.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:331-338",
+      "evidence": "`.then((abs) => normalizeToPosix(abs), () => fallback)` — nessuna guardia su `typeof abs !== 'string' || abs.length === 0`",
+      "suggested_fix_direction": "Aggiungere un controllo `typeof abs === 'string' && abs.length > 0` prima di `normalizeToPosix(abs)`: se non soddisfatto, loggare e ricadere su `fallback` (stesso comportamento del rejection handler). Questo chiude il gap tra rejection e resolve-con-valore-invalido.",
+      "references": [
+        "[^src5: packages/app/src/storage/native-fs-adapter.ts:331]",
+        "[^rule: code_quality/rules/canonical/TS-ROBUST-001.md §Rationale]"
+      ]
+    },
+    {
+      "id": "F-077-2-I1",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "title": "Non-null assertion `winRef!.soliboyDesktop` in select-adapter non documentata",
+      "description": "In `selectAdapter()` il ramo desktop usa `winRef!.soliboyDesktop as NativeFsBridge` con non-null assertion (`!`) su `winRef`. Il commento sopra afferma che `isDesktopRuntime` ha già verificato la presenza del bridge, il che è corretto, ma il commento è in prosa libera sul ramo if, non immediatamente adiacente all'assertion. TS-IDIOM-002 richiede che ogni `!` sia giustificato con un commento inline che ne documenti la sicurezza. Il rischio runtime è trascurabile (il type narrowing è corretto), ma la regola è formalmente non rispettata.",
+      "location": "packages/app/src/storage/select-adapter.ts:137",
+      "evidence": "`const bridge = winRef!.soliboyDesktop as NativeFsBridge;` — il commento è 3 righe sopra, non inline sull'assertion",
+      "suggested_fix_direction": "Spostare il commento giustificativo inline sull'assertion, oppure sostituire il pattern con un narrow esplicito: `const desktop = winRef?.soliboyDesktop; if (!desktop) return ...; const bridge = desktop as NativeFsBridge;`",
+      "references": [
+        "[^src5: packages/app/src/storage/select-adapter.ts:137]",
+        "[^rule: code_quality/rules/canonical/TS-IDIOM-002.md §Rationale]"
+      ]
+    },
+    {
+      "id": "F-077-3-Q1",
+      "severity": "low",
+      "pass": "robustness",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "title": "Assenza di test per il ramo normalizeToPosix su output del bridge (path assoluto Windows-style dal main)",
+      "description": "Il ramo `getBaseDir presente + ritorna path Windows-style` (es. `C:\\Users\\foo\\.soli-boy`) non è coperto da un test dedicato nella suite TSK-077 (describe block `bridge.getBaseDir`). Il test F-5 della suite TSK-054 verifica solo che il `baseDir` del costruttore in stile Windows sia normalizzato, ma non che il valore RISOLTO tramite `getBaseDir()` subisca la stessa normalizzazione. Su Windows il main process passa un path NT-style tramite IPC; se `normalizeToPosix` nel ramo `resolveBaseDir` non fosse applicato correttamente, i path composti con `joinPath` sarebbero misti (`C:\\Users/foo/roms`). Il codice attuale chiama `normalizeToPosix(abs)` nel then, quindi è corretto, ma la copertura test del ramo combinato (bridge.getBaseDir + path NT-style) manca.",
+      "location": "packages/app/src/storage/native-fs-adapter.test.ts — describe 'bridge.getBaseDir (TSK-077)'",
+      "evidence": "Tutti i test nella suite TSK-077 usano path POSIX (`/Users/foo/.soli-boy`, `/tmp/...`). Nessun caso `C:\\Windows\\...` dal bridge.",
+      "suggested_fix_direction": "Aggiungere un test nella suite `bridge.getBaseDir` in cui `getBaseDir()` restituisce `C:\\Users\\foo\\.soli-boy` e verificare che tutti i path IPC (writeFile, mkdir) contengano `/` e non `\\`. Analogo al test F-5 ma per il ramo lazy-resolved.",
+      "references": [
+        "[^src5: packages/app/src/storage/native-fs-adapter.test.ts:539]",
+        "[^rule: code_quality/rules/canonical/QA-TEST-001.md §Rationale]"
+      ]
+    }
+  ],
+  "positive_patterns": [
+    "Single source of truth rispettato: main.ts restituisce la costante `FS_BASE_DIR` (non ricalcola `os.homedir()`). Il commento è esplicito nel mettere in guardia dalla divergenza silenzio — buona pratica.",
+    "Memoizzazione su Promise (non su string): la scelta di cachare la Promise invece del valore risolto è la sola tecnica corretta per il single-flight in concorrenza. I test lo verificano esplicitamente con `Promise.all` tri-parallelo e con `getBaseDirCalls === 1`.",
+    "Laziness reale garantita: il costruttore di `NativeFsAdapter` non chiama `bridge.getBaseDir`; il test 'risoluzione LAZY' con `getBaseDirCalls === 0` post-costruzione è un assertion cardine corretta.",
+    "Fallback esplicito su rejection IPC: il rejection handler in `resolveBaseDir` ricade sul `fallbackBaseDir` invece di propagare, evitando retry-storm su IPC instabili. La Promise cacheata con valore fallback è poi riutilizzata da tutte le operazioni successive (zero IPC aggiuntivi).",
+    "Compatibilità retro-bridge documentata e testata: la firma `getBaseDir?()` in `NativeFsBridge` è opzionale, il test su bridge senza `getBaseDir` verifica il fallback, il commento in `select-adapter.ts` documenta la semantica pre/post TSK-077.",
+    "Invariante sincrona della factory rispettata: `selectAdapter()` e `App.tsx` non ricevono alcun ripple async — la Promise viene creata solo alla prima operazione FS.",
+    "contextIsolation e nodeIntegration corretti: la whitelist del preload è aggiornata senza aprire nuove superfici; `getBaseDir` è read-only senza parametri, non inducibile da renderer verso path arbitrari.",
+    "Copertura test TSK-077 eccellente: 7 test nel describe block, con casi bridge-presente, getBaseDir-chiamato-una-volta, concorrenza-single-flight, bridge-assente, rejection-con-fallback, lazy-zero-calls.",
+    "Normalizzazione POSIX applicata sia al fallbackBaseDir nel costruttore sia al valore risolto dal bridge in `resolveBaseDir` — coerenza garantita su Windows."
+  ],
+  "loop_status": {
+    "previous_iter": null,
+    "no_progress_risk": false,
+    "regression_detected": false
+  },
+  "task_package": {
+    "tsk_id": "TSK-077",
+    "iter": 1,
+    "verdict": "conditional",
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 80,
+      "blast_radius_warning": [
+        "packages/app/src/storage/native-fs-adapter.ts",
+        "packages/app/src/storage/native-fs-adapter.test.ts",
+        "packages/app/src/storage/select-adapter.ts"
+      ],
+      "blast_radius_note": "Le modifiche sono confinate a resolveBaseDir() (max 5 righe) e a un test aggiuntivo. Non toccare i path helpers, le operazioni pubbliche dell'adapter, select-adapter.ts oltre la non-null assertion, né alcun file fuori dallo scope storage. Se per F-077-1-R1 il fix richiede una modifica alla firma di NativeFsBridge, verificarne l'impatto su preload.ts."
+    },
+    "findings_to_fix": [
+      {
+        "finding_id": "F-077-1-R1",
+        "severity": "medium",
+        "action": "In resolveBaseDir(), nel then-handler, aggiungere validazione del valore restituito: `typeof abs === 'string' && abs.length > 0 ? normalizeToPosix(abs) : fallback`"
+      },
+      {
+        "finding_id": "F-077-2-I1",
+        "severity": "low",
+        "action": "In select-adapter.ts:137, rendere il commento giustificativo inline sull'assertion o usare un narrow esplicito per eliminare `!`"
+      },
+      {
+        "finding_id": "F-077-3-Q1",
+        "severity": "low",
+        "action": "Aggiungere un test nella suite 'bridge.getBaseDir' in cui getBaseDir() restituisce un path NT-style Windows e verificare normalizzazione POSIX"
+      }
+    ]
+  }
+}

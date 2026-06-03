@@ -24,15 +24,25 @@ Porta di persistenza consumata dal dominio, con adapter IndexedDB e filesystem n
 | `restoreSaveState` | saveStateId | snapshot | US-016 |
 | `putSram` | romId, data | esito | US-017 |
 | `getSram` | romId | data | US-017 |
-| `exportSave` | saveStateId \| romId | file serializzato | US-019 |
-| `importSave` | file serializzato | esito + riassociazione | US-019 |
 | `getConfig` / `setConfig` | key (/ value) | value (/ esito) | US-013, US-015, US-021, US-022 |
+
+## Operazioni di dominio (non-porta) — planned
+
+Le seguenti operazioni sono pianificate sotto **US-019** (export/import save), **fuori
+sprint corrente**. NON sono esposte dalla porta `StoragePort`: vivono a livello dominio
+e, quando verranno implementate, comporranno le primitive della porta (es. `getSaveState`,
+`putSaveState`) senza estenderne la superficie.
+
+| Operazione | Input | Output | Copre | Stato |
+|---|---|---|---|---|
+| `exportSave` | saveStateId \| romId | file serializzato | US-019 | planned — US-019, out of sprint |
+| `importSave` | file serializzato | esito + riassociazione | US-019 | planned — US-019, out of sprint |
 
 ## Invarianti
 
 - Tutte le operazioni sono **locali**: nessun dato verso server esterni (US-033). [^src: management/kanban/EP-008-conformita-e-pubblicazione-store/US-033-privacy-on-device/US-033.md §Business Rules]
 - `removeRom` richiede conferma a monte (UI) ed è idempotente. [^src: management/kanban/EP-001-gestione-file-di-gioco/US-005-rimuovere-rom/US-005.md §Acceptance Criteria]
-- `importSave` valida il file e riassocia al gioco corretto, con errore comprensibile se non valido. [^src: management/kanban/EP-004-salvataggi/US-019-export-import/US-019.md §Acceptance Criteria]
+- (planned, US-019) `importSave` validerà il file e riassocerà al gioco corretto, con errore comprensibile se non valido — invariante di dominio, non della porta. [^src: management/kanban/EP-004-salvataggi/US-019-export-import/US-019.md §Acceptance Criteria]
 
 ## Adapter
 

@@ -1,0 +1,85 @@
+{
+  "tsk_id": "TSK-054",
+  "iter": 1,
+  "generated_at": "2026-06-03T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.17",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": ["electron-ipc", "vitest"],
+    "context": ["desktop-adapter", "storage", "ipc-bridge"],
+    "confidence": 0.92,
+    "mode": "full"
+  },
+  "verdict": "conditional",
+  "summary": "NativeFsAdapter è solido nel nucleo: contratto StoragePort rispettato, idiomaticità TS buona, invariante zero-network verificata nei test. Quattro finding da indirizzare prima del pass: (F-1) `exportSave`/`importSave` del contratto storage-port.md sono assenti senza tombstone/stub dichiarato; (F-2) `listRoms` materializza tutti i blob anche per operazioni metadata-only (TS-DESIGN-002); (F-3) `isNotFoundError` usa cast `as { code?; message? }` invece di type-guard strutturato (TS-ROBUST-001 / TS-IDIOM-002); (F-4) test coverage manca `materializeRom` su manifest corrotto (blob tombstone a 0 byte ancora in manifest — path inconsistency post-removeRom). F-1 e F-4 sono assorbibili in TSK-074; F-2 e F-3 richiedono fix indipendente leggero.",
+  "findings": [
+    {
+      "id": "F-1",
+      "severity": "medium",
+      "pass": "design",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "title": "exportSave / importSave assenti: contratto storage-port.md incompleto",
+      "description": "Il contratto API `design_&_architecture/api_specs/storage-port.md §Operazioni` elenca esplicitamente `exportSave(saveStateId|romId)` e `importSave(file)` come operazioni obbligatorie di `StoragePort`. La classe `NativeFsAdapter` non implementa né dichiara questi metodi, né li stub con `throw new Error('not implemented')`. L'adapter è tipato come `implements StoragePort, SaveStatePort, SramPort, CoverPort, ConfigPort, SaveStoragePort` — se `StoragePort` in `port.ts` non li include (e in effetti non li include nella versione attuale del file), il contratto TS è soddisfatto ma la spec API rimane scoperta. La discrepanza va risolta: o `exportSave`/`importSave` entrano in `port.ts` + adapter (US-019, previsto), oppure la spec API doc va allineata allo stato corrente. Questo è il gap più rilevante per compatibilità futura con US-019.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts (classe NativeFsAdapter — metodi mancanti)",
+      "reference_spec": "design_&_architecture/api_specs/storage-port.md §Operazioni",
+      "absorbable_in_tsk074": true,
+      "note": "TSK-074 estende il bridge IPC e riscriverà parte dell'adapter; è il momento giusto per aggiungere stub documentati o l'implementazione reale. Non bloccante per l'MVP se US-019 è fuori sprint."
+    },
+    {
+      "id": "F-2",
+      "severity": "medium",
+      "pass": "design",
+      "rule_id": "TS-DESIGN-002",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-002.md",
+      "title": "listRoms materializza tutti i blob — full-scan + I/O eager non necessario",
+      "description": "`listRoms` (riga 343-353) chiama `Promise.all(entries.map(e => materializeRom(e)))` che legge ogni file blob da disco tramite IPC. L'IndexedDBAdapter restituisce record completi di blob perché IDB li serializza atomicamente; il filesystem nativo è diverso: ogni blob richiede un `readFile` separato. Per operazioni UI metadata-only (lista titoli/piattaforme nella Library) si esegue N IPC round-trip inutili. Andrebbe separata la lista-metadati dalla materializzazione blob (`listRomsMeta` + lazy `getRom`) — lo fa già il commento inline ('I consumer ROM-only usano i metadati; il caricamento del Player chiama getRom') che riconosce il problema ma non lo risolve. Sul volume atteso (decine/centinaia di ROM) l'impatto è significativo al caricamento della libreria.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:343-353",
+      "absorbable_in_tsk074": false,
+      "note": "Richiederebbe una modifica all'interfaccia StoragePort (o un metodo aggiuntivo nell'adapter) — azione separata da TSK-074 che si concentra su unlink/mkdir. Valutare se il breaking change su StoragePort è accettabile in sprint corrente."
+    },
+    {
+      "id": "F-3",
+      "severity": "low",
+      "pass": "robustness",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "title": "isNotFoundError: cast `as { code?; message? }` invece di type-guard strutturato",
+      "description": "`isNotFoundError` (riga 597-603) esegue `const e = err as { code?: unknown; message?: unknown }` senza verificare prima che `err` sia un oggetto non-null. Il controllo `if (!err) return false` copre solo il falsy esplicito, ma se `err` è un numero o una stringa la valutazione di `e.code` non lancia ma produce `undefined` — comportamento corretto per caso, non per design. Più robusto: `if (typeof err !== 'object' || err === null) return false`. Il cast `as` sopprime la type-safety senza garantire la struttura attesa (TS-IDIOM-002). Nota: la funzione è già permissiva per design (commento §Heuristica), ma il cast va rafforzato in un type-guard.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:597-603",
+      "absorbable_in_tsk074": true,
+      "note": "Fix a 3 righe. Assorbibile in TSK-074 in quanto il file viene comunque toccato."
+    },
+    {
+      "id": "F-4",
+      "severity": "medium",
+      "pass": "robustness",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "title": "Test mancante: materializeRom su tombstone a 0 byte nel manifest",
+      "description": "Il test `removeRom elimina ed è idempotente` (riga 135-147) verifica solo che il blob esista a 0 byte nel bridge dopo la rimozione — ma NON verifica il comportamento di `listRoms`/`getRom` dopo un'eventuale corruzione del manifest (entry rimossa ma blob ancora a 0 byte leggibile). Il path critico non coperto è: cosa succede se il manifest non è stato aggiornato correttamente ma il blob è stato tombstonato? `materializeRom` (riga 533-556) lancia `Error('Blob ROM mancante')` quando `fileBytes` è `undefined` — ma un tombstone a 0 byte non è `undefined`, è un `Uint8Array` di lunghezza zero, e viene passato a `bytesToBlob` producendo un Blob.size=0 silenziosamente valido. Questo stato inconsistente non è testato. Serve un test: 'materializeRom su blob tombstone (0 byte) solleva o restituisce Blob.size=0 in modo deterministico'.",
+      "location": "packages/app/src/storage/native-fs-adapter.test.ts (suite roms, test mancante) + native-fs-adapter.ts:533-545",
+      "absorbable_in_tsk074": true,
+      "note": "TSK-074 introduce delete reale (unlink): il tombstone diventa irrilevante a regime. Il test di consistenza vale comunque fino alla release TSK-074; inserirlo come test di regressione tombstone da rimuovere dopo TSK-074. Lasciare al qa-dev la stesura del test effettivo."
+    },
+    {
+      "id": "F-5",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "rule_id": "TS-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-001.md",
+      "title": "joinPath: comportamento Windows non documentato (path-separator assumption)",
+      "description": "`joinPath` (riga 172-177) produce path POSIX-style con `/`. Il commento inline la descrive come 'Posix-style join sufficiente: i path passati dal main process Electron sono risolti contro baseDir lato Node'. Su Windows, tuttavia, il main process usa `path.join` nativo (backslash) — se `baseDir` arriva con backslash (es. `C:\\Users\\...`), `joinPath` produce path misti (`C:\\Users\\.../roms/index.json`) che potrebbero essere non risolti correttamente da Electron IPC. La limitazione è già parzialmente commentata ma non rispecchia il rischio completo. Valutare: o delegare la composizione path al main process (più sicuro, solo filename passato via IPC), oppure normalizzare `baseDir` a POSIX in costruttore.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:172-177 + constructor:239",
+      "absorbable_in_tsk074": true,
+      "note": "Rischio concreto solo su Windows. Assorbibile in TSK-074 che comunque rivedra la gestione path per unlink/mkdir."
+    }
+  ],
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "next_step": "conditional — emettere task_package per dev-agent con F-2 (fix indipendente: listRoms metadata-only) e F-3 (isNotFoundError type-guard); F-1, F-4, F-5 assorbiti in TSK-074. Richiesta conferma umana su F-2 (impatto interfaccia StoragePort)."
+}
