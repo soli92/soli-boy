@@ -44,15 +44,15 @@ test.describe("TSK-073 — tema dark ≠ light (anti-regressione blind-spot visu
     // setThemeViaDB: scrive in IDB → reload → assertThemeApplied (fail-loud).
     await setThemeViaDB(page, "dark");
     await page.waitForSelector(ROOT_SELECTOR);
-    // Breve attesa per completare eventuali transizioni CSS.
-    await page.waitForTimeout(300);
+    // Attesa deterministica: avanza solo quando data-theme è stabile sul DOM.
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     const darkBuf = await page.screenshot({ fullPage: true });
 
     // --- Screenshot "90s-party" (brand default = variante light) ---
     await clearThemeInDB(page);
     await setThemeViaDB(page, "90s-party");
     await page.waitForSelector(ROOT_SELECTOR);
-    await page.waitForTimeout(300);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "90s-party");
     const lightBuf = await page.screenshot({ fullPage: true });
 
     // --- Confronto md5 ---
@@ -76,12 +76,13 @@ test.describe("TSK-073 — tema dark ≠ light (anti-regressione blind-spot visu
 
     // --- Screenshot "dark" via selector ---
     await setThemeViaSelector(page, "dark");
-    await page.waitForTimeout(300);
+    // Attesa deterministica: avanza solo quando data-theme è stabile sul DOM.
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     const darkBuf = await page.screenshot({ fullPage: true });
 
     // --- Screenshot "90s-party" via selector ---
     await setThemeViaSelector(page, "90s-party");
-    await page.waitForTimeout(300);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "90s-party");
     const lightBuf = await page.screenshot({ fullPage: true });
 
     // --- Confronto md5 ---

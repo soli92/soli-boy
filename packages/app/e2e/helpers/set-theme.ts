@@ -26,6 +26,7 @@
 //   DOM ATTR : data-theme su <html>             (useTheme.ts › DATA_THEME_ATTR)
 
 import type { Page } from "@playwright/test";
+import { UI_THEMES } from "../../src/components/ThemeSelector/useTheme";
 
 // ---- Costanti canoniche (derivate direttamente dal codice TSK-044) ----------------
 
@@ -41,8 +42,8 @@ export const UI_THEME_KEY = "ui-theme";
 /** Attributo DOM che veicola il tema su <html> (src/components/ThemeSelector/useTheme.ts › DATA_THEME_ATTR). */
 export const DATA_THEME_ATTR = "data-theme";
 
-/** Temi validi (src/components/ThemeSelector/useTheme.ts › UI_THEMES). */
-export const VALID_THEMES = ["90s-party", "dark", "cyberpunk"] as const;
+/** Temi validi — single source of truth da useTheme.ts › UI_THEMES. */
+export const VALID_THEMES = UI_THEMES;
 export type UiTheme = (typeof VALID_THEMES)[number];
 
 // ---- Strategia 1: IndexedDB + reload (preferita) ---------------------------------
@@ -80,6 +81,12 @@ export async function setThemeViaDB(
   if (!currentUrl || currentUrl === "about:blank") {
     await page.goto(appUrl);
   }
+  // Attende il completamento del parsing DOM in modo che l'app abbia avuto la
+  // possibilità di eseguire openDB/upgrade e creare lo store `config` prima che
+  // page.evaluate apra il DB. Senza questa attesa, su contesti di storage freschi
+  // (es. Playwright isolatedStorage) la open senza versione può creare un DB vuoto
+  // prima che l'upgrade handler dell'app venga invocato.
+  await page.waitForLoadState("domcontentloaded");
 
   // Scrittura IDB tramite `page.evaluate`: la Promise si risolve dopo il commit
   // della transazione, quindi la scrittura è garantita prima del reload.
@@ -112,7 +119,9 @@ export async function setThemeViaDB(
               ok: false,
               error:
                 `store "${storeName}" non trovato in DB "${dbName}" (versione ${db.version}). ` +
-                `La struttura del DB è cambiata — aggiornare CONFIG_STORE_NAME in set-theme.ts.`,
+                `Cause possibili: (1) DB non ancora inizializzato dall'app (invocare setThemeViaDB ` +
+                `solo dopo che l'app ha completato il caricamento); ` +
+                `(2) la struttura del DB è cambiata — verificare CONFIG_STORE_NAME in set-theme.ts.`,
             });
             return;
           }
@@ -237,10 +246,14 @@ export async function clearThemeInDB(page: Page): Promise<void> {
           };
           tx.onerror = () => {
             db.close();
+            console.warn("[set-theme] clearThemeInDB: errore IDB (best-effort, il test continua):", tx.error);
             resolve(); // best-effort: non blocchiamo il test su errori di clear
           };
         };
-        req.onerror = () => resolve(); // best-effort
+        req.onerror = () => {
+          console.warn("[set-theme] clearThemeInDB: errore IDB (best-effort, il test continua):", req.error);
+          resolve(); // best-effort
+        };
       });
     },
     {

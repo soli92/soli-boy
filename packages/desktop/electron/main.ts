@@ -14,7 +14,7 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, session } from "electron";
 import type { OpenDialogOptions, SaveDialogOptions } from "electron";
 import { autoUpdater } from "electron-updater";
-import { mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, realpath, stat, unlink, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -93,14 +93,29 @@ function registerAppProtocol(): void {
 const FS_BASE_DIR = path.resolve(os.homedir(), ".soli-boy");
 
 /**
- * Path traversal guard: confina `target` a `FS_BASE_DIR`.
+ * Path traversal guard (LESSICALE) — confina `target` a `FS_BASE_DIR` via
+ * `path.resolve` (normalizza `..`, separatori e prefissi). Restituisce il path
+ * assoluto risolto se OK, lancia altrimenti.
  *
- * Usa `path.resolve` per normalizzare `..`, link simbolici di prefisso e
- * separatori; controlla che il risultato inizi con la root (o sia la root
- * stessa). Il separatore di sistema viene aggiunto al confronto per evitare
- * il falso-positivo `/base-dir-evil` rispetto a `/base-dir` (prefix-match
- * naive). In caso di violazione lancia un errore tipato (loggabile ma non
- * sensibile: contiene solo il path richiesto, non quello assoluto risolto).
+ * **Limite noto (F-074-1, CQRL TSK-074 iter-1)**: `path.resolve` NON dereferenzia
+ * i symlink. Un link simbolico esistente DENTRO `FS_BASE_DIR` (es.
+ * `~/.soli-boy/roms/evil` → `/etc`) supera questo guard lessicale: il path
+ * risolto resta `<FS_BASE_DIR>/roms/evil` e `startsWith(rootWithSep)` ritorna
+ * true, ma le syscall successive (`readFile`, `unlink`, ecc.) seguono il link
+ * fisico verso `/etc`. Per i path ESISTENTI usa `guardExistingPath()` che fa
+ * un secondo passo via `fs.realpath()` per chiudere questa finestra.
+ *
+ * Questo guard "puro" resta corretto per i path che CREANO file nuovi
+ * (`fs:writeFile`, `fs:mkdir`): il target non esiste ancora, `realpath`
+ * fallirebbe ENOENT. Per gli stessi motivi resta usato in `registerAppProtocol`
+ * (lì il file servito esiste, ma il rischio symlink è confinato a chi può
+ * scrivere dentro `RENDERER_DIR` = `resourcesPath` packaged o `dist/` in dev,
+ * cioè il developer/build pipeline — non un attaccante remoto, non l'utente).
+ *
+ * Il separatore di sistema viene aggiunto al confronto per evitare il
+ * falso-positivo `/base-dir-evil` rispetto a `/base-dir` (prefix-match naive).
+ * In caso di violazione lancia un errore tipato (loggabile ma non sensibile:
+ * contiene solo il path richiesto, non quello assoluto risolto).
  */
 function guardPath(target: string): string {
   const resolved = path.resolve(target);
@@ -108,6 +123,53 @@ function guardPath(target: string): string {
   const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
   if (resolved !== root && !resolved.startsWith(rootWithSep)) {
     throw new Error(`fs: path fuori dalla base dir consentita (~/.soli-boy/): ${target}`);
+  }
+  return resolved;
+}
+
+/**
+ * Path traversal guard (FISICO) — variante di `guardPath` per i path che
+ * devono già esistere su disco (handler `fs:readFile`, `fs:unlink`,
+ * `fs:readdir`, `fs:stat`). Esegue prima il check lessicale e poi
+ * `fs.realpath()` per dereferenziare gli eventuali symlink, riapplicando il
+ * confronto `startsWith(rootWithSep)` sul target fisico. Garantisce che il
+ * file effettivamente toccato dalle syscall sia DENTRO `FS_BASE_DIR`, chiudendo
+ * il vettore symlink-traversal descritto in F-074-1.
+ *
+ * Strategia:
+ *   1. `guardPath(target)` — guard lessicale + normalizzazione.
+ *   2. `realpath(resolved)` — dereferenzia symlink (compresi quelli intermedi).
+ *      Se il path NON esiste (ENOENT), facciamo passare il path lessicale: i
+ *      handler che chiamano questa guard otterranno comunque l'ENOENT dalla
+ *      syscall successiva (semantica preservata), mentre i path "fantasma"
+ *      (es. lookup `fs:stat` su file mancante) non vengono falsamente
+ *      bloccati. Errori `realpath` diversi da ENOENT (permessi, ELOOP) si
+ *      propagano: l'handler li mappa in rejection IPC, fail-closed.
+ *   3. Confronto finale su `realResolved` con `startsWith(rootWithSep)`.
+ *
+ * Nota: il path RITORNATO è sempre quello lessicale (passo 1). Le syscall
+ * Node seguono comunque il symlink fisico: la guard ha già verificato che
+ * tale fisico è dentro `FS_BASE_DIR`, quindi è safe usare il lessicale come
+ * argomento di `readFile`/`unlink`/ecc.
+ */
+async function guardExistingPath(target: string): Promise<string> {
+  const resolved = guardPath(target);
+  let realResolved: string;
+  try {
+    realResolved = await realpath(resolved);
+  } catch (err) {
+    // Path inesistente: nessun symlink da dereferenziare. Lasciamo procedere
+    // l'handler; sarà la syscall successiva a propagare l'ENOENT con
+    // semantica nativa (allineata al contratto IPC, vedi `fs:stat`/`fs:unlink`).
+    if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return resolved;
+    throw err;
+  }
+  const root = FS_BASE_DIR;
+  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
+  if (realResolved !== root && !realResolved.startsWith(rootWithSep)) {
+    throw new Error(
+      `fs: path fuori dalla base dir consentita (~/.soli-boy/) via symlink: ${target}`,
+    );
   }
   return resolved;
 }
@@ -127,35 +189,67 @@ function registerFsIpc(): void {
   });
 
   ipcMain.handle("fs:readFile", async (_e, filePath: string): Promise<Uint8Array> => {
-    const safe = guardPath(filePath);
+    // F-074-1: path esistente → guard fisico (realpath) per chiudere il
+    // vettore symlink-traversal (es. `roms/evil` → `/etc/passwd`).
+    const safe = await guardExistingPath(filePath);
     const buf = await readFile(safe);
     return new Uint8Array(buf);
   });
 
   ipcMain.handle("fs:writeFile", async (_e, filePath: string, data: Uint8Array): Promise<void> => {
+    // F-074-1 (limite noto, accettato): `fs:writeFile` può creare path nuovi
+    // → `realpath` fallirebbe ENOENT sul target. Usiamo solo il guard
+    // lessicale `guardPath`. Conseguenza: se il PARENT del path contiene un
+    // symlink che esce da `FS_BASE_DIR` (es. `roms` è un symlink a `/etc`),
+    // questo writeFile finirebbe fisicamente fuori. Il vettore è confinato a
+    // chi può creare symlink dentro `~/.soli-boy/` (= utente locale stesso
+    // che possiede la home, già fidato in modello desktop single-user).
+    // Mitigation futura possibile: realpath sulla directory parent del target
+    // e ricomporre il path con `path.basename`; rimandata per non complicare
+    // l'happy path con un'ulteriore syscall su ogni write. Vedi log entry
+    // dev-agent TSK-074 absorb iter-1.
     const safe = guardPath(filePath);
     await writeFile(safe, Buffer.from(data));
   });
 
   // TSK-074: primitive aggiuntive per il delete reale e la gestione directory
-  // del NativeFsAdapter. Tutti i path passano dalla guard `guardPath` per
-  // mantenere l'invariante privacy (ADR-002).
+  // del NativeFsAdapter. Tutti i path passano dalla guard `guardPath` (path
+  // nuovi) o `guardExistingPath` (path esistenti, dereferenza symlink — F-074-1)
+  // per mantenere l'invariante privacy (ADR-002).
 
+  // F-074-2 (CQRL TSK-074 iter-1): asimmetria contratto IPC documentata.
+  // `fs:unlink` PROPAGA ENOENT come rejection (semantica nativa di
+  // `fs/promises.unlink`), mentre `fs:stat` la intercetta e restituisce
+  // `{exists:false}`. Scelta consapevole, non un bug: il consumer primario
+  // `NativeFsAdapter.tryUnlink()` (packages/app/src/storage/native-fs-adapter.ts
+  // §tryUnlink) maschera già correttamente l'ENOENT via `isNotFoundError`,
+  // ottenendo idempotenza lato adapter senza dover allargare la responsabilità
+  // dell'handler IPC. Eventuali consumer futuri del bridge che chiamino
+  // `window.soliboyDesktop.unlink()` direttamente su un path mancante DEVONO
+  // gestire il rejection ENOENT esplicitamente (è il contratto). Vedi anche
+  // JSDoc in `packages/desktop/electron/preload.ts §unlink`.
   ipcMain.handle("fs:unlink", async (_e, filePath: string): Promise<void> => {
-    const safe = guardPath(filePath);
+    // F-074-1: path esistente (il caller chiama unlink su qualcosa che
+    // intende esista, ENOENT è un caso di errore esplicito). Guard fisico.
+    const safe = await guardExistingPath(filePath);
     await unlink(safe);
   });
 
   ipcMain.handle(
     "fs:mkdir",
     async (_e, dirPath: string, opts?: { recursive?: boolean }): Promise<void> => {
+      // F-074-1 (limite noto, accettato): `fs:mkdir` può creare path nuovi
+      // (caso d'uso primario con `recursive: true` lato adapter). Stessa
+      // motivazione di `fs:writeFile`: guard lessicale soltanto. Vedi commento
+      // sopra in `fs:writeFile`.
       const safe = guardPath(dirPath);
       await mkdir(safe, { recursive: opts?.recursive === true });
     },
   );
 
   ipcMain.handle("fs:readdir", async (_e, dirPath: string): Promise<string[]> => {
-    const safe = guardPath(dirPath);
+    // F-074-1: path esistente → guard fisico.
+    const safe = await guardExistingPath(dirPath);
     return readdir(safe);
   });
 
@@ -165,7 +259,12 @@ function registerFsIpc(): void {
       _e,
       filePath: string,
     ): Promise<{ exists: boolean; size: number; isDirectory: boolean }> => {
-      const safe = guardPath(filePath);
+      // F-074-1: il path POTREBBE non esistere (è il caso d'uso primario di
+      // stat: testare l'esistenza). `guardExistingPath` ha già un fallback
+      // esplicito al guard lessicale su ENOENT, quindi è safe usarlo qui:
+      // i path mancanti passano col solo check lessicale e l'handler ritorna
+      // `{exists:false}` come da contratto.
+      const safe = await guardExistingPath(filePath);
       try {
         const st = await stat(safe);
         return { exists: true, size: st.size, isDirectory: st.isDirectory() };

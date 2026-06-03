@@ -290,7 +290,25 @@ export class NativeFsAdapter
    */
   private resolvedBaseDirPromise: Promise<string> | undefined;
 
-  /** Dir di collezione già garantite via mkdir: evita mkdir ridondanti. */
+  /**
+   * Dir di collezione già garantite via mkdir: evita mkdir ridondanti.
+   *
+   * **Limite noto (F-074-3, CQRL TSK-074 iter-1)**: cache per-istanza senza
+   * TTL né invalidazione. Se una directory già "ensured" viene rimossa
+   * esternamente (es. utente che cancella manualmente `~/.soli-boy/roms/`
+   * mentre l'app è aperta, o tooling OS), `ensureDir` ritorna senza ricreare
+   * la directory; il `writeFile` successivo fallisce con ENOENT propagato al
+   * caller. Scenario tollerabile in MVP single-process (la UI non offre
+   * percorsi per rimozioni esterne mentre l'app è aperta; il fallimento è
+   * comunque sintomatico e non corrompe lo stato).
+   *
+   * Mitigation futura possibile: invalidare l'entry da `ensuredDirs` quando
+   * un `bridge.writeFile` rigetta con ENOENT e ritentare un singolo passaggio
+   * `ensureDir → writeFile`. Non implementato qui per non scoprire un retry
+   * silenzioso in un canale (FS) dove fail-loud è preferibile per
+   * diagnosticare anomalie del filesystem dell'utente. Rivedere se i log di
+   * produzione mostrano ricorrenza dello scenario.
+   */
   private readonly ensuredDirs = new Set<string>();
 
   constructor(opts: { bridge: NativeFsBridge; baseDir: string }) {
@@ -465,7 +483,10 @@ export class NativeFsAdapter
    * cross-file come in IndexedDB. Due `addRom` concorrenti sullo stesso id
    * sono sicure (last-write-wins, idempotenti); due `addRom` con id diversi
    * concorrenti possono perdere uno dei due upsert sul manifest (read-modify-
-   * write). Mitigazione: l'app esegue ingest da UI seriale; rivedere se l'uso
+   * write). La cache `ensuredDirs` (sopra) amplifica silenziosamente questa
+   * race in scenario multi-istanza e non si auto-invalida se la directory di
+   * collezione viene rimossa esternamente (F-074-3 CQRL TSK-074 iter-1).
+   * Mitigazione: l'app esegue ingest da UI seriale; rivedere se l'uso
    * concorrente diventa pattern (es. drag&drop batch).
    */
   async addRom(input: RomInput): Promise<string> {
