@@ -144,6 +144,11 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
     );
 
     await waitFor(() => expect(port.listSaveStates).toHaveBeenCalled());
+    // Attendi che il re-render post-load popoli la select con "ss-a" selezionato:
+    // senza questa attesa il click può precedere lo state update (flaky in CI).
+    await waitFor(() =>
+      expect((screen.getByLabelText("Salvataggio da esportare") as HTMLSelectElement).value).toBe("ss-a"),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /esporta/i }));
 
