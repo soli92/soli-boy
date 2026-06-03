@@ -110,6 +110,20 @@ Fonti: `wiki/log.md` §"2026-06-03 — develop TSK-024 (qa)"; ADR-004 (`wiki/con
 
 **CHIUSO 2026-06-01 — decisioni ratificate dall'owner (TPM Sprint 6):** deploy produzione su tag `v*`, deploy preview automatico su PR. Output: dist di `packages/app`. Segreti GitHub necessari: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (creazione = gate umano). `packages/app/vercel.json` (COOP/COEP) non modificato. Implementato in TSK-051.
 
+## 2026-06-03 — electron-packaging-toolchain
+**Origine:** tpm @ breakdown TSK-053/TSK-056/TSK-057 (EP-006)
+**Gap:** il toolchain di packaging Electron non è specificato in alcun documento L4 (architettura, ADR, tech_stack). I candidati sono Electron Forge, electron-builder, o un setup custom. La scelta impatta: configurazione del build step, formato dei distribuibili (NSIS/DMG/AppImage), firma dei pacchetti, e il meccanismo di auto-update (electron-updater di electron-builder vs @electron/update-electron-app vs Squirrel).
+**Sospetta fonte:** decisione lead-architect (ADR mancante su confezionamento desktop).
+**Impatto:** bloccante per TSK-053 (Electron main process configuration), TSK-056 (bundling core offline), TSK-057 (auto-update). TSK-054 e TSK-055 (NativeFsAdapter + selezione runtime) sono indipendenti e possono procedere. TSK-058 (e2e con IPC mock) può procedere parzialmente.
+**Azione richiesta:** lead-architect deve emettere un ADR (o decisione inline) su toolchain Electron prima che i task infra EP-006 possano essere assegnati all'agent.
+
+## 2026-06-03 — electron-autoupdate-mechanism
+**Origine:** tpm @ breakdown TSK-057 (EP-006, US-025)
+**Gap:** il meccanismo di aggiornamento automatico dell'app Electron non è specificato in L4. US-025 definisce il "cosa" (rilevamento + applicazione senza reinstallazione + notifica esito) ma non il "come" (electron-updater di electron-builder, @electron/update-electron-app con GitHub Releases, Squirrel, server di update custom). La scelta dipende anche dal toolchain di packaging (`electron-packaging-toolchain`).
+**Sospetta fonte:** decisione lead-architect + owner (feed di update: GitHub Releases vs altro).
+**Impatto:** bloccante per TSK-057. Dipende dalla chiusura del gap `electron-packaging-toolchain`.
+**Azione richiesta:** lead-architect decide il meccanismo di update contestualmente al toolchain di packaging.
+
 ## 2026-06-01 — svg-react-import-strategy
 **Origine:** tpm @ breakdown TSK-046 (logo header EP-010)
 **Gap:** TSK-046 prevede di importare `soliboy-logo-mono.svg` come componente React. `packages/app/vite.config.ts` usa solo `@vitejs/plugin-react` — non è installato/configurato `vite-plugin-svgr` (necessario per l'import `?react` che trasforma SVG in componente React). L'alternativa (import `?url` + `<img src>`) non richiede plugin aggiuntivi ma perde il vantaggio di `currentColor`.

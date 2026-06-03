@@ -3,7 +3,10 @@
 
 View aggregata generata dal `tpm`. Scope: Core web MVP (EP-001 + EP-003) +
 emulazione reale (EP-003 ADR-004/005) + post-MVP backlog (EP-002/004/005) +
-identità di brand (EP-010) + CI/CD (EP-011).
+identità di brand (EP-010) + CI/CD (EP-011) + desktop (EP-006) + mobile (EP-007) +
+conformità store (EP-008).
+
+---
 
 ## Stato: Core web MVP — 20/20 TSK done · 19/20 review passed
 
@@ -71,7 +74,7 @@ il registry instrada l'arcade a "non ancora supportato". Vedi gap arcade-emulati
 | TSK-040 | Integrare @soli92/solids reale | (cross) | fe | agent | P2 | blocked | Q_001 |
 | TSK-041 | Bugfix canvas WasmBoy loadState | EP-004 | fe | agent | P1 | done | TSK-032,034 |
 
-⛔ TSK-040 blocked su Q_001 (pacchetto @soli92/solids non consumabile: npm 404, github senza dist).
+TSK-040 blocked su Q_001 (pacchetto @soli92/solids non consumabile: npm 404, github senza dist).
 
 DAG: EP-004 catena (030→031→{032,033}→034); EP-005 e EP-002 in parallelo (UI indipendenti).
 ADR-006 (salvataggi). EP-005/EP-002 design in architecture-overview.
@@ -108,30 +111,143 @@ ADR-006 (salvataggi). EP-005/EP-002 design in architecture-overview.
 DAG Sprint 6:
 - Wave A (parallelo): TSK-042 ‖ TSK-049 ‖ TSK-044
 - Wave B (dopo Wave A): TSK-043, TSK-047, TSK-050, TSK-051, TSK-052
-  (TSK-043 → TSK-042; TSK-047 → TSK-044; TSK-050/051/052 → TSK-049)
-- Wave C (dopo Wave B): TSK-045, TSK-046 → TSK-042; TSK-048 → TSK-043+045+046
-
-Parallelismo max scheduler = 4 (factory.config.yaml §scheduler): Wave A spawna 3
-agent in parallelo (entro il limite). Wave B spawna 5 task ma con dipendenze
-differenziate — il scheduler li dispatcha appena la dipendenza è soddisfatta.
+- Wave C (dopo Wave B): TSK-045, TSK-046, TSK-048
 
 Nota TSK-050: `consumer: human` (branch protection = gate umano R.14/R.15).
-Il task è incluso nel DAG per visibilità ma non viene eseguito da un agent.
 
-## Lookahead — Sprint 7 (post-Sprint 6)
 
-| TSK (da pianificare) | Ambito | Note |
-|----------------------|--------|------|
-| EP-006 distribuzione desktop | Electron wrapper | Dipende da MVP stabile |
-| EP-007 esperienza mobile | Touch controls | Alta complessità, confidence 60% |
-| EP-008 conformità store | iOS/Android | Dipende da EP-007 |
-| EP-009 arcade (FBNeo) | Emulazione arcade | Gap aperto, rinviato |
+## Sprint 7 — Distribuzione desktop (EP-006)
 
-## Note
+> **GATE DESIGN PARZIALE:** TSK-053, TSK-056, TSK-057 sono bloccati su due gap L4 non
+> risolti dal lead-architect (`electron-packaging-toolchain`, `electron-autoupdate-mechanism`).
+> TSK-054, TSK-055, TSK-058 (NativeFsAdapter + selezione runtime + e2e IPC mock) sono
+> indipendenti dal gap packaging e possono procedere in parallelo.
 
-- **Core web MVP completo a livello TSK** (20/20 done). 49 test verdi, typecheck OK.
+### Wave A — Dominio (indipendente dal gap packaging)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-054 | NativeFsAdapter (StoragePort su IPC Electron) | US-023 | be | agent | P0 | L | todo | TSK-053* |
+| TSK-055 | Selezione runtime adapter (IDB vs NativeFs) | US-023 | be | agent | P0 | S | todo | TSK-054 |
+| TSK-058 | e2e: carica ROM + salva (IPC mock, Electron) | US-023 | qa | agent | P1 | M | todo | TSK-054,055 |
+
+*TSK-054 dipende dalle firme IPC di TSK-053; può iniziare con contratto IPC concordato
+anche prima della build Electron completa.
+
+### Wave B — Infra (bloccata su gap packaging — gate umano lead-architect)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | blocked_by | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|------------|-----------|
+| TSK-053 | Electron main.ts + IPC filesystem bridge | US-023 | infra | human | P0 | L | todo | GAP-electron-packaging-toolchain | — |
+| TSK-056 | Bundling core WASM offline (Electron) | US-024 | infra | human | P1 | M | todo | GAP-electron-packaging-toolchain | TSK-053 |
+| TSK-057 | Auto-update Electron (rileva + applica) | US-025 | infra | human | P2 | M | todo | GAP-electron-packaging-toolchain, GAP-electron-autoupdate-mechanism | TSK-053,056 |
+
+DAG Sprint 7:
+- Wave A (agent, parallelo dopo contratto IPC): TSK-054 → TSK-055 → TSK-058
+- Wave B (human, dopo chiusura gap): TSK-053 → TSK-056 → TSK-057
+- Wave A e Wave B sono parzialmente parallelizzabili (TSK-054 inizia con IPC mockato).
+
+
+## Sprint 8 — Esperienza mobile (EP-007)
+
+> **NOTE DESIGN:**
+> - Capacitor (ADR-001) e plugin nativi sono specificati in L4: tutti i task sono taskizzabili.
+> - TSK-059 (Capacitor init) è `consumer: human` per il requisito di Android Studio/Xcode/device.
+> - TSK-060–TSK-067 (agent) dipendono da TSK-059 ma possono essere sviluppati con
+>   emulazione browser (Playwright device emulation) e promossi su device reale.
+
+### Wave A — Prerequisito (gate umano)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-059 | Capacitor init: progetto Android + iOS + plugin | US-026 | infra | human | P0 | M | todo | — |
+
+### Wave B — Core mobile (parallelo, dopo TSK-059)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-060 | TouchOverlay: D-pad + pulsanti virtuali | US-026 | fe | agent | P0 | L | todo | TSK-059 |
+| TSK-063 | File picker mobile (Capacitor Filesystem) | US-029 | fe | agent | P0 | M | todo | TSK-059 |
+| TSK-065 | Sospensione/ripresa (Capacitor App plugin) | US-031 | be | agent | P0 | S | todo | TSK-059 |
+
+### Wave C — Funzionalità avanzate (dopo Wave B)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-061 | TouchOverlay config (posizione/size/opacità) | US-027 | fe | agent | P1 | M | todo | TSK-060 |
+| TSK-062 | Bluetooth controller + auto-hide overlay | US-028 | be | agent | P1 | M | todo | TSK-060 |
+| TSK-064 | Layout responsivo + safe areas (CSS env()) | US-030 | fe | agent | P0 | M | todo | TSK-060 |
+| TSK-066 | Feedback aptico (Capacitor Haptics) | US-032 | fe | agent | P2 | S | todo | TSK-060 |
+
+### Wave D — QA e2e mobile (dopo Wave C)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-067 | e2e mobile smoke: TouchOverlay + sospensione | US-026 | qa | agent | P1 | M | todo | TSK-060,064,065 |
+
+DAG Sprint 8:
+- Wave A (human): TSK-059
+- Wave B (agent, parallelo dopo TSK-059): TSK-060 ‖ TSK-063 ‖ TSK-065
+- Wave C (agent, dopo Wave B): TSK-061, TSK-062, TSK-064, TSK-066 → dopo TSK-060
+- Wave D (agent, dopo Wave C): TSK-067 → dopo TSK-060,064,065
+
+Parallelismo max scheduler = 4: Wave B spawna 3 agent in parallelo (entro il limite).
+Wave C spawna 4 task — il scheduler li dispatcha per dipendenza soddisfatta.
+
+
+## Sprint 9 — Conformità e pubblicazione store (EP-008)
+
+> **NOTE DESIGN:**
+> - Privacy on-device (ADR-002, StoragePort invariant) è completamente specced → TSK-068,069 agent.
+> - Avviso legale in-app → TSK-070 agent (pattern da US-006 esistente).
+> - Store metadata e iOS benchmark → gate umano (account developer, device fisico).
+
+### Wave A — Prerequisiti (parallelo)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-068 | Privacy audit: on-device su web/desktop/mobile | US-033 | qa | agent | P0 | M | todo | TSK-054,055 |
+| TSK-069 | Privacy policy in-app (comunicazione utente) | US-033 | fe | agent | P1 | S | todo | — |
+
+### Wave B — Avviso legale e store asset (dopo Wave A)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-070 | Avviso legale in-app: no ROM protette | US-034 | fe | agent | P1 | S | todo | TSK-069 |
+| TSK-072 | Benchmark iOS: WASM su device reale + report | US-035 | qa | human | P0 | L | todo | TSK-059,060 |
+
+### Wave C — Store submission (gate umano, dopo Wave B)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-071 | Store metadata package (asset + checklist) | US-034 | infra | human | P2 | M | todo | TSK-059,070 |
+
+DAG Sprint 9:
+- Wave A (parallelo): TSK-068 ‖ TSK-069
+- Wave B: TSK-070 → TSK-069; TSK-072 → TSK-059,060 (human)
+- Wave C: TSK-071 → TSK-059,070 (human)
+
+
+## Lookahead — Sprint 10+ (post-Sprint 9)
+
+| Area | Note |
+|------|------|
+| EP-009 — Arcade (FBNeo/MAME) | Gap aperto `arcade-emulation-engine`; percorso libretro da valutare |
+| EP-006 — Build Electron distribuibile (Win/macOS/Linux) | Dopo chiusura gap `electron-packaging-toolchain` |
+| EP-006 — Auto-update produzione | Dopo chiusura gap `electron-autoupdate-mechanism` |
+| EP-007 — Validazione su device Android fisico | Human, dopo TSK-059 |
+| EP-008 — Submission Google Play e App Store | Human, dopo TSK-071 e TSK-072 |
+
+
+## Note generali
+
+- **Core web MVP completo** (20/20 done). 49 test verdi, typecheck OK.
 - **TSK-041 done** (bugfix canvas WasmBoy loadState — 8/8 e2e verdi).
-- Review: 19/20 passed (TSK-010 = qa closure, deliverable in TSK-004).
-- TSK-040 bloccato su Q_001 (DS reale — pacchetto non consumabile via npm).
-  Nota: EP-010 TSK-044 beneficia del DS installato (v1.14.1 già in package.json).
-- Sprint 6 introduce EP-010 + EP-011: 11 task, di cui 9 agent e 1 human (TSK-050).
+- Sprint 6 — 11 task (EP-010 + EP-011), di cui 1 human (TSK-050).
+- Sprint 7 — 6 task EP-006: 3 agent (Wave A, indipendenti dal gap), 3 human bloccati su
+  `GAP-electron-packaging-toolchain` e `GAP-electron-autoupdate-mechanism`.
+- Sprint 8 — 9 task EP-007: 1 human (TSK-059, gate device/Xcode), 7 agent, 1 qa agent.
+- Sprint 9 — 5 task EP-008: 3 agent, 2 human (TSK-072 device fisico iOS, TSK-071 store account).
+- **Consumer distribution (Sprint 7-9):** agent=14, human=6.
+- Gap da chiudere con lead-architect prima dello Sprint 7 Wave B:
+  `electron-packaging-toolchain`, `electron-autoupdate-mechanism` (vedi `wiki/gaps.md`).
