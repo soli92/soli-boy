@@ -23,9 +23,10 @@
 #     - VERCEL_TOKEN       (da https://vercel.com/account/tokens — token scope=Full Account)
 #     - VERCEL_ORG_ID      (output di `vercel link` oppure file `.vercel/project.json` del progetto)
 #     - VERCEL_PROJECT_ID  (idem — `vercel link` o `.vercel/project.json`)
-#   In assenza dei secret, il workflow fallira' in modo atteso al primo step
-#   che li usa (es. `vercel pull` con `--token=""`) — comportamento intenzionale,
-#   non blocca CI ne' TSK-049/050.
+#   In assenza dei secret il job `deploy` viene **saltato** (skipped/neutral) dal
+#   guard job sottostante: niente piu' un rosso "fail" atteso sulle PR. Il deploy
+#   resta pienamente funzionante non appena l'owner aggiunge i 3 secret. `deploy`
+#   non e' comunque un check richiesto da branch protection (solo `ci` lo e').
 
 name: CD — Vercel
 
@@ -53,7 +54,30 @@ permissions:
   contents: read
 
 jobs:
+  # Guard: verifica che i secret Vercel siano configurati. Il `secrets` context non
+  # e' usabile in un `if:` di job, quindi lo mappiamo a un output qui e gatiamo
+  # `deploy` su di esso. Senza secret → deploy SKIPPED (neutral), niente fail rosso.
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - name: Secrets Vercel presenti?
+        id: check
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Vercel deploy saltato::VERCEL_TOKEN non configurato. Aggiungere i 3 secret (VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID) in Settings → Secrets and variables → Actions per abilitare il deploy."
+          fi
+
   deploy:
+    needs: guard
+    if: needs.guard.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
