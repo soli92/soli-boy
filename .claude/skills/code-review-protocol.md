@@ -39,6 +39,17 @@ PROMPT_TEMPERATURE       = 0.2                  # bassa per coerenza output JSON
    - `review_status ∈ {pending, conditional}` → procedi; altrimenti STOP no-op.
    - `review_iter < max_iterations` → procedi; altrimenti forza verdict `reject` (sezione
      "Loop exhausted" sotto).
+   - **Visual oracle precondition (v2.17, opt-in additiva)**:
+     ```
+     IF TSK.layer == 'fe' AND factory.config.yaml.fe_correctness.enabled == true:
+       IF TSK.frontmatter.visual_status != 'pass':
+         ABORT "Visual oracle non ancora passato (visual_status: {value}).
+                Ordering develop → visual-oracle → review: eseguire /visual-oracle <TSK-id>
+                fino a visual_status: pass prima di /review."
+     ```
+     Formalizza l'ordering `develop → visual-oracle → review`. A `fe_correctness.enabled:
+     false` (default) il primo termine dell'`AND` è falso → la precondition **non si valuta**
+     e la Fase 0 si comporta identica a v2.16 (no-op).
 4. Calcola `current_iter = review_iter + 1` (incrementa per la nuova passata).
 5. Determina `files_in_scope`:
    - Se `tsk.code_path` valorizzato → usa quei glob.

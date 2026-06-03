@@ -1,0 +1,62 @@
+---
+description: Skill interna — gate deterministico pre-dispatch per TSK FE. Verifica 4 condizioni (a)-(d) OR-aggregate (no LLM runtime) e ritorna {passed, satisfied_by, message}. Invocata dall'orchestrator solo con fe_correctness.dispatch_gate: true.
+globs:
+alwaysApply: false
+---
+
+> **Adapter Cursor** del costrutto definito in `PATTERN.md` (agent-agnostic).
+> Tool mapping runtime: `Read`→`@<file>` mention · `Write`/`Edit`→Apply (agent mode) ·
+> `Bash`→Terminal embedded · `Agent(subagent_type=...)`→Compose/sequential rule activation ·
+> skill reference `[[name]]`→`[name](mdc:.cursor/rules/skills/name.mdc)`.
+> Il **contenuto** è IDENTICO al `.claude/`.
+
+# Skill — Oracle Pre-Check
+
+Gate **deterministico** (grep / pattern matching, **no LLM runtime**) che attesta la presenza
+di **almeno un** oracolo per un TSK `layer: fe` prima del dispatch. Invocata dall'orchestrator.
+
+## Trigger
+
+Invocata **se e solo se**: `fe_correctness.dispatch_gate: true` **AND** TSK `layer: fe`.
+Input: il `TSK-id`. Read-only su frontmatter/body/config/filesystem.
+
+## 4 condizioni (a)-(d) — OR aggregato, short-circuit ordinato
+
+- **(a)** `fe_correctness.enabled: true` **AND** `.claude/skills/visual-oracle-protocol.md`
+  (o `.cursor/rules/skills/visual-oracle-protocol.mdc`) presente. → `cond:a`.
+- **(b)** Body con header `## DoD FE — stati obbligatori` e ≥1 riga `- [x]`. → `cond:b`.
+- **(c)** Frontmatter `interaction_test_spec:` valorizzato. → `cond:c`.
+- **(d)** Criterio visivo via 4 segnali OR: (1) wikilink `wiki/concepts/design-token*` |
+  `wiki/entities/*` | `wiki/sources/*figma*`; (2) `raw/images/*-figma-*-frame-*.md`;
+  (3) header `## Visual Acceptance`/`## Design Reference`; (4) frontmatter
+  `interaction_test_spec:`/`visual_reference:` valorizzato. → `cond:d, signal:N=desc`.
+
+## Output
+
+```json
+{ "passed": true|false, "satisfied_by": "cond:a"|"cond:b"|"cond:c"|"cond:d, signal:N=desc"|null, "message": "<stringa>" }
+```
+
+`passed: true` → dispatch fe-dev; `passed: false` → fail-loud, mostra `message`, non dispatchare.
+
+## Messaggio di blocco (verbatim)
+
+```
+Nessuna delle 4 condizioni (a)-(d) soddisfatta per <TSK-id> (layer: fe). Aggiungi un oracolo in uno dei 4 modi:
+  (a) Abilita fe_correctness.enabled: true in factory.config.yaml (richiede skill visual-oracle-protocol presente).
+  (b) Aggiungi al TSK la sezione "## DoD FE — stati obbligatori" con almeno una riga checkata "- [x]".
+  (c) Valorizza il frontmatter interaction_test_spec: <path al test Playwright>.
+  (d) Aggiungi un criterio visivo misurabile: wikilink a wiki/concepts/design-token* | wiki/entities/<componente> | wiki/sources/*figma*, oppure un path raw/images/*-figma-*-frame-*.md, oppure una sezione "## Visual Acceptance" / "## Design Reference", oppure il frontmatter visual_reference: valorizzato.
+```
+
+## Logging
+
+Una riga append-only in `memory/episodic/oracle-gate.md` (lazy-create):
+`YYYY-MM-DD | TSK-id | passed|blocked (cond:X, signal:N=desc) | message`.
+
+## Backward compat
+
+`dispatch_gate: false` (default) → skill mai invocata → identico a v2.16. Read-only; unico
+side-effect = append al log. Euristica interamente deterministica.
+
+[^src: raw/factory-bootstrap.md §1.quinquies] [^src: PATTERN.md §3]

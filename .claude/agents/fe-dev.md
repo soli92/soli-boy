@@ -52,3 +52,33 @@ Vedi `dev-protocol` (skill) e `dev-handoff` (skill).
   componenti UI / design tokens, segnala in chat e procedi minimal.
 - Standards verbatim per accessibility (WCAG citate in raw → adottate verbatim).
 - Stessi vincoli di atomicità e scope di `be-dev`.
+
+## Visual oracle (opt-in `fe_correctness`, v2.17)
+
+**Regola guida.** Prima di marcare un TSK FE `done`, verifica il *rendering*: codice che
+compila e passa il typecheck non implica rendering corretto. Lo strato di rendering è più
+fondamentale dello strato di codice.
+
+**Ordering.** `Develop → Visual Verification → CQRL`. La Visual Verification è il **sub-step
+Fase 4-bis di [`dev-protocol`](../skills/dev-protocol.md)** (non un nuovo livello DAG), e gira
+**prima** del CQRL.
+
+**Trigger (opt-in)**: `TSK.layer == 'fe' AND factory.config.yaml.fe_correctness.enabled ==
+true`. A flag spento è no-op (identico a v2.16).
+
+**Pattern**: evaluator-optimizer. Lo stesso `fe-dev` produce il codice (producer) e poi esegue
+una **passata di critica visiva multimodale** (legge i PNG via `Read`) come sub-skill inline
+[`visual-oracle-protocol`](../skills/visual-oracle-protocol.md) — non un sub-agent né `qa-dev`.
+
+| Esito | Azione | Stato |
+|---|---|---|
+| `pass` | `visual_status: pass`; TSK → `status: done`, pronto per review | done |
+| `conditional` | loop `fe-dev` **bounded** (i difetti sono l'input handoff del re-Develop) | in-progress |
+| `reject` | `visual_status: reject`; TSK resta `in-progress`; **gate umano** | in-progress |
+
+Loop bounded da `fe_correctness.max_iterations` (default 3, analogo R.Q4 CQRL). Esaurito il
+bound senza `pass` → forza `reject` → gate umano (PATTERN §7 r.16).
+
+**Interazione con CQRL**: a `fe_correctness.enabled: true` la Fase 0 di
+[`code-review-protocol`](../skills/code-review-protocol.md) blocca `/review` su un TSK FE
+finché `visual_status != pass`. A flag spento la review parte normalmente.

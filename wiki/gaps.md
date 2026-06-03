@@ -134,3 +134,10 @@ Fonti: `wiki/log.md` §"2026-06-03 — develop TSK-024 (qa)"; ADR-004 (`wiki/con
 **Sospetta fonte:** decisione implementativa da prendere in TSK-046: (a) installare `vite-plugin-svgr` + aggiornare `vite.config.ts` e `tsconfig`; (b) oppure usare import URL + `<img>` con `aria-label`. Entrambe sono valide; (b) è zero-deps-extra.
 **Impatto:** non-bloccante per il task (TSK-046 documenta entrambe le opzioni). L'agent deve scegliere e annotare la decisione. Se sceglie (a), `vite.config.ts` va modificato (fuori scope TSK-042).
 **Azione:** risolto inline in TSK-046 (assunzione annotata). Nessun blocco su altri task.
+
+## 2026-06-03 — visual-oracle-adapter-porting (non-bloccante)
+**Origine:** framework-upgrade @ integrazione v2.17 (FE Visual Oracle)
+**Gap:** il FE Visual Oracle (skill `visual-oracle-protocol` + `oracle-precheck` + comando `/visual-oracle` + runner Playwright) è scaffoldato e mirrorato sugli adapter installati `.claude/` e `.cursor/`. Il porting verso eventuali adapter futuri non installati in questo progetto (Aider, OpenAI/Codex, Gemini) è un gap noto **non-bloccante**: i file scaffoldati sono Markdown puri, ma il runner Playwright + l'invocazione skill vanno adattati alla sintassi command/rules di ciascun adapter. Coerente con la nota del seed §1.quinquies ("per Cursor/Aider/OpenAI/Gemini il porting è un gap noto non-bloccante").
+**Sospetta fonte:** scelta di installazione adapter (PATTERN §12, factory.config.yaml.adapters).
+**Impatto:** nessuno sugli adapter attivi (`.claude`, `.cursor`). Si materializza solo se in futuro si installa un nuovo adapter.
+**Azione richiesta:** al momento dell'eventuale installazione di un nuovo adapter, replicare i 3 artefatti Visual Oracle (skill protocol + precheck + comando) + le sezioni delta nelle skill condivise, seguendo il mapping adapter di PATTERN §12. Nessuna azione richiesta ora.

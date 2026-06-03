@@ -60,3 +60,30 @@ Dashboard + episodic memory + operazioni `/promote` e `/run` + **parallel schedu
   stato corrente; mai cache fra invocazioni.
 - **Cycle = ABORT** (R.S5): ciclo in `depends_on` non viene mai risolto
   automaticamente; report e stop.
+- **Oracle Pre-Check FE** (v2.17, opt-in): se `factory.config.yaml.fe_correctness.dispatch_gate:
+  true` AND il TSK candidato ha `layer: fe`, invoca la skill `oracle-precheck` **prima** del
+  dispatch; `passed: false` → **fail-loud bloccante** (no dispatch, mostra `message` con le 4
+  strade + link al runbook). A gate off (default) o blocco `fe_correctness` assente → no-op,
+  dispatch diretto come v2.16. Vedi sezione «Oracle Pre-Check FE».
+
+## Oracle Pre-Check FE (opt-in `fe_correctness.dispatch_gate`)
+
+Gate **deterministico pre-dispatch** per i TSK frontend: prima di dispatchare un TSK
+`layer: fe`, verifica che disponga di **almeno un oracolo di correttezza**. Senza oracolo
+l'agente FE opera a loop aperto e non sa quando ha finito (PATTERN §3, ordering
+`develop → visual-oracle → review`).
+
+**Trigger (AND)**: `fe_correctness.dispatch_gate: true` **AND** TSK `layer: fe`. Vale per
+dispatch singolo (`/dev`, `/run`) e per ogni candidato FE di un wave parallelo. I TSK non-FE
+non sono mai toccati. A gate off (default) → no-op, dispatch identico a v2.16.
+
+**Azione**: invoca la skill interna [`oracle-precheck`](../skills/oracle-precheck.md) passando
+il TSK-id (grep deterministico, no LLM runtime). Ritorna `{passed, satisfied_by, message}`.
+
+- `passed: true` → dispatch normale del fe-dev.
+- `passed: false` → **fail-loud bloccante**: NON dispatchare, STOP, mostra `message` (le 4
+  strade per aggiungere un oracolo) + link a [`visual-oracle-installation`](../../wiki/runbooks/visual-oracle-installation.md).
+  In un wave, il TSK bloccato è escluso ma gli altri candidati procedono (riportato nel wave plan).
+
+**Logging**: ogni invocazione (pass/blocked) appende una riga in
+`memory/episodic/oracle-gate.md` (lazy-create a cura di `oracle-precheck`).

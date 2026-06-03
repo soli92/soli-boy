@@ -204,6 +204,25 @@ struttura completa del DAG (per audit + retroactive analysis).
 - **R.S7**: Fallimento di un sub-agent non rollba gli altri.
 - **R.S8**: VCS sempre serializzato — coda di `vcs-handoff` a fine wave.
 
+## Dominio `visual-oracle` (v2.17)
+
+La verifica visiva ([`visual-oracle-protocol`](./visual-oracle-protocol.md)) sui TSK FE è
+candidata alla wave quando `scheduler.domains.visual-oracle: true` (default `true` se
+`fe_correctness.enabled: true`, altrimenti no-op).
+
+**Inquadramento: sub-step di L2 (develop), NON un nuovo livello DAG.** Il visual oracle gira
+logicamente dopo la Fase 4 di `dev-protocol` (build/typecheck verde) e prima della Fase 5
+(handoff a `done`), cioè dentro L2 e prima di L3 (review). Parallelizzazione:
+
+- **Cross-TSK → parallel**: TSK FE distinti possono essere verificati in wave (stessa logica
+  di develop, cap `max_parallel`).
+- **Same-TSK → serial**: gli iter dello stesso TSK (iter N+1 dopo `conditional`) sono
+  serializzati — il report `<TSK-id>-visual-iter-<N>` è single-writer per TSK (analogo a
+  `review` e a `visual_status`).
+- **Effetto sul DAG**: non aumenta il numero di livelli; estende la durata effettiva di L2 per
+  i TSK FE. Lo scheduler continua a vedere L1 → L2 (develop, ora con visual-oracle come
+  sub-step) → L3 (review) → L4 (publish/sync), invariati.
+
 ## Quando NON eseguire (short-circuit)
 
 - `factory.config.yaml.scheduler.enabled: false` → l'orchestrator esegue il

@@ -109,6 +109,29 @@ Se anche un solo punto fallisce e non puoi risolverlo nel TSK corrente:
   lo stato parziale.
 - Edit `status: in-progress` (NON `done`), e descrivi il blocker in chat.
 
+## Fase 4-bis — Visual Verification (opt-in `fe_correctness`, v2.17)
+
+Sub-step di Develop FE, **dopo la Fase 4** (build/typecheck verde) e **prima della Fase 5**
+(handoff a `done`). Ordering `develop → visual-oracle → review` (PATTERN §3).
+
+**Trigger (AND)**: `TSK.layer == 'fe'` **AND** `factory.config.yaml.fe_correctness.enabled == true`.
+A flag spento oppure `layer != fe` → **no-op** (identico a v2.16).
+
+**Fail-loud**: trigger soddisfatto ma skill `visual-oracle-protocol` assente → **ERROR** «flag
+attivo ma skill assente; impossibile eseguire la Fase 4-bis». STOP. Mai degrado silenzioso.
+
+**Azione**: invoca [visual-oracle-protocol](mdc:.cursor/rules/skills/visual-oracle-protocol.mdc)
+passando `TSK-id` + `resolved_code_path`. Produce `{verdict, defects}`.
+
+```
+verdict: pass        → visual_status: pass; TSK → status: done (→ Fase 5).
+verdict: conditional → loop fe-dev (bounded fe_correctness.max_iterations, default 3); i defects
+                       sono l'input handoff; TSK resta in-progress fino a pass o esaurimento bound.
+verdict: reject      → visual_status: reject; TSK resta in-progress; gate umano.
+```
+
+Esaurito il bound senza `pass` → gate umano. Il `reject` blocca la review a valle.
+
 ## Fase 5 — Handoff finale (Develop completato)
 
 1. Edit del TSK: `status: done`, `updated: YYYY-MM-DD HH:MM`.

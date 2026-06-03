@@ -100,3 +100,38 @@ Note:
 - Cita endpoint OpenAPI o pagina FE specifica, non astratti.
 - Estimate: XS=<2h, S=mezza giornata, M=1 giorno, L=2+ giorni.
 - Citazioni: vedi `citation-rules` (cascade L4 → US/ADR).
+
+## Layer FE — State Matrix nel DoD (opt-in `fe_correctness.state_matrix_inject`, v2.17)
+
+**Trigger**: TSK `layer: fe` **e** `fe_correctness.state_matrix_inject: true`. A flag `false`
+(default) lo skill **non inietta nulla** (identico a oggi, 0 ERROR di lint). Quando attivo,
+oltre agli `## Acceptance Criteria` il TSK include il block (VERBATIM):
+
+```
+## DoD FE — stati obbligatori (selezionare quelli applicabili)
+- [ ] loading state
+- [ ] empty state
+- [ ] error state
+- [ ] success state (happy path)
+- [ ] responsive: mobile (≤ 768px)
+- [ ] responsive: desktop (≥ 1280px)
+- [ ] dark mode / tema alternativo
+- [ ] accessibilità da tastiera (tab order, focus visible)
+- [ ] contenuti di lunghezza variabile (testo corto / lunghissimo / overflow)
+- [ ] stato disabled / read-only (se form o interazione)
+```
+
+Sezione distinta dagli `## Acceptance Criteria` (gli AC = comportamenti end-to-end; gli stati
+FE = dimensioni di completezza UI ortogonali). Il TPM **deve** triage-are gli stati; lasciare
+le 10 righe intatte è anti-pattern (Lint Check 4n, WARNING-only). Cross-link: ogni stato
+selezionato → uno screenshot da verificare con
+[visual-oracle-protocol](mdc:.cursor/rules/skills/visual-oracle-protocol.mdc).
+
+## Layer FE — Granularity Rule (opt-in, v2.17)
+
+> Un TSK con `layer: fe` deve avere `estimate ≤ max_estimate_hours` OPPURE coprire al massimo
+> `max_states` stati selezionati. Se ENTRAMBE violate, scomporre.
+
+OR educativo: se anche una sola dimensione è alta, il TPM valuta la scomposizione. Soglie
+default `{max_estimate_hours: 8, max_states: 3}`, configurabili in `fe_correctness.granularity`.
+Il check meccanico è `lint-checks` Check 4n (WARNING-only, gated da `granularity_lint`).

@@ -92,3 +92,43 @@ Note:
 - Cita endpoint OpenAPI o pagina FE specifica, non astratti.
 - Estimate: XS=<2h, S=mezza giornata, M=1 giorno, L=2+ giorni.
 - Citazioni: vedi `citation-rules` (cascade L4 → US/ADR).
+
+## Layer FE — State Matrix nel DoD (opt-in `fe_correctness.state_matrix_inject`, v2.17)
+
+**Trigger**: TSK con `layer: fe` **e** `factory.config.yaml.fe_correctness.state_matrix_inject:
+true`. A flag `false` (default) lo skill **non inietta nulla** (identico a oggi, 0 ERROR di lint).
+
+Quando attivo, oltre agli `## Acceptance Criteria` il TSK include il block (VERBATIM):
+
+```
+## DoD FE — stati obbligatori (selezionare quelli applicabili)
+- [ ] loading state
+- [ ] empty state
+- [ ] error state
+- [ ] success state (happy path)
+- [ ] responsive: mobile (≤ 768px)
+- [ ] responsive: desktop (≥ 1280px)
+- [ ] dark mode / tema alternativo
+- [ ] accessibilità da tastiera (tab order, focus visible)
+- [ ] contenuti di lunghezza variabile (testo corto / lunghissimo / overflow)
+- [ ] stato disabled / read-only (se form o interazione)
+```
+
+`## DoD FE — stati obbligatori` ≠ `## Acceptance Criteria`: gli AC descrivono comportamenti
+end-to-end misurabili, gli stati FE descrivono dimensioni di completezza UI ortogonali (ogni
+stato = una faccia della matrice combinatoria). Il TPM **deve** triage-are gli stati (rimuovere
+i non pertinenti o marcarli `n/a`); lasciare le 10 righe intatte è un anti-pattern (materia di
+Lint Check 4n, WARNING-only).
+
+**Cross-link**: la State Matrix è input naturale del visual oracle — ogni stato selezionato →
+uno screenshot da verificare con [`visual-oracle-protocol`](./visual-oracle-protocol.md).
+
+## Layer FE — Granularity Rule (opt-in, v2.17)
+
+> Un TSK con `layer: fe` deve avere `estimate ≤ max_estimate_hours` OPPURE coprire al massimo
+> `max_states` stati selezionati. Se ENTRAMBE violate, scomporre.
+
+L'OR è educativo: se anche **una sola** dimensione è alta, il TPM si ferma e valuta la
+scomposizione. Soglie default `{max_estimate_hours: 8, max_states: 3}`, configurabili in
+`factory.config.yaml.fe_correctness.granularity`. Il check meccanico è `lint-checks` Check 4n
+(WARNING-only, gated da `granularity_lint`).

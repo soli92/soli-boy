@@ -58,3 +58,28 @@ Vedi `dev-protocol` (skill) e `dev-handoff` (skill).
   componenti UI / design tokens, segnala in chat e procedi minimal.
 - Standards verbatim per accessibility (WCAG citate in raw → adottate verbatim).
 - Stessi vincoli di atomicità e scope di `be-dev`.
+
+## Visual oracle (opt-in `fe_correctness`, v2.17)
+
+**Regola guida.** Prima di marcare un TSK FE `done`, verifica il *rendering*: build verde ≠
+rendering corretto. Lo strato di rendering è più fondamentale dello strato di codice.
+
+**Ordering** `Develop → Visual Verification → CQRL`. La Visual Verification è il **sub-step
+Fase 4-bis di [dev-protocol](mdc:.cursor/rules/skills/dev-protocol.mdc)**, gira **prima** del CQRL.
+
+**Trigger (opt-in)**: `TSK.layer == 'fe' AND fe_correctness.enabled == true`. A flag spento è
+no-op (identico a v2.16).
+
+**Pattern**: evaluator-optimizer. Lo stesso `fe-dev` produce il codice e poi esegue una passata
+di critica visiva multimodale (sub-skill inline
+[visual-oracle-protocol](mdc:.cursor/rules/skills/visual-oracle-protocol.mdc)).
+
+| Esito | Azione | Stato |
+|---|---|---|
+| `pass` | `visual_status: pass`; TSK → `done`, pronto per review | done |
+| `conditional` | loop `fe-dev` bounded (difetti = input handoff) | in-progress |
+| `reject` | `visual_status: reject`; gate umano | in-progress |
+
+Loop bounded da `fe_correctness.max_iterations` (default 3). A flag on, la Fase 0 di
+[code-review-protocol](mdc:.cursor/rules/skills/code-review-protocol.mdc) blocca `/review`
+finché `visual_status != pass`.
