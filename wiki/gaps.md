@@ -56,6 +56,14 @@ _(nessun gap registrato al bootstrap)_
 
 **Aggiornamento 2026-06-01 (debug 2):** confermato che fallisce **anche in browser headed** (utente): "Error loading EmulatorJS runtime" / `EJS_Runtime is not defined`. NON è né versione né headless. Provati senza successo: self-host npm+CDN, `EJS_threads=false`, core variante threaded e non-threaded, build **coerente** stable (`emulator.min.zip` esteso in `data/`), min vs non-min. Sintomo costante: "Could not fetch core report JSON" + il runtime del core non si estrae/definisce. Cause residue da indagare (sessione dedicata): caricamento/decompressione del core EmulatorJS (modulo `compression/` + endpoint cores report), MIME `application/wasm`, eventuale necessità di un manifest `cores`/`version` specifico, o quirk noto di self-host EJS (consultare doc/community EmulatorJS). Engine config (threads=false, startOnLoaded, selettore, pathtodata locale) lasciata come base. Gap RESTA APERTO.
 
+**Aggiornamento 2026-06-03 (TSK-024 — wiki-keeper):** qa-agent ha completato TSK-024 (sprint 3, P1, qa-dev). Nuova suite e2e `packages/app/e2e/emulation-emulatorjs-engine.e2e.ts` (4 test @slow con WasmBoyEngine + ROM `dmg-acid2.gb` MIT): ciclo completo caricamento ROM → avvio reale (canvas + `data-state=running`) → pausa (`data-state=paused`, "In pausa" visibile) → ripresa (canvas visibile, `data-state=running`) → arresto (`data-state=idle`, no leak) + verifica negativa. Suite completa: **15 passed / 0 regressioni** (28.7 s, Chromium). EmulatorJsEngine non esiste nel codice (rimosso TSK-029). Engine reale per GB/GBC = WasmBoyEngine (wasmboy ESM), conforme ADR-005. TSK-024.md → `status: done`.
+
+**Stato finale del gap (2026-06-03):**
+- **PARZIALMENTE CHIUSO — GB/GBC:** integrazione engine reale validata end-to-end via WasmBoyEngine (ADR-005 multi-engine, che ha superseded ADR-004 EmulatorJsEngine dopo il fallimento `EJS_Runtime not defined`). e2e verde: TSK-027 (5/5) + TSK-024 (15/15). DoD US-010 chiusa per GB/GBC.
+- **APERTO — arcade/libretro:** FBNeo/MAME non coperti da WasmBoy; percorso libretro/RetroArch web rinviato a **EP-009** (gap dedicato: `arcade-emulation-engine`). Nessuna data di chiusura pianificata.
+
+Fonti: `wiki/log.md` §"2026-06-03 — develop TSK-024 (qa)"; ADR-004 (`wiki/concepts/adr-004-emulatorjs-engine.md`); ADR-005 (`wiki/concepts/adr-005-multi-engine-registry.md`). [^src: wiki/log.md §2026-06-03 — develop TSK-024 (qa)]
+
 ## 2026-06-01 17:35 — arcade-emulation-engine
 **Origine:** lead-architect @ ADR-005
 **Gap:** FBNeo/MAME (arcade) non hanno una libreria ESM standalone (come WasmBoy per GB); girano via libretro (EmulatorJS/RetroArch). Decisione: **rinvio** a epica dedicata (EP-009); il registry instrada l'arcade a "non ancora supportato".

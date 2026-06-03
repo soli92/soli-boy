@@ -400,3 +400,23 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
 
 - 2026-06-01 — `review TSK-045 iter-1 → passed` (0 high / 0 medium / 3 low advisory: F-045-1-01 [PWA-DESIGN-001 emergent] purpose implicito su icon entries 192 e 512 non-maskable; F-045-1-02 [PWA-ROBUST-001 emergent] campo id assente — identity PWA legata a start_url; F-045-1-03 [PWA-DESIGN-002 emergent] campo lang assente — incoerenza con html lang=it. Nessun finding blocking. Verifiche positive: JSON valido, campi obbligatori completi (name/short_name/start_url/display/icons 192+512+maskable/theme_color/background_color), asset referenziati esistenti (icon-192.png 7567B + icon-512.png 18833B), coerenza theme_color #ff00cc manifest=meta, non interferenza favicon TSK-043, non interferenza Electron/Capacitor, assunzione palette documentata correttamente (gap palette-brand-da-verificare aperto). Build tsc+vite OK, 8/8 e2e Playwright Chromium verdi. Tre regole emergent candidate create: PWA-DESIGN-001, PWA-ROBUST-001, PWA-DESIGN-002.)
   - Reviewer: code-reviewer@2.15.0 · Commit: 5475158 · Stack: html5/json-vite-public-static (conf 0.97, asset-only mode) · Report: code_quality/reports/TSK-045-iter-1.json
+
+## 2026-06-03 — develop TSK-024 (qa)
+**Agente:** qa-dev
+**TSK:** [[../management/kanban/EP-003-esecuzione-e-controlli/US-010-avvio-emulazione/TSK-024]]
+**Layer:** qa · Sprint 3 · P1
+**Code path:** packages/app/e2e/**, packages/app/public/**
+**Files touched:**
+- packages/app/e2e/emulation-emulatorjs-engine.e2e.ts (nuovo, 4 test)
+- management/kanban/EP-003-esecuzione-e-controlli/US-010-avvio-emulazione/TSK-024.md (status: done, DoD aggiornato)
+**Comandi eseguiti:**
+- `npx playwright test e2e/emulation-emulatorjs-engine.e2e.ts --reporter=line` → 4 passed (41s)
+- `npx playwright test --reporter=line` (suite completa) → 15 passed (28.7s), 0 regressioni
+**DoD:** pass
+- [x] e2e verde con engine reale (WasmBoyEngine — sostituisce EmulatorJsEngine per GB dopo ADR-005) + ROM homebrew libera (dmg-acid2.gb, MIT)
+- [x] Nessun contenuto protetto nei fixture
+- [ ] Gap emulatorjs-real-integration: da annotare in gaps.md (wiki-keeper)
+**Note architetturali:** EmulatorJsEngine non esiste nel codice (rimosso in TSK-029, ADR-004 superseded da ADR-005). L'engine reale per GB/GBC è WasmBoyEngine (wasmboy ESM). La spec copre l'intero ciclo richiesto: caricamento ROM → avvio reale (canvas + data-state=running) → pausa (data-state=paused, "In pausa" visibile) → ripresa (canvas visibile, data-state=running) → arresto (data-state=idle, no leak). Verifica negativa inclusa. Tag @slow applicato (WasmBoy carica WASM + core GB in ~5-30s). Header COOP/COEP già attivi (TSK-023). ROM pubblica dmg-acid2.gb (MIT) già presente in public/test-roms/.
+**Flag gap:** emulatorjs-real-integration — parzialmente risolto per GB (WasmBoy, vedi log 2026-06-01 18:10). Questo TSK chiude la DoD della US-010 per il ciclo completo con engine reale. Il gap residuo riguarda EmulatorJS (arcade/libretro): da annotare in gaps.md come gap ancora aperto per l'arcade (rinviato EP-009). Segnalato al wiki-keeper per annotazione.
+
+[2026-06-03 | wiki-keeper | gap-update | emulatorjs-real-integration | Gap aggiornato post TSK-024: PARZIALMENTE CHIUSO. GB/GBC risolto (WasmBoyEngine, ADR-005, 15 e2e passed). Arcade/libretro APERTO → rinviato EP-009 (gap arcade-emulation-engine). Fonti: log.md §TSK-024, ADR-004, ADR-005. File toccati: wiki/gaps.md]
