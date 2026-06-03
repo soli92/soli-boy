@@ -39,6 +39,11 @@ import {
 // la sezione non viene renderizzata — preserva i test legacy che istanziano
 // `<Settings>` senza wiring tema.
 import { ThemeSelector } from "../ThemeSelector/ThemeSelector";
+// TSK-069 (US-033) — Sezione "Privacy" SEMPRE disponibile in Settings:
+// nessuna prop richiesta, il componente è UI puro (testo statico). La
+// presenza è incondizionata per soddisfare il requisito del TSK-069
+// §Technical Specs ("sempre disponibile in Settings → Privacy").
+import { PrivacyNotice } from "../PrivacyNotice/PrivacyNotice";
 
 const BUTTONS: GameButton[] = ["up", "down", "left", "right", "a", "b", "start", "select"];
 
@@ -561,6 +566,12 @@ export function Settings({
           {dataMessage.text}
         </p>
       )}
+
+      {/* TSK-069 (US-033) — Sezione "Privacy" SEMPRE consultabile.
+          Incondizionata (no prop gating) perché il contenuto è statico e
+          riflette il modello on-device dell'app (ADR-002 §Conseguenze).
+          Variante `section`: layout coerente, non dismissibile. */}
+      <PrivacyNotice variant="section" />
     </section>
   );
 }
