@@ -1,7 +1,8 @@
 // TSK-002 — test del dominio persistenza ROM con StoragePort in-memory (fake).
+// TSK-075 — fake esteso con `listRomsMeta` (variante metadata-only).
 import { describe, expect, it, vi } from "vitest";
 import type { StoragePort } from "../storage/port";
-import type { RomInput, RomRecord } from "../storage/types";
+import type { RomInput, RomMeta, RomRecord } from "../storage/types";
 import { importRom, titleFromFileName } from "./rom-library";
 
 function fakeStorage(): StoragePort & { added: RomInput[] } {
@@ -13,6 +14,7 @@ function fakeStorage(): StoragePort & { added: RomInput[] } {
       return "id-" + added.length;
     }),
     listRoms: vi.fn(async () => [] as RomRecord[]),
+    listRomsMeta: vi.fn(async () => [] as RomMeta[]),
     getRom: vi.fn(async () => undefined),
     removeRom: vi.fn(async () => {}),
   };

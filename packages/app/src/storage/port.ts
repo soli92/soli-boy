@@ -8,6 +8,7 @@
 import type {
   RomFilter,
   RomInput,
+  RomMeta,
   RomRecord,
   SaveStateInput,
   SaveStateRecord,
@@ -17,8 +18,41 @@ import type {
 export interface StoragePort {
   /** Aggiunge (o sostituisce) una ROM. Ritorna l'id derivato dal contenuto. */
   addRom(input: RomInput): Promise<string>;
-  /** Elenca le ROM, opzionalmente filtrate per piattaforma e/o titolo. */
+  /**
+   * Elenca le ROM **complete** (incluso `fileBlob`), opzionalmente filtrate.
+   *
+   * NOTA TSK-075 / F-2 CQRL TSK-054: per i consumer "metadata-only" (es. Library
+   * UI) preferire `listRomsMeta` — questa variante materializza il `fileBlob` di
+   * ogni ROM, che sull'adapter desktop (`NativeFsAdapter`) si traduce in N
+   * round-trip IPC `readFile`. `listRoms` resta sull'interfaccia per i consumer
+   * che davvero necessitano i blob completi in batch (oggi nessuno in app: il
+   * Player carica una sola ROM via `getRom(id)`).
+   */
   listRoms(filter?: RomFilter): Promise<RomRecord[]>;
+  /**
+   * Elenca i **metadati** delle ROM (senza `fileBlob`), opzionalmente filtrate.
+   * Path lazy introdotto da TSK-075 per chiudere F-2 (`code_quality/reports/
+   * TSK-054-iter-1.json` §F-2): la Library UI usa solo i metadati + l'eventuale
+   * `coverBlob` (piccolo, opzionale) per renderizzare le tile; il `fileBlob` (ROM
+   * binaria, KB-MB) è inutile in quel contesto e su `NativeFsAdapter` causava N
+   * IPC `readFile` ridondanti al caricamento della libreria.
+   *
+   * Parità semantica IDB ↔ NativeFs: entrambi gli adapter implementano lo
+   * stesso filtro e la stessa shape `RomMeta` (vedi `./types.ts §RomMeta`).
+   *
+   * @remarks
+   * Su IDB il costo è identico a `listRoms` (il record è già materializzato in
+   * memoria da IndexedDB, lo strip avviene a valle): il beneficio prestazionale
+   * di questo path è ESCLUSIVO del path `NativeFsAdapter`, dove evita N IPC
+   * `readFile` sui `fileBlob` per il rendering della Library. I consumer su
+   * dataset grandi non devono aspettarsi un costo `O(meta)` quando il backend
+   * è IDB — la complessità è `O(full-scan)` come `listRoms`; l'omogeneità
+   * dell'interfaccia è il vero contratto qui (F-1 CQRL TSK-075 iter-1).
+   *
+   * Per il `fileBlob` di una specifica ROM (es. caricamento Player) usare
+   * `getRom(id)` (lazy on-demand).
+   */
+  listRomsMeta(filter?: RomFilter): Promise<RomMeta[]>;
   /** Recupera una ROM per id. */
   getRom(id: string): Promise<RomRecord | undefined>;
   /** Rimuove una ROM (idempotente). */

@@ -1,0 +1,86 @@
+{
+  "tsk_id": "TSK-073",
+  "iter": 2,
+  "reviewer_version": "code-reviewer v2.17",
+  "generated_at": "2026-06-03T00:00:00Z",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "playwright",
+    "runtime": "node",
+    "confidence": 0.95,
+    "stack_mode": "guided",
+    "stack_notes": "TypeScript + Playwright e2e harness. Nessun componente React direttamente in scope (tooling-only, TSK scope qa). IndexedDB browser API testata via page.evaluate."
+  },
+  "verdict": "conditional",
+  "summary": "Tre finding su quattro sono chiusi in modo soddisfacente. F-3 (VALID_THEMES duplica UI_THEMES): import diretto da useTheme.ts verificato — la SSOT è rispettata strutturalmente, il tipo UiTheme locale è derivato da VALID_THEMES = UI_THEMES e rimane coerente. F-2 (waitForTimeout 300ms): tutti e quattro i timeout fissi sono stati sostituiti con `expect(page.locator('html')).toHaveAttribute('data-theme', ...)` — deterministici e con i valori di tema corretti in ciascun punto. F-4 (clearThemeInDB swallowa errori): console.warn aggiunto in entrambi i rami onerror (req.onerror e tx.onerror) con messaggio uniforme — chiuso. F-1 (race in setThemeViaDB): la guardia `waitForLoadState('domcontentloaded')` riduce significativamente il rischio ma non lo elimina completamente. Il DOM-content-loaded precede l'esecuzione dei React useEffect e quindi l'invocazione di openDB da parte dell'app. Il path normale (test chiama setThemeViaDB dopo il beforeEach che già include page.goto + waitForSelector) è safe. Il rischio residuo è per caller che invochino setThemeViaDB su un context fresco senza navigazione previa — scenario possibile in futuro ma non presente nel codebase corrente. La JSDoc documenta il precondition. Finding mantenuto aperto con severità degradata a low (da medium) per il residuo teorico; il fix applicato è adeguato per il contesto attuale.",
+  "findings": [
+    {
+      "id": "F-1",
+      "severity": "low",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "status": "open-degraded",
+      "title": "Race residua: waitForLoadState('domcontentloaded') non garantisce il completamento di openDB (React useEffect asincrono)",
+      "location": "packages/app/e2e/helpers/set-theme.ts:89",
+      "description": "Il fix aggiunge `await page.waitForLoadState('domcontentloaded')` dopo la guardia goto (riga 89). Questo riduce il rischio race rispetto alla versione iter-1 (nessuna attesa), ma `domcontentloaded` viene emesso al completamento del parsing HTML, prima che React esegua i suoi `useEffect`. L'apertura di IndexedDB da parte dell'app avviene dentro un `useEffect` di `useTheme` (che è async e attiva `makeThemePort` / `openDB`). Sul path normale del test — beforeEach esegue `page.goto('/') + waitForSelector('body')`, poi setThemeViaDB viene chiamata su una pagina già pienamente idratata — il DB è già inizializzato e la race non si materializza. Il rischio teorico rimane per chiamate a setThemeViaDB su un contesto Playwright isolato senza navigazione previa (es. nuovi test scritti in futuro che saltino il beforeEach canonico). Il messaggio di errore FAIL-LOUD (righe 118-124) è stato corretto e ora enumera correttamente 'DB non ancora inizializzato dall'app' come causa primaria — miglioramento apprezzabile. La JSDoc (righe 57-66) documenta il precondition ('Naviga su appUrl in modo che il DB venga creato con la struttura corretta dall'app al primo avvio'). Severità degradata da medium a low: il rischio è teorico, il fix è sufficiente per il codebase corrente, e la documentazione JSDoc mitiga il rischio per caller futuri.",
+      "recommendation": "Accettabile nello stato attuale con severità low. Opzionale per iter-3: sostituire `waitForLoadState('domcontentloaded')` con `waitForLoadState('networkidle')` oppure con un `page.waitForFunction(() => typeof window.indexedDB !== 'undefined' && document.readyState === 'complete')` per coprire anche il caso del React mount. In alternativa, aggiungere in JSDoc un esempio di uso corretto con beforeEach canonico.",
+      "auto_fixable": false
+    }
+  ],
+  "findings_closed": [
+    {
+      "id": "F-2",
+      "severity_iter1": "medium",
+      "status": "closed",
+      "title": "waitForTimeout 300ms sostituiti con asserzioni event-driven — chiuso",
+      "location": "packages/app/e2e/theme-dark-regression.e2e.ts:48,55,80,85",
+      "verification": "Tutti e quattro i `page.waitForTimeout(300)` sono stati rimossi. In ciascun punto è presente `await expect(page.locator('html')).toHaveAttribute('data-theme', <theme>)` con il valore di tema corretto: riga 48 usa 'dark' (dopo setThemeViaDB(page, 'dark')); riga 55 usa '90s-party' (dopo setThemeViaDB(page, '90s-party')); riga 80 usa 'dark' (dopo setThemeViaSelector(page, 'dark')); riga 85 usa '90s-party' (dopo setThemeViaSelector(page, '90s-party')). I valori tema attesi corrispondono in tutti e quattro i casi all'ultimo set applicato. Pattern pienamente idiomatico Playwright."
+    },
+    {
+      "id": "F-3",
+      "severity_iter1": "medium",
+      "status": "closed",
+      "title": "VALID_THEMES derivato da UI_THEMES via import — chiuso",
+      "location": "packages/app/e2e/helpers/set-theme.ts:29,46-47",
+      "verification": "Riga 29: `import { UI_THEMES } from '../../src/components/ThemeSelector/useTheme'`. Riga 46: `export const VALID_THEMES = UI_THEMES;`. Riga 47: `export type UiTheme = (typeof VALID_THEMES)[number]`. Il path di import è verificato: il file useTheme.ts esiste in `packages/app/src/components/ThemeSelector/useTheme.ts` ed esporta `UI_THEMES = ['90s-party', 'dark', 'cyberpunk'] as const` e `UiTheme = (typeof UI_THEMES)[number]`. VALID_THEMES è ora un alias diretto di UI_THEMES (stessa referenza runtime). Il tipo UiTheme locale in set-theme.ts è strutturalmente identico a quello di useTheme.ts (entrambi derivati dalla stessa costante as const). L'aggiunta di un nuovo tema in useTheme.ts si propaga automaticamente a set-theme.ts senza modifiche manuali. SSOT rispettata."
+    },
+    {
+      "id": "F-4",
+      "severity_iter1": "low",
+      "status": "closed",
+      "title": "clearThemeInDB aggiunge console.warn nei rami onerror — chiuso",
+      "location": "packages/app/e2e/helpers/set-theme.ts:248-250,253-255",
+      "verification": "Riga 248: `console.warn('[set-theme] clearThemeInDB: errore IDB (best-effort, il test continua):', tx.error)` in tx.onerror. Riga 253-255: analoga aggiunta in req.onerror. Entrambi i rami mantengono `resolve()` (best-effort corretto per teardown) e loggano il problema con un messaggio coerente con la filosofia fail-loud del file. Il pattern è allineato a quanto `useTheme.ts` fa per `port.save()` rejected."
+    }
+  ],
+  "positives": [
+    "Il JSDoc di setThemeViaDB (righe 57-66) documenta esplicitamente il precondition di navigazione e la sequenza di operazioni — eccellente per la manutenibilità.",
+    "Il messaggio di errore FAIL-LOUD (righe 118-124) è stato ristrutturato per enumerare la causa primaria (DB non inizializzato) prima della causa secondaria (CONFIG_STORE_NAME errato) — migliora la diagnostica.",
+    "Le asserzioni event-driven con `expect(page.locator('html')).toHaveAttribute` sono idiomatiche Playwright, leverage l'auto-retry interno di expect, e rendono il test più robusto su CI con runner lenti.",
+    "VALID_THEMES = UI_THEMES come alias diretto elimina la possibilità di deriva silente tra temi validi dell'app e temi validi nell'helper — la SSOT è ora strutturale, non solo documentale.",
+    "I console.warn in clearThemeInDB hanno un messaggio uniforme e identificativo ('[set-theme] clearThemeInDB:') — facilita il grep nei log CI."
+  ],
+  "loop_status": {
+    "previous_iter": 1,
+    "previous_verdict": "conditional",
+    "no_progress_detected": false,
+    "regression_detected": false,
+    "iterations_remaining": 1,
+    "note": "3 finding su 4 chiusi (F-2, F-3, F-4). F-1 passa da medium a low — no-progress non applicabile (progressione rilevata). Nessuna regressione in file non toccati dalla fix."
+  },
+  "task_package": {
+    "tsk_id": "TSK-073",
+    "iter": 2,
+    "verdict": "conditional",
+    "constraint": {
+      "scope": "fix only the finding below; no opportunistic refactor",
+      "max_diff_lines": 20,
+      "blast_radius_warning": [],
+      "blast_radius_note": "I file toccati (e2e/helpers/set-theme.ts) sono tooling-only e non hanno downstream di produzione."
+    },
+    "findings_to_fix": ["F-1"],
+    "findings_low_effort": [],
+    "priority_order": "F-1 (opzionale — low severity, il fix corrente è accettabile per il codebase attuale; se iter-3 richiesto: sostituire waitForLoadState('domcontentloaded') con attesa più forte)"
+  }
+}

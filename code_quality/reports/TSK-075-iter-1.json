@@ -1,0 +1,72 @@
+{
+  "tsk_id": "TSK-075",
+  "iter": 1,
+  "generated_at": "2026-06-03T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.17",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": ["react-18", "electron-ipc", "vitest"],
+    "context": ["storage-adapter", "ipc-bridge", "react-component", "metadata-optimization"],
+    "confidence": 0.94,
+    "mode": "full"
+  },
+  "verdict": "conditional",
+  "summary": "TSK-075 chiude correttamente F-2 (CQRL TSK-054): l'introduzione di `listRomsMeta`/`RomMeta` è idiomatica, il contratto StoragePort è coerente su entrambi gli adapter (IDB e NativeFs), e la Library.tsx consuma il path lazy come previsto. L'invariante zero-network è mantenuta. Tre finding aperti: (F-1) `listRomsMeta` su IDB esegue internamente `listRoms` completo + map strip: il costo IPC è equivalente a `listRoms`, il che è documentato nel codice ma il contratto dello StoragePort non lo avverte — il chiamante può aspettarsi costo O(meta) quando ottiene O(full); (F-2) il test `selezione invoca onSelect` nel Library test verifica che `onSelect` sia chiamato ma non che `getRom` sia stato invocato prima (e con il corretto id) — copre il happy path ma non verifica l'invariante TSK-075 sul lazy-load; (F-3) manca un test unitario su `handleSelect` che copra i due rami di guardia (ROM rimossa → `undefined` da `getRom`, e rigetto da `getRom`) — ambedue documentati nel commento del codice ma non testati nemmeno staticamente nel file UI (nota: i test UI jsdom non girano per ERR_REQUIRE_ESM pre-esistente — finding non imputabile a TSK-075, valutazione statica del coverage intent).",
+  "findings": [
+    {
+      "id": "F-1",
+      "severity": "low",
+      "pass": "design",
+      "rule_id": "TS-DESIGN-002",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-002.md",
+      "title": "listRomsMeta su IDB: costo O(full-scan) non segnalato nel contratto StoragePort",
+      "description": "In `db.ts` la funzione `listRomsMeta` è implementata come `(await listRoms(filter)).map(toMeta)`: esegue per intero il `getAll`/`getAllFromIndex` IDB (deserializzando ogni record completo con `fileBlob`) e poi fa lo strip del campo. Il commento inline in `port.ts §listRomsMeta` specifica che 'su IDB il costo è equivalente a `listRoms` (l'idb deserializza il record intero comunque)' — la documentazione è presente e corretta. Tuttavia la firma del contratto `StoragePort.listRomsMeta` non include alcun segnale (tipo JSDoc `@complexity` o nota `@remarks`) che renda evidente ai futuri consumer che il beneficio lazy è esclusivo del path NativeFs. Un consumer su IDB che chiami `listRomsMeta` pensando di pagare meno potrebbe avere aspettative errate sull'impatto su dataset grandi. Suggerimento: aggiungere un `@remarks` nel JSDoc di `StoragePort.listRomsMeta` (port.ts riga 48) che espliciti 'Su IDB il costo è identico a `listRoms` (il record è già materializzato in memoria da IndexedDB); il beneficio principale è sul path NativeFs (N IPC `readFile` eliminati)'. Non blocca la correttezza; classificato low perché la nota esiste già nelle implementazioni, manca solo nel contratto autoritativo.",
+      "location": "packages/app/src/storage/port.ts:48 + packages/app/src/storage/db.ts:142-145",
+      "absorbable_in": "hotfix inline",
+      "note": "Fix a 3-4 righe JSDoc in port.ts. Non impatta il comportamento runtime. Emettere nel task_package come nota di manutenzione a bassa priorità."
+    },
+    {
+      "id": "F-2",
+      "severity": "medium",
+      "pass": "robustness",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "title": "Library.test.tsx: il test 'selezione invoca onSelect' non verifica l'invariante lazy-getRom di TSK-075",
+      "description": "Il test 'selezione invoca onSelect' (Library.test.tsx riga 89-93) usa `fakeStorage` che include un `getRom` funzionante (riga 40), ma il test verifica solo `expect(onSelect).toHaveBeenCalledOnce()` — non verifica che `getRom` sia stato invocato con l'id corretto prima di chiamare `onSelect`. L'invariante TSK-075 è che la Library riceve `RomMeta` (no `fileBlob`) e lo materializza via `getRom(id)` solo al click. Se un futuro refactor invertisse accidentalmente questo path (es. passasse direttamente il meta all'`onSelect` senza `getRom`), il test non rileva la regressione. Mancano i due test di guardia esplicitati nel commento di `handleSelect` (Library.tsx riga 138-147): (a) `getRom` ritorna `undefined` → `onSelect` NON invocato + `console.warn` emesso; (b) `getRom` rigetta → `onSelect` NON invocato + `console.warn` emesso. Nota: i test UI jsdom non girano per ERR_REQUIRE_ESM pre-esistente (TSK-078): questo finding è valutazione statica del coverage intent, non imputabile a TSK-075; la stesura dei test è responsabilità del `qa-dev`.",
+      "location": "packages/app/src/components/Library/Library.test.tsx:89-93 (test mancante) + Library.tsx:139-150 (logica non coperta)",
+      "absorbable_in": "TSK-078 (fix env jsdom) o task qa-dev dedicato",
+      "note": "Tre test da aggiungere al describe 'Library': (1) verifica che `getRom` sia chiamato con l'id della ROM al click (spy su `fakeStorage.getRom`); (2) `getRom` ritorna `undefined` → `onSelect` non chiamato; (3) `getRom` rigetta → `onSelect` non chiamato. Lasciare al `qa-dev`. Non imputare a TSK-075 la non-esecuzione attuale (ERR_REQUIRE_ESM)."
+    },
+    {
+      "id": "F-3",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "rule_id": "TS-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-001.md",
+      "title": "db.ts: `void _omitFileBlob` — pattern di soppressione linter non standard",
+      "description": "In `db.ts` la funzione `toMeta` (riga 152-153) usa `const { fileBlob: _omitFileBlob, ...meta } = r; void _omitFileBlob;` per evitare il warning 'variable declared but never read'. Il pattern `void <expr>` è corretto TS e usato anche in Library.test.tsx (riga 36, 288) in modo consistente — non è un errore. Tuttavia la variante idiomatica più semplice in TS 5.x è `const { fileBlob: _fileBlob, ...meta } = r;` con il prefisso underscore che sopprime il warning del linter in modo nativo, senza bisogno del `void`. Oppure, ancora più diretto, il tipo `RomMeta = Omit<RomRecord, 'fileBlob'>` permette il cast diretto `const { fileBlob, ...meta } = r; return meta as RomMeta;` (destructuring con campo ignorato). Non è un errore tecnico — il comportamento è corretto. Classificato low perché la coerenza interna del codebase (stessa convenzione in test e in prod) mitiga il problema.",
+      "location": "packages/app/src/storage/db.ts:152-153",
+      "absorbable_in": "TSK successivo che tocca db.ts",
+      "note": "Alternativa suggerita: `const { fileBlob: _fileBlob, ...meta } = r; return meta;` (il prefisso `_` sopprime il warning TS/ESLint senza `void`). Oppure mantenere `void` per coerenza con Library.test.tsx. Fix cosmetico, non bloccante."
+    }
+  ],
+  "findings_resolved_from_tsk054": [
+    {
+      "id": "F-2",
+      "resolution": "CLOSED — `listRomsMeta` introdotto su StoragePort + entrambi gli adapter; Library.tsx migrata a path lazy. Invariante zero-blob-IPC verificata dal test 'non emette readFile sui fileBlob ROM' (native-fs-adapter.test.ts riga 263-295)."
+    },
+    {
+      "id": "F-3",
+      "resolution": "CLOSED — `isNotFoundError` usa type-guard strutturato (`typeof err !== 'object' || err === null`) prima del cast (native-fs-adapter.ts riga 807-811)."
+    }
+  ],
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "zero_network_invariant": "VERIFIED — NativeFsAdapter non introduce nuove chiamate di rete; il guard privacy nei test (US-033, native-fs-adapter.test.ts riga 128-151) è attivo e copre listRomsMeta.",
+  "contract_parity_idb_nativefs": "VERIFIED — entrambi gli adapter implementano `listRomsMeta(filter?: RomFilter): Promise<RomMeta[]>` con stessa firma e stesso filtro; `filteredRomEntries` è fattorizzato per garantire parità semantica filter su NativeFs (riga 524-530).",
+  "next_step": "conditional — emettere task_package per qa-dev con F-2 (3 test mancanti su handleSelect/getRom lazy path); F-1 e F-3 sono low e assorbibili inline. Nessun finding blocca il funzionamento corretto."
+}

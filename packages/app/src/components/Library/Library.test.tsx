@@ -24,11 +24,20 @@ function rec(
   };
 }
 
+// TSK-075 — fake storage esteso con `listRomsMeta` (path metadata-only usato
+// dalla Library) e `getRom` funzionante (la Library lo invoca lazy al click di
+// selezione, per fornire il `fileBlob` completo al consumer onSelect).
 function fakeStorage(rows: RomRecord[]): StoragePort & CoverPort {
   return {
     addRom: vi.fn(async () => "x"),
     listRoms: vi.fn(async () => rows),
-    getRom: vi.fn(async () => undefined),
+    listRomsMeta: vi.fn(async () =>
+      rows.map(({ fileBlob: _omit, ...meta }) => {
+        void _omit;
+        return meta;
+      }),
+    ),
+    getRom: vi.fn(async (id: string) => rows.find((r) => r.id === id)),
     removeRom: vi.fn(async () => {}),
     setCover: vi.fn(async () => {}),
   };
@@ -77,17 +86,53 @@ describe("Library", () => {
     expect(await screen.findByText(/nessun gioco/i)).toBeInTheDocument();
   });
 
-  it("selezione invoca onSelect", async () => {
+  // TSK-075 F-2 — `handleSelect` è asincrono: carica la ROM completa via
+  // `getRom(id)` al click e invoca `onSelect` solo dopo la risoluzione. I test
+  // devono attendere il microtask (waitFor), non asserire sincrono dopo il click.
+  it("selezione carica la ROM completa via getRom e invoca onSelect (F-2)", async () => {
     const onSelect = vi.fn();
-    render(<Library storage={fakeStorage([rec("1", "Tetris", "GB")])} onSelect={onSelect} />);
+    const storage = fakeStorage([rec("1", "Tetris", "GB")]);
+    render(<Library storage={storage} onSelect={onSelect} />);
     fireEvent.click(await screen.findByText("Tetris"));
-    expect(onSelect).toHaveBeenCalledOnce();
+    await waitFor(() => expect(onSelect).toHaveBeenCalledOnce());
+    expect(storage.getRom).toHaveBeenCalledWith("1");
+    // onSelect riceve il RomRecord completo (incluso fileBlob), non il solo meta.
+    const passed = (onSelect.mock.calls[0] as [RomRecord])[0];
+    expect(passed.id).toBe("1");
+    expect(passed.fileBlob).toBeInstanceOf(Blob);
   });
 
-  it("mostra role=alert quando storage.listRoms rejecta (F-038-01)", async () => {
+  it("non invoca onSelect se getRom ritorna undefined (ROM sparita nel frattempo) (F-2)", async () => {
+    const onSelect = vi.fn();
+    const storage = fakeStorage([rec("1", "Tetris", "GB")]);
+    storage.getRom = vi.fn(async () => undefined);
+    render(<Library storage={storage} onSelect={onSelect} />);
+    fireEvent.click(await screen.findByText("Tetris"));
+    await waitFor(() => expect(storage.getRom).toHaveBeenCalledWith("1"));
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("non invoca onSelect se getRom rigetta (no-op fail-soft) (F-2)", async () => {
+    const onSelect = vi.fn();
+    const storage = fakeStorage([rec("1", "Tetris", "GB")]);
+    storage.getRom = vi.fn(async () => {
+      throw new Error("io");
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<Library storage={storage} onSelect={onSelect} />);
+    fireEvent.click(await screen.findByText("Tetris"));
+    await waitFor(() => expect(storage.getRom).toHaveBeenCalledWith("1"));
+    expect(onSelect).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("mostra role=alert quando storage.listRomsMeta rejecta (F-038-01)", async () => {
+    // TSK-075 — il fallimento è ora su `listRomsMeta` (path lazy della UI),
+    // non più su `listRoms`: stessa semantica di failure mode, stesso role=alert.
     const failing: StoragePort & CoverPort = {
       addRom: vi.fn(async () => "x"),
-      listRoms: vi.fn(async () => {
+      listRoms: vi.fn(async () => []),
+      listRomsMeta: vi.fn(async () => {
         throw new Error("IndexedDB indisponibile");
       }),
       getRom: vi.fn(async () => undefined),
@@ -267,9 +312,16 @@ describe("Library", () => {
     });
 
     it("se setCover fallisce mostra role=alert e non aggiorna la tile", async () => {
+      const rows = [rec("1", "Tetris", "GB")];
       const storage: StoragePort & CoverPort = {
         addRom: vi.fn(async () => "x"),
-        listRoms: vi.fn(async () => [rec("1", "Tetris", "GB")]),
+        listRoms: vi.fn(async () => rows),
+        listRomsMeta: vi.fn(async () =>
+          rows.map(({ fileBlob: _omit, ...meta }) => {
+            void _omit;
+            return meta;
+          }),
+        ),
         getRom: vi.fn(async () => undefined),
         removeRom: vi.fn(async () => {}),
         setCover: vi.fn(async () => {

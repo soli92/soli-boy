@@ -9,6 +9,7 @@ import {
   getSaveState,
   getSram,
   listRoms,
+  listRomsMeta,
   listSaveStates,
   putSaveState,
   putSram,
@@ -22,9 +23,11 @@ import type { ConfigPort, SaveStoragePort } from "./port";
 // (TSK-002), save state e SRAM (TSK-031). I consumer ROM-only (componenti UI
 // di libreria) possono restringerne il tipo a `StoragePort` per interface
 // segregation; il `SaveService` (TSK-031) consuma `SaveStoragePort`.
+// TSK-075 — aggiunto `listRomsMeta` (variante metadata-only di `listRoms`).
 export const indexedDbStorage: SaveStoragePort = {
   addRom,
   listRoms,
+  listRomsMeta,
   getRom,
   removeRom,
   putSaveState,

@@ -1,0 +1,95 @@
+{
+  "tsk_id": "TSK-074",
+  "iter": 2,
+  "generated_at": "2026-06-03T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.17",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": ["electron-ipc", "vitest"],
+    "context": ["desktop-bridge", "ipc-security", "filesystem-guard", "storage-adapter"],
+    "confidence": 0.95,
+    "mode": "full"
+  },
+  "verdict": "pass",
+  "summary": "Tutti e tre i finding conditional di iter-1 risultano chiusi. F-074-1 (MEDIUM symlink traversal): guardExistingPath() è introdotta e applicata correttamente a tutti gli handler su path esistenti (fs:readFile, fs:unlink, fs:readdir, fs:stat); la logica è fail-closed su ELOOP/EPERM (rethrow a riga 165 di main.ts), il fallback ENOENT è corretto e documentato (i path mancanti non hanno symlink da dereferenziare), il confronto sul realResolved applica la stessa rootWithSep del guard lessicale. Il limite residuo su fs:writeFile e fs:mkdir (symlink sul directory parent, non sul target) è documentato in modo esplicito e l'accettazione è motivata (threat model desktop single-user, utente già owner di ~/.soli-boy). F-074-2 (low asimmetria ENOENT): la deliberata differenza di contratto fra fs:unlink (propaga ENOENT) e fs:stat (intercetta → {exists:false}) è ora documentata con un JSDoc di 12 righe nell'handler fs:unlink (main.ts:220-230) e nel JSDoc di preload.ts §unlink. F-074-3 (low ensuredDirs cache): il campo ensuredDirs ha ora un JSDoc di 22 righe (native-fs-adapter.ts:295-312) che descrive il limite, il failure scenario, la tollerabilità in MVP e la mitigation futura; il commento di addRom (riga 487-491) è stato esteso per citare esplicitamente la cache ensuredDirs e F-074-3. Gap test symlink: non è stato aggiunto un test per guardExistingPath per assenza di harness sul main process Electron; il gap è accettabile per il verdict (dettaglio sotto). Nessuna regressione nei file non toccati; nessun nuovo finding.",
+  "findings": [],
+  "closed_findings": [
+    {
+      "id": "F-074-1",
+      "iter_opened": 1,
+      "severity": "medium",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "title": "guardPath non risolve symlink — path traversal via symlink all'interno della base dir",
+      "status": "closed",
+      "closure_evidence": "Nuova funzione guardExistingPath() (main.ts:155-175) applicata a fs:readFile (riga 194), fs:unlink (riga 234), fs:readdir (riga 252), fs:stat (riga 267). La funzione: (1) chiama guardPath() per il check lessicale, (2) chiama realpath() per dereferenziare i symlink, (3) in caso di ENOENT ritorna il path lessicale (corretto: nessun symlink da seguire su un path inesistente; la syscall successiva propaga ENOENT nativamente), (4) su qualsiasi altro errore (ELOOP, EPERM, ecc.) rilanancia — fail-closed — senza fallback, (5) riapplica il confronto startsWith(rootWithSep) sul realResolved fisico. Il limite residuo su fs:writeFile e fs:mkdir (guard lessicale solo) è documentato con commenti JSDoc espliciti (main.ts:200-213, 243-248) e motivato: il target non esiste ancora, realpath fallirebbe ENOENT; il vettore 'parent symlink' è confinato a chi ha già pieno accesso alla home directory (trusted in desktop single-user). La JSDoc di guardPath() stessa (riga 96-119) descrive il limite F-074-1 e indirizza al guardExistingPath per i path esistenti. Chiusura completa del vettore symlink-traversal sugli handler di lettura/cancellazione.",
+      "note": "Il fallback ENOENT in guardExistingPath merita una nota aggiuntiva per fs:unlink: quando realpath lancia ENOENT per un path inesistente, il fallback restituisce il path lessicale; unlink chiamato su un path mancante propagherà ENOENT come rejection IPC, che è esattamente il contratto documentato in F-074-2. Nessun comportamento inatteso."
+    },
+    {
+      "id": "F-074-2",
+      "iter_opened": 1,
+      "severity": "low",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "title": "Asimmetria contratto IPC: fs:unlink lancia ENOENT, fs:stat restituisce {exists:false}",
+      "status": "closed",
+      "closure_evidence": "L'handler fs:unlink (main.ts:220-235) è preceduto da un blocco di commento di 12 righe (F-074-2, CQRL TSK-074 iter-1) che spiega: (a) la scelta consapevole di non intercettare ENOENT in fs:unlink, (b) il consumer primario tryUnlink() già gestisce l'ENOENT via isNotFoundError, (c) i futuri consumer del bridge che chiamino window.soliboyDesktop.unlink() direttamente su path mancanti DEVONO gestire il rejection. Il JSDoc di preload.ts §unlink (righe 33-36) enuncia esplicitamente 'Solleva se il file non esiste (ENOENT) — il consumer è responsabile della gestione idempotente lato adapter.' La documentazione è ora coerente e completa nei due punti di contatto con i consumer (main.ts nel lato Node, preload.ts nel lato renderer)."
+    },
+    {
+      "id": "F-074-3",
+      "iter_opened": 1,
+      "severity": "low",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "title": "ensuredDirs cache per-istanza: falso negativo su mkdir in scenario multi-istanza",
+      "status": "closed",
+      "closure_evidence": "Il campo ensuredDirs (native-fs-adapter.ts:312) ha ora un JSDoc di 22 righe (righe 295-312) che: (a) nomina il finding F-074-3 CQRL TSK-074 iter-1, (b) descrive il failure scenario (directory rimossa esternamente a runtime, successivo writeFile fallisce con ENOENT propagato), (c) documenta la tollerabilità in MVP single-process (la UI non offre percorsi per rimozioni esterne; il fallimento è sintomatico e non corrompe lo stato), (d) descrive la mitigation futura possibile (invalidare l'entry da ensuredDirs su ENOENT dal writeFile e ritentare), (e) spiega perché fail-loud è preferito al retry silenzioso (diagnosticare anomalie del filesystem dell'utente). Il commento di addRom (righe 487-491) fa ora cross-reference esplicito a ensuredDirs e F-074-3. La documentazione è completa in entrambi i punti: dichiarazione del campo e sito primario d'uso."
+    }
+  ],
+  "test_gap_assessment": {
+    "subject": "guardExistingPath() — assenza di test per il logic branch symlink/ENOENT/ELOOP",
+    "rule_id": "QA-TEST-001",
+    "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+    "verdict_impact": "non bloccante — accettabile per il pass verdict",
+    "rationale": "guardExistingPath() contiene branching non banale (4 rami: ENOENT fallback, non-ENOENT rethrow, startsWith check su realResolved, rethrow su guard lessicale). QA-TEST-001 richiederebbe copertura test. Tuttavia: (1) il main process Electron non ha un harness di test unitari — structural constraint non introdotto da questa fix; (2) la correttezza della logica è verificabile staticamente (il codice è corto, i branch sono tutti coperti dalla descrizione in JSDoc e verificati in questa review); (3) richiedere un integration test symlink come condizione di pass sarebbe sproporzionato rispetto alla copertura attuale (43/43 unit test sul consumer NativeFsAdapter; il main process è tradizionalmente integration-tested via smoke test CI, non unit-tested in isolamento in questo stack). Un test harness sul main Electron resta un gap di qualità da tracciare in un task dedicato futuro (es. con electron-mocha o similar). Segnalato come open_debt, non come finding che blocca il verdict.",
+    "recommended_action": "Aprire un TSK dedicato per un harness di test sul main process (electron-mocha o simile), con copertura di guardExistingPath sui rami: symlink verso fuori base, ENOENT su file mancante, ELOOP su symlink ciclici, path dentro base senza symlink (happy path). Fuori scope TSK-074 per vincolo strutturale."
+  },
+  "open_debt": [
+    {
+      "id": "DEBT-074-A",
+      "severity": "low",
+      "rule_id": "QA-TEST-001",
+      "title": "Nessun test unitario per guardExistingPath — assenza harness main process",
+      "description": "Assenza di test harness sul main process Electron: guardExistingPath non è coperta da test automatici. Da tracciare come task futuro dedicato, non bloccante per il pass del TSK-074.",
+      "location": "packages/desktop/electron/main.ts:155-175 (guardExistingPath)"
+    },
+    {
+      "id": "DEBT-074-B",
+      "severity": "low",
+      "rule_id": "TS-ROBUST-001",
+      "title": "fs:writeFile / fs:mkdir: symlink sul parent directory non intercettato",
+      "description": "Limite residuo documentato e accettato nel JSDoc di fs:writeFile e fs:mkdir. Mitigation futura: realpath sulla directory parent del target e ricomposizione con path.basename. Da rivalutare se il modello di threat cambia (multi-utente, plugin di terze parti).",
+      "location": "packages/desktop/electron/main.ts:199-213 (fs:writeFile), 238-248 (fs:mkdir)"
+    }
+  ],
+  "regression_detection": {
+    "new_findings_in_untouched_files": false,
+    "no_progress_detected": false,
+    "notes": "Tutti e tre i finding di iter-1 sono stati affrontati. Nessun file fuori scope dal TSK è stato modificato. Nessun nuovo finding emerso nei file toccati."
+  },
+  "dod_verification": {
+    "bridge_ipc_unlink_mkdir_readdir_stat": "OK — invariato da iter-1",
+    "context_isolation_node_integration": "OK — invariato da iter-1",
+    "remove_rom_delete_savestate_real_delete": "OK — invariato da iter-1",
+    "path_traversal_guard": "OK — ora completo: guardExistingPath chiude il vettore symlink su handler di lettura/cancellazione; limite su handler di scrittura documentato e accettato",
+    "zero_network": "OK — invariato da iter-1",
+    "typecheck_tests": "OK — nessuna modifica che introduca errori di tipo; 43/43 test consumer pass (invariato)"
+  },
+  "loop_status": {
+    "iter": 2,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "next_step": "pass — nessuna azione richiesta sul TSK-074. Aprire task separato per l'harness di test sul main process Electron (DEBT-074-A)."
+}

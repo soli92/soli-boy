@@ -8,6 +8,7 @@ import type {
   ConfigRecord,
   RomFilter,
   RomInput,
+  RomMeta,
   RomRecord,
   SaveStateInput,
   SaveStateRecord,
@@ -127,6 +128,32 @@ export async function listRoms(filter: RomFilter = {}): Promise<RomRecord[]> {
   const q = filter.query?.trim().toLowerCase();
   if (!q) return rows;
   return rows.filter((r) => r.title.toLowerCase().includes(q));
+}
+
+/**
+ * TSK-075 — variante "metadata-only" di `listRoms`: stessa semantica di
+ * filtro, ritorna `RomMeta[]` (senza `fileBlob`). Su IndexedDB il costo è
+ * equivalente a `listRoms` (idb deserializza il record intero comunque, il
+ * Blob è già materializzato in memoria) — il valore aggiunto è **interfaccia
+ * omogenea** con `NativeFsAdapter.listRomsMeta`, dove invece il salto del
+ * fileBlob elimina N round-trip IPC `readFile` (chiusura finding F-2 del
+ * code-review di TSK-054). Vedi `./port.ts §StoragePort.listRomsMeta`.
+ */
+export async function listRomsMeta(filter: RomFilter = {}): Promise<RomMeta[]> {
+  const rows = await listRoms(filter);
+  return rows.map(toMeta);
+}
+
+/** Strip del `fileBlob` da un `RomRecord`. Helper inline (no copia profonda). */
+function toMeta(r: RomRecord): RomMeta {
+  // Distruzione per esclusione: il `coverBlob` (opzionale) resta nel meta.
+  // Niente clone profondo del Blob → riferimento condiviso, ammissibile perché
+  // il Blob è immutabile per contratto Web Platform.
+  // F-3 (CQRL TSK-075 iter-1): il prefisso `_` sopprime il warning
+  // "declared but never read" sia in TS che in ESLint via convenzione nativa,
+  // rendendo superfluo il `void` esplicito (pattern idiomatico TS 5.x).
+  const { fileBlob: _fileBlob, ...meta } = r;
+  return meta;
 }
 
 // === saveStates (TSK-031, US-016) ==============================================

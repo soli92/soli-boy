@@ -1,0 +1,62 @@
+{
+  "tsk_id": "TSK-075",
+  "iter": 2,
+  "generated_at": "2026-06-03T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.17",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": ["react-18", "electron-ipc", "vitest"],
+    "context": ["storage-adapter", "ipc-bridge", "react-component", "metadata-optimization"],
+    "confidence": 0.94,
+    "mode": "full"
+  },
+  "verdict": "pass",
+  "summary": "Tutti e tre i finding di iter-1 sono chiusi. F-2 (medium): Library.test.tsx ora include tre test dedicati all'invariante lazy-getRom di TSK-075 — happy path con verifica getRom(id) + RomRecord completo passato a onSelect, guard undefined (getRom ritorna undefined → onSelect non invocato), guard reject (getRom rigetta → onSelect non invocato + console.warn spiato). La copertura dei rami è corretta e le asserzioni sono precise. F-1 (low): port.ts §listRomsMeta include il @remarks richiesto che esplicita il costo O(full-scan) su IDB vs beneficio esclusivo NativeFs, con riferimento esplicito al finding (F-1 CQRL TSK-075 iter-1). F-3 (low): db.ts toMeta() usa ora la variante idiomatica con prefisso _fileBlob senza void esplicito, con commento inline che documenta la motivazione del pattern. Nessuna regressione rilevata nei file toccati. Il working tree è coerente con la chiusura dei finding.",
+  "findings": [],
+  "findings_resolved_from_iter1": [
+    {
+      "id": "F-1",
+      "iter_origin": 1,
+      "severity": "low",
+      "rule_id": "TS-DESIGN-002",
+      "title": "listRomsMeta su IDB: costo O(full-scan) non segnalato nel contratto StoragePort",
+      "resolution": "CLOSED — port.ts riga 43-53 include ora un blocco @remarks che esplicita: (a) su IDB il costo e' identico a listRoms (la complessita' e' O(full-scan), non O(meta)); (b) il beneficio prestazionale e' esclusivo del path NativeFsAdapter dove evita N IPC readFile; (c) rinvio a getRom(id) per il blob on-demand. Il contratto autoritative e' ora informativo per i consumer su entrambi i backend. [^src5: packages/app/src/storage/port.ts:43-53]",
+      "evidence_location": "packages/app/src/storage/port.ts:43-53"
+    },
+    {
+      "id": "F-2",
+      "iter_origin": 1,
+      "severity": "medium",
+      "rule_id": "QA-TEST-001",
+      "title": "Library.test.tsx: test mancanti sull'invariante lazy-getRom di TSK-075",
+      "resolution": "CLOSED — Library.test.tsx include tre nuovi test nel describe 'Library' (righe 89-127), tutti prefissati con '(F-2)': (1) 'selezione carica la ROM completa via getRom e invoca onSelect (F-2)' (riga 92): verifica waitFor + expect(onSelect).toHaveBeenCalledOnce() + expect(storage.getRom).toHaveBeenCalledWith('1') + asserzione sul RomRecord completo passato (id corretto, fileBlob instanceof Blob); (2) 'non invoca onSelect se getRom ritorna undefined (ROM sparita nel frattempo) (F-2)' (riga 105): getRom sovrascritto a vi.fn(async () => undefined), waitFor su getRom chiamato, onSelect not.toHaveBeenCalled(); (3) 'non invoca onSelect se getRom rigetta (no-op fail-soft) (F-2)' (riga 115): getRom lancia Error('io'), spy su console.warn, waitFor su getRom chiamato, onSelect not.toHaveBeenCalled(). I tre rami di handleSelect (Library.tsx:139-150) sono coperti: happy path, guard undefined, guard reject. Le asserzioni verificano correttamente sia la precondizione (getRom invocato con id corretto) sia la postcondizione (onSelect invocato/non invocato con il payload giusto). [^src5: packages/app/src/components/Library/Library.test.tsx:89-127]",
+      "evidence_location": "packages/app/src/components/Library/Library.test.tsx:89-127"
+    },
+    {
+      "id": "F-3",
+      "iter_origin": 1,
+      "severity": "low",
+      "rule_id": "TS-IDIOM-001",
+      "title": "db.ts: void _omitFileBlob — pattern di soppressione linter non standard",
+      "resolution": "CLOSED — db.ts toMeta() (riga 155) usa ora 'const { fileBlob: _fileBlob, ...meta } = r; return meta;' senza void esplicito. Il prefisso underscore sopprime nativamente il warning TS/ESLint 'declared but never read'. Il commento inline (righe 152-154) documenta esplicitamente il razionale con riferimento al finding (F-3 CQRL TSK-075 iter-1). Pattern allineato all'idioma TS 5.x. [^src5: packages/app/src/storage/db.ts:148-157]",
+      "evidence_location": "packages/app/src/storage/db.ts:148-157"
+    }
+  ],
+  "regression_check": {
+    "files_touched_by_fix": [
+      "packages/app/src/components/Library/Library.test.tsx",
+      "packages/app/src/storage/port.ts",
+      "packages/app/src/storage/db.ts"
+    ],
+    "regressions_detected": false,
+    "notes": "Library.test.tsx: i test preesistenti (ricerca, filtro, cover, upload, role=alert) sono tutti intatti e non modificati dalla fix. port.ts: la firma pubblica di tutte le interfacce (StoragePort, SaveStatePort, SramPort, CoverPort, SaveStoragePort, ConfigPort, ThemePort) e' invariata — aggiunto solo il blocco @remarks nel JSDoc di listRomsMeta. db.ts: toMeta() e' un helper privato; l'unica variazione e' la soppressione del void; la semantica di ritorno (RomMeta senza fileBlob) e' identica. Nessun file fuori scope e' stato toccato."
+  },
+  "loop_status": {
+    "iter": 2,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false,
+    "exhausted": false
+  },
+  "next_step": "pass — nessun finding aperto. TSK-075 puo' essere marcato review_status: passed. Nessun task_package da emettere."
+}
