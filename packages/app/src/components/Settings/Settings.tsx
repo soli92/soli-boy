@@ -44,6 +44,12 @@ import { ThemeSelector } from "../ThemeSelector/ThemeSelector";
 // presenza è incondizionata per soddisfare il requisito del TSK-069
 // §Technical Specs ("sempre disponibile in Settings → Privacy").
 import { PrivacyNotice } from "../PrivacyNotice/PrivacyNotice";
+// TSK-070 (US-034) — Sezione "Legale" SEMPRE disponibile in Settings:
+// avviso esplicito no-ROM protette per conformità Play Store / App Store
+// (US-034 §Business Rules + §Acceptance Criteria). UI puro, statico. La
+// presenza è incondizionata per soddisfare il TSK-070 §DoD
+// ("Avviso legale no-ROM protette visibile in Settings → Legale").
+import { StoreComplianceNotice } from "../StoreComplianceNotice/StoreComplianceNotice";
 
 const BUTTONS: GameButton[] = ["up", "down", "left", "right", "a", "b", "start", "select"];
 
@@ -566,6 +572,12 @@ export function Settings({
           {dataMessage.text}
         </p>
       )}
+
+      {/* TSK-070 (US-034) — Sezione "Legale" SEMPRE consultabile, posta
+          PRIMA della sezione Privacy così il cross-link interno "qui sotto"
+          è coerente (vedi StoreComplianceNotice.tsx). Avviso esplicito
+          no-ROM protette per conformità store. */}
+      <StoreComplianceNotice />
 
       {/* TSK-069 (US-033) — Sezione "Privacy" SEMPRE consultabile.
           Incondizionata (no prop gating) perché il contenuto è statico e

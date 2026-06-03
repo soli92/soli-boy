@@ -22,4 +22,24 @@ describe("Settings", () => {
     expect(onSaveProfile).toHaveBeenCalledOnce();
     expect(screen.getByRole("status")).toHaveTextContent(/salvato/i);
   });
+
+  // TSK-070 (US-034) — Avviso legale no-ROM protette SEMPRE visibile in
+  // Settings → Legale (TSK-070 §DoD). Test di integrazione: il componente
+  // StoreComplianceNotice è renderizzato dentro Settings senza dipendere
+  // da prop opzionali.
+  it("rende sempre la sezione legale no-ROM protette (TSK-070, US-034)", () => {
+    render(<Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} />);
+    // Presenza del data-testid del componente compliance.
+    expect(
+      screen.getByTestId("sb-store-compliance-section"),
+    ).toBeInTheDocument();
+    // Presenza del testo chiave US-034 §Business Rules. aria-label distinto
+    // da "Avviso legale" (LegalNotice TSK-006) per evitare collisione strict
+    // nei test che hanno il render dell'App completa (vedi e2e app.e2e.ts).
+    expect(
+      screen.getByRole("note", {
+        name: /avviso conformità store: no-ROM protette/i,
+      }),
+    ).toHaveTextContent(/non include, distribuisce né supporta/i);
+  });
 });
