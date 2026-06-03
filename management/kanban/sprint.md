@@ -80,72 +80,50 @@ DAG: EP-004 catena (030→031→{032,033}→034); EP-005 e EP-002 in parallelo (
 ADR-006 (salvataggi). EP-005/EP-002 design in architecture-overview.
 
 
-## Sprint 6 — Brand identity + CI/CD (EP-010 / EP-011)
-
-### Wave A — Prerequisiti (parallelo, nessuna dipendenza)
+## Sprint 6 — Brand identity + CI/CD (EP-010 / EP-011) — 11/11 TSK done
 
 | TSK | Titolo | EP | layer | consumer | prio | est | status | US | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|----|-----------|
-| TSK-042 | Copia brand asset in packages/app/public | EP-010 | fe | agent | P1 | S | todo | US-037 | — |
-| TSK-049 | Workflow CI GitHub Actions: ci.yml | EP-011 | fe | agent | P0 | M | todo | US-040 | — |
-| TSK-044 | ThemeSelector + persistenza data-theme | EP-010 | fe | agent | P1 | M | todo | US-036 | — |
-
-### Wave B — Brand assets HTML + CD (dipendono da Wave A)
-
-| TSK | Titolo | EP | layer | consumer | prio | est | status | US | depends_on |
-|-----|--------|----|-------|----------|------|-----|--------|----|-----------|
-| TSK-043 | Favicon e link tag in index.html | EP-010 | fe | agent | P1 | S | todo | US-037 | TSK-042 |
-| TSK-047 | Unit test ThemeSelector + useTheme | EP-010 | qa | agent | P1 | S | todo | US-036 | TSK-044 |
-| TSK-050 | Branch protection main: gate CI | EP-011 | fe | human | P0 | S | todo | US-041 | TSK-049 |
-| TSK-051 | Workflow CD Vercel: cd-vercel.yml | EP-011 | fe | agent | P1 | M | todo | US-042 | TSK-049 |
-| TSK-052 | Cache Playwright + artefatti e2e | EP-011 | qa | agent | P1 | S | todo | US-043 | TSK-049 |
-
-### Wave C — Manifest + logo + smoke test e2e brand (dipendono da Wave B)
-
-| TSK | Titolo | EP | layer | consumer | prio | est | status | US | depends_on |
-|-----|--------|----|-------|----------|------|-----|--------|----|-----------|
-| TSK-045 | Web app manifest (manifest.webmanifest) | EP-010 | fe | agent | P2 | S | todo | US-038 | TSK-042,043 |
-| TSK-046 | Logo Soli-boy nell'header Library | EP-010 | fe | agent | P2 | S | todo | US-039 | TSK-042 |
-| TSK-048 | E2e smoke test brand (favicon/manifest/logo) | EP-010 | qa | agent | P2 | S | todo | US-037/038/039 | TSK-043,045,046 |
-
-DAG Sprint 6:
-- Wave A (parallelo): TSK-042 ‖ TSK-049 ‖ TSK-044
-- Wave B (dopo Wave A): TSK-043, TSK-047, TSK-050, TSK-051, TSK-052
-- Wave C (dopo Wave B): TSK-045, TSK-046, TSK-048
+| TSK-042 | Copia brand asset in packages/app/public | EP-010 | fe | agent | P1 | S | done | US-037 | — |
+| TSK-049 | Workflow CI GitHub Actions: ci.yml | EP-011 | fe | agent | P0 | M | done | US-040 | — |
+| TSK-044 | ThemeSelector + persistenza data-theme | EP-010 | fe | agent | P1 | M | done | US-036 | — |
+| TSK-043 | Favicon e link tag in index.html | EP-010 | fe | agent | P1 | S | done | US-037 | TSK-042 |
+| TSK-047 | Unit test ThemeSelector + useTheme | EP-010 | qa | agent | P1 | S | done | US-036 | TSK-044 |
+| TSK-050 | Branch protection main: gate CI | EP-011 | fe | human | P0 | S | done | US-041 | TSK-049 |
+| TSK-051 | Workflow CD Vercel: cd-vercel.yml | EP-011 | fe | agent | P1 | M | done | US-042 | TSK-049 |
+| TSK-052 | Cache Playwright + artefatti e2e | EP-011 | qa | agent | P1 | S | done | US-043 | TSK-049 |
+| TSK-045 | Web app manifest (manifest.webmanifest) | EP-010 | fe | agent | P2 | S | done | US-038 | TSK-042,043 |
+| TSK-046 | Logo Soli-boy nell'header Library | EP-010 | fe | agent | P2 | S | done | US-039 | TSK-042 |
+| TSK-048 | E2e smoke test brand (favicon/manifest/logo) | EP-010 | qa | agent | P2 | S | done | US-037/038/039 | TSK-043,045,046 |
 
 Nota TSK-050: `consumer: human` (branch protection = gate umano R.14/R.15).
 
 
 ## Sprint 7 — Distribuzione desktop (EP-006)
 
-> **GATE DESIGN PARZIALE:** TSK-053, TSK-056, TSK-057 sono bloccati su due gap L4 non
-> risolti dal lead-architect (`electron-packaging-toolchain`, `electron-autoupdate-mechanism`).
-> TSK-054, TSK-055, TSK-058 (NativeFsAdapter + selezione runtime + e2e IPC mock) sono
-> indipendenti dal gap packaging e possono procedere in parallelo.
+> TSK-053 (`done`): Electron main process completato. Wave A (agent) può procedere.
+> Wave B: TSK-056, TSK-057 restano bloccati su gap L4 non risolti dal lead-architect
+> (`electron-packaging-toolchain`, `electron-autoupdate-mechanism`).
 
-### Wave A — Dominio (indipendente dal gap packaging)
+### Wave A — Dominio (TSK-053 done: Wave A sbloccata)
 
 | TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|-----------|
-| TSK-054 | NativeFsAdapter (StoragePort su IPC Electron) | US-023 | be | agent | P0 | L | todo | TSK-053* |
+| TSK-053 | Electron main.ts + IPC filesystem bridge | US-023 | infra | human | P0 | L | done | — |
+| TSK-054 | NativeFsAdapter (StoragePort su IPC Electron) | US-023 | be | agent | P0 | L | todo | TSK-053 |
 | TSK-055 | Selezione runtime adapter (IDB vs NativeFs) | US-023 | be | agent | P0 | S | todo | TSK-054 |
 | TSK-058 | e2e: carica ROM + salva (IPC mock, Electron) | US-023 | qa | agent | P1 | M | todo | TSK-054,055 |
-
-*TSK-054 dipende dalle firme IPC di TSK-053; può iniziare con contratto IPC concordato
-anche prima della build Electron completa.
 
 ### Wave B — Infra (bloccata su gap packaging — gate umano lead-architect)
 
 | TSK | Titolo | US | layer | consumer | prio | est | status | blocked_by | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|------------|-----------|
-| TSK-053 | Electron main.ts + IPC filesystem bridge | US-023 | infra | human | P0 | L | todo | GAP-electron-packaging-toolchain | — |
 | TSK-056 | Bundling core WASM offline (Electron) | US-024 | infra | human | P1 | M | todo | GAP-electron-packaging-toolchain | TSK-053 |
 | TSK-057 | Auto-update Electron (rileva + applica) | US-025 | infra | human | P2 | M | todo | GAP-electron-packaging-toolchain, GAP-electron-autoupdate-mechanism | TSK-053,056 |
 
 DAG Sprint 7:
-- Wave A (agent, parallelo dopo contratto IPC): TSK-054 → TSK-055 → TSK-058
-- Wave B (human, dopo chiusura gap): TSK-053 → TSK-056 → TSK-057
-- Wave A e Wave B sono parzialmente parallelizzabili (TSK-054 inizia con IPC mockato).
+- TSK-053 done → Wave A sbloccata: TSK-054 → TSK-055 → TSK-058
+- Wave B (human, dopo chiusura gap): TSK-056 → TSK-057
 
 
 ## Sprint 8 — Esperienza mobile (EP-007)
@@ -160,7 +138,7 @@ DAG Sprint 7:
 
 | TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|-----------|
-| TSK-059 | Capacitor init: progetto Android + iOS + plugin | US-026 | infra | human | P0 | M | todo | — |
+| TSK-059 | Capacitor init: progetto Android + iOS + plugin | US-026 | infra | human | P0 | M | in-progress | — |
 
 ### Wave B — Core mobile (parallelo, dopo TSK-059)
 
@@ -186,7 +164,7 @@ DAG Sprint 7:
 | TSK-067 | e2e mobile smoke: TouchOverlay + sospensione | US-026 | qa | agent | P1 | M | todo | TSK-060,064,065 |
 
 DAG Sprint 8:
-- Wave A (human): TSK-059
+- Wave A (human): TSK-059 (in-progress)
 - Wave B (agent, parallelo dopo TSK-059): TSK-060 ‖ TSK-063 ‖ TSK-065
 - Wave C (agent, dopo Wave B): TSK-061, TSK-062, TSK-064, TSK-066 → dopo TSK-060
 - Wave D (agent, dopo Wave C): TSK-067 → dopo TSK-060,064,065
@@ -195,25 +173,28 @@ Parallelismo max scheduler = 4: Wave B spawna 3 agent in parallelo (entro il lim
 Wave C spawna 4 task — il scheduler li dispatcha per dipendenza soddisfatta.
 
 
-## Sprint 9 — Conformità e pubblicazione store (EP-008)
+## Sprint 9 — Conformità e pubblicazione store (EP-008) + Visual Oracle harness (EP-011)
 
 > **NOTE DESIGN:**
 > - Privacy on-device (ADR-002, StoragePort invariant) è completamente specced → TSK-068,069 agent.
 > - Avviso legale in-app → TSK-070 agent (pattern da US-006 esistente).
 > - Store metadata e iOS benchmark → gate umano (account developer, device fisico).
+> - TSK-073: follow-up Visual Oracle v2.17 (FE Visual Oracle) — render harness per copertura dark.
+>   Nato da prima Visual Verification TSK-069 (`visual_status: pass`); vedi
+>   `code_quality/reports/TSK-069-visual-iter-1.md`.
 
 ### Wave A — Prerequisiti (parallelo)
 
 | TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|-----------|
 | TSK-068 | Privacy audit: on-device su web/desktop/mobile | US-033 | qa | agent | P0 | M | todo | TSK-054,055 |
-| TSK-069 | Privacy policy in-app (comunicazione utente) | US-033 | fe | agent | P1 | S | todo | — |
+| TSK-069 | Privacy policy in-app (comunicazione utente) | US-033 | fe | agent | P1 | S | done | — |
 
 ### Wave B — Avviso legale e store asset (dopo Wave A)
 
 | TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|-----------|
-| TSK-070 | Avviso legale in-app: no ROM protette | US-034 | fe | agent | P1 | S | todo | TSK-069 |
+| TSK-070 | Avviso legale in-app: no ROM protette | US-034 | fe | agent | P1 | S | done | TSK-069 |
 | TSK-072 | Benchmark iOS: WASM su device reale + report | US-035 | qa | human | P0 | L | todo | TSK-059,060 |
 
 ### Wave C — Store submission (gate umano, dopo Wave B)
@@ -222,10 +203,17 @@ Wave C spawna 4 task — il scheduler li dispatcha per dipendenza soddisfatta.
 |-----|--------|----|-------|----------|------|-----|--------|-----------|
 | TSK-071 | Store metadata package (asset + checklist) | US-034 | infra | human | P2 | M | todo | TSK-059,070 |
 
+### Wave D — Visual Oracle harness (parallelo, indipendente)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-073 | Visual oracle render harness: pilotaggio tema per copertura dark | US-043 | qa | agent | P2 | S | todo | — |
+
 DAG Sprint 9:
-- Wave A (parallelo): TSK-068 ‖ TSK-069
-- Wave B: TSK-070 → TSK-069; TSK-072 → TSK-059,060 (human)
+- Wave A (parallelo): TSK-068 ‖ TSK-069 (done)
+- Wave B: TSK-070 (done) → TSK-069; TSK-072 → TSK-059,060 (human)
 - Wave C: TSK-071 → TSK-059,070 (human)
+- Wave D (parallelo, indipendente): TSK-073 — nessuna dipendenza; può procedere in qualsiasi momento
 
 
 ## Lookahead — Sprint 10+ (post-Sprint 9)
@@ -243,11 +231,13 @@ DAG Sprint 9:
 
 - **Core web MVP completo** (20/20 done). 49 test verdi, typecheck OK.
 - **TSK-041 done** (bugfix canvas WasmBoy loadState — 8/8 e2e verdi).
-- Sprint 6 — 11 task (EP-010 + EP-011), di cui 1 human (TSK-050).
-- Sprint 7 — 6 task EP-006: 3 agent (Wave A, indipendenti dal gap), 3 human bloccati su
+- Sprint 6 — 11/11 task done (EP-010 + EP-011). Tutti completati.
+- Sprint 7 — 6 task EP-006: TSK-053 done, 2 agent in coda (TSK-054,055,058), 2 human bloccati su
   `GAP-electron-packaging-toolchain` e `GAP-electron-autoupdate-mechanism`.
-- Sprint 8 — 9 task EP-007: 1 human (TSK-059, gate device/Xcode), 7 agent, 1 qa agent.
-- Sprint 9 — 5 task EP-008: 3 agent, 2 human (TSK-072 device fisico iOS, TSK-071 store account).
-- **Consumer distribution (Sprint 7-9):** agent=14, human=6.
+- Sprint 8 — 9 task EP-007: TSK-059 in-progress (human, gate device/Xcode), 7 agent todo, 1 qa agent todo.
+- Sprint 9 — 6 task: TSK-069 done (`visual_status: pass`, Visual Oracle v2.17), TSK-070 done,
+  TSK-068/071/072/073 todo. TSK-073 nuovo (qa agent, US-043, follow-up Visual Verification TSK-069).
+- **Factory upgrade v2.17 (FE Visual Oracle)**: campo `visual_status` attivo su TSK-069.
+- **Consumer distribution (Sprint 7-9):** agent=15, human=6.
 - Gap da chiudere con lead-architect prima dello Sprint 7 Wave B:
   `electron-packaging-toolchain`, `electron-autoupdate-mechanism` (vedi `wiki/gaps.md`).
