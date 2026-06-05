@@ -1,10 +1,13 @@
 // TSK-011/TSK-019 — e2e browser reale (Chromium) del Core web MVP.
-// Pilota l'app reale servita da Vite; engine = StubEngine (no emulazione WASM reale).
+// Pilota l'app reale servita da Vite; engine = StubEngine (no emulazione WASM
+// reale) forzato via ?engine=stub: questi flussi verificano la UI/lifecycle in
+// modo deterministico con ROM fittizie, non l'emulazione vera (vedi
+// emulation-real.e2e.ts per il motore reale WasmBoy con ?engine=real).
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => indexedDB.deleteDatabase("soli-boy"));
-  await page.goto("/");
+  await page.goto("/?engine=stub");
 });
 
 test("avviso legale visibile all'avvio", async ({ page }) => {

@@ -30,11 +30,17 @@ import { makeVideoSettingsPort } from "./components/Player/video-settings-port";
 import { useTheme } from "./components/ThemeSelector/useTheme";
 import { makeThemePort } from "./components/ThemeSelector/theme-port";
 
-// TSK-025 (ADR-005): selezione engine. Default StubEngine (test/dev/e2e deterministici);
-// engine REALE per-piattaforma via registry, opt-in con ?engine=real.
-const REAL_ENGINE =
-  typeof location !== "undefined" &&
-  new URLSearchParams(location.search).get("engine") === "real";
+// TSK-025 (ADR-005): selezione engine. Default ENGINE REALE per-piattaforma via
+// registry (l'utente che apre la webapp vuole emulare davvero). Lo StubEngine
+// deterministico (test/e2e/dev senza WASM) resta opt-in con ?engine=stub, oppure
+// automatico in ambiente test (vitest). Retrocompat: ?engine=real è ancora
+// accettato (no-op, ora che il reale è il default).
+const engineParam =
+  typeof location !== "undefined"
+    ? new URLSearchParams(location.search).get("engine")
+    : null;
+const STUB_ENGINE = engineParam === "stub" || import.meta.env.MODE === "test";
+const REAL_ENGINE = !STUB_ENGINE;
 
 // TSK-055 — Bundle storage+config selezionato a runtime una sola volta a
 // modulo-load. Su web/mobile coincide con i singleton storici IndexedDB
