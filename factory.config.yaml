@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.15"
+pattern_version: "2.18"
 
 owner: soli92
 language: it
@@ -98,6 +98,8 @@ scheduler:
     sync:    true
     review:  true
     visual-oracle: true  # v2.17 — sub-step di L2 (develop); attivo perché fe_correctness.enabled: true
+    a11y: true           # v2.18 NEW (EP-007 ADR-016 §C) — parallel cross-TSK, serial same-TSK; composto inline con visual-oracle in Modalità 1
+    ux-ui-review: true   # v2.18 NEW (EP-008 ADR-020 §C / ADR-019 §Punto 3) — sub-step di L2 (develop), aspetta visual_status non-pending
 
 # Code Quality Review Layer (PATTERN §19) — ON.
 code_quality:
@@ -112,6 +114,7 @@ code_quality:
     idiomaticity: true
     design: true
     robustness: true
+    accessibility: false          # v2.18 NEW — 4° pass opzionale (invoca run_a11y_scan); indipendente dal dominio scheduler a11y
   router:
     strategy: severity-tiered
     max_diff_lines: 80
@@ -155,6 +158,58 @@ fe_correctness:
     max_estimate_hours: 8
     max_states: 3
   dispatch_gate: false
+
+# === Accessibility Testing (v2.18, EP-007, PATTERN §3 operazione Accessibility Scan,
+# ADR-014..018) — ON. Pre-screening WCAG 2.2 AA stack-agnostico via tool deterministico
+# run_a11y_scan (Playwright + axe-playwright), consumato da accessibility-testing-protocol.
+# Riusa l'infra browser headless del FE Visual Oracle (v2.17).
+# Regola di neutralità invariante: mai conformità su soli automated_findings (manual_checks N>=1).
+#
+# enabled              : master switch — abilita Modalità 1/2/3 + comando /a11y
+# agent                : gating agente a11y-specialist (Modalità 3 standalone)
+# severity_threshold   : critical|major|minor|none — soglia di gating del verdict
+# required_on_fe_done  : true → Lint Check 4o WARNING-only (ADR-016 §A)
+# fail_ci_on           : critical|critical,major|any|none
+# include_interactive  : true → check tastiera/focus/reflow (richiede browser headed)
+# fallback_non_web     : snippet-inline (default, ADR-015)
+a11y:
+  enabled: true
+  agent: true                       # a11y-specialist attivo (scelta owner 2026-06-05)
+  standard: "wcag22aa"
+  severity_threshold: critical      # critical|major|minor|none
+  required_on_fe_done: true         # → Lint Check 4o WARNING-only ATTIVO (ADR-016 §A) — gate owner 2026-06-05
+  fail_ci_on: critical              # critical|critical,major|any|none
+  include_interactive: false
+  fallback_non_web: snippet-inline  # ADR-015
+
+# === UX/UI Review & Design (v2.18, EP-008, PATTERN §3 UX/UI Review + UX/UI Design,
+# ADR-019/ADR-020 §B) — ON. Critica usabilità su rubrica anti-soggettività (10 euristiche
+# Nielsen + 6 dimensioni UI + 5 dimensioni flusso) + produzione deliverable di design.
+# Semanticamente distinto dal visual oracle (fe_correctness: «il rendering funziona»):
+# ux_ui: valuta «il rendering è UX-buono». No-auto-eval: l'output del designer va SEMPRE
+# alla Review (designer e reviewer agenti distinti).
+#
+# enabled                : master switch — Fase 4-ter dev-protocol + precondition code-review
+# max_iterations         : bound loop designer ↔ reviewer (default 3)
+# rubric_strict          : true → ogni finding deve avere rubric_ref (fail-loud)
+# design_system_path     : path a DS canonico — cascata step 1 (ADR-018)
+# default_viewports      : matrice viewport screenshot review UX/UI (ADR-017)
+# agents.reviewer/designer: gating agenti opzionali (US-030)
+# required_on_fe_done    : true → Lint Check 4p WARNING-only (ADR-020 §G)
+# delegate_a11y_to_ep007 : true → ux-ui-reviewer invoca run_a11y_scan (ADR-014)
+ux_ui:
+  enabled: true
+  max_iterations: 3
+  rubric_strict: true
+  design_system_path: ""
+  default_viewports:
+    - { name: mobile,  width: 375  }
+    - { name: desktop, width: 1280 }
+  agents:
+    reviewer: true                  # ux-ui-reviewer attivo (scelta owner 2026-06-05)
+    designer: true                  # ui-designer attivo (scelta owner 2026-06-05)
+  required_on_fe_done: true         # → Lint Check 4p WARNING-only ATTIVO (ADR-020 §G) — gate owner 2026-06-05
+  delegate_a11y_to_ep007: true      # ux-ui-reviewer invoca run_a11y_scan (ADR-014)
 
 # === Compression Layer (PATTERN §20) — ENTRAMBI gli assi ON =======================
 compression:
@@ -222,6 +277,16 @@ compression:
 
 notes: |
   Factory soli-boy generata da factory-bootstrap v2.15 (2026-06-01).
+  Upgrade a v2.18 (A11y + UX/UI Integration) il 2026-06-05 — ingest del seed
+  raw/factory-bootstrap copy.md (delta v2.18, extends v2-17).
+  A11y (EP-007) ON: run_a11y_scan WCAG 2.2 AA via tool a11y-scan.sh (Playwright +
+   axe-playwright), agente a11y-specialist attivo. Modalità 1 inline a visual-oracle.
+   Regola di neutralità invariante (manual_checks N>=1; non sostituisce audit EAA/ADA).
+  UX/UI (EP-008) ON: ux-ui-review-protocol su rubrica + ux-ui-design-protocol; agenti
+   ux-ui-reviewer + ui-designer attivi (no-auto-eval enforced). Pipeline FE completa:
+   develop → visual-oracle → ux-ui-review → code-review (ADR-019).
+   Prerequisito: axe-playwright in packages/app (Playwright già presente da v2.17).
+  NB: analytics (EP-009/010) della factory sorgente NON importato (fuori scope v2.18).
   topology full-stack-agents: dev-agent be/fe/db/qa attivi su code_path `app`
   (./packages/app, monorepo). Stack mode guided → stack-detector propone, owner conferma.
   CQRL ON: code-reviewer attivo; popolare code_quality/rules/canonical/ per lo stack

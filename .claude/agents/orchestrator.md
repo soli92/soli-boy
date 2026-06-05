@@ -87,3 +87,116 @@ il TSK-id (grep deterministico, no LLM runtime). Ritorna `{passed, satisfied_by,
 
 **Logging**: ogni invocazione (pass/blocked) appende una riga in
 `memory/episodic/oracle-gate.md` (lazy-create a cura di `oracle-precheck`).
+
+## A11y dispatch fallback (EP-007 ADR-014)
+
+Quando lo scheduler deve dispatchare uno scan a11y (dominio `a11y`, ADR-016) o un
+TSK richiede l'esecuzione di `run_a11y_scan`, l'orchestrator seleziona l'agente
+consumer in modo **deterministico** secondo la fallback chain
+**`a11y-specialist > qa-dev > fe-dev`** (ADR-014 §Decisione → Fallback discovery,
+precedence per grado di specializzazione).
+
+**Trigger (opt-in).** Il dispatch a11y si attiva SOLO se
+`factory.config.yaml.a11y.enabled: true`. A flag spento (**default**) — o blocco
+`a11y` assente — l'orchestrator **non** valuta alcun dispatch a11y: comportamento
+identico a v2.17 (R.P3, sezione puramente additiva).
+
+**Fallback discovery (precedence ordinata):**
+
+1. Se `a11y.agent: true` AND `.claude/agents/a11y-specialist.md` scaffoldato →
+   invoca `a11y-specialist` (più specializzato, US-026).
+2. Altrimenti, se `qa-dev` scaffoldato in topologia AND TSK target ha
+   `layer: fe` + `status: done` → invoca `qa-dev` (Modalità 2 batch
+   post-Develop, skill [`accessibility-testing-protocol`](../skills/accessibility-testing-protocol.md)).
+3. Altrimenti, se `fe-dev` scaffoldato → invoca `fe-dev` via skill US-024
+   (Modalità 1, tool [`a11y-scan.sh`](../tools/a11y-scan.sh)).
+4. Altrimenti **fail-loud**: nessun agente a11y disponibile e `a11y.enabled: true`
+   → STOP, logga **warning** in [`wiki/log.md`](../../wiki/log.md) («Nessun agente
+   disponibile per a11y scan; topologia non compatibile. Vedi
+   factory.config.yaml.topology e a11y.agent») e non dispatcha.
+
+**Single-writer.** Qualunque agente della chain esegua lo scan è single-writer di
+`a11y_status:` sul TSK target (ADR-014 §Rationale 6): l'ordering inline →
+post-Develop → standalone garantisce che i 3 trigger non siano mai concorrenti
+sullo stesso TSK (ADR-016 §Seriality).
+
+Cross-link: [ADR-014](../../design_&_architecture/decisions/ADR-014.md),
+[US-026](../../management/kanban/EP-007-accessibility-testing-capability/US-026-agente-a11y-specialist-e-comando/US-026.md).
+
+## UX/UI dispatch policy (EP-008 ADR-020)
+
+Quando lo scheduler deve dispatchare una review UX/UI (dominio `ux-ui-review`,
+ADR-019/ADR-020 §C) o un design deliverable (`/ux-ui-design`, off-DAG),
+l'orchestrator applica la policy seguente. Le due sotto-capability sono
+strutturalmente distinte e l'orchestrator **non** le collassa mai sullo stesso
+agente.
+
+**Trigger (opt-in).** Il dispatch UX/UI si attiva SOLO se
+`factory.config.yaml.ux_ui.enabled: true`. A flag spento (**default**) — o blocco
+`ux_ui` assente — l'orchestrator **non** valuta alcun dispatch UX/UI: comportamento
+identico a v2.17 (R.P3, sezione puramente additiva). File agenti/comandi assenti =
+comportamento orchestrator identico (ADR-020 §J).
+
+**Separazione strutturale enforced (reviewer ≠ designer).** L'orchestrator non
+assegna MAI il ruolo `ux-ui-reviewer` e il ruolo `ui-designer` allo stesso agente
+invocato nella stessa catena di reasoning (ADR-020 §H, §Rationale 4). I due ruoli
+vivono in due agenti fisicamente distinti; l'orchestrator dispatcha l'uno o l'altro,
+mai entrambi nel medesimo turn sullo stesso artefatto. Siccome gli agenti sono
+fisicamente separati, la review procede normalmente anche su un TSK il cui
+`ui_design_spec:` è stato prodotto in iterazione precedente dal designer (no vincolo
+su identità — i due sono entità diverse).
+
+**Policy dispatch review (`ux-ui-review`):**
+
+1. Se `ux_ui.agents.reviewer: true` AND `.claude/agents/ux-ui-reviewer.md`
+   scaffoldato → invoca `ux-ui-reviewer` (agente dedicato, US-030).
+2. Altrimenti → fallback alla skill
+   [`ux-ui-review-protocol`](../skills/ux-ui-review-protocol.md) (US-028) invocata
+   via `fe-dev`/`qa-dev` attivi in topologia.
+
+**Policy dispatch design (`ux-ui-design`, off-DAG):**
+
+1. Se `ux_ui.agents.designer: true` AND `.claude/agents/ui-designer.md`
+   scaffoldato → invoca `ui-designer` (agente dedicato, US-030).
+2. Altrimenti → fallback alla skill
+   [`ux-ui-design-protocol`](../skills/ux-ui-design-protocol.md) (US-029) invocata
+   via `fe-dev`/`qa-dev` attivi in topologia.
+
+**Post-condizione design (no auto-chain).** Dopo ogni `/ux-ui-design`, l'orchestrator
+**NON** auto-avvia la review: termina suggerendo `/ux-ui-review` sul deliverable
+prodotto, lasciando il gate umano obbligatorio (ADR-020 §Decisione, US-030 §Comando
+/ux-ui-design). Mai collassare design + review nello stesso flusso automatico.
+
+**Ordering pipeline FE.** La review UX/UI è un sub-step di Develop FE (L2), interposto
+tra visual-oracle e code-review: **develop → visual-oracle → ux-ui-review →
+code-review** (ADR-019). Composizione con flag parziali: senza visual oracle →
+`develop → ux-ui-review → code-review`. Il design (`ux-ui-design`) è **off-DAG /
+pre-TSK** (fonte upstream di `ui_design_spec:`), fuori da questo ordering.
+Precondition: `visual_status` è ABORT-gate (ADR-013), `ux_ui_status` è nota
+informativa (no ABORT — ADR-019 Punto 2).
+
+**Single-writer.** Il `ux_ui_status:` sul TSK target è scritto solo dall'agente che
+esegue la review (`ux-ui-reviewer` se scaffoldato, altrimenti `fe-dev`/`qa-dev` via
+skill US-028). Il `ui_design_spec:` è scritto solo dal **TPM** (il `ui-designer`
+suggerisce il path nel proprio output, il TPM committa — ADR-020 §A, §F): vedi nota
+`scrivi-task` sotto.
+
+**Logging.** Per ogni invocazione l'orchestrator appende (single-committer, R.S1)
+una entry in [`wiki/log.md`](../../wiki/log.md) (`ux-ui-review <target> → <verdict>`
+o `ux-ui-design <brief> → <deliverable_type>`) e una riga in
+[`memory/episodic/ux-ui-runs.md`](../../memory/episodic/ux-ui-runs.md) (formato:
+`YYYY-MM-DD-HH-MM | review|design | TSK-id|adhoc | verdict|deliverable |
+rubric_violations_count`).
+
+**Nota `scrivi-task` (handoff `ui_design_spec:`).** Dopo
+`/ux-ui-design --tsk=<id>`, il deliverable vive in
+`code_quality/reports/<TSK-id>-uxui-design.json`. Il **TPM** (single-writer del
+frontmatter TSK, skill [`scrivi-task`](../skills/scrivi-task.md)) può aggiungere
+`ui_design_spec: <path>` al frontmatter del TSK FE; il `fe-dev` lo legge in Fase 4 di
+Develop come specifica visiva di INPUT (analogo a `interaction_test_spec:` di
+ADR-012, vedi ADR-020 §A). L'orchestrator non scrive mai `ui_design_spec:`
+direttamente.
+
+Cross-link: [ADR-020](../../design_&_architecture/decisions/ADR-020.md),
+[ADR-019](../../design_&_architecture/decisions/ADR-019.md),
+[US-030](../../management/kanban/EP-008-ux-ui-review-design-capability/US-030-agenti-distinti-ux-ui-reviewer-ui-designer/US-030.md).

@@ -1,6 +1,6 @@
 # CLAUDE.md — soli-boy
 
-Questo repo è una **Agentic Factory llm-wiki++ v2.17** scaffoldata da `factory-bootstrap`.
+Questo repo è una **Agentic Factory llm-wiki++ v2.18** scaffoldata da `factory-bootstrap`.
 Segue il contratto universale definito in [`PATTERN.md`](PATTERN.md) (agent-agnostic,
 multi-adapter, compression layer a due assi).
 
@@ -17,6 +17,8 @@ Vedi [`factory.config.yaml`](factory.config.yaml):
 | Parallel scheduler | ON |
 | Code Quality Review (CQRL) | ON |
 | FE Visual Oracle (v2.17) | ON — `fe_correctness.enabled: true`, Playwright in `packages/app` |
+| Accessibility Testing (v2.18) | ON — `a11y.enabled: true`, agente `a11y-specialist`; richiede `axe-playwright` |
+| UX/UI Review & Design (v2.18) | ON — `ux_ui.enabled: true`, agenti `ux-ui-reviewer` + `ui-designer` |
 | Compression OUTPUT (Caveman) | ON — `conservative` |
 | Compression CONTEXT (Graphify) | ON — `graphify-cloud`, target `app` |
 
@@ -53,6 +55,14 @@ adapter contemporaneamente.
 - **Visual oracle su TSK FE**: `/visual-oracle <TSK-id> [--dry-run]` — render headless +
   screenshot multi-viewport/tema + critica visiva (ordering `develop → visual-oracle →
   review`; vedi [`wiki/runbooks/visual-oracle-installation.md`](wiki/runbooks/visual-oracle-installation.md))
+- **Accessibility scan (v2.18)**: `/a11y <target>` — scan WCAG 2.2 AA (URL | file | dir build |
+  TSK-id) via `run_a11y_scan`; regola di neutralità (`manual_checks` N≥1, non sostituisce audit
+  EAA/ADA); vedi [`wiki/runbooks/accessibility-testing-runbook.md`](wiki/runbooks/accessibility-testing-runbook.md)
+- **UX/UI review (v2.18)**: `/ux-ui-review <target>` — critica usabilità su rubrica anti-soggettività
+  (Nielsen + dimensioni UI/flusso); ordering `develop → visual-oracle → ux-ui-review → code-review`;
+  vedi [`wiki/runbooks/ux-ui-review-runbook.md`](wiki/runbooks/ux-ui-review-runbook.md)
+- **UX/UI design (v2.18)**: `/ux-ui-design <brief>` — wireframe/spec/flussi/copy (no-auto-eval: passa
+  sempre alla review); vedi [`wiki/runbooks/ux-ui-design-runbook.md`](wiki/runbooks/ux-ui-design-runbook.md)
 - Pubblicare kanban su GitHub: `/kanban-publish [show|run|dry-run]`
 - Premortem su epica/feature: `/premortem`
 - **Compression output**: `/compression [show|set|policy|dry-run]`

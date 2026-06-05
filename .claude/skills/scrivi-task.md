@@ -132,3 +132,43 @@ L'OR è educativo: se anche **una sola** dimensione è alta, il TPM si ferma e v
 scomposizione. Soglie default `{max_estimate_hours: 8, max_states: 3}`, configurabili in
 `factory.config.yaml.fe_correctness.granularity`. Il check meccanico è `lint-checks` Check 4n
 (WARNING-only, gated da `granularity_lint`).
+
+## Layer FE — UX/UI Design Spec (EP-008, ADR-020)
+
+> Sezione opt-in (US-032, capability EP-008). Procedura per il **TPM** per allegare al frontmatter di
+> un TSK FE il campo `ui_design_spec: <path>` quando esiste un deliverable di Design per il componente.
+> Analoga alla `## Layer FE — Interaction Test Spec` di EP-005 (ADR-012): il deliverable è una specifica
+> esterna che il TPM allega al TSK, non un output di runtime.
+
+**Quando suggerirlo.** Se per il componente target del TSK FE esiste un deliverable di Design prodotto
+da `/ux-ui-design` (agente `ui-designer`, US-029/030) — tipicamente in
+`code_quality/reports/<TSK-id>-uxui-design.json` (+ `.md`), oppure in `code_quality/reports/_adhoc/uxui-design-<...>`
+per invocazioni standalone — la skill suggerisce di valorizzare il frontmatter:
+
+```yaml
+ui_design_spec: code_quality/reports/<TSK-id>-uxui-design.json
+```
+
+**Single-writer: il TPM (ADR-020 §A/§F).** Il `ui-designer` **suggerisce** il path nel proprio output
+(logging), ma NON modifica il frontmatter né il corpo del TSK: il TPM **committa** il campo in fase di
+scrittura/aggiornamento del TSK. Pattern simmetrico a come il `code-reviewer` suggerisce ma il TPM
+committa i campi strutturali. Evita race condition e mantiene il TPM come owner del TSK schema.
+
+**Procedura.**
+1. Verifica se esiste un deliverable Design per il componente (path `<TSK-id>-uxui-design.json` o adhoc).
+2. Se sì, aggiungi `ui_design_spec: <path>` al frontmatter del TSK FE.
+3. Se il deliverable è adhoc e copre più componenti/TSK, scelta del TPM: può citarlo in più TSK.
+4. Opzionalmente aggiungi una sezione `## Design Reference` nel corpo del TSK con bullet al wireframe/spec.
+
+**Cosa ne fa il fe-dev.** In Fase 4 (Develop) il fe-dev legge `ui_design_spec:` come specifica visiva di
+prima classe (wireframe + `component_spec` + rationale del designer); le `assumptions[]`/`open_questions[]`
+non risolte del deliverable possono diventare `open_questions` del TSK. Vedi
+[`fe-dev`](../agents/fe-dev.md) §UX/UI Design spec input.
+
+**Schema deliverable single-shot.** Il deliverable Design è **single-shot** per TSK (no iter-N, distinto
+dal report Review iterativo `uxui-review-iter-<N>`): eventuali ridisegni sovrascrivono il file, il
+versioning vive in git. Il path resta quindi stabile nel frontmatter.
+
+**Backward compat.** Un TSK FE **senza** `ui_design_spec:` resta pienamente valido: **0 ERROR di lint**.
+Il campo è additivo e opt-in; la sua assenza non è mai un errore (il fe-dev sviluppa dalle specifiche
+esistenti — corpo TSK, State Matrix, eventuale `visual_reference:`).
