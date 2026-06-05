@@ -208,12 +208,22 @@ export class MgbaEngine implements EmulatorEngine {
     await this.flushFs();
   }
 
-  /** Compone il path del file save state per uno slot dato la convenzione mGBA. */
+  /**
+   * Compone il path del file save state per uno slot data la convenzione mGBA.
+   * Verificato a runtime (probe e2e GBA): mGBA scrive lo slot in
+   * `<saveStatePath>/<stem>.ss<slot>` dove `<stem>` è il nome ROM SENZA estensione
+   * (la lib deriva i nomi via `romPath.split('.'); arr.pop()`, cfr.
+   * node_modules/@thenick775/mgba-wasm/dist/mgba.js loadGame). Es. `game.gba` →
+   * `/data/states/game.ss0` (NON `game.gba.ss0`). Usare il basename completo
+   * causava ENOENT in lettura → "(undefined)" da Emscripten ErrnoError.
+   */
   private saveStateFilePath(slot: number): string {
     const mod = this.requireModule("saveStateFilePath");
     const dir = mod.filePaths().saveStatePath;
     const baseName = (mod.gameName ?? this.gameFileName ?? "game.gba").split("/").pop() ?? "game.gba";
-    return `${dir}/${baseName}.ss${slot}`;
+    const dot = baseName.lastIndexOf(".");
+    const stem = dot > 0 ? baseName.slice(0, dot) : baseName;
+    return `${dir}/${stem}.ss${slot}`;
   }
 
   private requireModule(op: string): MgbaModule {
