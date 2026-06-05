@@ -1,0 +1,13 @@
+{
+  "tsk": "TSK-069", "component": "PrivacyNotice (banner + sezione Settings)",
+  "ep012_remediation": "TSK-082", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-10", "severity": "low",
+      "location": "PrivacyNotice copy",
+      "description": "Il notice 'on-device' è chiaro ma manca un link a un eventuale documento esteso (chi vuole approfondire deve cercare in Settings)." },
+    { "rubric_ref": "ui-gerarchia", "severity": "low",
+      "location": "banner",
+      "description": "Banner always-visible (non blocca) — gerarchia ok; verificare che non competa con CTA principale Library." }
+  ],
+  "positive_findings": ["Bottone 'Ho capito' chiaro. Non blocca uso (no modal trap)."]
+}

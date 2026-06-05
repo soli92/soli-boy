@@ -1,0 +1,13 @@
+{
+  "tsk": "TSK-044", "component": "ThemeSelector + persistenza data-theme",
+  "ep012_remediation": "TSK-083", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-1", "severity": "low",
+      "location": "feedback cambio tema",
+      "description": "Il cambio tema avviene immediatamente (verificato via Playwright); la persistenza non ha feedback esplicito ('Salvato')." },
+    { "rubric_ref": "ui-coerenza", "severity": "low",
+      "location": "tema cyberpunk (non scansionato)",
+      "description": "Il terzo tema (cyberpunk) non è stato verificato in questo run; manual check raccomandato sulla coerenza visiva." }
+  ],
+  "positive_findings": ["Switch immediato funziona (verified). Persistenza IDB documentata in TSK-044."]
+}

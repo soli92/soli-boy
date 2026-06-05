@@ -1,0 +1,14 @@
+{
+  "tsk": "TSK-006", "component": "Avviso legale no-copyright",
+  "ep012_remediation": "TSK-079",
+  "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    {
+      "rubric_ref": "ui-gerarchia", "severity": "low",
+      "location": "LegalNotice in pagina",
+      "description": "L'avviso è always-visible ma può confondersi visivamente con altri pannelli (chiarezza della distinzione 'note legali' vs 'controlli funzionali').",
+      "recommendation": "Valutare un'iconcina/badge 'legal' per identificarlo immediatamente."
+    }
+  ],
+  "positive_findings": ["Avviso sempre presente; nessun overlay che blocca l'uso."]
+}

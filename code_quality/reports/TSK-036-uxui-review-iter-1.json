@@ -1,0 +1,10 @@
+{
+  "tsk": "TSK-036", "component": "Scala + aspect ratio (Settings Resa video)",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-1", "severity": "low",
+      "location": "preview cambio scala",
+      "description": "Manca preview live del cambio scala/aspect; l'utente deve applicare per vedere effetto." }
+  ],
+  "positive_findings": ["Due <select> ben separati, valori esposti chiaramente."]
+}

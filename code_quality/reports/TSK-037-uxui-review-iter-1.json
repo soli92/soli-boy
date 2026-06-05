@@ -1,0 +1,10 @@
+{
+  "tsk": "TSK-037", "component": "Filtri base (nearest/smoothing/scanline)",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-2", "severity": "low",
+      "location": "naming filtri",
+      "description": "Termini tecnici (nearest/smoothing/scanline) sono adeguati per il pubblico target (utenti emulazione) ma un micro-tooltip esplicativo aiuterebbe il newbie." }
+  ],
+  "positive_findings": ["Opzioni esposte uniformemente in Settings."]
+}

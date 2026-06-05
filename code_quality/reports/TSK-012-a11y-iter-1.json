@@ -1,0 +1,21 @@
+{
+  "tsk": "TSK-012", "component": "Library: griglia ROM persistite",
+  "ep012_remediation": "TSK-079",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 0, "minor": 2, "manual_checks": 5 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[role=\"region\"]", "description": "Non specifico alla Library." },
+    { "id": "page-has-heading-one", "severity": "Minor", "wcag": "n/a", "location": "html", "description": "La pagina non ha h1; la Library header potrebbe candidare un h1 brand+title." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify card semantic (heading + meta) per ROM", "status": "to_verify" },
+    { "wcag": "2.4.6", "item": "Verify heading hierarchy descrive la struttura della Library", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify griglia responsive non rompe a 320px", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify card e CTA Avvia navigabili da tastiera", "status": "to_verify" },
+    { "wcag": "1.4.3", "item": "Verify contrasto titolo/meta su tutti i temi", "status": "to_verify" }
+  ],
+  "positive_findings": ["Griglia Library always-visible alla root. Nessun finding axe sulla griglia/card."],
+  "notes": "Scan eseguito con DB IndexedDB vuoto (stato iniziale, no ROM persistite). Per coprire stato 'card popolata' è stato eseguito anche il run player-rom-loaded dopo upload di dmg-acid2.gb (vedi all-runs.json)."
+}

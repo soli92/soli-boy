@@ -1,0 +1,19 @@
+{
+  "tsk": "TSK-012", "component": "Library (griglia ROM persistite)",
+  "ep012_remediation": "TSK-079",
+  "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    {
+      "rubric_ref": "ux-errori-vuoti", "severity": "low",
+      "location": "Library stato vuoto",
+      "description": "Quando non ci sono ROM caricate la griglia è vuota; l'utente è guidato dall'avviso 'Trascina una ROM' ma la Library stessa non comunica esplicitamente lo stato vuoto.",
+      "recommendation": "Aggiungere placeholder esplicito 'Nessuna ROM ancora caricata' con CTA verso FileLoader."
+    },
+    {
+      "rubric_ref": "ui-spaziatura", "severity": "low",
+      "location": "griglia card",
+      "description": "Su mobile 375 le card potrebbero apparire dense in caso di molte ROM (non verificabile su dataset vuoto)."
+    }
+  ],
+  "positive_findings": ["Griglia visibile sin dal mount; layout responsivo plausibile."]
+}

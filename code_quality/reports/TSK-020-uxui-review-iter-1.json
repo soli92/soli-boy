@@ -1,0 +1,15 @@
+{
+  "tsk": "TSK-020", "component": "Dropzone FileLoader attivabile da tastiera",
+  "ep012_remediation": "TSK-079",
+  "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    {
+      "rubric_ref": "nielsen-7", "severity": "low",
+      "location": "dropzone keyboard hint",
+      "description": "Acceleratore di tastiera (Enter/Space) presente ma non documentato visivamente. Utenti esperti che usano AT ne hanno feedback, utenti vedenti no.",
+      "recommendation": "Hint visivo opzionale: 'Tab + Invio per scegliere un file'."
+    }
+  ],
+  "positive_findings": ["Funzionalità correttamente implementata (REACT-A11Y-001)."],
+  "notes": "Review co-localizzata con TSK-003 (stesso componente)."
+}

@@ -1,0 +1,21 @@
+{
+  "tsk": "TSK-022", "component": "Player mount DOM + selezione engine (stub/reale)",
+  "ep012_remediation": "TSK-081",
+  "target": "http://localhost:5179/?engine=real (con ROM caricata)",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "scan_state": "player-rom-loaded",
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 4 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]", "description": "Banner privacy non specifico." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify ref container DOM Player ha struttura semantica appropriata", "status": "to_verify" },
+    { "wcag": "4.1.1", "item": "Verify che engine real e engine stub producano DOM valido (no parsing errors)", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify Player reflows a 320px", "status": "to_verify" },
+    { "wcag": "1.3.1", "item": "Verify semantic structure end-to-end", "status": "to_verify" }
+  ],
+  "positive_findings": ["Engine real (WasmBoy) attivato via ?engine=real e canvas visibile."],
+  "notes": "Mount DOM verificato sia in stato montato (canvas visibile) sia in stato pre-mount (Library). Nessun finding specifico."
+}

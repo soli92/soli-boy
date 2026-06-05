@@ -497,3 +497,14 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
   - F-074-3 (low): CLOSED — JSDoc esteso su ensuredDirs (22 righe, native-fs-adapter.ts:295-312) + cross-reference in addRom.
   - Gap test symlink: non bloccante — assenza harness main process Electron (structural constraint); tracciato come DEBT-074-A in report iter-2.
   - Open debt: DEBT-074-A (QA-TEST-001, low) harness main process per guardExistingPath; DEBT-074-B (TS-ROBUST-001, low) realpath parent su fs:writeFile/mkdir.
+
+## 2026-06-05 — develop EP-012 (remediation a11y + UX/UI retroattiva, TSK-079..083)
+[2026-06-05] develop TSK-079 → done · TSK-080 → done · TSK-081 → done · TSK-082 → done · TSK-083 → done
+  - Scope: verifica retroattiva a11y (WCAG 2.2 AA) + UX/UI (rubrica Nielsen + UI/UX) su 21 TSK sorgente già `done` (FE).
+  - Tooling: `a11y-scan.sh` (Playwright + axe-playwright); script inline `axe-playwright` + screenshot Playwright in `packages/app` (rimossi post-run, R.18 mai persistere temp).
+  - Setup esercitato: SPA single-route `http://localhost:5179/` (sempre-visibile: FileLoader, LegalNotice, Library, ThemeSelector, logo, PrivacyNotice, Settings) + carico ROM libera `dmg-acid2.gb` (MIT) via `?engine=real` per esercitare componenti ROM-gated (Player, controls, SaveStatePanel, Fullscreen, Settings → Resa video / Filtri / Dati / Controlli). Tema switching via UI selector (`Tema dell'interfaccia`) per coprire 90s-party + dark.
+  - Esito frontmatter sorgente (21/21): a11y_status valorizzato pass×16, major×5 (TSK-003 dark loader label, TSK-040 DS cross-cutting, TSK-038 chip-on 90s-party, TSK-014 sb-danger 90s-party, TSK-044 cross-token); ux_ui_status: pass×21 (no conditional/reject).
+  - Gap dichiarati nei report: tema cyberpunk non scansionato (gap TSK-044/046); sub-stati Player fullscreen-attivo / loadState completato / dialog errore engine-mismatch non esercitati (manual checks raccomandati nei report).
+  - No auto-fix codice (vincolo retroattivo: `packages/app/**` intatto); finding major → open_questions sui TSK sorgente + entry `wiki/gaps.md` (gate owner).
+  - Report: `code_quality/reports/TSK-{003,006,008,012,014,017,020,022,032,033,035,036,037,038,039,040,041,044,046,069,070}-{a11y,uxui-review}-iter-1.{json,md}` (42 file). Run aggregati: `code_quality/reports/ep012-runs/all-runs.json`, `all-runs-dark.json`, 12 screenshot PNG.
+  - Manual checks `N≥1` rispettata su tutti i report a11y (regola di neutralità ADR-016 §G).

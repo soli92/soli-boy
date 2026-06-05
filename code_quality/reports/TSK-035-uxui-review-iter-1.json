@@ -1,0 +1,10 @@
+{
+  "tsk": "TSK-035", "component": "Schermo intero (Fullscreen API toggle)",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-1", "severity": "low",
+      "location": "toggle Fullscreen",
+      "description": "Lo stato attivo/inattivo è veicolato dal solo aria-pressed (manual check) + label dinamica; verifica visuale dell'icona/etichetta raccomandata." }
+  ],
+  "positive_findings": ["Bottone presente con accessible name."]
+}

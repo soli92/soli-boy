@@ -1,0 +1,28 @@
+{
+  "tsk": "TSK-044", "component": "ThemeSelector + persistenza data-theme",
+  "ep012_remediation": "TSK-083",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 1, "minor": 2, "manual_checks": 5 },
+  "automated_findings": [
+    {
+      "id": "color-contrast", "severity": "Major", "wcag": "1.4.3",
+      "location": "varie classi DS attivate dal tema",
+      "themes_affected": ["90s-party","dark"],
+      "description": "Cambiando tema via ThemeSelector emergono i finding contrast cross-cutting: 90s-party → .sb-chip-on / .sb-danger.sb-btn; dark → .sb-loader > label. Il ThemeSelector funziona correttamente (data-theme switcha), ma alcuni token DS sotto soglia AA nei singoli temi.",
+      "suggested_fix": "Patch upstream nei token @soli92/solids o override `sb-*`; non in ThemeSelector stesso. Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast"
+    },
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[role=\"region\"]", "description": "Non specifico al ThemeSelector." },
+    { "id": "page-has-heading-one", "severity": "Minor", "wcag": "n/a", "location": "html", "description": "Non specifico al ThemeSelector." }
+  ],
+  "manual_checks": [
+    { "wcag": "4.1.2", "item": "Verify select tema ha aria-label 'Tema dell'interfaccia'", "status": "to_verify" },
+    { "wcag": "1.4.3", "item": "Verify contrast in tema cyberpunk (non scan automatico in questa iter)", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify <select> navigabile da tastiera (default browser, presumed OK)", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visibile sul <select> tema", "status": "to_verify" },
+    { "wcag": "3.2.5", "item": "Verify cambio tema non causa context change inaspettato", "status": "to_verify" }
+  ],
+  "positive_findings": ["ThemeSelector switcha correttamente via API IDB e via UI selector (verified). Nessuna violazione sul <select> stesso."],
+  "notes": "Il finding 'major' è imputabile al DS/tokens, non al ThemeSelector. Tema cyberpunk NON scansionato automaticamente in questa iter (gap dichiarato). Manual check raccomandato."
+}

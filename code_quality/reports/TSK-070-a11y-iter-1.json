@@ -1,0 +1,19 @@
+{
+  "tsk": "TSK-070", "component": "Avviso legale in-app (Settings → Legale)",
+  "ep012_remediation": "TSK-082",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 4 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[role=\"region\"]", "description": "Non specifico a 'Legale'." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.4.3", "item": "Verify contrast del testo legale e dei link 'Privacy/Sorgenti' nei 3 temi", "status": "to_verify" },
+    { "wcag": "1.3.1", "item": "Verify heading level appropriato della sezione Legale", "status": "to_verify" },
+    { "wcag": "3.1.5", "item": "Verify linguaggio legale adeguato al pubblico", "status": "to_verify" },
+    { "wcag": "2.4.4", "item": "Verify che i link contestuali alla privacy abbiano accessible name descrittivo", "status": "to_verify" }
+  ],
+  "positive_findings": ["Sezione always-visible in Settings (sempre raggiungibile)."],
+  "notes": "Componente testuale dentro Settings. Scan eseguito con Settings montato. Nessun finding specifico."
+}

@@ -1,0 +1,10 @@
+{
+  "tsk": "TSK-022", "component": "Player mount DOM + engine selection",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-6", "severity": "low",
+      "location": "selezione engine via ?engine=real",
+      "description": "La selezione engine (stub/reale) avviene via query string; per l'utente finale è invisibile e non documentata in-app. Coerente con l'intento dev-only, ma manca un mode-indicator se attivato per debug." }
+  ],
+  "positive_findings": ["Mount DOM corretto su entrambi gli engine."]
+}

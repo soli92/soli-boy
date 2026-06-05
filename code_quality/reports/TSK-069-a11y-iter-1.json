@@ -1,0 +1,23 @@
+{
+  "tsk": "TSK-069", "component": "PrivacyNotice (banner + sezione Settings)",
+  "ep012_remediation": "TSK-082",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 4 },
+  "automated_findings": [
+    {
+      "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1",
+      "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]",
+      "description": "Il banner section condivide ruolo 'region' con altre section senza heading univoco. Aggiungere `aria-label` o assicurare che `aria-labelledby` punti a un heading semanticamente unico."
+    }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify banner ha role=region + accessible name unico", "status": "to_verify" },
+    { "wcag": "2.4.3", "item": "Verify focus va al banner alla prima apertura", "status": "to_verify" },
+    { "wcag": "1.4.3", "item": "Verify contrast testo privacy su tutti i temi", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify dismiss CTA attivabile da tastiera", "status": "to_verify" }
+  ],
+  "positive_findings": ["Bottone 'Ho capito' presente con label visibile (button accessible-name OK)."],
+  "notes": "Il banner è always-visible alla prima apertura (l'agente l'ha trovato in tutti gli stati senza dismiss). Single finding minor risolvibile rendendo univoco l'aria-labelledby della banner."
+}

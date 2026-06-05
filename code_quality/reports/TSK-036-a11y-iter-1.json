@@ -1,0 +1,21 @@
+{
+  "tsk": "TSK-036", "component": "Scala + aspect ratio persistiti (Settings → Resa video)",
+  "ep012_remediation": "TSK-081",
+  "target": "http://localhost:5179/?engine=real (con ROM caricata)",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "scan_state": "player-rom-loaded (sezione Resa video visibile in Settings)",
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 4 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]", "description": "Non specifico a Resa video." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify due <select> (scala, aspect) hanno <label> associato", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify <select> navigabili da tastiera (default browser)", "status": "to_verify" },
+    { "wcag": "3.2.2", "item": "Verify cambio scala/aspect non causa context change inaspettato", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify nuova scala non rompe reflow a 320px", "status": "to_verify" }
+  ],
+  "positive_findings": ["Sezione visibile; nessuna violazione axe."],
+  "notes": "Cambio scala/aspect non esercitato a livello interattivo. Manual check raccomandato per label association sui due <select>."
+}

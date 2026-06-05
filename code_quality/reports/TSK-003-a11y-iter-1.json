@@ -1,0 +1,54 @@
+{
+  "tsk": "TSK-003",
+  "component": "FileLoader (selettore file + dropzone)",
+  "ep012_remediation": "TSK-079",
+  "target": "http://localhost:5179/",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375", "desktop-1280"],
+  "themes": ["90s-party", "dark"],
+  "include_interactive": true,
+  "summary": {
+    "critical": 0,
+    "major": 1,
+    "minor": 2,
+    "manual_checks": 5
+  },
+  "automated_findings": [
+    {
+      "id": "color-contrast",
+      "severity": "Major",
+      "wcag": "1.4.3",
+      "location": ".sb-loader > label",
+      "theme_affected": "dark",
+      "viewports_affected": ["mobile-375", "desktop-1280"],
+      "description": "Etichetta della dropzone FileLoader sotto soglia contrasto WCAG AA quando il tema è 'dark'. Rilevato sia in mobile sia in desktop. Nel tema '90s-party' (default) non emerge.",
+      "suggested_fix": "Aumentare il contrasto del foreground della label nello scope .sb-loader per il tema dark (token DS @soli92/solids). Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast"
+    },
+    {
+      "id": "landmark-unique",
+      "severity": "Minor",
+      "wcag": "1.3.1",
+      "location": "section[role=\"region\"] (top-level)",
+      "description": "Una delle section landmark non ha un nome accessibile univoco. Non bloccante."
+    },
+    {
+      "id": "page-has-heading-one",
+      "severity": "Minor",
+      "wcag": "n/a",
+      "location": "html",
+      "description": "Pagina priva di heading h1. Best-practice axe non-WCAG."
+    }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify semantic structure end-to-end", "status": "to_verify" },
+    { "wcag": "1.4.3", "item": "Verify color is not the only means of conveying information", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify FileLoader dropzone activates via keyboard (Enter/Space) — TSK-020 invariant", "status": "to_verify" },
+    { "wcag": "2.4.3", "item": "Verify focus order is logical and predictable", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify content reflows without loss at 320px width", "status": "to_verify" }
+  ],
+  "positive_findings": [
+    "Input file con label 'Carica ROM' visibile sia in mobile sia in desktop.",
+    "Dropzone (.sb-loader) sempre montata: nessun finding axe sulla semantica role=button + tabIndex (TSK-020)."
+  ],
+  "notes": "Scan eseguito su / (SPA single-route, FileLoader è componente always-visible). Dataset condiviso con TSK-020/006/012 sullo stesso scope DOM."
+}

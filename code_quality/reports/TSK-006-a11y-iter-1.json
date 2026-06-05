@@ -1,0 +1,23 @@
+{
+  "tsk": "TSK-006", "component": "Avviso legale no-copyright (LegalNotice)",
+  "ep012_remediation": "TSK-079",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 4 },
+  "automated_findings": [
+    {
+      "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1",
+      "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]",
+      "description": "Banner privacy section duplicata in landmark-unique con altra section senza label distinto. Tangenziale al LegalNotice."
+    }
+  ],
+  "manual_checks": [
+    { "wcag": "1.4.3", "item": "Verify legal copy contrast across themes (90s-party neon)", "status": "to_verify" },
+    { "wcag": "1.3.1", "item": "Verify legal notice has appropriate heading level", "status": "to_verify" },
+    { "wcag": "3.1.5", "item": "Verify legal language is appropriate to audience (Italian)", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify content reflows at 320px without truncation", "status": "to_verify" }
+  ],
+  "positive_findings": ["LegalNotice è always-visible alla root (no dialog, no dismiss che blocchi l'app)."],
+  "notes": "Componente statico testuale. Nessun finding di contrasto sul testo legal nei temi scanned."
+}

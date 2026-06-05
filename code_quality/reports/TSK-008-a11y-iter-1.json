@@ -1,0 +1,22 @@
+{
+  "tsk": "TSK-008", "component": "Player: viewport + mount EmulatorJS",
+  "ep012_remediation": "TSK-081",
+  "target": "http://localhost:5179/?engine=real (con ROM dmg-acid2.gb caricata)",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "scan_state": "player-rom-loaded (ROM libera dmg-acid2.gb caricata via Playwright)",
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 5 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]", "description": "Banner privacy non specifico al Player." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify .sb-screen ha role semantico appropriato (canvas + label)", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus indicator sul viewport quando il gioco è in esecuzione", "status": "to_verify" },
+    { "wcag": "4.1.2", "item": "Verify canvas WasmBoy ha accessible name", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify viewport reflows a 320px", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify input emulator (D-pad/A/B) keyboard-mappable", "status": "to_verify" }
+  ],
+  "positive_findings": ["Viewport .sb-screen monta canvas WasmBoy correttamente (verified via locator). Nessuna violazione axe specifica al Player viewport."],
+  "notes": "Player esercitato in stato 'running' con ROM dmg-acid2.gb (MIT, public domain). NON esercitato in stati 'paused' separato o 'idle pre-ROM' (idle = niente Player montato). Engine WasmBoy attivo (?engine=real)."
+}

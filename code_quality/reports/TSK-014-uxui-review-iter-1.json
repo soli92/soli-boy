@@ -1,0 +1,13 @@
+{
+  "tsk": "TSK-014", "component": "Player controls (pausa/ripresa/arresto)",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-3", "severity": "low",
+      "location": "Arresta",
+      "description": "Arresto è azione distruttiva (perde lo stato non salvato); manca conferma esplicita o info-tip." },
+    { "rubric_ref": "ux-reversibilita", "severity": "med",
+      "location": "Arresta",
+      "description": "Reversibilità mancante. Suggerimento: confirm dialog o snack 'Annulla' temporizzato." }
+  ],
+  "positive_findings": ["Bottoni con label chiare. Pausa cliccabile e screenshot 'paused' coerente."]
+}

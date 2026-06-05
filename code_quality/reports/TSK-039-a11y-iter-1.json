@@ -1,0 +1,20 @@
+{
+  "tsk": "TSK-039", "component": "Copertina gioco (upload/display)",
+  "ep012_remediation": "TSK-080",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 0, "minor": 2, "manual_checks": 4 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[role=\"region\"]", "description": "Non specifico alla cover." },
+    { "id": "page-has-heading-one", "severity": "Minor", "wcag": "n/a", "location": "html", "description": "Non specifico alla cover." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.1.1", "item": "Verify <img alt> per copertina ROM (alt=titolo gioco, non vuoto)", "status": "to_verify" },
+    { "wcag": "1.4.3", "item": "Verify contrast titolo card sopra copertina (no overlay illeggibile)", "status": "to_verify" },
+    { "wcag": "1.3.1", "item": "Verify upload area copertina ha label associato", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visibile su upload copertina", "status": "to_verify" }
+  ],
+  "positive_findings": ["Nessuna violazione image-alt rilevata. Card senza copertina (stato iniziale) presenta placeholder accessibile."],
+  "notes": "Scan eseguito senza copertina caricata (no fixture cover). Manual check WCAG 1.1.1 per la presenza di alt su card con copertina."
+}

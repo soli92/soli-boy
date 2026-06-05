@@ -1,0 +1,13 @@
+{
+  "tsk": "TSK-017", "component": "Settings rimappatura comandi + profili",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-9", "severity": "low",
+      "location": "rimappatura",
+      "description": "Mancano feedback espliciti su conflict keybinding (manual check, non verificato in scan)." },
+    { "rubric_ref": "ui-coerenza", "severity": "low",
+      "location": "lista profili",
+      "description": "Pattern profilo dovrebbe seguire la stessa CTA di altre liste in Settings." }
+  ],
+  "positive_findings": ["'Salva profilo' visibile, accessibile da tastiera."]
+}

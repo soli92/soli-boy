@@ -1,0 +1,18 @@
+{
+  "tsk": "TSK-039", "component": "Copertina gioco (upload/display)",
+  "ep012_remediation": "TSK-080",
+  "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    {
+      "rubric_ref": "ui-affordance", "severity": "low",
+      "location": "upload copertina",
+      "description": "L'area upload copertina deve essere distinguibile dall'area upload ROM per evitare confusione (verifica su card popolata necessaria)."
+    },
+    {
+      "rubric_ref": "ux-errori-vuoti", "severity": "low",
+      "location": "card senza copertina",
+      "description": "Lo stato 'card senza copertina' deve avere placeholder esplicito (verifica visiva richiesta)."
+    }
+  ],
+  "positive_findings": ["Funzionalità presente; integrazione storage corretta (TSK-039 DoD review-passed)."]
+}
