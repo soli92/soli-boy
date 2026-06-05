@@ -1,0 +1,19 @@
+{
+  "tsk": "TSK-046", "component": "Logo Soli-boy nell'header Library",
+  "ep012_remediation": "TSK-083",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 0, "minor": 2, "manual_checks": 3 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[role=\"region\"]", "description": "Non specifico al logo." },
+    { "id": "page-has-heading-one", "severity": "Minor", "wcag": "n/a", "location": "html", "description": "Non specifico al logo." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.1.1", "item": "Verify <img alt='Soli-boy'> non vuoto e descrittivo", "status": "to_verify" },
+    { "wcag": "1.4.11", "item": "Verify logo visibile su tutti i temi (90s-party/dark/cyberpunk) senza perdita di contrasto", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify logo non distorto/troncato a 320px", "status": "to_verify" }
+  ],
+  "positive_findings": ["Nessuna violazione image-alt rilevata sul logo."],
+  "notes": "Logo testato in 90s-party e dark, presente in tutti gli screenshot. Cyberpunk non testato (vedi gap TSK-044)."
+}

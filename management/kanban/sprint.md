@@ -4,7 +4,8 @@
 View aggregata generata dal `tpm`. Scope: Core web MVP (EP-001 + EP-003) +
 emulazione reale (EP-003 ADR-004/005) + post-MVP backlog (EP-002/004/005) +
 identità di brand (EP-010) + CI/CD (EP-011) + desktop (EP-006) + mobile (EP-007) +
-conformità store (EP-008).
+conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
+**fix color-contrast WCAG AA (EP-012/US-049, Sprint 10)**.
 
 ---
 
@@ -227,7 +228,51 @@ DAG Sprint 9:
 - Wave E (parallelo, EP-011): TSK-073 (done) ‖ TSK-078 (todo, P1)
 
 
-## Lookahead — Sprint 10+ (post-Sprint 9)
+## Sprint 10 — Remediation a11y & UX/UI (EP-012) — 5 scan todo · 1 fix todo
+
+> **Obiettivo:** smaltire il debito v2.18. 21 TSK FE `done` pregressi senza
+> `a11y_status`/`ux_ui_status` → scansioni retroattive per chiudere WARNING 4o/4p.
+> I 5 TSK di scan sono **indipendenti** e parallelizzabili (scheduler max_parallel: 4).
+> Ordering per ogni TSK scan: `visual-oracle (già eseguito) → /a11y → /ux-ui-review → update frontmatter TSK sorgente`.
+> Finding `critical` → fix FE o Q hard; `major` → conditional gestito o fix dedicato.
+> TSK-084 è il fix a11y emerso dai scan: chiude il gap `ds-color-contrast-cross-cutting-90s-party-dark`.
+> Regola di neutralità invariante: `manual_checks N≥1` obbligatori.
+
+### Wave 1 — Scan paralleli (tutti indipendenti)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | TSK sorgente coperti | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|----------------------|-----------|
+| TSK-079 | Scan a11y + UX/UI: FileLoader, avviso legale, Library griglia | US-044 | EP-012 | fe | agent | P1 | M | done | TSK-003/020/006/012 | — |
+| TSK-080 | Scan a11y + UX/UI: griglia DS, ricerca/filtro, copertina | US-045 | EP-012 | fe | agent | P1 | S | done | TSK-040/038/039 | — |
+| TSK-081 | Scan a11y + UX/UI: Player, controls, Settings, save-state, video | US-046 | EP-012 | fe | agent | P1 | L | done | TSK-008/022/014/017/032/041/033/035/036/037 | — |
+| TSK-082 | Scan a11y + UX/UI: PrivacyNotice, avviso legale in-app | US-047 | EP-012 | fe | agent | P1 | S | done | TSK-069/070 | — |
+| TSK-083 | Scan a11y + UX/UI: ThemeSelector, logo header Library | US-048 | EP-012 | fe | agent | P2 | S | done | TSK-044/046 | — |
+
+### Wave 2 — Fix a11y cross-cutting (post-scan, finding major chiusi)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | gap chiuso | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|------------|-----------|
+| TSK-084 | Fix token color-contrast 90s-party/dark + verifica cyberpunk (WCAG 2.2 AA) | US-049 | EP-012 | fe | agent | P1 | M | done | ds-color-contrast-cross-cutting-90s-party-dark | — |
+
+DAG Sprint 10:
+- Wave 1: TSK-079/080/081/082/083 tutti **done** (scan retroattivo EP-012 completato: 16 a11y pass, 5 major, 21 ux pass).
+- Wave 2: TSK-084 (**done**) — fix a11y cross-cutting completato.
+- TSK-084 ha CHIUSO il gap `ds-color-contrast-cross-cutting-90s-party-dark`; `a11y_status: pass` su TSK-003/014/038/040/044 (override locale app-extra.css, scan iter-2 0 finding, build verde, 279/279 test).
+
+**Nota a11y_status skip motivato applicato (non richiede scan):**
+I seguenti 6 TSK FE `done` hanno ricevuto skip motivato direttamente nel frontmatter (infra/asset non-DOM):
+
+| TSK | Titolo | a11y_skip_reason (sintesi) | ux_ui_skip_reason (sintesi) |
+|-----|--------|----------------------------|-----------------------------|
+| TSK-042 | Copia brand asset in public/ | copia binari PNG/SVG, no DOM | nessun componente UI |
+| TSK-043 | Favicon + link tag index.html | meta-tag HTML, no DOM interattivo | nessun componente UI |
+| TSK-045 | Web app manifest | JSON + meta tag, no DOM | file configurazione PWA |
+| TSK-049 | CI GitHub Actions ci.yml | YAML infra, no DOM | pipeline CI, no interazione utente |
+| TSK-050 | Branch protection main | gh API config, no DOM | configurazione VCS, no UI |
+| TSK-051 | CD Vercel cd-vercel.yml | YAML infra, no DOM | pipeline CD, no interazione utente |
+
+
+## Lookahead — Sprint 11+ (post-Sprint 10)
 
 | Area | Note |
 |------|------|
@@ -250,8 +295,15 @@ DAG Sprint 9:
 - Sprint 9 — 11 task: 8 done (TSK-069/070/073/074/075/076/077 done + TSK-073 done),
   2 todo (TSK-068, TSK-078), 1 todo human (TSK-072), 1 todo human (TSK-071).
   TSK-078 nuovo (qa agent, US-043, P1 — fix jsdom ERR_REQUIRE_ESM).
-- **Factory upgrade v2.17 (FE Visual Oracle)**: campo `visual_status` attivo su TSK-069.
-- **Consumer distribution (Sprint 7-9):** agent=19, human=6.
+- **Sprint 10 — Remediation a11y & UX/UI (EP-012):** 6/6 done (5 scan TSK-079..083 + fix TSK-084).
+  Fix a11y cross-cutting: TSK-084 (P1, **done**) — token contrasto 90s-party/dark/cyberpunk corretti; gap chiuso
+  `ds-color-contrast-cross-cutting-90s-party-dark`. 6 TSK skip motivato applicato (infra/asset non-DOM).
+  TSK-084 può partire subito (i 5 finding major originano dai scan EP-012 già done).
+- **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
+  Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
+  Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).
+- **Visual oracle v2.17**: campo `visual_status` attivo su TSK-069.
+- **Consumer distribution (Sprint 7-10):** agent=25, human=6 (Sprint 10 tutto agent, incluso TSK-084).
 - Gap da chiudere con lead-architect prima dello Sprint 7 Wave B:
   `electron-packaging-toolchain`, `electron-autoupdate-mechanism` (vedi `wiki/gaps.md`).
 - TSK-058 (e2e Electron) ora sbloccato: TSK-054 e TSK-055 sono done.

@@ -1,0 +1,13 @@
+{
+  "tsk": "TSK-033", "component": "Export/Import salvataggi (Settings → Dati)",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-9", "severity": "low",
+      "location": "esito KO import",
+      "description": "Manual check su role=alert per esito KO." },
+    { "rubric_ref": "ux-errori-vuoti", "severity": "low",
+      "location": "import di file corrotto",
+      "description": "Stato 'file invalido' deve avere copy explicit + recovery action." }
+  ],
+  "positive_findings": ["'Esporta' visibile in Settings."]
+}

@@ -1,0 +1,29 @@
+{
+  "tsk": "TSK-038", "component": "Ricerca + filtro piattaforma (Library)",
+  "ep012_remediation": "TSK-080",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 1, "minor": 2, "manual_checks": 5 },
+  "automated_findings": [
+    {
+      "id": "color-contrast", "severity": "Major", "wcag": "1.4.3",
+      "location": ".sb-chip-on",
+      "theme_affected": "90s-party",
+      "viewports_affected": ["mobile-375","desktop-1280"],
+      "description": "Chip filtro nello stato 'attivo' (`.sb-chip-on`) sotto soglia AA su tema 90s-party. La chip in stato off (`.sb-chip`) non è interessata.",
+      "suggested_fix": "Aumentare contrasto foreground/background di `.sb-chip-on` per il tema 90s-party. Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast"
+    },
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[role=\"region\"]", "description": "Non specifico ai filtri." },
+    { "id": "page-has-heading-one", "severity": "Minor", "wcag": "n/a", "location": "html", "description": "Non specifico ai filtri." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify radiogroup semantica (role=radiogroup + role=radio + aria-checked)", "status": "to_verify" },
+    { "wcag": "1.4.3", "item": "Verify chip-on contrast in tutti i temi", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify chip navigabili da tastiera (Arrow/Home/End)", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visibile sulla chip selezionata", "status": "to_verify" },
+    { "wcag": "3.3.2", "item": "Verify campo search ha label associato (input type=search)", "status": "to_verify" }
+  ],
+  "positive_findings": ["Search input con label associato (no aria/label violation). Radiogroup roles riconosciuti da axe."],
+  "notes": "Il finding color-contrast su .sb-chip-on è il contributo specifico di TSK-038 al gap DS cross-cutting (vedi TSK-040)."
+}

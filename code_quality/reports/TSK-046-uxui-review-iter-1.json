@@ -1,0 +1,10 @@
+{
+  "tsk": "TSK-046", "component": "Logo Soli-boy header Library",
+  "ep012_remediation": "TSK-083", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "ui-gerarchia", "severity": "low",
+      "location": "logo header",
+      "description": "Logo posizionato nell'header ma potrebbe candidare ad heading h1 visivo per ancorare la pagina." }
+  ],
+  "positive_findings": ["Logo visibile in 90s-party e dark; aderente al brand."]
+}

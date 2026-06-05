@@ -1,0 +1,29 @@
+{
+  "tsk": "TSK-014", "component": "Player controls (pausa/ripresa/arresto)",
+  "ep012_remediation": "TSK-081",
+  "target": "http://localhost:5179/?engine=real (con ROM caricata)",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "scan_state": "player-rom-loaded",
+  "summary": { "critical": 0, "major": 1, "minor": 1, "manual_checks": 4 },
+  "automated_findings": [
+    {
+      "id": "color-contrast", "severity": "Major", "wcag": "1.4.3",
+      "location": ".sb-app > .sd-gap-sm > .sb-danger.sb-btn",
+      "theme_affected": "90s-party",
+      "viewports_affected": ["mobile-375","desktop-1280"],
+      "description": "Bottone 'Arresta' (`.sb-danger.sb-btn`) sotto soglia contrasto AA sul tema 90s-party. Affligge sia mobile sia desktop.",
+      "suggested_fix": "Aumentare contrasto foreground/background della variante `sb-danger` per il tema 90s-party (token DS). Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast"
+    },
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]", "description": "Non specifico ai controls." }
+  ],
+  "manual_checks": [
+    { "wcag": "2.1.1", "item": "Verify Pausa/Riprendi/Arresta attivabili da tastiera (Enter/Space)", "status": "to_verify" },
+    { "wcag": "4.1.2", "item": "Verify role=button + accessible-name per i 3 controls", "status": "to_verify" },
+    { "wcag": "1.4.3", "item": "Verify contrast 'Arresta' in tema dark e cyberpunk (non scan automatico in 90s-party già FAIL)", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visibile sui controls", "status": "to_verify" }
+  ],
+  "positive_findings": ["Bottoni 'Pausa', 'Arresta' presenti con accessible-name (verificato via getByRole)."],
+  "notes": "Pausa è stata cliccata durante il run (vedi screenshot player-paused-*.png). Nessuna violazione semantica."
+}

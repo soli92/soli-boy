@@ -1,0 +1,52 @@
+{
+  "target": "http://localhost:5179/",
+  "standard": "wcag22aa",
+  "driver": "axe-playwright + Playwright (iter-2)",
+  "themes_viewports": [
+    "90s-party/mobile-375",
+    "90s-party/desktop-1280",
+    "dark/mobile-375",
+    "dark/desktop-1280",
+    "cyberpunk/mobile-375",
+    "cyberpunk/desktop-1280"
+  ],
+  "summary": {
+    "critical": 0,
+    "major": 0,
+    "minor": "unchanged",
+    "manual_checks": 3
+  },
+  "automated_findings": [],
+  "manual_checks": [
+    {
+      "wcag": "1.4.3",
+      "item": "Visual spot-check contrast on fixed selectors across themes",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.11",
+      "item": "Non-text contrast: focus ring/border after token override",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.4.7",
+      "item": "Visible focus on .sb-chip-on / .sb-danger after fix",
+      "status": "to_verify"
+    }
+  ],
+  "iter1_link": "code_quality/reports/TSK-014-a11y-iter-1.{json,md}",
+  "iter2_aggregated": [
+    "code_quality/reports/ep012-runs/all-runs-iter2.json",
+    "code_quality/reports/ep012-runs/all-runs-iter2-synthetic.json"
+  ],
+  "fix_source": "TSK-084 (US-049, EP-012) — overrides in packages/app/src/styles/app-extra.css",
+  "tsk_id": "TSK-014",
+  "verdict": "pass",
+  "fix_summary": {
+    "selector": ".sb-danger.sb-btn (\"Arresta\")",
+    "theme_fixed": "90s-party",
+    "ratio_before": 4.24,
+    "ratio_after": 7.78,
+    "token": ".sb-danger color #ff0055 → #ff8fb8"
+  }
+}

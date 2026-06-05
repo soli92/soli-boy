@@ -141,3 +141,39 @@ Fonti: `wiki/log.md` §"2026-06-03 — develop TSK-024 (qa)"; ADR-004 (`wiki/con
 **Sospetta fonte:** scelta di installazione adapter (PATTERN §12, factory.config.yaml.adapters).
 **Impatto:** nessuno sugli adapter attivi (`.claude`, `.cursor`). Si materializza solo se in futuro si installa un nuovo adapter.
 **Azione richiesta:** al momento dell'eventuale installazione di un nuovo adapter, replicare i 3 artefatti Visual Oracle (skill protocol + precheck + comando) + le sezioni delta nelle skill condivise, seguendo il mapping adapter di PATTERN §12. Nessuna azione richiesta ora.
+
+## 2026-06-05 — ds-color-contrast-cross-cutting-90s-party-dark
+**Origine:** scan a11y retroattivo EP-012/TSK-079..083 (verifica WCAG 2.2 AA con `a11y-scan.sh` + axe-playwright).
+**Gap:** 3 finding `color-contrast` di severità **Major** (WCAG 1.4.3) sul DS shared `@soli92/solids@1.14.1`, riproducibili stabilmente in mobile-375 e desktop-1280:
+  - `.sb-loader > label` (etichetta dropzone FileLoader) — tema `dark` → impatta TSK-003.
+  - `.sb-chip-on` (chip filtro attivo, Library) — tema `90s-party` → impatta TSK-038.
+  - `.sb-danger.sb-btn` (CTA Arresta, Player) — tema `90s-party` → impatta TSK-014.
+  
+  Origine cross-cutting (token DS, non componente-specifico) → TSK-040 portatore del gap; effetto trasversale via ThemeSelector (TSK-044) che applica i tre temi.
+**Sospetta fonte:** matrice token × tema incompleta nel pacchetto `@soli92/solids` (o assenza di override `sb-*` per i casi mancanti).
+**Impatto:** WCAG AA non rispettato sui tre stati nei rispettivi temi. Nessun finding `Critical`; uso possibile ma leggibilità ridotta. Cyberpunk non scansionato in iter-1 (gap secondario, manual check raccomandato).
+**Azione richiesta:** patch upstream nei token DS `@soli92/solids` (o override `sb-*` lato `packages/app/src/styles/`) per portare i 3 stati sopra soglia AA. Re-scan a11y dei 5 TSK sorgente (TSK-003, TSK-014, TSK-038, TSK-040, TSK-044). Eseguire anche scan tema `cyberpunk` per chiudere il gap secondario. Auto-fix NON eseguito in questo task (vincolo remediation retroattiva: nessuna modifica `packages/app/`). Gate owner.
+
+**Aggiornamento 2026-06-05 — owned/in-progress:** TSK-084 (EP-012/US-049, Sprint 10, P1, fe, consumer: agent) creato e assegnato per chiudere questo gap. Strategia: override CSS custom properties `sb-*` in `packages/app/src/styles/` per `[data-theme="90s-party"]` e `[data-theme="dark"]`. Include scan cyberpunk (gap secondario). Al completamento di TSK-084, aggiornare questa entry con stato CHIUSO e riferimento al commit.
+
+**Aggiornamento 2026-06-05 — CHIUSO da TSK-084.** Override applicati in `packages/app/src/styles/app-extra.css` (importato in `main.tsx` DOPO `@soli92/solids/dist/css/index.css`, così le custom properties dell'app sovrascrivono effettivamente i token DS). Cinque blocchi:
+  - `[data-theme="dark"] --sd-color-primary-default: #3B82F6 → #1d4ed8` + `--sd-color-primary-hover: → #1e40af`. Ratio `.sb-btn-primary` (incl. `.sb-loader > label`) bianco su nuovo blu = **6.70:1** (era 3.67).
+  - `[data-theme="dark"] .sb-chip-on { color: #93c5fd }` — compensa lo scuriamento del primary sul chip dark (avrebbe regredito a 2.56:1) → **9.51:1**.
+  - `[data-theme="90s-party"] .sb-chip-on { color: #ffd1ff }` (was `#e019dd`) → **10.48:1** (era 3.55).
+  - `[data-theme="90s-party"] .sb-danger { color: #ff8fb8; border-color: #ff8fb8 }` (was `#ff0055`) → **7.78:1** (era 4.24).
+  - `[data-theme="cyberpunk"] --sd-color-primary-subtle: #0e7490 → #052e36` → `.sb-chip-on` cyan FG su nuovo subtle = **5.96:1** (era 2.21, sub-gap iter-1 incluso).
+
+Re-scan iter-2 (axe-playwright, 3 temi × 2 viewport + scope sintetico): **0 finding `color-contrast` major/critical** su tutte le combinazioni. I 5 TSK sorgente (TSK-003, TSK-014, TSK-038, TSK-040, TSK-044) sono `a11y_status: pass` con report `code_quality/reports/TSK-*-a11y-iter-2.{json,md}`. Sub-gap cyberpunk incluso e risolto. Tracce: `code_quality/reports/ep012-runs/all-runs-iter2.json`, `all-runs-iter2-synthetic.json`, screenshot `iter2-*`. Build `packages/app` verde post-fix.
+
+## 2026-06-05 — rom-gated-ui-substates-not-exercised-headless
+**Origine:** scan a11y retroattivo EP-012/TSK-081 (componenti ROM-gated: Player, controls, SaveStatePanel, Fullscreen, Settings sub-sezioni).
+**Gap:** alcuni sub-stati della UI ROM-gated NON sono esercitabili banalmente in Playwright headless e quindi NON sono coperti dallo scan automatico iter-1:
+  - Player in stato `fullscreen` attivo (Fullscreen API richiede user gesture realistico; headless concede `requestFullscreen` ma non sempre triggera la state machine completa) → TSK-035.
+  - SaveStatePanel con slot popolati + dialog di errore engine-mismatch / not-found (richiede save reale + sequenza che provochi l'errore) → TSK-032.
+  - Bugfix loadState (canvas persistente dopo `loadState`) verificato strutturalmente ma sub-stato `loadState completato` non esercitato → TSK-041.
+  - Settings rimappatura comandi: `capture keybinding` non esercitato interattivamente → TSK-017.
+  - Settings Dati: flusso esito KO `Importa` (file corrotto) non esercitato end-to-end → TSK-033.
+**Sospetta fonte:** limite intrinseco dello scan headless retroattivo; copertura completa richiede test interattivi dedicati o auditor manuale con AT reale.
+**Impatto:** sub-stati elencati hanno `a11y_status: pass` su axe ma con manual checks aperti (documentati nei report `TSK-{017,032,033,035,041}-a11y-iter-1.{json,md}`).
+**Azione richiesta:** manual audit con AT (NVDA/VoiceOver) sui 5 sub-stati elencati prima di rilascio pubblico. In alternativa, estendere la suite e2e (`packages/app/e2e/`) con scenari dedicati che coprano i sub-stati e re-eseguire `a11y-scan.sh` su URL parametrizzati.
+

@@ -202,3 +202,9 @@ body{
 .device-desktop{width:100%;}
 
 /* responsive game grid per device handled inline per screen */
+
+/* TSK-084 — Gli override WCAG AA color-contrast vivono in app-extra.css
+   (importato in main.tsx DOPO @soli92/solids/dist/css/index.css, così
+   sovrascrivono effettivamente i token DS). Vedi packages/app/src/styles/app-extra.css
+   §"TSK-084 — WCAG 2.2 AA color-contrast overrides". */
+

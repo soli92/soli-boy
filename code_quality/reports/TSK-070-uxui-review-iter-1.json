@@ -1,0 +1,10 @@
+{
+  "tsk": "TSK-070", "component": "Avviso legale in-app (Settings → Legale)",
+  "ep012_remediation": "TSK-082", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-2", "severity": "low",
+      "location": "copy avviso legale",
+      "description": "Linguaggio legale è chiaro ma può essere intimidatorio; un riassunto bullet 'cosa puoi/non puoi fare' aiuterebbe la comprensione." }
+  ],
+  "positive_findings": ["Sezione 'Legale' sempre accessibile in Settings."]
+}

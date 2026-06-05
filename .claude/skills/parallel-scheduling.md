@@ -223,6 +223,54 @@ logicamente dopo la Fase 4 di `dev-protocol` (build/typecheck verde) e prima del
   i TSK FE. Lo scheduler continua a vedere L1 → L2 (develop, ora con visual-oracle come
   sub-step) → L3 (review) → L4 (publish/sync), invariati.
 
+## Dominio `a11y` (v2.18, EP-007)
+
+Lo scan di accessibilità ([`accessibility-testing-protocol`](./accessibility-testing-protocol.md),
+tool [`a11y-scan.sh`](../tools/a11y-scan.sh)) sui TSK FE è candidato alla wave quando
+`scheduler.domains.a11y: true` (default `false`, opt-in R.P3; richiede
+`factory.config.yaml.a11y.enabled: true`, altrimenti no-op). **Inquadramento: sub-step di L2
+(develop) in Modalità 2 (batch post-Develop, qa-dev), oppure operazione canonica autonoma in
+Modalità 3 (`/a11y`, a11y-specialist) — NON un nuovo livello DAG.** Parallelizzazione:
+
+- **Cross-TSK → parallel**: lo scan a11y su TSK FE distinti è parallelizzabile (ogni TSK scrive
+  il proprio report `code_quality/reports/<TSK-id>-a11y-iter-<N>` e il campo `a11y_status`, no
+  shared state).
+- **Same-TSK → serial**: gli iter dello stesso TSK sono serializzati — `a11y_status` è
+  single-writer per TSK (ADR-014 §Rationale 6: scrive solo l'agente che esegue lo scan;
+  fe-dev Modalità 1 ha priorità, qa-dev non sovrascrive).
+- **Composizione con `visual-oracle`**: in Modalità 1 (a11y inline in visual-oracle Fase 3-bis,
+  gated da `fe_correctness.checks: [axe-a11y]`) lo scan gira dentro la Visual Verification. In
+  Modalità 2 a11y e `ux-ui-review` girano in parallel sullo stesso TSK FE done senza contesa
+  (campi frontmatter distinti: `a11y_status` vs `ux_ui_status`).
+- **Effetto sul DAG**: non aumenta i livelli; gira su qualsiasi topology (anche `plan-only`).
+  Regola di neutralità invariante: il report include sempre `manual_checks` (N ≥ 1), mai
+  conformità su soli `automated_findings`.
+
+## Dominio `ux-ui-review` (v2.18, EP-008)
+
+La review UX/UI ([`ux-ui-review-protocol`](./ux-ui-review-protocol.md), o agente `ux-ui-reviewer`
+se `ux_ui.agents.reviewer: true`) sui TSK FE è candidata alla wave quando
+`scheduler.domains.ux-ui-review: true` (default `false`, opt-in R.P3; richiede
+`factory.config.yaml.ux_ui.enabled: true`, altrimenti no-op). **Inquadramento: sub-step di L2
+(develop), NON un nuovo livello DAG** — identico a `visual-oracle` (ADR-019 §Punto 3). Gira
+logicamente dopo la Fase 4-bis Visual Verification e prima della Fase 5. Parallelizzazione:
+
+- **Cross-TSK → parallel**: review su TSK FE distinti parallelizzabile (cartella isolata
+  `code_quality/reports/<TSK-id>-uxui-review-iter-<N>/`, no shared state).
+- **Same-TSK → serial**: gli iter dello stesso TSK (loop bounded da `ux_ui.max_iterations`)
+  sono serializzati — `ux_ui_status` e il report sono single-writer per TSK (analogo a `review`,
+  `visual_status`, `a11y_status`).
+- **Composizione con `visual-oracle`**: la `ux-ui-review` attende `visual_status` non-pending.
+  Se `visual_status: reject` → SKIPPED (no point a revisionare un rendering rotto). Se
+  `conditional` → può girare in parallel al loop visual oracle (ottimizzazione ADR-019
+  §Rationale 7). Ordering: `develop → visual-oracle → ux-ui-review → code-review`.
+- **Sotto-capability Design (`ux-ui-design`)**: **off-DAG** (no dominio scheduler dedicato,
+  ADR-020 §C). Invocata umano-driven via `/ux-ui-design <brief>`; il deliverable diventa input
+  «pre-TSK» di un TSK FE futuro tramite il campo frontmatter `ui_design_spec: <path>`
+  (single-writer TPM).
+- **Effetto sul DAG**: non aumenta i livelli; estende la durata effettiva di L2 per i TSK FE
+  quando `ux_ui.enabled: true`.
+
 ## Quando NON eseguire (short-circuit)
 
 - `factory.config.yaml.scheduler.enabled: false` → l'orchestrator esegue il

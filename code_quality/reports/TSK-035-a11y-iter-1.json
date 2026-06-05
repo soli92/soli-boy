@@ -1,0 +1,21 @@
+{
+  "tsk": "TSK-035", "component": "Schermo intero Fullscreen API (toggle Player)",
+  "ep012_remediation": "TSK-081",
+  "target": "http://localhost:5179/?engine=real (con ROM caricata)",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "scan_state": "player-rom-loaded (Fullscreen NON attivato — headless non supporta Fullscreen API utente reale)",
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 4 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]", "description": "Non specifico al fullscreen." }
+  ],
+  "manual_checks": [
+    { "wcag": "4.1.2", "item": "Verify aria-pressed e aria-label dinamici del toggle Fullscreen", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify toggle Fullscreen attivabile da tastiera", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify Player in fullscreen reflows correttamente", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visibile in modalità fullscreen", "status": "to_verify" }
+  ],
+  "positive_findings": ["Bottone 'Schermo intero' presente con accessible-name (verificato via getByRole)."],
+  "notes": "Lo stato 'fullscreen ATTIVO' non è stato esercitato (Playwright headless non concede Fullscreen API user gesture realistico). Verifica manuale raccomandata per aria-pressed='true' e cambio aria-label."
+}

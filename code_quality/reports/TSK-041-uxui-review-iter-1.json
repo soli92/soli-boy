@@ -1,0 +1,7 @@
+{
+  "tsk": "TSK-041", "component": "Bugfix canvas WasmBoy loadState (sb-canvas-host)",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [],
+  "positive_findings": ["Bugfix wrapper sb-canvas-host non altera la UX percepita; canvas rimane stabile."],
+  "notes": "Bugfix infrastrutturale, impatto UX neutro/positivo (regressione risolta)."
+}

@@ -1,0 +1,26 @@
+{
+  "tsk": "TSK-040", "component": "Integrazione @soli92/solids reale (DS cross-cutting)",
+  "ep012_remediation": "TSK-080",
+  "target": "http://localhost:5179/", "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 1, "minor": 2, "manual_checks": 4 },
+  "automated_findings": [
+    {
+      "id": "color-contrast", "severity": "Major", "wcag": "1.4.3",
+      "location": "varie classi DS (`.sb-chip-on`, `.sb-danger.sb-btn`, `.sb-loader > label`)",
+      "description": "Alcuni token DS sotto soglia AA in specifiche combinazioni tema: chip-on in 90s-party, sb-danger in 90s-party, label di .sb-loader in dark. Cross-cutting (impatta più componenti).",
+      "suggested_fix": "Aggiornare i token di contrasto in @soli92/solids o gli override `sb-*` per i casi mancanti. Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast"
+    },
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[role=\"region\"]", "description": "Non specifico al DS." },
+    { "id": "page-has-heading-one", "severity": "Minor", "wcag": "n/a", "location": "html", "description": "Non specifico al DS." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.4.3", "item": "Verify contrast su tutti i token DS per i 3 temi (90s-party/dark/cyberpunk)", "status": "to_verify" },
+    { "wcag": "1.3.1", "item": "Verify che il DS non introduca landmark duplicate", "status": "to_verify" },
+    { "wcag": "1.4.11", "item": "Verify non-text contrast (border, focus ring) sui componenti DS", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visible con il focus ring DS in tutti i temi", "status": "to_verify" }
+  ],
+  "positive_findings": ["Nessuna violazione sistemica oltre i 3 casi contrast individuati. Il DS espone correttamente roles/labels su componenti standard."],
+  "notes": "TSK-040 è cross-cutting: i finding contrast appartengono a token shared. Patch dovrebbe essere upstream nel pacchetto @soli92/solids o in override `sb-*`."
+}

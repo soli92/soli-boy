@@ -1,0 +1,37 @@
+{
+  "tsk": "TSK-003", "component": "FileLoader (selettore file + drag&drop)",
+  "ep012_remediation": "TSK-079",
+  "scope": "always-visible-root + drag&drop area",
+  "rubric_strict": true,
+  "viewports": ["mobile-375","desktop-1280"],
+  "themes": ["90s-party","dark"],
+  "verdict_suggested": "pass",
+  "screenshots": [
+    "code_quality/reports/ep012-runs/always-visible-mobile-90s-party.png",
+    "code_quality/reports/ep012-runs/always-visible-desktop-90s-party.png",
+    "code_quality/reports/ep012-runs/always-visible-mobile-dark-actual.png",
+    "code_quality/reports/ep012-runs/always-visible-desktop-dark-actual.png"
+  ],
+  "findings": [
+    {
+      "rubric_ref": "nielsen-6",
+      "severity": "low",
+      "location": "FileLoader dropzone",
+      "description": "Il testo 'Trascina qui una ROM' è chiaro ma non comunica esplicitamente che è anche cliccabile/keyboard-attivabile (la affordance dual selettore+dropzone è implicita).",
+      "recommendation": "Aggiungere micro-copy '...oppure premi Invio per scegliere un file' o uno hint di tastiera visibile."
+    },
+    {
+      "rubric_ref": "ui-affordance",
+      "severity": "low",
+      "location": ".sb-loader hover/drag-over",
+      "description": "Lo stato 'drag-over' è coerente ma negli screenshot statici non distinguibile dallo stato idle (manual check raccomandato in interazione reale).",
+      "recommendation": "Verificare empiricamente che drag-over abbia outline/colore distinto su tutti i temi."
+    }
+  ],
+  "positive_findings": [
+    "Label 'Carica ROM' visibile e cliccabile.",
+    "Dropzone presente e dimensionata per touch.",
+    "Layout chiaro: copy + area attivabile."
+  ],
+  "notes": "Contrast dell'etichetta in dark tema → DELEGATO al report a11y (TSK-003-a11y-iter-1, axe MAJOR color-contrast su .sb-loader > label)."
+}

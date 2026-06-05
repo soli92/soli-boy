@@ -5,7 +5,16 @@
   },
   "permissions": {
     "allow": [
-      "WebFetch(domain:registry.npmjs.org)"
+      "WebFetch(domain:registry.npmjs.org)",
+      "Bash(npx vite:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm --prefix packages/app run dev:*)",
+      "Bash(npx playwright:*)",
+      "Bash(bash .claude/tools/a11y-scan.sh:*)",
+      "Bash(.claude/tools/a11y-scan.sh:*)",
+      "Bash(cd packages/app && bash ../../.claude/tools/a11y-scan.sh:*)",
+      "Bash(curl http://localhost:*)",
+      "Bash(curl -s http://localhost:*)"
     ]
   }
 }

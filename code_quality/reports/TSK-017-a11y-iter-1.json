@@ -1,0 +1,22 @@
+{
+  "tsk": "TSK-017", "component": "Settings: rimappatura comandi + profili",
+  "ep012_remediation": "TSK-081",
+  "target": "http://localhost:5179/?engine=real (con ROM caricata)",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "scan_state": "player-rom-loaded (sezione 'Controlli' di Settings visibile, 'Salva profilo' bottone tra i labels)",
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 5 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]", "description": "Non specifico ai Controlli." }
+  ],
+  "manual_checks": [
+    { "wcag": "2.1.1", "item": "Verify che il keybinding capture funzioni da tastiera senza trap", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visibile durante rimappatura", "status": "to_verify" },
+    { "wcag": "4.1.2", "item": "Verify role e label dei controlli rimappabili (button/input)", "status": "to_verify" },
+    { "wcag": "3.3.1", "item": "Verify error identification quando il keybinding entra in conflitto", "status": "to_verify" },
+    { "wcag": "1.3.1", "item": "Verify lista profili ha struttura semantica appropriata", "status": "to_verify" }
+  ],
+  "positive_findings": ["Bottone 'Salva profilo' presente con label visibile (verificato via getByRole). Sezione 'Controlli' raggiungibile dalla SPA root."],
+  "notes": "Capture keybinding interattivo non esercitato (richiede sequenza keyboard targeted). Manual check raccomandato."
+}

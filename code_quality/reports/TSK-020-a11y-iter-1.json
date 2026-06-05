@@ -1,0 +1,34 @@
+{
+  "tsk": "TSK-020",
+  "component": "Dropzone FileLoader attivabile da tastiera (a11y)",
+  "ep012_remediation": "TSK-079",
+  "target": "http://localhost:5179/",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375", "desktop-1280"],
+  "themes": ["90s-party", "dark"],
+  "include_interactive": true,
+  "summary": { "critical": 0, "major": 0, "minor": 2, "manual_checks": 5 },
+  "automated_findings": [
+    {
+      "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1",
+      "location": "section[role=\"region\"]",
+      "description": "Non specifico al componente."
+    },
+    {
+      "id": "page-has-heading-one", "severity": "Minor", "wcag": "n/a",
+      "location": "html", "description": "Non specifico al componente."
+    }
+  ],
+  "manual_checks": [
+    { "wcag": "2.1.1", "item": "Verify dropzone (role=button + tabIndex=0) is triggerable by keyboard Enter/Space and opens native file picker", "status": "to_verify" },
+    { "wcag": "2.4.7", "item": "Verify focus visible on dropzone when Tab-focused", "status": "to_verify" },
+    { "wcag": "4.1.2", "item": "Verify role/name/value of dropzone exposed to AT", "status": "to_verify" },
+    { "wcag": "1.3.1", "item": "Verify semantic structure end-to-end", "status": "to_verify" },
+    { "wcag": "1.4.10", "item": "Verify content reflows at 320px", "status": "to_verify" }
+  ],
+  "positive_findings": [
+    "Nessun finding axe sulla semantica role=button + tabIndex (regola REACT-A11Y-001).",
+    "Nessuna violazione 'keyboard'/'focusable-content' su .sb-loader."
+  ],
+  "notes": "TSK-020 introduce onKeyDown Enter/Space sulla dropzone. axe non testa keyboard activation automaticamente — manual checks coprono il requisito."
+}

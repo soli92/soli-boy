@@ -1,0 +1,18 @@
+{
+  "tsk": "TSK-038", "component": "Ricerca + filtro piattaforma",
+  "ep012_remediation": "TSK-080",
+  "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    {
+      "rubric_ref": "nielsen-1", "severity": "low",
+      "location": "chip filtro attivo",
+      "description": "Lo stato 'filtro attivo' è veicolato cromaticamente dalla chip-on; in tema 90s-party il contrast issue (vedi report a11y) ne riduce la visibilità."
+    },
+    {
+      "rubric_ref": "ux-prossimo-passo", "severity": "low",
+      "location": "interazione search+chip",
+      "description": "Combinabilità search+chip è plausibile ma non comunicata esplicitamente; un utente potrebbe credere di dover scegliere uno dei due."
+    }
+  ],
+  "positive_findings": ["Search input + chip radiogroup, semantica corretta."]
+}

@@ -1,0 +1,20 @@
+{
+  "tsk": "TSK-037", "component": "Filtri base nearest/smoothing/scanline (Settings)",
+  "ep012_remediation": "TSK-081",
+  "target": "http://localhost:5179/?engine=real (con ROM caricata)",
+  "standard": "wcag22aa",
+  "viewports": ["mobile-375","desktop-1280"], "themes": ["90s-party","dark"],
+  "include_interactive": true,
+  "scan_state": "player-rom-loaded",
+  "summary": { "critical": 0, "major": 0, "minor": 1, "manual_checks": 3 },
+  "automated_findings": [
+    { "id": "landmark-unique", "severity": "Minor", "wcag": "1.3.1", "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]", "description": "Non specifico ai filtri." }
+  ],
+  "manual_checks": [
+    { "wcag": "1.3.1", "item": "Verify opzioni filtro hanno label/role appropriato (radio/select)", "status": "to_verify" },
+    { "wcag": "2.1.1", "item": "Verify opzioni filtro navigabili da tastiera", "status": "to_verify" },
+    { "wcag": "3.2.4", "item": "Verify naming consistente delle opzioni filtro", "status": "to_verify" }
+  ],
+  "positive_findings": ["Sezione visibile; nessuna violazione axe specifica."],
+  "notes": "Cambio filtro non esercitato a livello interattivo."
+}

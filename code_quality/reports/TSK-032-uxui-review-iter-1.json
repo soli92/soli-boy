@@ -1,0 +1,13 @@
+{
+  "tsk": "TSK-032", "component": "SaveStatePanel",
+  "ep012_remediation": "TSK-081", "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    { "rubric_ref": "nielsen-5", "severity": "low",
+      "location": "Elimina slot",
+      "description": "Elimina è azione distruttiva senza conferma esplicita; rischio cancellazione accidentale." },
+    { "rubric_ref": "ui-affordance", "severity": "low",
+      "location": "slot vuoto",
+      "description": "Carica/Elimina disabled in slot vuoto è coerente, ma la differenza visiva fra slot vuoto e slot popolato deve essere immediatamente leggibile." }
+  ],
+  "positive_findings": ["3 slot esposti uniformemente; pattern coerente."]
+}

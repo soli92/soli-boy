@@ -497,3 +497,30 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
   - F-074-3 (low): CLOSED — JSDoc esteso su ensuredDirs (22 righe, native-fs-adapter.ts:295-312) + cross-reference in addRom.
   - Gap test symlink: non bloccante — assenza harness main process Electron (structural constraint); tracciato come DEBT-074-A in report iter-2.
   - Open debt: DEBT-074-A (QA-TEST-001, low) harness main process per guardExistingPath; DEBT-074-B (TS-ROBUST-001, low) realpath parent su fs:writeFile/mkdir.
+
+## 2026-06-05 — develop EP-012 (remediation a11y + UX/UI retroattiva, TSK-079..083)
+[2026-06-05] develop TSK-079 → done · TSK-080 → done · TSK-081 → done · TSK-082 → done · TSK-083 → done
+  - Scope: verifica retroattiva a11y (WCAG 2.2 AA) + UX/UI (rubrica Nielsen + UI/UX) su 21 TSK sorgente già `done` (FE).
+  - Tooling: `a11y-scan.sh` (Playwright + axe-playwright); script inline `axe-playwright` + screenshot Playwright in `packages/app` (rimossi post-run, R.18 mai persistere temp).
+  - Setup esercitato: SPA single-route `http://localhost:5179/` (sempre-visibile: FileLoader, LegalNotice, Library, ThemeSelector, logo, PrivacyNotice, Settings) + carico ROM libera `dmg-acid2.gb` (MIT) via `?engine=real` per esercitare componenti ROM-gated (Player, controls, SaveStatePanel, Fullscreen, Settings → Resa video / Filtri / Dati / Controlli). Tema switching via UI selector (`Tema dell'interfaccia`) per coprire 90s-party + dark.
+  - Esito frontmatter sorgente (21/21): a11y_status valorizzato pass×16, major×5 (TSK-003 dark loader label, TSK-040 DS cross-cutting, TSK-038 chip-on 90s-party, TSK-014 sb-danger 90s-party, TSK-044 cross-token); ux_ui_status: pass×21 (no conditional/reject).
+  - Gap dichiarati nei report: tema cyberpunk non scansionato (gap TSK-044/046); sub-stati Player fullscreen-attivo / loadState completato / dialog errore engine-mismatch non esercitati (manual checks raccomandati nei report).
+  - No auto-fix codice (vincolo retroattivo: `packages/app/**` intatto); finding major → open_questions sui TSK sorgente + entry `wiki/gaps.md` (gate owner).
+  - Report: `code_quality/reports/TSK-{003,006,008,012,014,017,020,022,032,033,035,036,037,038,039,040,041,044,046,069,070}-{a11y,uxui-review}-iter-1.{json,md}` (42 file). Run aggregati: `code_quality/reports/ep012-runs/all-runs.json`, `all-runs-dark.json`, 12 screenshot PNG.
+  - Manual checks `N≥1` rispettata su tutti i report a11y (regola di neutralità ADR-016 §G).
+
+## 2026-06-05 — develop + a11y EP-012 (TSK-084 → done, gap color-contrast cross-cutting CHIUSO)
+[2026-06-05] develop TSK-084 → done · a11y re-scan iter-2 OK su 5 TSK sorgente
+  - Scope: fix codice dei 5 finding `color-contrast` Major (WCAG 2.2 AA) emersi da EP-012 remediation (TSK-079..083). 3 selettori cross-cutting: `.sb-loader > label` (dark), `.sb-chip-on` (90s-party + dark + cyberpunk), `.sb-danger.sb-btn` (90s-party). Sub-gap cyberpunk incluso.
+  - Sorgente fix: `@soli92/solids@1.14.1` in `node_modules` IMMUTABILE → override app-level in `packages/app/src/styles/app-extra.css` (importato in `main.tsx` DOPO `@soli92/solids/dist/css/index.css`; nota di redirect aggiunta in `solids-theme.css`).
+  - Token override (before → after, ratio raggiunto):
+    1. `[data-theme="dark"] --sd-color-primary-default: #3B82F6 → #1d4ed8` (+ `--sd-color-primary-hover: → #1e40af`) — `.sb-btn-primary` (incl. `.sb-loader > label`) bianco su nuovo blu = **6.70:1** (era 3.67).
+    2. `[data-theme="dark"] .sb-chip-on { color: #93c5fd }` — compensa scuriamento del primary sul chip dark, **9.51:1** (sarebbe regredito a 2.56 senza questo).
+    3. `[data-theme="90s-party"] .sb-chip-on { color: #ffd1ff }` — was `#e019dd`, **10.48:1** (era 3.55).
+    4. `[data-theme="90s-party"] .sb-danger { color: #ff8fb8; border-color: #ff8fb8 }` — was `#ff0055`, **7.78:1** (era 4.24).
+    5. `[data-theme="cyberpunk"] --sd-color-primary-subtle: #0e7490 → #052e36` — `.sb-chip-on` cyan FG su nuovo subtle = **5.96:1** (era 2.21, sub-gap iter-1 incluso).
+  - Verifica iter-2: axe-playwright su `http://localhost:5179/` (dev server già attivo), 3 temi × 2 viewport (375 + 1280) + scope `synthetic-3-states` con probe DOM dei 3 selettori. **0 finding `color-contrast` major/critical** su tutte le 9 combinazioni. Manual checks N≥1 su ogni report (regola di neutralità).
+  - Frontmatter 5 TSK sorgente aggiornati: TSK-003 / TSK-014 / TSK-038 / TSK-040 / TSK-044 → `a11y_status: pass`, `a11y_report: code_quality/reports/TSK-*-a11y-iter-2.md`, `open_questions: []` (le entry relative al contrasto sono risolte). TSK-084 → `status: done`, `a11y_status: skip` (fix task, verifica vive sui TSK sorgente).
+  - Report iter-2: `code_quality/reports/TSK-{003,014,038,040,044}-a11y-iter-2.{json,md}`; run aggregati `code_quality/reports/ep012-runs/all-runs-iter2.json` + `all-runs-iter2-synthetic.json`; screenshot `ep012-runs/iter2-*.png` (9 PNG).
+  - `wiki/gaps.md`: gap `ds-color-contrast-cross-cutting-90s-party-dark` marcato CHIUSO (append-only) con breakdown dei 5 override e ratio raggiunti. Sub-gap cyberpunk incluso e risolto.
+  - Build: `npm --prefix packages/app run build` verde (tsc --noEmit + vite build).

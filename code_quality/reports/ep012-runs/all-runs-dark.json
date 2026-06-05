@@ -1,0 +1,146 @@
+[
+  {
+    "viewport": "mobile",
+    "theme": "dark",
+    "scope": "always-visible-dark-attempt",
+    "summary": {
+      "critical": 0,
+      "major": 1,
+      "minor": 2
+    },
+    "automated_findings": [
+      {
+        "id": "color-contrast",
+        "severity": "Major",
+        "wcag": "2aa",
+        "location": "label",
+        "description": "Elements must meet minimum color contrast ratio thresholds",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI"
+      },
+      {
+        "id": "landmark-unique",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "section[role=\"region\"]",
+        "description": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=axeAPI"
+      },
+      {
+        "id": "page-has-heading-one",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "html",
+        "description": "Page should contain a level-one heading",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/page-has-heading-one?application=axeAPI"
+      }
+    ]
+  },
+  {
+    "viewport": "mobile",
+    "theme": "dark",
+    "scope": "player-rom-loaded-dark-attempt",
+    "summary": {
+      "critical": 0,
+      "major": 1,
+      "minor": 2
+    },
+    "automated_findings": [
+      {
+        "id": "color-contrast",
+        "severity": "Major",
+        "wcag": "2aa",
+        "location": ".sb-loader > label",
+        "description": "Elements must meet minimum color contrast ratio thresholds",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI"
+      },
+      {
+        "id": "landmark-unique",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]",
+        "description": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=axeAPI"
+      },
+      {
+        "id": "page-has-heading-one",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "html",
+        "description": "Page should contain a level-one heading",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/page-has-heading-one?application=axeAPI"
+      }
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "theme": "dark",
+    "scope": "always-visible-dark-attempt",
+    "summary": {
+      "critical": 0,
+      "major": 1,
+      "minor": 2
+    },
+    "automated_findings": [
+      {
+        "id": "color-contrast",
+        "severity": "Major",
+        "wcag": "2aa",
+        "location": "label",
+        "description": "Elements must meet minimum color contrast ratio thresholds",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI"
+      },
+      {
+        "id": "landmark-unique",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "section[role=\"region\"]",
+        "description": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=axeAPI"
+      },
+      {
+        "id": "page-has-heading-one",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "html",
+        "description": "Page should contain a level-one heading",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/page-has-heading-one?application=axeAPI"
+      }
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "theme": "dark",
+    "scope": "player-rom-loaded-dark-attempt",
+    "summary": {
+      "critical": 0,
+      "major": 1,
+      "minor": 2
+    },
+    "automated_findings": [
+      {
+        "id": "color-contrast",
+        "severity": "Major",
+        "wcag": "2aa",
+        "location": ".sb-loader > label",
+        "description": "Elements must meet minimum color contrast ratio thresholds",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI"
+      },
+      {
+        "id": "landmark-unique",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "section[aria-labelledby=\"sb-privacy-heading-banner\"]",
+        "description": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=axeAPI"
+      },
+      {
+        "id": "page-has-heading-one",
+        "severity": "Minor",
+        "wcag": "n/a",
+        "location": "html",
+        "description": "Page should contain a level-one heading",
+        "suggested_fix": "Vedi: https://dequeuniversity.com/rules/axe/4.12/page-has-heading-one?application=axeAPI"
+      }
+    ]
+  }
+]

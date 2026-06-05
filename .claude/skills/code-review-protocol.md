@@ -50,6 +50,37 @@ PROMPT_TEMPERATURE       = 0.2                  # bassa per coerenza output JSON
      Formalizza l'ordering `develop → visual-oracle → review`. A `fe_correctness.enabled:
      false` (default) il primo termine dell'`AND` è falso → la precondition **non si valuta**
      e la Fase 0 si comporta identica a v2.16 (no-op).
+   - **Precondition additiva UX/UI (opt-in, v2.18, ADR-019 §Punto 2 — NOTA INFORMATIVA, no ABORT):**
+
+     ```
+     Fase 0 precondition additiva (opt-in, soft):
+       IF TSK.layer == 'fe' AND factory.config.yaml.ux_ui.enabled == true:
+         IF TSK.frontmatter.ux_ui_status NOT IN ['pass', 'skip']:
+           EMIT nota informativa:
+             "UX/UI review non ancora completata (ux_ui_status: {value}).
+              Considera /ux-ui-review {TSK-id} prima del code-review.
+              Skip legittimo: ux_ui_status: skip + ux_ui_skip_reason."
+           PROCEDI (no ABORT — la review UX è raccomandata, non obbligatoria).
+     ```
+
+     **Differenza con la precondition visual oracle (cruciale).** Diversamente da
+     `visual_status != pass` — che è un **hard ABORT** (il rendering è precondizione
+     semantica del code-review: senza render valido la review codice è insensata) — la
+     precondition `ux_ui_status` è una **sola nota informativa, no ABORT**. Razionale
+     (ADR-019 §Punto 2 + §Rationale 2): la review UX è *additive value*, non *blocking
+     gate*; un `ux_ui_status` non `pass`/`skip` significa "il componente funziona ma ha
+     findings UX", e il code-review (che non riguarda UX) può comunque procedere con
+     senso. Lo **skip esplicito** (`ux_ui_status: skip` + `ux_ui_skip_reason`) è scelta
+     **legittima del derivatore** (simmetrica a `a11y_status: skip` di ADR-016): in quel
+     caso nessuna nota viene emessa. Se il derivatore sceglie di proseguire senza
+     ux-ui-review, **procedi** (lo skip è scelta legittima). **Logga nel report** la nota
+     "ux_ui_status non pass/skip al momento del code-review".
+
+     **No-op a flag spento (backward compat totale).** Con
+     `factory.config.yaml.ux_ui.enabled: false` (**default**) la precondition **non si
+     valuta** (primo termine dell'`AND` falso) → la Fase 0 si comporta **identica ad
+     ADR-013**. Anche per `TSK.layer != 'fe'` con flag acceso la nota è skip. Vedi
+     [ADR-019](../../design_&_architecture/decisions/ADR-019.md).
 4. Calcola `current_iter = review_iter + 1` (incrementa per la nuova passata).
 5. Determina `files_in_scope`:
    - Se `tsk.code_path` valorizzato → usa quei glob.

@@ -207,6 +207,144 @@ cattura solo il caso patologico «grosso E complesso UI», riducendo i falsi pos
 
 «4n» segue la serie alfabetica; non collide con i check esistenti.
 
+### 4o — TSK FE done senza scan a11y verificata (Accessibility Testing Capability, EP-007 US-027, ADR-016 §A/§I)
+
+**Pattern allineato a Check 4m (EP-002 US-007) + Check 4n (EP-006 US-022)** (R.P3 opt-in
+totale): WARNING-only, opt-in via flag config, nessun ERROR meccanico. Check 4o eredita la
+stessa shape per coerenza framework.
+
+**Severità: WARNING-only — mai ERROR** (R.P3 opt-in totale + decisione ADR-016 §A). Il
+completamento di uno scan a11y prima del done è scope del derivatore di factory, non
+automatizzabile come gate hard: il lint informa, non blocca mai `/lint` né il Develop. Mai
+`heal-eligible` (giudizio semantico).
+
+**Trigger (AND — tutte le condizioni devono essere vere)**:
+
+```
+TSK.layer == 'fe'
+AND factory.config.yaml.a11y.required_on_fe_done == true
+AND TSK.status == 'done'
+AND NOT (TSK.frontmatter.a11y_status IN ['pass', 'skip'])
+AND NOT (TSK.frontmatter.a11y_status == 'skip' AND TSK.frontmatter.a11y_skip_reason valorizzato)
+```
+
+(In pratica: WARNING se `a11y_status` è assente, `pending`, `major` o `critical`, **oppure**
+è `skip` ma `a11y_skip_reason` è vuoto/assente. La condizione `a11y_report` assente è
+implicata: un report a11y produce `a11y_status: pass|major|critical`, non lascia il campo
+assente/`pending`.)
+
+**Gate**: `factory.config.yaml.a11y.required_on_fe_done: false` (default off, opt-in totale,
+backward compat). Se assente o `false` → no-op totale (Check 4o non si applica,
+indipendentemente dallo stato dei TSK FE). [^src: ADR-016 §A + §I + §J]
+
+**Esenzione**: TSK FE che dichiara `a11y_status: skip` **con** `a11y_skip_reason:` valorizzato
+→ no WARNING (il derivatore ha dichiarato esplicitamente che il TSK non è soggetto a scan,
+es. "componente coperto da scan parent route"). L'esenzione richiede motivazione esplicita.
+
+**Esenzione parziale (incoerenza)**: TSK FE con `a11y_status: skip` **senza**
+`a11y_skip_reason:` → WARNING diverso (l'esenzione è dichiarata ma non motivata):
+
+```
+TSK <id> ha a11y_status: skip ma manca a11y_skip_reason. Aggiungere motivazione.
+```
+
+**Messaggio (template verbatim, placeholder `<id>`, `<value>`)**:
+
+```
+TSK <id> FE done senza scan a11y verificata (a11y_status: <value>). Eseguire `/a11y <id>` o aggiungere `a11y_status: skip` con `a11y_skip_reason: <motivazione>`. Vedi ADR-016, US-027.
+```
+
+**Output format** (sezione `## WARNING (igiene)` del report):
+
+```
+- [WARNING][a11y][4o] TSK-051: FE done senza scan a11y verificata (a11y_status: pending). Eseguire /a11y TSK-051 o aggiungere a11y_status: skip con a11y_skip_reason. Vedi ADR-016, US-027.
+- [WARNING][a11y][4o] TSK-052: ha a11y_status: skip ma manca a11y_skip_reason. Aggiungere motivazione.
+```
+
+**Scenari di verifica**:
+
+| # | layer | status | a11y_status | a11y_skip_reason | flag `required_on_fe_done` | esito atteso |
+|---|---|---|---|---|---|---|
+| 1 | fe | done | assente | — | `false` (default) | no warning (gate off, backward compat) |
+| 2 | fe | done | assente | — | `true` | **WARNING 4o** (scan a11y mancante) |
+| 3 | fe | done | `pass` | — | `true` | no warning (scan verificata pass) |
+| 4 | fe | done | `skip` | valorizzato | `true` | no warning (esenzione motivata) |
+| 5 | fe | done | `skip` | assente | `true` | **WARNING 4o** (skip senza motivazione) |
+| 6 | be | done | assente | — | `true` | no warning (layer != fe) |
+
+**Numerazione**: «4o» segue «4n» (State Matrix v2.18, EP-006 US-022) nella serie alfabetica;
+non collide con alcun check esistente in questo file (segue «4n», precede «4p»).
+
+### 4p — TSK FE done senza review UX/UI verificata (UX/UI Review & Design Capability, EP-008 US-032, ADR-020 §G)
+
+**Pattern allineato a Check 4m (EP-002 US-007) + Check 4n (EP-006 US-022) + Check 4o (EP-007
+US-027)** (R.P3 opt-in totale): WARNING-only, opt-in via flag config, nessun ERROR meccanico.
+Check 4p eredita la stessa shape per coerenza framework.
+
+**Severità: WARNING-only — mai ERROR** (R.P3 opt-in totale + decisione ADR-020 §G). Il
+completamento di una review UX/UI prima del done è scope del derivatore di factory, non
+automatizzabile come gate hard (la review UX è additive value, non semantic precondition —
+ADR-019 §Rationale 2): il lint informa, non blocca mai `/lint` né il Develop. Mai
+`heal-eligible` (giudizio semantico).
+
+**Trigger (AND — tutte le condizioni devono essere vere)**:
+
+```
+TSK.layer == 'fe'
+AND factory.config.yaml.ux_ui.required_on_fe_done == true
+AND TSK.status == 'done'
+AND NOT (TSK.frontmatter.ux_ui_status == 'pass')
+AND NOT (TSK.frontmatter.ux_ui_status == 'skip' AND TSK.frontmatter.ux_ui_skip_reason valorizzato)
+```
+
+(In pratica: WARNING se `ux_ui_status` è assente, `pending`, `conditional` o `reject`,
+**oppure** è `skip` ma `ux_ui_skip_reason` è vuoto/assente.)
+
+**Gate**: `factory.config.yaml.ux_ui.required_on_fe_done: false` (default off, opt-in totale,
+backward compat). Se assente o `false` → no-op totale (Check 4p non si applica,
+indipendentemente dallo stato dei TSK FE). [^src: ADR-020 §G + §J]
+
+**Esenzione**: TSK FE che dichiara `ux_ui_status: skip` **con** `ux_ui_skip_reason:` valorizzato
+→ no WARNING (il derivatore ha dichiarato esplicitamente che il TSK non è soggetto a review UX/UI).
+L'esenzione richiede motivazione esplicita.
+
+**Esenzione parziale (incoerenza)**: TSK FE con `ux_ui_status: skip` **senza**
+`ux_ui_skip_reason:` → WARNING diverso (l'esenzione è dichiarata ma non motivata):
+
+```
+TSK <id> ha ux_ui_status: skip ma manca ux_ui_skip_reason. Aggiungere motivazione.
+```
+
+**Messaggio (template verbatim, placeholder `<id>`, `<value>`)**:
+
+```
+TSK <id> FE done senza review UX/UI verificata (ux_ui_status: <value>). Eseguire `/ux-ui-review <id>` o aggiungere `ux_ui_status: skip` con `ux_ui_skip_reason: <motivazione>`. Vedi ADR-020, US-032.
+```
+
+**Output format** (sezione `## WARNING (igiene)` del report):
+
+```
+- [WARNING][ux-ui][4p] TSK-051: FE done senza review UX/UI verificata (ux_ui_status: pending). Eseguire /ux-ui-review TSK-051 o aggiungere ux_ui_status: skip con ux_ui_skip_reason. Vedi ADR-020, US-032.
+- [WARNING][ux-ui][4p] TSK-052: ha ux_ui_status: skip ma manca ux_ui_skip_reason. Aggiungere motivazione.
+```
+
+**Scenari di verifica**:
+
+| # | layer | status | ux_ui_status | ux_ui_skip_reason | flag `required_on_fe_done` | esito atteso |
+|---|---|---|---|---|---|---|
+| 1 | fe | done | assente | — | `false` (default) | no warning (gate off, backward compat) |
+| 2 | fe | done | assente | — | `true` | **WARNING 4p** (review UX/UI mancante) |
+| 3 | fe | done | `pass` | — | `true` | no warning (review verificata pass) |
+| 4 | fe | done | `skip` | valorizzato | `true` | no warning (esenzione motivata) |
+| 5 | fe | done | `skip` | assente | `true` | **WARNING 4p** (skip senza motivazione) |
+| 6 | be | done | assente | — | `true` | no warning (layer != fe) |
+
+**Numerazione**: «4p» segue «4o» (a11y v2.18, EP-007 US-027) nella serie alfabetica; non
+collide con alcun check esistente in questo file (segue «4o»).
+Distinto da Check 4o: 4o enforce lo scan a11y (`a11y.required_on_fe_done`, campo `a11y_status`),
+4p enforce la review UX/UI (`ux_ui.required_on_fe_done`, campo `ux_ui_status`) — gate, trigger
+e campi frontmatter indipendenti, possono coesistere (a11y e ux-ui sono capability distinte).
+
 ## Citation audit (periodico)
 
 Per ogni `[^src: <path> §<sez>]` in `wiki/**`:

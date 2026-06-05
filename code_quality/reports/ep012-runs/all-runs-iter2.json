@@ -1,0 +1,72 @@
+{
+  "target": "http://localhost:5179/",
+  "standard": "wcag22aa",
+  "iter": 2,
+  "runs": [
+    {
+      "theme": "90s-party",
+      "viewport": "mobile",
+      "contrast_violations": [],
+      "all_major_or_critical_count": 0,
+      "all_violations_summary": [],
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-always-visible-mobile-90s-party.png"
+    },
+    {
+      "theme": "90s-party",
+      "viewport": "desktop",
+      "contrast_violations": [],
+      "all_major_or_critical_count": 0,
+      "all_violations_summary": [],
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-always-visible-desktop-90s-party.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "mobile",
+      "contrast_violations": [],
+      "all_major_or_critical_count": 0,
+      "all_violations_summary": [],
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-always-visible-mobile-dark.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "desktop",
+      "contrast_violations": [],
+      "all_major_or_critical_count": 0,
+      "all_violations_summary": [],
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-always-visible-desktop-dark.png"
+    },
+    {
+      "theme": "cyberpunk",
+      "viewport": "mobile",
+      "contrast_violations": [],
+      "all_major_or_critical_count": 0,
+      "all_violations_summary": [],
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-always-visible-mobile-cyberpunk.png"
+    },
+    {
+      "theme": "cyberpunk",
+      "viewport": "desktop",
+      "contrast_violations": [],
+      "all_major_or_critical_count": 0,
+      "all_violations_summary": [],
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-always-visible-desktop-cyberpunk.png"
+    }
+  ],
+  "manual_checks": [
+    {
+      "wcag": "1.4.3",
+      "item": "Contrast ratio chips/danger/loader-label across themes (visual spot-check)",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.11",
+      "item": "Non-text contrast: focus ring on .sb-btn-primary across themes",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.4.7",
+      "item": "Visible focus on .sb-chip-on after fix",
+      "status": "to_verify"
+    }
+  ]
+}

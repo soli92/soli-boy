@@ -1,0 +1,19 @@
+{
+  "tsk": "TSK-040", "component": "Integrazione DS @soli92/solids",
+  "ep012_remediation": "TSK-080",
+  "rubric_strict": true, "verdict_suggested": "pass",
+  "findings": [
+    {
+      "rubric_ref": "ui-coerenza", "severity": "med",
+      "location": "cross-cutting (chip / button / loader)",
+      "description": "Il DS è applicato ma alcuni stati (chip-on, sb-danger, loader label in dark) hanno contrast issues che riducono la coerenza percepita tra temi. Il problema è cromatico (delegato a a11y) ma indica una incompletezza nel design token-system (gli stati non sono completi su tutte le combinazioni tema).",
+      "recommendation": "Auditare la matrice token × tema in @soli92/solids; documentare i casi mancanti."
+    },
+    {
+      "rubric_ref": "ui-affordance", "severity": "low",
+      "location": "stati componenti",
+      "description": "Le coppie idle/hover/active/disabled appaiono presenti ma non sistematicamente documentate per ciascun componente DS nel codice app."
+    }
+  ],
+  "positive_findings": ["Adozione DS reale completata (gap design-system-real-package chiuso da TSK-040)."]
+}

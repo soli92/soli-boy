@@ -1,0 +1,14 @@
+{
+  "tsk": "TSK-008", "component": "Player viewport + mount EmulatorJS",
+  "ep012_remediation": "TSK-081",
+  "rubric_strict": true, "verdict_suggested": "pass",
+  "scope": "post-ROM-load (player-rom-loaded screenshots)",
+  "findings": [
+    {
+      "rubric_ref": "ui-gerarchia", "severity": "low",
+      "location": "viewport .sb-screen",
+      "description": "Il viewport è centrale ma la gerarchia con i pannelli laterali (SaveState, Settings) appare paritaria; l'utente potrebbe non capire immediatamente che il gioco è 'il focus'."
+    }
+  ],
+  "positive_findings": ["Viewport ben dimensionato; canvas WasmBoy visibile correttamente."]
+}
