@@ -43,6 +43,15 @@ export class WasmBoyEngine implements EmulatorEngine {
 
   private configured = false;
   private joypad: WasmBoyJoypadState = {};
+  /**
+   * Stato di riproduzione AUTORITATIVO tracciato dall'adapter, mirror dei nostri
+   * comandi play/pause. NON ci affidiamo a `WasmBoy.isPlaying()` perché la lib
+   * inizializza `paused=false` (→ isPlaying()=true) già prima del primo play():
+   * un restore eseguito su un engine caricato-ma-mai-avviato lo farebbe partire
+   * da solo. Inoltre `pause()` della lib risolve in modo asincrono, mentre questo
+   * flag riflette subito l'intento, evitando race in `restore`.
+   */
+  private playing = false;
 
   async load(opts: LoadOptions): Promise<void> {
     if (!opts.container) throw new Error("WasmBoyEngine.load: container DOM mancante.");
@@ -55,22 +64,40 @@ export class WasmBoyEngine implements EmulatorEngine {
 
   start(): void {
     this.run(WasmBoy.play(), "play");
+    this.playing = true;
   }
   pause(): void {
     this.run(WasmBoy.pause(), "pause");
+    this.playing = false;
   }
   resume(): void {
     this.run(WasmBoy.play(), "resume");
+    this.playing = true;
   }
   stop(): void {
     this.run(WasmBoy.pause(), "stop");
     this.joypad = {};
+    this.playing = false;
   }
 
   /** TSK-029 (TS-ROBUST-001): interfaccia sync ma API WasmBoy async → non lasciare
    *  la promise non gestita: logga l'errore invece di ingoiarlo. */
   private run(p: Promise<void>, op: string): void {
     p.catch((e) => console.error(`WasmBoyEngine.${op}:`, e));
+  }
+
+  /**
+   * `WasmBoy.saveState()` e `WasmBoy.loadState()` mettono l'emulatore in PAUSA
+   * internamente (`await this.pause()`, vedi wasmboy.ts.esm.js) e NON lo
+   * riavviano. Ogni metodo dell'adapter che le usa (snapshot / restore /
+   * getSram / loadSram) deve quindi riprendere la riproduzione se l'engine
+   * stava girando, altrimenti il loop resta fermo e il canvas si congela
+   * mentre il Player continua a credersi "running". Si basa sul flag
+   * autoritativo `this.playing` (vedi nota sul campo), non su
+   * `WasmBoy.isPlaying()`. No-op se eravamo in pausa/idle (nessun avvio spurio).
+   */
+  private resumeIfPlaying(): void {
+    if (this.playing) this.run(WasmBoy.play(), "resume-after-savestate");
   }
 
   setAudio(_settings: AudioSettings): void {
@@ -102,6 +129,7 @@ export class WasmBoyEngine implements EmulatorEngine {
       throw new Error("WasmBoyEngine.snapshot: API WasmBoy.saveState non disponibile a runtime.");
     }
     const state = await WasmBoy.saveState();
+    this.resumeIfPlaying(); // saveState() ha messo in pausa: riprendi se giocavamo.
     const serializable = toSerializableSaveState(state);
     const json = JSON.stringify(serializable);
     const body = new TextEncoder().encode(json);
@@ -126,6 +154,11 @@ export class WasmBoyEngine implements EmulatorEngine {
     }
     const obj = decodeSaveState(state);
     await WasmBoy.loadState(obj);
+    // loadState() mette in pausa internamente e non riavvia: senza questo lo
+    // stato viene caricato ma il loop resta fermo (canvas congelato mentre il
+    // Player si crede "running") → "carico ma il gioco non cambia". Vedi
+    // resumeIfPlaying: riprende SOLO se stavamo effettivamente giocando.
+    this.resumeIfPlaying();
   }
 
   /**
@@ -140,6 +173,7 @@ export class WasmBoyEngine implements EmulatorEngine {
       throw new Error("WasmBoyEngine.getSram: API WasmBoy.saveState non disponibile a runtime.");
     }
     const state = await WasmBoy.saveState();
+    this.resumeIfPlaying(); // saveState() ha messo in pausa: riprendi se giocavamo.
     const cr = state?.wasmboyMemory?.cartridgeRam;
     if (!cr) return null;
     const bytes = cr instanceof Uint8Array ? cr : new Uint8Array(cr as ArrayLike<number>);
@@ -168,6 +202,7 @@ export class WasmBoyEngine implements EmulatorEngine {
       },
     };
     await WasmBoy.loadState(patched);
+    this.resumeIfPlaying(); // saveState+loadState hanno messo in pausa: riprendi.
   }
 
   /** Crea (una sola volta) un <canvas> dentro il container e lo ritorna. */
