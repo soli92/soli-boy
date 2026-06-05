@@ -156,6 +156,15 @@ Fonti: `wiki/log.md` §"2026-06-03 — develop TSK-024 (qa)"; ADR-004 (`wiki/con
 
 **Aggiornamento 2026-06-05 — owned/in-progress:** TSK-084 (EP-012/US-049, Sprint 10, P1, fe, consumer: agent) creato e assegnato per chiudere questo gap. Strategia: override CSS custom properties `sb-*` in `packages/app/src/styles/` per `[data-theme="90s-party"]` e `[data-theme="dark"]`. Include scan cyberpunk (gap secondario). Al completamento di TSK-084, aggiornare questa entry con stato CHIUSO e riferimento al commit.
 
+**Aggiornamento 2026-06-05 — CHIUSO da TSK-084.** Override applicati in `packages/app/src/styles/app-extra.css` (importato in `main.tsx` DOPO `@soli92/solids/dist/css/index.css`, così le custom properties dell'app sovrascrivono effettivamente i token DS). Cinque blocchi:
+  - `[data-theme="dark"] --sd-color-primary-default: #3B82F6 → #1d4ed8` + `--sd-color-primary-hover: → #1e40af`. Ratio `.sb-btn-primary` (incl. `.sb-loader > label`) bianco su nuovo blu = **6.70:1** (era 3.67).
+  - `[data-theme="dark"] .sb-chip-on { color: #93c5fd }` — compensa lo scuriamento del primary sul chip dark (avrebbe regredito a 2.56:1) → **9.51:1**.
+  - `[data-theme="90s-party"] .sb-chip-on { color: #ffd1ff }` (was `#e019dd`) → **10.48:1** (era 3.55).
+  - `[data-theme="90s-party"] .sb-danger { color: #ff8fb8; border-color: #ff8fb8 }` (was `#ff0055`) → **7.78:1** (era 4.24).
+  - `[data-theme="cyberpunk"] --sd-color-primary-subtle: #0e7490 → #052e36` → `.sb-chip-on` cyan FG su nuovo subtle = **5.96:1** (era 2.21, sub-gap iter-1 incluso).
+
+Re-scan iter-2 (axe-playwright, 3 temi × 2 viewport + scope sintetico): **0 finding `color-contrast` major/critical** su tutte le combinazioni. I 5 TSK sorgente (TSK-003, TSK-014, TSK-038, TSK-040, TSK-044) sono `a11y_status: pass` con report `code_quality/reports/TSK-*-a11y-iter-2.{json,md}`. Sub-gap cyberpunk incluso e risolto. Tracce: `code_quality/reports/ep012-runs/all-runs-iter2.json`, `all-runs-iter2-synthetic.json`, screenshot `iter2-*`. Build `packages/app` verde post-fix.
+
 ## 2026-06-05 — rom-gated-ui-substates-not-exercised-headless
 **Origine:** scan a11y retroattivo EP-012/TSK-081 (componenti ROM-gated: Player, controls, SaveStatePanel, Fullscreen, Settings sub-sezioni).
 **Gap:** alcuni sub-stati della UI ROM-gated NON sono esercitabili banalmente in Playwright headless e quindi NON sono coperti dallo scan automatico iter-1:

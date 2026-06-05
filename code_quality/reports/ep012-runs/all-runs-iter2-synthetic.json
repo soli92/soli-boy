@@ -1,0 +1,43 @@
+{
+  "target": "http://localhost:5179/",
+  "scope": "synthetic-states",
+  "iter": 2,
+  "runs": [
+    {
+      "theme": "90s-party",
+      "scope": "synthetic-3-states",
+      "contrast_violations": [],
+      "contrast_count": 0,
+      "all_violations": 0,
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-synthetic-90s-party.png"
+    },
+    {
+      "theme": "dark",
+      "scope": "synthetic-3-states",
+      "contrast_violations": [],
+      "contrast_count": 0,
+      "all_violations": 0,
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-synthetic-dark.png"
+    },
+    {
+      "theme": "cyberpunk",
+      "scope": "synthetic-3-states",
+      "contrast_violations": [],
+      "contrast_count": 0,
+      "all_violations": 0,
+      "screenshot": "/Users/simone.olivieri/Documents/Personal/Repos/soli-boy/code_quality/reports/ep012-runs/iter2-synthetic-cyberpunk.png"
+    }
+  ],
+  "manual_checks": [
+    {
+      "wcag": "1.4.3",
+      "item": "Visual spot-check contrast on .sb-loader > label / .sb-chip-on / .sb-danger.sb-btn across 3 themes",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.11",
+      "item": "Non-text contrast: button border on .sb-danger after fix",
+      "status": "to_verify"
+    }
+  ]
+}

@@ -508,3 +508,19 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
   - No auto-fix codice (vincolo retroattivo: `packages/app/**` intatto); finding major → open_questions sui TSK sorgente + entry `wiki/gaps.md` (gate owner).
   - Report: `code_quality/reports/TSK-{003,006,008,012,014,017,020,022,032,033,035,036,037,038,039,040,041,044,046,069,070}-{a11y,uxui-review}-iter-1.{json,md}` (42 file). Run aggregati: `code_quality/reports/ep012-runs/all-runs.json`, `all-runs-dark.json`, 12 screenshot PNG.
   - Manual checks `N≥1` rispettata su tutti i report a11y (regola di neutralità ADR-016 §G).
+
+## 2026-06-05 — develop + a11y EP-012 (TSK-084 → done, gap color-contrast cross-cutting CHIUSO)
+[2026-06-05] develop TSK-084 → done · a11y re-scan iter-2 OK su 5 TSK sorgente
+  - Scope: fix codice dei 5 finding `color-contrast` Major (WCAG 2.2 AA) emersi da EP-012 remediation (TSK-079..083). 3 selettori cross-cutting: `.sb-loader > label` (dark), `.sb-chip-on` (90s-party + dark + cyberpunk), `.sb-danger.sb-btn` (90s-party). Sub-gap cyberpunk incluso.
+  - Sorgente fix: `@soli92/solids@1.14.1` in `node_modules` IMMUTABILE → override app-level in `packages/app/src/styles/app-extra.css` (importato in `main.tsx` DOPO `@soli92/solids/dist/css/index.css`; nota di redirect aggiunta in `solids-theme.css`).
+  - Token override (before → after, ratio raggiunto):
+    1. `[data-theme="dark"] --sd-color-primary-default: #3B82F6 → #1d4ed8` (+ `--sd-color-primary-hover: → #1e40af`) — `.sb-btn-primary` (incl. `.sb-loader > label`) bianco su nuovo blu = **6.70:1** (era 3.67).
+    2. `[data-theme="dark"] .sb-chip-on { color: #93c5fd }` — compensa scuriamento del primary sul chip dark, **9.51:1** (sarebbe regredito a 2.56 senza questo).
+    3. `[data-theme="90s-party"] .sb-chip-on { color: #ffd1ff }` — was `#e019dd`, **10.48:1** (era 3.55).
+    4. `[data-theme="90s-party"] .sb-danger { color: #ff8fb8; border-color: #ff8fb8 }` — was `#ff0055`, **7.78:1** (era 4.24).
+    5. `[data-theme="cyberpunk"] --sd-color-primary-subtle: #0e7490 → #052e36` — `.sb-chip-on` cyan FG su nuovo subtle = **5.96:1** (era 2.21, sub-gap iter-1 incluso).
+  - Verifica iter-2: axe-playwright su `http://localhost:5179/` (dev server già attivo), 3 temi × 2 viewport (375 + 1280) + scope `synthetic-3-states` con probe DOM dei 3 selettori. **0 finding `color-contrast` major/critical** su tutte le 9 combinazioni. Manual checks N≥1 su ogni report (regola di neutralità).
+  - Frontmatter 5 TSK sorgente aggiornati: TSK-003 / TSK-014 / TSK-038 / TSK-040 / TSK-044 → `a11y_status: pass`, `a11y_report: code_quality/reports/TSK-*-a11y-iter-2.md`, `open_questions: []` (le entry relative al contrasto sono risolte). TSK-084 → `status: done`, `a11y_status: skip` (fix task, verifica vive sui TSK sorgente).
+  - Report iter-2: `code_quality/reports/TSK-{003,014,038,040,044}-a11y-iter-2.{json,md}`; run aggregati `code_quality/reports/ep012-runs/all-runs-iter2.json` + `all-runs-iter2-synthetic.json`; screenshot `ep012-runs/iter2-*.png` (9 PNG).
+  - `wiki/gaps.md`: gap `ds-color-contrast-cross-cutting-90s-party-dark` marcato CHIUSO (append-only) con breakdown dei 5 override e ratio raggiunti. Sub-gap cyberpunk incluso e risolto.
+  - Build: `npm --prefix packages/app run build` verde (tsc --noEmit + vite build).

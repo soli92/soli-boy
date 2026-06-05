@@ -51,3 +51,65 @@ body {
 /* Settings — keymap */
 .sb-keymap { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .sb-key { font-family: var(--sd-font-mono, monospace); }
+
+/* ============================================================================
+   TSK-084 — WCAG 2.2 AA color-contrast overrides (US-049, EP-012)
+   ----------------------------------------------------------------------------
+   Override locali per i 3 stati cross-cutting individuati nei finding axe
+   iter-1 (TSK-003/014/038/040/044). Il DS @soli92/solids vive in node_modules
+   ed è immutabile: questi override sono app-level e preservano l'identità
+   visiva di ciascun tema (blu dark, magenta neon 90s-party, cyan cyberpunk).
+   Devono restare in app-extra.css perché il file è importato in main.tsx
+   DOPO @soli92/solids/dist/css/index.css (override effettivo dei token DS).
+   Verifiche tramite axe-playwright (run iter-2, 0 finding color-contrast
+   major/critical su tutti e 3 i temi × 2 viewport). NON rimuovere senza
+   ri-eseguire lo scan a11y.
+   ============================================================================ */
+
+/* --- tema dark -------------------------------------------------------------
+   .sb-loader > label è un .sb-btn-primary con label "Carica ROM": il DS dark
+   usa primary-default #3B82F6 (blu-500) con foreground #FFFFFF → ratio 3.67
+   (< 4.5). Scuriamo il primary a blue-700 (#1d4ed8) → ratio 6.70 vs #FFFFFF.
+   Effetto: preserva il blu identitario del tema dark, migliora leggibilità
+   anche su altri usi primary (badge, focus ring, tog "on"). */
+[data-theme="dark"] {
+  --sd-color-primary-default: #1d4ed8; /* was #3B82F6 — WCAG AA fix (6.70:1) */
+  --sd-color-primary-hover: #1e40af;   /* hover coerente, più scuro */
+}
+/* Lo scurire primary-default rompe il contrasto di .sb-chip-on dark, il cui
+   foreground deriva da --sd-color-primary-default su bg primary-subtle
+   #0c1a3a: #1d4ed8 vs #0c1a3a = 2.56 (rotto dal nostro fix). Schiariamo SOLO
+   il color del chip attivo dark a blue-300 #93c5fd → ratio 9.51:1 (non
+   tocchiamo --sd-color-primary-default per non regredire la label). */
+[data-theme="dark"] .sb-chip-on {
+  color: #93c5fd !important; /* was var(--sd-color-primary-default) — WCAG AA fix (9.51:1) */
+}
+
+/* --- tema 90s-party --------------------------------------------------------
+   .sb-chip-on usa primary-default #e019dd su primary-subtle #4a1942 →
+   ratio 3.55. Modifichiamo SOLO il color del chip attivo (non l'intero
+   primary del tema, per non spostare il magenta brand) a un magenta neon
+   chiaro #ffd1ff → ratio 10.48 con il background invariato. */
+[data-theme="90s-party"] .sb-chip-on {
+  color: #ffd1ff !important; /* was var(--sd-color-primary-default) #e019dd — WCAG AA fix (10.48:1) */
+}
+
+/* .sb-danger.sb-btn ("Arresta"): testo intent-danger #ff0055 su bg-elevated
+   #251447 → ratio 4.24. Schiariamo il rosa neon di danger a #ff8fb8 →
+   ratio 7.78 vs #251447. Limitiamo l'override al solo .sb-danger (lo
+   sfondo danger di altre superfici non cambia). */
+[data-theme="90s-party"] .sb-danger {
+  color: #ff8fb8 !important;        /* was var(--sd-color-intent-danger) #ff0055 — WCAG AA fix (7.78:1) */
+  border-color: #ff8fb8 !important; /* border coerente con il nuovo foreground */
+}
+
+/* --- tema cyberpunk (sub-gap iter-1: TSK-044 non scansionato) --------------
+   .sb-chip-on usa primary-default #06b6d4 (cyan) su primary-subtle
+   #0e7490 → ratio 2.21 (< 4.5). Manteniamo il cyan in foreground e
+   approfondiamo il background del chip attivo a #052e36 → ratio 5.96.
+   .sb-loader>label (.sb-btn-primary) cyberpunk: fg #030712 su #06b6d4 =
+   8.29 → già conforme. .sb-danger cyberpunk: fg #f472b6 su #12152e =
+   6.76 → già conforme. */
+[data-theme="cyberpunk"] {
+  --sd-color-primary-subtle: #052e36; /* was #0e7490 — WCAG AA fix per .sb-chip-on (5.96:1) */
+}

@@ -252,12 +252,12 @@ DAG Sprint 9:
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | gap chiuso | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|------------|-----------|
-| TSK-084 | Fix token color-contrast 90s-party/dark + verifica cyberpunk (WCAG 2.2 AA) | US-049 | EP-012 | fe | agent | P1 | M | todo | ds-color-contrast-cross-cutting-90s-party-dark | — |
+| TSK-084 | Fix token color-contrast 90s-party/dark + verifica cyberpunk (WCAG 2.2 AA) | US-049 | EP-012 | fe | agent | P1 | M | done | ds-color-contrast-cross-cutting-90s-party-dark | — |
 
 DAG Sprint 10:
 - Wave 1: TSK-079/080/081/082/083 tutti **done** (scan retroattivo EP-012 completato: 16 a11y pass, 5 major, 21 ux pass).
-- Wave 2: TSK-084 (todo, P1) — fix a11y cross-cutting. Indipendente, può partire subito.
-- TSK-084 CHIUDE il gap `ds-color-contrast-cross-cutting-90s-party-dark`; al completamento aggiorna `a11y_status` in TSK-003/014/038/040/044.
+- Wave 2: TSK-084 (**done**) — fix a11y cross-cutting completato.
+- TSK-084 ha CHIUSO il gap `ds-color-contrast-cross-cutting-90s-party-dark`; `a11y_status: pass` su TSK-003/014/038/040/044 (override locale app-extra.css, scan iter-2 0 finding, build verde, 279/279 test).
 
 **Nota a11y_status skip motivato applicato (non richiede scan):**
 I seguenti 6 TSK FE `done` hanno ricevuto skip motivato direttamente nel frontmatter (infra/asset non-DOM):
@@ -295,13 +295,13 @@ I seguenti 6 TSK FE `done` hanno ricevuto skip motivato direttamente nel frontma
 - Sprint 9 — 11 task: 8 done (TSK-069/070/073/074/075/076/077 done + TSK-073 done),
   2 todo (TSK-068, TSK-078), 1 todo human (TSK-072), 1 todo human (TSK-071).
   TSK-078 nuovo (qa agent, US-043, P1 — fix jsdom ERR_REQUIRE_ESM).
-- **Sprint 10 — Remediation a11y & UX/UI (EP-012):** 5/5 scan done (TSK-079/080/081/082/083); 1 fix todo (TSK-084).
-  Fix a11y cross-cutting: TSK-084 (P1, todo) — fix token contrasto 90s-party/dark + verifica cyberpunk; chiude gap
+- **Sprint 10 — Remediation a11y & UX/UI (EP-012):** 6/6 done (5 scan TSK-079..083 + fix TSK-084).
+  Fix a11y cross-cutting: TSK-084 (P1, **done**) — token contrasto 90s-party/dark/cyberpunk corretti; gap chiuso
   `ds-color-contrast-cross-cutting-90s-party-dark`. 6 TSK skip motivato applicato (infra/asset non-DOM).
   TSK-084 può partire subito (i 5 finding major originano dai scan EP-012 già done).
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
-  Residuo: 5 WARNING 4o (a11y major DS color-contrast, TSK-003/014/038/040/044) → TSK-084; 4p pulito.
+  Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).
 - **Visual oracle v2.17**: campo `visual_status` attivo su TSK-069.
 - **Consumer distribution (Sprint 7-10):** agent=25, human=6 (Sprint 10 tutto agent, incluso TSK-084).
 - Gap da chiudere con lead-architect prima dello Sprint 7 Wave B:
