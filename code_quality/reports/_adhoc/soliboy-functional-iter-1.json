@@ -1,0 +1,21 @@
+{
+  "report_id": "soliboy-functional-iter-1",
+  "type": "functional_oracle",
+  "target": "http://127.0.0.1:4317/",
+  "acceptance_spec": "code_quality/acceptance/soliboy.acceptance.yaml",
+  "fixture": "packages/app/public/test-roms/gba-tests-thumb.gba",
+  "timestamp": "2026-06-09 16:54",
+  "verdict": "reject",
+  "iterations": 1,
+  "assertions_results": [
+    { "id": "canvas-advancing", "kind": "canvas_pixel_variance", "severity": "blocking", "pass": false, "detail": "distinct=2/8, canvas frozen after first frame" },
+    { "id": "state-running", "kind": "text_matches", "severity": "blocking", "pass": false, "detail": ".sb-screen shows title 'gba-tests-thumb', never 'In esecuzione'" },
+    { "id": "no-console-error", "kind": "console_no_error", "severity": "advisory", "pass": true, "detail": "0 console errors" }
+  ],
+  "root_cause": {
+    "ruled_out": "serving / cross-origin isolation (COOP+COEP correct, crossOriginIsolated=true, SharedArrayBuffer=true)",
+    "candidates_not_asserted": ["emulation run-loop does not advance after wrapper.start()", "possible headless/automation sensitivity (needs headed control run)"]
+  },
+  "evidence": { "canvas_digests": ["1983932487:2118","970685579:1942 x7"], "screenshot": "soliboy-functional-iter-1/player-after-avvia.png" },
+  "next_action": "handoff fe-dev: debug run-loop post-start + headed control run; then re-run /functional-oracle soliboy"
+}

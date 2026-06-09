@@ -1,0 +1,42 @@
+# Acceptance-spec soli-boy — flusso core: carica ROM → avvia → emulazione gira
+# Schema: .claude/schemas/acceptance-spec.schema.yaml (EP-018, ADR-065).
+# Il FRAMEWORK possiede lo schema; QUESTO file (contenuto, dominio soli-boy) lo possiede il progetto.
+# Fixture: gba-tests-thumb.gba — test ROM mGBA, freely distributable (NO ROM commerciali, ADR-066/TSK-155).
+
+app: soliboy
+target: http://127.0.0.1:4317/        # build dist servita (vite preview)
+
+fixtures:
+  - id: test-rom
+    path: packages/app/public/test-roms/gba-tests-thumb.gba
+    load_via:
+      selector: 'input[aria-label="Carica ROM"]'
+      action: set_input_files
+
+scenario:
+  - { action: set_input_files, selector: 'input[aria-label="Carica ROM"]', fixture: test-rom }
+  - { action: click, selector: 'button:has-text("Avvia")' }
+  - { action: wait_for, selector: '[data-testid="sb-canvas-host"] canvas', state: visible, timeout_ms: 15000 }
+  - { action: wait_ms, value: 2500 }   # lascia girare alcuni frame di emulazione
+
+assertions:
+  # BLOCKING — l'emulazione sta davvero girando (il canvas cambia tra i frame): prova funzionale forte
+  - id: canvas-advancing
+    severity: blocking
+    kind: canvas_pixel_variance
+    selector: '[data-testid="sb-canvas-host"] canvas'
+    min_variance: 0.02
+    frames: 8
+  # BLOCKING — lo stato HUD passa a "In esecuzione" (running)
+  - id: state-running
+    severity: blocking
+    kind: text_matches
+    selector: '.sb-screen'
+    pattern: 'In esecuzione'
+  # ADVISORY — nessun errore console durante il boot+avvio
+  - id: no-console-error
+    severity: advisory
+    kind: console_no_error
+
+thresholds:
+  advisory_max: 1
