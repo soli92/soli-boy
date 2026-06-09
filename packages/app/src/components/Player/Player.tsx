@@ -42,6 +42,10 @@ import {
   type VideoSettings,
   type VideoSettingsPort,
 } from "./useVideoSettings";
+// TSK-060 / TSK-061 — TouchOverlay: D-pad + pulsanti virtuali + config persistita (US-026/US-027).
+import type { InputMapping } from "../../domain/input-mapping";
+import type { ConfigPort } from "../../storage/port";
+import { TouchOverlay } from "../TouchOverlay/TouchOverlay";
 
 export interface PlayerProps {
   /** Engine di emulazione (EmulatorJS in runtime). */
@@ -76,6 +80,17 @@ export interface PlayerProps {
    * SaveService.loadState per il guard cross-engine (ADR-006 §Conseguenze).
    */
   currentCore?: Core;
+  /**
+   * TSK-060 — InputMapping da passare al TouchOverlay per instradare gli eventi
+   * touch verso il core. Se assente, il TouchOverlay non viene montato (backward
+   * compat — test legacy invariati).
+   */
+  inputMapping?: InputMapping;
+  /**
+   * TSK-061 — Porta di persistenza per la config TouchOverlay (US-027).
+   * Se assente, la config TouchOverlay usa solo lo stato locale (no crash).
+   */
+  touchConfigStorage?: ConfigPort;
 }
 
 export function Player({
@@ -87,6 +102,8 @@ export function Player({
   saveService,
   romId,
   currentCore,
+  inputMapping,
+  touchConfigStorage,
 }: PlayerProps) {
   const wrapper = useMemo(() => new CoreWrapper(engine), [engine]);
   const [state, setState] = useState(wrapper.currentState);
@@ -329,6 +346,19 @@ export function Player({
           romId={romId}
           currentCore={currentCore}
           isRunning={running}
+        />
+      )}
+      {/* TSK-060 — TouchOverlay: D-pad + pulsanti virtuali su dispositivo touch
+          (US-026/US-027). Montato solo se la composizione App inietta
+          `inputMapping` (backward compat: test e composizioni legacy invariati).
+          Visibilità touch-device effettuata internamente al componente.
+          Posizionato DOPO il pannello save state perché l'overlay usa
+          `position:absolute` sopra il viewport (z-index gestito internamente). */}
+      {inputMapping && (
+        <TouchOverlay
+          core={rom.core}
+          inputMapping={inputMapping}
+          storage={touchConfigStorage}
         />
       )}
     </section>

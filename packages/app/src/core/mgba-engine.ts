@@ -55,6 +55,8 @@ interface MgbaModule {
 const BTN: Record<GameButton, string> = {
   up: "Up", down: "Down", left: "Left", right: "Right",
   a: "A", b: "B", start: "Start", select: "Select",
+  // TSK-060: shoulder button GBA (US-026).
+  l: "L", r: "R",
 };
 
 /**

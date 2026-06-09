@@ -62,6 +62,17 @@ export class InputMapping {
     return true;
   }
 
+  /**
+   * Input touch diretto da `TouchOverlay` (TSK-060 / US-026).
+   * Il `button` è già il `GameButton` finale (derivato da `button-map.ts`
+   * o dalla direzione D-pad); questa funzione è un passthrough tipizzato
+   * che consente all'overlay di usare l'`InputMapping` come unico punto
+   * di accesso al sink, coerentemente con gli altri sorgenti (tastiera, gamepad).
+   */
+  sendTouchInput(button: GameButton, pressed: boolean): void {
+    this.sink(button, pressed);
+  }
+
   /** Rimappa un tasto su un pulsante (US-013). */
   remap(key: string, button: GameButton): void {
     this.profile[key] = button;

@@ -1,0 +1,405 @@
+// TSK-060 — TouchOverlay: D-pad + pulsanti virtuali per mobile (US-026).
+// TSK-061 — Config posizione/dimensione/opacità persistita (US-027).
+//
+// Visibile solo su touch device (`window.matchMedia('(pointer: coarse)')`).
+// `aria-hidden="true"`: elemento puramente touch, non nel tab order.
+// Stile via token solids (CSS custom properties, classi sb-/sd-).
+// Persistenza config via ConfigPort (store `config`, chiave `touch-overlay`).
+
+import { useCallback, useRef, useState } from "react";
+import type { Core } from "../../domain/types";
+import type { InputMapping } from "../../domain/input-mapping";
+import type { GameButton } from "../../core/core-wrapper";
+import type { ConfigPort } from "../../storage/port";
+import { BUTTON_MAP, DPAD_DIRECTIONS } from "./button-map";
+import {
+  useTouchOverlayConfig,
+  type TouchOverlayConfig,
+} from "./useTouchOverlayConfig";
+
+export interface TouchOverlayProps {
+  /** Core della sessione corrente: determina il set di pulsanti. */
+  core: Core;
+  /** InputMapping a cui instradare gli eventi touch. */
+  inputMapping: InputMapping;
+  /**
+   * Porta di persistenza opzionale (ConfigPort). Se assente, la config
+   * vive solo nello stato locale (no crash — backward compat).
+   */
+  storage?: ConfigPort;
+}
+
+/** Determina se il dispositivo è touch-primary. */
+function isTouchDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
+/** Stile CSS inline derivato dalla `TouchOverlayConfig` (CSS custom properties). */
+function configToCssVars(cfg: TouchOverlayConfig): React.CSSProperties {
+  return {
+    // Casting necessario per proprietà custom non riconosciute da CSSProperties.
+    ["--sb-touch-opacity" as string]: String(cfg.opacity),
+    ["--sb-touch-scale" as string]: String(cfg.scale),
+    ["--sb-touch-dpad-x" as string]: `${cfg.dpadOffsetX}%`,
+    ["--sb-touch-dpad-y" as string]: `${cfg.dpadOffsetY}%`,
+    ["--sb-touch-btns-x" as string]: `${cfg.buttonsOffsetX}%`,
+    ["--sb-touch-btns-y" as string]: `${cfg.buttonsOffsetY}%`,
+  } as React.CSSProperties;
+}
+
+/** Handler touch riutilizzabile che chiama `inputMapping.sendTouchInput`. */
+function useTouchHandlers(inputMapping: InputMapping) {
+  const handleTouchStart = useCallback(
+    (button: GameButton) => (e: React.TouchEvent) => {
+      e.preventDefault();
+      inputMapping.sendTouchInput(button, true);
+    },
+    [inputMapping],
+  );
+  const handleTouchEnd = useCallback(
+    (button: GameButton) => (e: React.TouchEvent) => {
+      e.preventDefault();
+      inputMapping.sendTouchInput(button, false);
+    },
+    [inputMapping],
+  );
+  return { handleTouchStart, handleTouchEnd };
+}
+
+export function TouchOverlay({
+  core,
+  inputMapping,
+  storage,
+}: TouchOverlayProps) {
+  // Solo su touch device.
+  if (!isTouchDevice()) return null;
+
+  return (
+    <TouchOverlayInner
+      core={core}
+      inputMapping={inputMapping}
+      storage={storage}
+    />
+  );
+}
+
+/**
+ * Componente interno separato per permettere agli hook di girare
+ * SEMPRE (no conditional hook call sopra il guard `isTouchDevice`).
+ * Il guard rimane nel `TouchOverlay` wrapper, che è il componente
+ * pubblico. Gli hook possono essere chiamati condizionalmente QUI
+ * perché questo componente è reso solo su touch device.
+ */
+function TouchOverlayInner({
+  core,
+  inputMapping,
+  storage,
+}: TouchOverlayProps) {
+  const { config, setConfig, save } = useTouchOverlayConfig(storage);
+  const [showConfig, setShowConfig] = useState(false);
+  const { handleTouchStart, handleTouchEnd } = useTouchHandlers(inputMapping);
+  const buttons = BUTTON_MAP[core] ?? BUTTON_MAP["gambatte"];
+
+  const overlayStyle: React.CSSProperties = {
+    ...configToCssVars(config),
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    zIndex: 10,
+    opacity: config.opacity,
+  };
+
+  const dpadStyle: React.CSSProperties = {
+    position: "absolute",
+    left: `${config.dpadOffsetX}%`,
+    bottom: `${config.dpadOffsetY}%`,
+    pointerEvents: "auto",
+    transform: `scale(${config.scale})`,
+    transformOrigin: "bottom left",
+  };
+
+  const buttonsStyle: React.CSSProperties = {
+    position: "absolute",
+    right: `${config.buttonsOffsetX}%`,
+    bottom: `${config.buttonsOffsetY}%`,
+    pointerEvents: "auto",
+    transform: `scale(${config.scale})`,
+    transformOrigin: "bottom right",
+  };
+
+  const configButtonStyle: React.CSSProperties = {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    pointerEvents: "auto",
+    zIndex: 11,
+    opacity: config.opacity,
+  };
+
+  return (
+    <div
+      className="sb-touch-overlay"
+      aria-hidden="true"
+      data-testid="sb-touch-overlay"
+      style={overlayStyle}
+    >
+      {/* Config toggle: pulsante pill in alto a destra */}
+      <button
+        type="button"
+        className="sb-pill"
+        style={configButtonStyle}
+        data-testid="sb-touch-config-toggle"
+        onClick={() => setShowConfig((v) => !v)}
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        {showConfig ? "Chiudi" : "Configura overlay"}
+      </button>
+
+      {/* Pannello di configurazione */}
+      {showConfig && (
+        <TouchOverlayConfigPanel
+          config={config}
+          onChange={setConfig}
+          onSave={save}
+          onClose={() => setShowConfig(false)}
+        />
+      )}
+
+      {/* D-pad */}
+      <div
+        className="sb-dpad"
+        style={dpadStyle}
+        data-testid="sb-touch-dpad"
+      >
+        {DPAD_DIRECTIONS.map(({ button, label }) => (
+          <button
+            key={button}
+            type="button"
+            className={`dp dp-${button}`}
+            aria-hidden="true"
+            tabIndex={-1}
+            data-testid={`sb-touch-dpad-${button}`}
+            onTouchStart={handleTouchStart(button)}
+            onTouchEnd={handleTouchEnd(button)}
+          >
+            {label}
+          </button>
+        ))}
+        <div className="dp-center" />
+      </div>
+
+      {/* Pulsanti azione */}
+      <div
+        className="sb-ab"
+        style={buttonsStyle}
+        data-testid="sb-touch-buttons"
+      >
+        {buttons.map(({ button, label }) => (
+          <button
+            key={button}
+            type="button"
+            className={`ab ab-${button}`}
+            aria-hidden="true"
+            tabIndex={-1}
+            data-testid={`sb-touch-btn-${button}`}
+            onTouchStart={handleTouchStart(button)}
+            onTouchEnd={handleTouchEnd(button)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Config panel (TSK-061)
+// --------------------------------------------------------------------------
+
+interface TouchOverlayConfigPanelProps {
+  config: TouchOverlayConfig;
+  onChange: (next: Partial<TouchOverlayConfig>) => void;
+  onSave: () => Promise<void>;
+  onClose: () => void;
+}
+
+function TouchOverlayConfigPanel({
+  config,
+  onChange,
+  onSave,
+  onClose,
+}: TouchOverlayConfigPanelProps) {
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave();
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const panelStyle: React.CSSProperties = {
+    position: "absolute",
+    top: 48,
+    right: 8,
+    width: 260,
+    zIndex: 12,
+    pointerEvents: "auto",
+    padding: "var(--sd-space-md, 12px)",
+    background: "var(--sd-color-bg-surface)",
+    border: "1px solid var(--sd-color-border-muted)",
+    borderRadius: "var(--sd-radius-lg, 14px)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--sd-space-sm, 8px)",
+  };
+
+  return (
+    <div
+      ref={panelRef}
+      className="sd-card"
+      style={panelStyle}
+      data-testid="sb-touch-config-panel"
+      aria-hidden="true"
+    >
+      <p className="sb-lbl" style={{ margin: 0 }}>
+        Configura overlay
+      </p>
+
+      {/* Opacità */}
+      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+        <span className="sb-key">
+          Opacità: {Math.round(config.opacity * 100)}%
+        </span>
+        <input
+          type="range"
+          className="sb-range"
+          min={0.2}
+          max={1}
+          step={0.05}
+          value={config.opacity}
+          data-testid="sb-touch-config-opacity"
+          aria-label="Opacità overlay"
+          onChange={(e) => onChange({ opacity: parseFloat(e.target.value) })}
+        />
+      </label>
+
+      {/* Dimensione */}
+      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+        <span className="sb-key">
+          Dimensione: {Math.round(config.scale * 100)}%
+        </span>
+        <input
+          type="range"
+          className="sb-range"
+          min={0.5}
+          max={1.5}
+          step={0.05}
+          value={config.scale}
+          data-testid="sb-touch-config-scale"
+          aria-label="Dimensione overlay"
+          onChange={(e) => onChange({ scale: parseFloat(e.target.value) })}
+        />
+      </label>
+
+      {/* Posizione D-pad (X) */}
+      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+        <span className="sb-key">D-pad sinistra: {config.dpadOffsetX}%</span>
+        <input
+          type="range"
+          className="sb-range"
+          min={0}
+          max={40}
+          step={1}
+          value={config.dpadOffsetX}
+          data-testid="sb-touch-config-dpad-x"
+          aria-label="Posizione D-pad orizzontale"
+          onChange={(e) => onChange({ dpadOffsetX: parseInt(e.target.value, 10) })}
+        />
+      </label>
+
+      {/* Posizione D-pad (Y) */}
+      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+        <span className="sb-key">D-pad basso: {config.dpadOffsetY}%</span>
+        <input
+          type="range"
+          className="sb-range"
+          min={0}
+          max={40}
+          step={1}
+          value={config.dpadOffsetY}
+          data-testid="sb-touch-config-dpad-y"
+          aria-label="Posizione D-pad verticale"
+          onChange={(e) => onChange({ dpadOffsetY: parseInt(e.target.value, 10) })}
+        />
+      </label>
+
+      {/* Posizione pulsanti (X) */}
+      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+        <span className="sb-key">Pulsanti destra: {config.buttonsOffsetX}%</span>
+        <input
+          type="range"
+          className="sb-range"
+          min={0}
+          max={40}
+          step={1}
+          value={config.buttonsOffsetX}
+          data-testid="sb-touch-config-btns-x"
+          aria-label="Posizione pulsanti orizzontale"
+          onChange={(e) => onChange({ buttonsOffsetX: parseInt(e.target.value, 10) })}
+        />
+      </label>
+
+      {/* Posizione pulsanti (Y) */}
+      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+        <span className="sb-key">Pulsanti basso: {config.buttonsOffsetY}%</span>
+        <input
+          type="range"
+          className="sb-range"
+          min={0}
+          max={40}
+          step={1}
+          value={config.buttonsOffsetY}
+          data-testid="sb-touch-config-btns-y"
+          aria-label="Posizione pulsanti verticale"
+          onChange={(e) => onChange({ buttonsOffsetY: parseInt(e.target.value, 10) })}
+        />
+      </label>
+
+      <div className="sd-flex sd-gap-sm">
+        <button
+          type="button"
+          className="sb-btn sb-btn-primary"
+          style={{ flex: 1, justifyContent: "center" }}
+          onClick={handleSave}
+          disabled={saving}
+          data-testid="sb-touch-config-save"
+        >
+          {saving ? "Salvataggio…" : "Salva"}
+        </button>
+        <button
+          type="button"
+          className="sb-btn"
+          onClick={onClose}
+          data-testid="sb-touch-config-close"
+        >
+          Chiudi
+        </button>
+      </div>
+
+      {saved && (
+        <p className="sb-note" role="status" data-testid="sb-touch-config-saved">
+          Config salvata.
+        </p>
+      )}
+    </div>
+  );
+}

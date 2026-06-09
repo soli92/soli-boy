@@ -76,10 +76,12 @@ export interface AudioSettings {
   mute: boolean;
 }
 
-/** Pulsanti di gioco logici (mappati dall'InputMapping). TSK-016. */
+/** Pulsanti di gioco logici (mappati dall'InputMapping). TSK-016.
+ * TSK-060: aggiunti "l" e "r" per i shoulder button GBA (US-026). */
 export type GameButton =
   | "up" | "down" | "left" | "right"
-  | "a" | "b" | "start" | "select";
+  | "a" | "b" | "start" | "select"
+  | "l" | "r";
 
 /** Impostazioni di velocità. TSK-018 / US-014. */
 export interface SpeedSettings {
