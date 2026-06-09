@@ -180,6 +180,17 @@ export function useVideoSettings(
 }
 
 /**
+ * Aspect ratio nativo GBA (240×160 = 3:2) usato come default quando
+ * `aspect = "original"`. Fornisce un'altezza visibile prominente con scala auto
+ * (emulator-first design) senza richiedere la modalità schermo intero.
+ * GB ha un aspect 160:144 ≈ 10:9 leggermente più quadrato, ma 3:2 è un
+ * compromesso visivo accettabile in modalità "original" (letterbox minimo).
+ * Il canvas interno usa `object-fit: contain` quindi non viene mai deformato:
+ * il valore 3:2 definisce solo il bounding box del contenitore.
+ */
+export const DEFAULT_SCREEN_ASPECT_RATIO = "3 / 2";
+
+/**
  * Calcola lo stile CSS da applicare al contenitore del viewport (`.sb-screen`)
  * in funzione di scala/aspect ratio. Engine-agnostico: agiamo sul box che
  * contiene il `<canvas>` reso dall'adapter.
@@ -187,10 +198,11 @@ export function useVideoSettings(
  * Mappatura:
  * - `scale = N` (1..5): width = N * BASE_VIEWPORT_WIDTH_PX. Container fisso.
  * - `scale = "auto"`: width = 100% (adatta al contenitore parent).
- * - `aspect = "original"`: aspect-ratio lasciato auto (canvas conserva il proprio).
+ * - `aspect = "original"`: aspect-ratio: 3/2 (GBA nativo, emulator-first).
+ *   Il canvas interno usa `object-fit: contain` → nessuna deformazione per GB.
  * - `aspect = "4:3"`: aspect-ratio: 4 / 3.
- * - `aspect = "stretch"`: aspect-ratio: auto + height: 100% (riempie). In pratica
- *   lasciamo il box libero e demandiamo all'inner canvas via `object-fit: fill`.
+ * - `aspect = "stretch"`: aspect-ratio non vincolato; l'inner canvas verrà
+ *   steso via `object-fit: fill`.
  */
 export function videoSettingsToContainerStyle(
   s: VideoSettings,
@@ -198,14 +210,19 @@ export function videoSettingsToContainerStyle(
   const style: CSSProperties = {};
   if (s.scale === "auto") {
     style.width = "100%";
+    // Cap a 480px (3× risoluzione nativa GBA 160px) per evitare un viewport di
+    // gioco gigante su schermi desktop larghi in modalità "auto".
+    style.maxWidth = "480px";
   } else {
     style.width = `${s.scale * BASE_VIEWPORT_WIDTH_PX}px`;
   }
   if (s.aspect === "4:3") {
     style.aspectRatio = "4 / 3";
   } else if (s.aspect === "original") {
-    // Lasciamo che il canvas determini la propria aspect intrinseca.
-    style.aspectRatio = "auto";
+    // Imposta aspect-ratio esplicito sul contenitore così l'altezza non collassa
+    // a zero quando il contenuto è posizionato in assoluto (canvas-host absolute).
+    // Fix: canvas schiacciato (altezza ~24px con scala auto, bug finding iter-2).
+    style.aspectRatio = DEFAULT_SCREEN_ASPECT_RATIO;
   } else {
     // stretch: nessun vincolo di aspect; l'inner canvas verrà steso via object-fit.
     style.aspectRatio = "auto";

@@ -150,9 +150,14 @@ body{
 .sb-add .sb-mt{color:var(--sd-color-text-tertiary);font-size:13px;}
 
 /* player */
+/* TSK — Fix B: canvas schiacciato. L'aspect-ratio effettivo è iniettato inline
+   da videoSettingsToContainerStyle (3/2 per "original", 4/3 per "4:3",
+   auto per "stretch"). overflow:hidden: il canvas non fuoriesce dal
+   border-radius. */
 .sb-screen{
   background:var(--sd-screen-bg);border:1px solid var(--sd-color-border-muted);
   border-radius:var(--sd-radius-md);display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
 }
 .sb-hud{
   display:flex;align-items:center;justify-content:space-between;

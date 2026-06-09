@@ -74,6 +74,12 @@ export class WasmBoyEngine implements EmulatorEngine {
     this.playing = false;
   }
   resume(): void {
+    // Guard: no-op se l'engine non è ancora configurato (nessuna ROM caricata).
+    // Difesa in profondità rispetto al guard in CoreWrapper.resume(): protegge
+    // da chiamate dirette sull'adapter (es. LifecycleTarget proxy) o da percorsi
+    // non mediati da CoreWrapper (architettura "Player sempre montato" con
+    // visibility/resume che potrebbe arrivare prima del primo load).
+    if (!this.configured) return;
     this.run(WasmBoy.play(), "resume");
     this.playing = true;
   }
