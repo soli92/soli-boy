@@ -53,6 +53,10 @@ function isTrustedUrl(url: string): boolean {
 // ── Fixture: ROM sintetica ────────────────────────────────────────────────────
 const FAKE_ROM_BYTES = Buffer.from("FAKE-ROM-PRIVACY-AUDIT-GB");
 const FAKE_ROM_NAME = "privacy-audit-test.gb";
+// Accessible name esatto del tile di selezione ROM: "<titolo> <platform>"
+// (vedi Library.tsx). Match esatto per evitare lo strict-mode violation con
+// l'input "Cambia copertina di privacy-audit-test".
+const GAME_TILE_NAME = "privacy-audit-test GB";
 
 test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
   /**
@@ -124,7 +128,7 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
 
     // Attendi che la ROM compaia in libreria.
     await expect(
-      page.getByRole("button", { name: /privacy-audit-test/i }),
+      page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 10_000 });
 
     // Breve attesa per raccogliere richieste lazy.
@@ -153,11 +157,11 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       buffer: FAKE_ROM_BYTES,
     });
     await expect(
-      page.getByRole("button", { name: /privacy-audit-test/i }),
+      page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 10_000 });
 
     // Seleziona la ROM e avvia.
-    await page.getByRole("button", { name: /privacy-audit-test/i }).click();
+    await page.getByRole("button", { name: GAME_TILE_NAME }).click();
     await page.getByRole("button", { name: /avvia/i }).click();
 
     // Attendi che il pulsante "Salva nello slot 1" sia abilitato.
@@ -203,9 +207,9 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       buffer: FAKE_ROM_BYTES,
     });
     await expect(
-      page.getByRole("button", { name: /privacy-audit-test/i }),
+      page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 5_000 });
-    await page.getByRole("button", { name: /privacy-audit-test/i }).click();
+    await page.getByRole("button", { name: GAME_TILE_NAME }).click();
     await page.getByRole("button", { name: /avvia/i }).click();
     await page.waitForTimeout(1_000);
 
@@ -242,7 +246,7 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       buffer: FAKE_ROM_BYTES,
     });
     await expect(
-      page.getByRole("button", { name: /privacy-audit-test/i }),
+      page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 5_000 });
 
     // Naviga su settings se esiste.
