@@ -62,6 +62,13 @@ export const STORE_COMPLIANCE_NOTICE_DETAIL =
 export interface StoreComplianceNoticeProps {
   /** Classi aggiuntive opzionali (allineato a LegalNotice / PrivacyNotice). */
   className?: string;
+  /**
+   * Quando `true`, sopprime l'intestazione interna (`<p className="sb-lbl">`).
+   * Usato da Settings quando il `<summary>` del `<details>` accordion già
+   * fornisce il titolo "Legale" — evita il doppio header. Default `false`:
+   * nessuna variazione del rendering in tutti gli altri usi del componente.
+   */
+  headingHidden?: boolean;
 }
 
 /**
@@ -71,17 +78,20 @@ export interface StoreComplianceNoticeProps {
  */
 export function StoreComplianceNotice({
   className,
+  headingHidden = false,
 }: StoreComplianceNoticeProps): ReactElement {
   const headingId = "sb-store-compliance-heading";
   return (
     <section
       className={["sd-card", "sb-sec", className].filter(Boolean).join(" ")}
-      aria-labelledby={headingId}
+      aria-labelledby={headingHidden ? undefined : headingId}
       data-testid="sb-store-compliance-section"
     >
-      <p id={headingId} className="sb-lbl">
-        {HEADING}
-      </p>
+      {!headingHidden && (
+        <p id={headingId} className="sb-lbl">
+          {HEADING}
+        </p>
+      )}
       {/* aria-label deliberatamente distinto da "Avviso legale" (LegalNotice
           TSK-006) per non collidere con l'e2e `getByRole('note', {name: /avviso
           legale/i})` in app.e2e.ts in modalità strict: due elementi `role=note`

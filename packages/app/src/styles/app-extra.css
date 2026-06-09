@@ -86,6 +86,82 @@ footer {
   border-top: 1px solid var(--sd-color-border-muted, #3a2a63);
 }
 
+/* ============================================================================
+   TSK-??? — Accordion Settings: stile marker <details>/<summary> (Residuo B)
+   ----------------------------------------------------------------------------
+   Il triangolo disclosure nativo non è stilizzato col design system. Strategia:
+   - Nasconde il marker nativo (cross-browser: ::webkit-details-marker + ::marker).
+   - Aggiunge un chevron custom via ::after con rotazione su [open] per indicare
+     stato aperto/chiuso in modo chiaro.
+   - cursor:pointer, hover/focus-visible coerenti con sb-tab-btn (sb-* tokens).
+   - L'accessibilità nativa di <details> è PRESERVATA: Space/Enter su <summary>
+     funzionano invariati (il marker visivo non tocca il behaviour nativo). Gli
+     screen reader annunciano ancora "collapsed/expanded" dal role="group" nativo.
+   Scope: solo i <summary> di classe .sb-lbl dentro .sd-card.sb-sec (Settings)
+   per non influenzare altri eventuali <details> non-Settings del progetto.
+   ============================================================================ */
+
+/* Nascondi il triangolo nativo (WebKit + Firefox/standard) */
+.sd-card.sb-sec details > summary.sb-lbl::-webkit-details-marker {
+  display: none;
+}
+.sd-card.sb-sec details > summary.sb-lbl::marker {
+  content: "";
+}
+
+/* Layout dell'header accordion */
+.sd-card.sb-sec details > summary.sb-lbl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  /* Reset list-style nel caso in cui il browser applichi il ruolo di lista. */
+  list-style: none;
+  padding: var(--sd-space-sm, 8px) 0;
+  color: var(--sd-color-text-primary, #f0e9ff);
+  font-family: var(--sd-font-body, system-ui, sans-serif);
+  user-select: none;
+  /* Linea separatrice sottile fra accordion chiusi */
+  border-bottom: 1px solid var(--sd-color-border-muted, #3a2a63);
+  transition: color 0.15s;
+}
+
+/* Hover: evidenzia il label con il colore primario */
+.sd-card.sb-sec details > summary.sb-lbl:hover {
+  color: var(--sd-color-primary-default, #00e5ff);
+}
+
+/* Focus visibile da tastiera (coerente con sb-tab-btn:focus-visible) */
+.sd-card.sb-sec details > summary.sb-lbl:focus-visible {
+  outline: 2px solid var(--sd-color-primary-default, #00e5ff);
+  outline-offset: 2px;
+  border-radius: var(--sd-radius-sm, 6px);
+}
+
+/* Chevron custom: freccia rotante che indica aperto (su) / chiuso (giù) */
+.sd-card.sb-sec details > summary.sb-lbl::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);   /* punta in basso = chiuso */
+  transition: transform 0.2s ease, color 0.15s;
+  flex-shrink: 0;
+  margin-left: var(--sd-space-sm, 8px);
+}
+
+/* Quando aperto: ruota il chevron verso l'alto */
+.sd-card.sb-sec details[open] > summary.sb-lbl::after {
+  transform: rotate(-135deg);  /* punta in alto = aperto */
+}
+
+/* Quando aperto: rimuovi la linea separatrice (il contenuto si espande sotto) */
+.sd-card.sb-sec details[open] > summary.sb-lbl {
+  border-bottom-color: transparent;
+}
+
 /* ============================================================================ */
 
 html, body { margin: 0; }

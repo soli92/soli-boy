@@ -71,6 +71,14 @@ export interface PrivacyNoticeProps {
   onAcknowledge?: () => void;
   /** Classi aggiuntive opzionali (allineato a `LegalNotice`). */
   className?: string;
+  /**
+   * Quando `true`, sopprime l'intestazione interna (`<p className="sb-lbl">`).
+   * Usato da Settings quando il `<summary>` del `<details>` accordion già
+   * fornisce il titolo "Privacy" — evita il doppio header. Default `false`:
+   * nessuna variazione del rendering in tutti gli altri usi del componente
+   * (banner di primo avvio, modale, ecc.).
+   */
+  headingHidden?: boolean;
 }
 
 /** Lista dei punti privacy (markup condiviso fra banner e sezione). */
@@ -92,6 +100,7 @@ export function PrivacyNotice({
   variant = "banner",
   onAcknowledge,
   className,
+  headingHidden = false,
 }: PrivacyNoticeProps): ReactElement {
   // ID stabile per il legame `aria-labelledby`. Distinto fra varianti così
   // banner + sezione possono coesistere nella stessa pagina senza id duplicati
@@ -103,12 +112,14 @@ export function PrivacyNotice({
     return (
       <section
         className={["sd-card", "sb-sec", className].filter(Boolean).join(" ")}
-        aria-labelledby={headingId}
+        aria-labelledby={headingHidden ? undefined : headingId}
         data-testid="sb-privacy-section"
       >
-        <p id={headingId} className="sb-lbl">
-          {HEADING}
-        </p>
+        {!headingHidden && (
+          <p id={headingId} className="sb-lbl">
+            {HEADING}
+          </p>
+        )}
         <PointList />
         <p className="sb-note" role="note">
           <i className="ti ti-info-circle" aria-hidden="true" /> Questa app è
@@ -125,12 +136,14 @@ export function PrivacyNotice({
     <section
       className={["sd-card", "sb-sec", className].filter(Boolean).join(" ")}
       role="region"
-      aria-labelledby={headingId}
+      aria-labelledby={headingHidden ? undefined : headingId}
       data-testid="sb-privacy-banner"
     >
-      <p id={headingId} className="sb-lbl">
-        {HEADING}
-      </p>
+      {!headingHidden && (
+        <p id={headingId} className="sb-lbl">
+          {HEADING}
+        </p>
+      )}
       <PointList />
       <button
         type="button"

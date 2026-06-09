@@ -390,20 +390,15 @@ export function Settings({
     selectedSaveStateId === "" ||
     saveStates.length === 0;
 
-  // Stile inline comune per i <summary> accordion: cursor pointer per UX
-  // coerente con .sb-lbl. Non modifica i file CSS condivisi (ownership
-  // esclusiva Settings/**). Il triangolo disclosure nativo di <details> è
-  // mantenuto: è un affordance visivo utile per l'accordion pattern e non
-  // richiede CSS aggiuntivo.
-  const summaryStyle: React.CSSProperties = {
-    cursor: "pointer",
-  };
+  // Nota: lo stile cursor:pointer + chevron accordion è ora in
+  // styles/app-extra.css (regola `.sd-card.sb-sec details > summary.sb-lbl`),
+  // quindi non serve più lo stile inline summaryStyle (Residuo B).
 
   return (
     <section className="sd-card sb-sec" aria-label="Impostazioni controlli">
       {/* === Accordion 1: Controlli — rimappatura (aperto di default) ======== */}
       <details open>
-        <summary className="sb-lbl" style={summaryStyle}>
+        <summary className="sb-lbl">
           Controlli — rimappatura
         </summary>
         <ul className="sb-keymap">
@@ -445,7 +440,7 @@ export function Settings({
       {/* TSK-036 — Resa video (US-021): scala + aspect ratio. Persistenza via
           `videoConfigPort` (opzionale); stessa porta consumata da Player. */}
       <details>
-        <summary className="sb-lbl" style={summaryStyle}>
+        <summary className="sb-lbl">
           Resa video — scala e proporzioni
         </summary>
         <ul className="sb-keymap" aria-label="Impostazioni resa video">
@@ -509,7 +504,7 @@ export function Settings({
           lo stesso markup di prima — niente regressioni. */}
       {theme !== undefined && onThemeChange !== undefined && (
         <details>
-          <summary className="sb-lbl" style={summaryStyle}>
+          <summary className="sb-lbl">
             Aspetto — tema UI
           </summary>
           <ul className="sb-keymap" aria-label="Impostazioni aspetto">
@@ -525,7 +520,7 @@ export function Settings({
           queste prop non vedono la sezione. */}
       {hapticsEnabled !== undefined && onHapticsChange !== undefined && (
         <details>
-          <summary className="sb-lbl" style={summaryStyle}>
+          <summary className="sb-lbl">
             Mobile — feedback aptico
           </summary>
           <ul className="sb-keymap" aria-label="Impostazioni mobile">
@@ -553,7 +548,7 @@ export function Settings({
           se manca `saveService` (es. test legacy senza wiring) o non ci sono
           save state per la ROM selezionata. */}
       <details>
-        <summary className="sb-lbl" style={summaryStyle}>
+        <summary className="sb-lbl">
           Dati — salvataggi (export/import)
         </summary>
         <div
@@ -646,10 +641,13 @@ export function Settings({
           è coerente (vedi StoreComplianceNotice.tsx). Avviso esplicito
           no-ROM protette per conformità store. */}
       <details>
-        <summary className="sb-lbl" style={summaryStyle}>
+        <summary className="sb-lbl">
           Legale
         </summary>
-        <StoreComplianceNotice />
+        {/* headingHidden=true: il <summary> sopra funge già da titolo —
+            sopprimiamo l'intestazione interna di StoreComplianceNotice
+            per evitare il doppio header (Residuo A). */}
+        <StoreComplianceNotice headingHidden />
       </details>
 
       {/* === Accordion 7: Privacy (chiuso) =================================== */}
@@ -658,10 +656,13 @@ export function Settings({
           riflette il modello on-device dell'app (ADR-002 §Conseguenze).
           Variante `section`: layout coerente, non dismissibile. */}
       <details>
-        <summary className="sb-lbl" style={summaryStyle}>
+        <summary className="sb-lbl">
           Privacy
         </summary>
-        <PrivacyNotice variant="section" />
+        {/* headingHidden=true: il <summary> sopra funge già da titolo —
+            sopprimiamo l'intestazione interna di PrivacyNotice
+            per evitare il doppio header (Residuo A). */}
+        <PrivacyNotice variant="section" headingHidden />
       </details>
     </section>
   );
