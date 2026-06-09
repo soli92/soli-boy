@@ -390,119 +390,144 @@ export function Settings({
     selectedSaveStateId === "" ||
     saveStates.length === 0;
 
+  // Stile inline comune per i <summary> accordion: cursor pointer per UX
+  // coerente con .sb-lbl. Non modifica i file CSS condivisi (ownership
+  // esclusiva Settings/**). Il triangolo disclosure nativo di <details> è
+  // mantenuto: è un affordance visivo utile per l'accordion pattern e non
+  // richiede CSS aggiuntivo.
+  const summaryStyle: React.CSSProperties = {
+    cursor: "pointer",
+  };
+
   return (
     <section className="sd-card sb-sec" aria-label="Impostazioni controlli">
-      <p className="sb-lbl">Controlli — rimappatura</p>
-      <ul className="sb-keymap">
-        {Object.entries(profile).map(([key, button]) => (
-          <li key={key} className="sb-row">
-            <span className="sb-key">{key}</span>
+      {/* === Accordion 1: Controlli — rimappatura (aperto di default) ======== */}
+      <details open>
+        <summary className="sb-lbl" style={summaryStyle}>
+          Controlli — rimappatura
+        </summary>
+        <ul className="sb-keymap">
+          {Object.entries(profile).map(([key, button]) => (
+            <li key={key} className="sb-row">
+              <span className="sb-key">{key}</span>
+              <select
+                className="sb-sel"
+                aria-label={`Pulsante per ${key}`}
+                value={button}
+                onChange={(e) => onRemap(key, e.target.value as GameButton)}
+              >
+                {BUTTONS.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            </li>
+          ))}
+        </ul>
+        <button
+          className="sb-btn sb-full"
+          onClick={() => {
+            onSaveProfile?.();
+            setSaved(true);
+          }}
+        >
+          Salva profilo
+        </button>
+        {saved && (
+          <p className="sb-note" role="status">
+            Profilo salvato.
+          </p>
+        )}
+      </details>
+
+      {/* === Accordion 2: Resa video — scala e proporzioni (chiuso) ========= */}
+      {/* TSK-036 — Resa video (US-021): scala + aspect ratio. Persistenza via
+          `videoConfigPort` (opzionale); stessa porta consumata da Player. */}
+      <details>
+        <summary className="sb-lbl" style={summaryStyle}>
+          Resa video — scala e proporzioni
+        </summary>
+        <ul className="sb-keymap" aria-label="Impostazioni resa video">
+          <li className="sb-row">
+            <span className="sb-key">Fattore di scala</span>
             <select
               className="sb-sel"
-              aria-label={`Pulsante per ${key}`}
-              value={button}
-              onChange={(e) => onRemap(key, e.target.value as GameButton)}
+              aria-label="Fattore di scala"
+              value={String(effective.scale)}
+              onChange={(e) => handleScaleChange(e.target.value)}
             >
-              {BUTTONS.map((b) => (
-                <option key={b} value={b}>
-                  {b}
+              <option value="auto">{scaleLabel("auto")}</option>
+              {SCALE_FACTORS.map((s) => (
+                <option key={s} value={String(s)}>
+                  {scaleLabel(s)}
                 </option>
               ))}
             </select>
           </li>
-        ))}
-      </ul>
-      <button
-        className="sb-btn sb-full"
-        onClick={() => {
-          onSaveProfile?.();
-          setSaved(true);
-        }}
-      >
-        Salva profilo
-      </button>
-      {saved && (
-        <p className="sb-note" role="status">
-          Profilo salvato.
-        </p>
-      )}
+          <li className="sb-row">
+            <span className="sb-key">Aspect ratio</span>
+            <select
+              className="sb-sel"
+              aria-label="Aspect ratio"
+              value={effective.aspect}
+              onChange={(e) => handleAspectChange(e.target.value)}
+            >
+              {ASPECT_RATIOS.map((a) => (
+                <option key={a} value={a}>
+                  {aspectLabel(a)}
+                </option>
+              ))}
+            </select>
+          </li>
+          {/* TSK-037 — Filtro (US-022): nearest/smoothing/scanline. Stesso
+              `VideoSettings`, stessa porta, persistenza già coperta dal
+              wiring App.tsx introdotto in TSK-036. */}
+          <li className="sb-row">
+            <span className="sb-key">Filtro</span>
+            <select
+              className="sb-sel"
+              aria-label="Filtro video"
+              value={effective.filter}
+              onChange={(e) => handleFilterChange(e.target.value)}
+            >
+              {VIDEO_FILTERS.map((f) => (
+                <option key={f} value={f}>
+                  {filterLabel(f)}
+                </option>
+              ))}
+            </select>
+          </li>
+        </ul>
+      </details>
 
-      {/* TSK-036 — Resa video (US-021): scala + aspect ratio. Persistenza via
-          `videoConfigPort` (opzionale); stessa porta consumata da Player. */}
-      <p className="sb-lbl">Resa video — scala e proporzioni</p>
-      <ul className="sb-keymap" aria-label="Impostazioni resa video">
-        <li className="sb-row">
-          <span className="sb-key">Fattore di scala</span>
-          <select
-            className="sb-sel"
-            aria-label="Fattore di scala"
-            value={String(effective.scale)}
-            onChange={(e) => handleScaleChange(e.target.value)}
-          >
-            <option value="auto">{scaleLabel("auto")}</option>
-            {SCALE_FACTORS.map((s) => (
-              <option key={s} value={String(s)}>
-                {scaleLabel(s)}
-              </option>
-            ))}
-          </select>
-        </li>
-        <li className="sb-row">
-          <span className="sb-key">Aspect ratio</span>
-          <select
-            className="sb-sel"
-            aria-label="Aspect ratio"
-            value={effective.aspect}
-            onChange={(e) => handleAspectChange(e.target.value)}
-          >
-            {ASPECT_RATIOS.map((a) => (
-              <option key={a} value={a}>
-                {aspectLabel(a)}
-              </option>
-            ))}
-          </select>
-        </li>
-        {/* TSK-037 — Filtro (US-022): nearest/smoothing/scanline. Stesso
-            `VideoSettings`, stessa porta, persistenza già coperta dal
-            wiring App.tsx introdotto in TSK-036. */}
-        <li className="sb-row">
-          <span className="sb-key">Filtro</span>
-          <select
-            className="sb-sel"
-            aria-label="Filtro video"
-            value={effective.filter}
-            onChange={(e) => handleFilterChange(e.target.value)}
-          >
-            {VIDEO_FILTERS.map((f) => (
-              <option key={f} value={f}>
-                {filterLabel(f)}
-              </option>
-            ))}
-          </select>
-        </li>
-      </ul>
-
+      {/* === Accordion 3: Aspetto — tema UI (chiuso, opzionale) ============= */}
       {/* TSK-044 (US-036) — Aspetto: tema UI applicato via `data-theme` su
           `<html>`. Sezione opzionale: renderizzata solo se App.tsx ha cablato
           `theme` + `onThemeChange` (modalità controllata via `useTheme` con
           porta IndexedDB). I test legacy che non passano queste prop vedono
           lo stesso markup di prima — niente regressioni. */}
       {theme !== undefined && onThemeChange !== undefined && (
-        <>
-          <p className="sb-lbl">Aspetto — tema UI</p>
+        <details>
+          <summary className="sb-lbl" style={summaryStyle}>
+            Aspetto — tema UI
+          </summary>
           <ul className="sb-keymap" aria-label="Impostazioni aspetto">
             <ThemeSelector theme={theme} onThemeChange={onThemeChange} />
           </ul>
-        </>
+        </details>
       )}
 
+      {/* === Accordion 4: Mobile — feedback aptico (chiuso, opzionale) ====== */}
       {/* TSK-066 (US-032) — Mobile: feedback aptico.
           Sezione opzionale: renderizzata solo se App.tsx ha cablato
           `hapticsEnabled` + `onHapticsChange`. I test legacy che non passano
           queste prop non vedono la sezione. */}
       {hapticsEnabled !== undefined && onHapticsChange !== undefined && (
-        <>
-          <p className="sb-lbl">Mobile — feedback aptico</p>
+        <details>
+          <summary className="sb-lbl" style={summaryStyle}>
+            Mobile — feedback aptico
+          </summary>
           <ul className="sb-keymap" aria-label="Impostazioni mobile">
             <li className="sb-row">
               <span className="sb-key">Vibrazione ai controlli</span>
@@ -519,108 +544,125 @@ export function Settings({
               </button>
             </li>
           </ul>
-        </>
+        </details>
       )}
 
+      {/* === Accordion 5: Dati — salvataggi (export/import) (chiuso) ======== */}
       {/* TSK-033 — Dati (US-019): export/import salvataggi.
           Sezione sempre visibile per UX prevedibile; disabilitata con nota
           se manca `saveService` (es. test legacy senza wiring) o non ci sono
           save state per la ROM selezionata. */}
-      <p className="sb-lbl">Dati — salvataggi (export/import)</p>
-      <div
-        className="sd-flex sd-items-center sd-gap-sm"
-        role="group"
-        aria-label="Esporta e importa salvataggi"
-        data-testid="sb-data-section"
-      >
-        {/* Etichetta di contesto: la ROM corrente è quella selezionata nel
-            Player (App-level state). Non rendiamo un selettore ROM dedicato:
-            (a) la Library lo è già; (b) duplicare il titolo qui collide con
-            gli e2e che usano `getByText(title)` in modalità strict. L'utente
-            che vuole esportare i save di un'altra ROM la seleziona dalla
-            Library, poi torna in Settings (workflow esistente).
-            Per la stessa ragione, indichiamo la ROM tramite id corto (non il
-            titolo): il titolo resta univoco nella DOM (Library tile + Player). */}
-        <span className="sb-key" data-testid="sb-data-rom-context">
-          {currentRom
-            ? `Gioco corrente: [${currentRom.id.slice(0, 6)}]`
-            : /* Wording deliberatamente distinto da "Nessun gioco" usato da
-                 Library (vedi Library.tsx) per non collidere con l'e2e
-                 `getByText(/nessun gioco/i)` in modalità strict. */
-              "— seleziona una ROM dalla libreria —"}
-        </span>
-      </div>
-      <div className="sd-flex sd-items-center sd-gap-sm">
-        <span className="sb-key">Salvataggio</span>
-        <select
-          className="sb-sel"
-          aria-label="Salvataggio da esportare"
-          value={selectedSaveStateId}
-          onChange={(e) => setSelectedSaveStateId(e.target.value)}
-          disabled={!dataSectionAvailable || saveStates.length === 0}
+      <details>
+        <summary className="sb-lbl" style={summaryStyle}>
+          Dati — salvataggi (export/import)
+        </summary>
+        <div
+          className="sd-flex sd-items-center sd-gap-sm"
+          role="group"
+          aria-label="Esporta e importa salvataggi"
+          data-testid="sb-data-section"
         >
-          {saveStates.length === 0 && (
-            <option value="">(nessun salvataggio)</option>
-          )}
-          {saveStates.map((rec) => (
-            <option key={rec.id} value={rec.id}>
-              {saveStateLabel(rec)}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="sb-btn sb-btn-primary"
-          onClick={handleExport}
-          disabled={exportDisabled}
-          aria-label="Esporta salvataggio selezionato"
-        >
-          Esporta
-        </button>
-      </div>
-      <div className="sd-flex sd-items-center sd-gap-sm">
-        <span className="sb-key">Importa file</span>
-        <input
-          ref={importInputRef}
-          type="file"
-          aria-label="Importa file di salvataggio"
-          // application/json + estensione di courtesy: il dialog non filtra a
-          // schermo (US-019 menziona "file"), ma offre un hint al browser.
-          accept="application/json,.json"
-          onChange={handleImportChange}
-          disabled={!dataSectionAvailable || dataBusy}
-        />
-      </div>
-      {!dataSectionAvailable && (
-        // Nota statica (no aria-live): è uno stato permanente del rendering
-        // quando manca il SaveService, non un feedback contestuale. Mantenere
-        // un role="status" qui creerebbe ambiguità con il messaggio "Profilo
-        // salvato" (anch'esso role="status"): l'AT leggerebbe entrambi.
-        <p className="sb-note" data-testid="sb-data-unavailable">
-          La gestione dei salvataggi non è disponibile.
-        </p>
-      )}
-      {dataMessage && (
-        <p
-          className="sb-note"
-          role={dataMessage.kind === "error" ? "alert" : "status"}
-          data-testid="sb-data-message"
-        >
-          {dataMessage.text}
-        </p>
-      )}
+          {/* Etichetta di contesto: la ROM corrente è quella selezionata nel
+              Player (App-level state). Non rendiamo un selettore ROM dedicato:
+              (a) la Library lo è già; (b) duplicare il titolo qui collide con
+              gli e2e che usano `getByText(title)` in modalità strict. L'utente
+              che vuole esportare i save di un'altra ROM la seleziona dalla
+              Library, poi torna in Settings (workflow esistente).
+              Per la stessa ragione, indichiamo la ROM tramite id corto (non il
+              titolo): il titolo resta univoco nella DOM (Library tile + Player). */}
+          <span className="sb-key" data-testid="sb-data-rom-context">
+            {currentRom
+              ? `Gioco corrente: [${currentRom.id.slice(0, 6)}]`
+              : /* Wording deliberatamente distinto da "Nessun gioco" usato da
+                   Library (vedi Library.tsx) per non collidere con l'e2e
+                   `getByText(/nessun gioco/i)` in modalità strict. */
+                "— seleziona una ROM dalla libreria —"}
+          </span>
+        </div>
+        <div className="sd-flex sd-items-center sd-gap-sm">
+          <span className="sb-key">Salvataggio</span>
+          <select
+            className="sb-sel"
+            aria-label="Salvataggio da esportare"
+            value={selectedSaveStateId}
+            onChange={(e) => setSelectedSaveStateId(e.target.value)}
+            disabled={!dataSectionAvailable || saveStates.length === 0}
+          >
+            {saveStates.length === 0 && (
+              <option value="">(nessun salvataggio)</option>
+            )}
+            {saveStates.map((rec) => (
+              <option key={rec.id} value={rec.id}>
+                {saveStateLabel(rec)}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="sb-btn sb-btn-primary"
+            onClick={handleExport}
+            disabled={exportDisabled}
+            aria-label="Esporta salvataggio selezionato"
+          >
+            Esporta
+          </button>
+        </div>
+        <div className="sd-flex sd-items-center sd-gap-sm">
+          <span className="sb-key">Importa file</span>
+          <input
+            ref={importInputRef}
+            type="file"
+            aria-label="Importa file di salvataggio"
+            // application/json + estensione di courtesy: il dialog non filtra a
+            // schermo (US-019 menziona "file"), ma offre un hint al browser.
+            accept="application/json,.json"
+            onChange={handleImportChange}
+            disabled={!dataSectionAvailable || dataBusy}
+          />
+        </div>
+        {!dataSectionAvailable && (
+          // Nota statica (no aria-live): è uno stato permanente del rendering
+          // quando manca il SaveService, non un feedback contestuale. Mantenere
+          // un role="status" qui creerebbe ambiguità con il messaggio "Profilo
+          // salvato" (anch'esso role="status"): l'AT leggerebbe entrambi.
+          <p className="sb-note" data-testid="sb-data-unavailable">
+            La gestione dei salvataggi non è disponibile.
+          </p>
+        )}
+        {dataMessage && (
+          <p
+            className="sb-note"
+            role={dataMessage.kind === "error" ? "alert" : "status"}
+            data-testid="sb-data-message"
+          >
+            {dataMessage.text}
+          </p>
+        )}
+      </details>
 
+      {/* === Accordion 6: Legale (chiuso) ==================================== */}
       {/* TSK-070 (US-034) — Sezione "Legale" SEMPRE consultabile, posta
           PRIMA della sezione Privacy così il cross-link interno "qui sotto"
           è coerente (vedi StoreComplianceNotice.tsx). Avviso esplicito
           no-ROM protette per conformità store. */}
-      <StoreComplianceNotice />
+      <details>
+        <summary className="sb-lbl" style={summaryStyle}>
+          Legale
+        </summary>
+        <StoreComplianceNotice />
+      </details>
 
+      {/* === Accordion 7: Privacy (chiuso) =================================== */}
       {/* TSK-069 (US-033) — Sezione "Privacy" SEMPRE consultabile.
           Incondizionata (no prop gating) perché il contenuto è statico e
           riflette il modello on-device dell'app (ADR-002 §Conseguenze).
           Variante `section`: layout coerente, non dismissibile. */}
-      <PrivacyNotice variant="section" />
+      <details>
+        <summary className="sb-lbl" style={summaryStyle}>
+          Privacy
+        </summary>
+        <PrivacyNotice variant="section" />
+      </details>
     </section>
   );
 }

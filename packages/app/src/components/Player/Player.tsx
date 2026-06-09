@@ -294,48 +294,82 @@ export function Player({
             : ""
         }
       `}</style>
+      {/*
+        Variante B — .sb-player-layout: wrapper che gestisce i tre layout:
+        1. Portrait non-fullscreen: flex-column (schermo sopra, controlli touch sotto).
+        2. Landscape non-fullscreen: flex-row 3-colonne (D-pad | schermo | tasti).
+        3. Fullscreen: l'overlay è montato DENTRO .sb-screen (vedi sotto) — il
+           wrapper è trasparente al layout (il fullscreen riguarda solo .sb-screen).
+        Il TouchOverlay è figlio del wrapper (sibling di .sb-screen) in non-fullscreen;
+        in fullscreen è figlio diretto di .sb-screen per restare nel fullscreen context.
+      */}
       <div
-        ref={screenRef}
-        className="sb-screen"
-        aria-label="Schermo di gioco"
-        data-state={state}
-        data-video-scope={scopeId}
-        data-scale={String(effectiveSettings.scale)}
-        data-aspect={effectiveSettings.aspect}
-        data-filter={effectiveSettings.filter}
-        style={screenStyle}
+        className={[
+          "sb-player-layout",
+          fullscreen.isFullscreen ? "sb-player-fullscreen" : "",
+        ].filter(Boolean).join(" ")}
+        data-fullscreen={fullscreen.isFullscreen ? "true" : "false"}
       >
-        {/* TSK-041 — Host dedicato per il canvas imperativo dell'engine.
-            NESSUN figlio React qui dentro: React non riconcilia il contenuto
-            dell'host, quindi il <canvas> appeso da WasmBoyEngine.ensureCanvas
-            non viene mai rimosso/clobberato da re-render del Player (es. il
-            re-render che segue handleLoad in SaveStatePanel). Il selettore
-            e2e `.sb-screen canvas` continua a matchare (il canvas resta
-            discendente di `.sb-screen`). */}
         <div
-          ref={canvasHostRef}
-          className="sb-canvas-host"
-          data-testid="sb-canvas-host"
-        />
-        {running ? (title ?? "In esecuzione") : paused ? "In pausa" : "Premi Avvia"}
-        {/* TSK-037 — Overlay scanline (US-022): reso solo con filter=scanline.
-            Dentro `.sb-screen` per ereditare lo scoping CSS sopra. Fratello
-            (NON figlio) dell'host canvas: vedi TSK-041. */}
-        {showScanlineOverlay && (
+          ref={screenRef}
+          className="sb-screen"
+          aria-label="Schermo di gioco"
+          data-state={state}
+          data-video-scope={scopeId}
+          data-scale={String(effectiveSettings.scale)}
+          data-aspect={effectiveSettings.aspect}
+          data-filter={effectiveSettings.filter}
+          style={screenStyle}
+        >
+          {/* TSK-041 — Host dedicato per il canvas imperativo dell'engine.
+              NESSUN figlio React qui dentro: React non riconcilia il contenuto
+              dell'host, quindi il <canvas> appeso da WasmBoyEngine.ensureCanvas
+              non viene mai rimosso/clobberato da re-render del Player (es. il
+              re-render che segue handleLoad in SaveStatePanel). Il selettore
+              e2e `.sb-screen canvas` continua a matchare (il canvas resta
+              discendente di `.sb-screen`). */}
           <div
-            className="sb-scanline"
-            aria-hidden="true"
-            data-testid="scanline-overlay"
+            ref={canvasHostRef}
+            className="sb-canvas-host"
+            data-testid="sb-canvas-host"
           />
-        )}
-        {/* INCREMENT 3 — TouchOverlay spostato DENTRO .sb-screen (figlio diretto)
-            per ancorarlo al viewport di gioco. Con position:relative stabile su
-            .sb-screen (solids-theme.css), il position:absolute;inset:0 dell'overlay
-            si risolve correttamente sul game viewport e non sull'intera pagina.
-            overflow:hidden su .sb-screen clippa l'overlay ai bordi del viewport.
-            Montato solo se la composizione App inietta `inputMapping` (backward
-            compat invariata). */}
-        {inputMapping && (
+          {running ? (title ?? "In esecuzione") : paused ? "In pausa" : "Premi Avvia"}
+          {/* TSK-037 — Overlay scanline (US-022): reso solo con filter=scanline.
+              Dentro `.sb-screen` per ereditare lo scoping CSS sopra. Fratello
+              (NON figlio) dell'host canvas: vedi TSK-041. */}
+          {showScanlineOverlay && (
+            <div
+              className="sb-scanline"
+              aria-hidden="true"
+              data-testid="scanline-overlay"
+            />
+          )}
+          {/* Variante B — fullscreen: TouchOverlay DENTRO .sb-screen per restare
+              nel fullscreen context (requestFullscreen su .sb-screen include solo
+              i figli diretti nel rendering fullscreen). Comportamento INCREMENT 3
+              invariato: position:absolute; inset:0 ancorato al viewport di gioco.
+              Montato solo se la composizione App inietta `inputMapping`. */}
+          {inputMapping && fullscreen.isFullscreen && (
+            <TouchOverlay
+              core={rom.core}
+              inputMapping={inputMapping}
+              storage={touchConfigStorage}
+              hapticsEnabled={hapticsEnabled}
+              hideWhenGamepad={hideOverlayWhenGamepad}
+              gamepadConnected={gamepadConnected}
+              isFullscreen={true}
+            />
+          )}
+        </div>
+
+        {/* Variante B — non-fullscreen: TouchOverlay FUORI da .sb-screen,
+            sibling nel .sb-player-layout. In portrait: compare sotto lo schermo
+            (flex-column del wrapper). In landscape: CSS 3-colonne posiziona D-pad
+            a sinistra e pulsanti a destra tramite la classe sb-touch-landscape.
+            Il componente riceve isFullscreen=false (default) per usare il layout
+            in flusso (portrait) o landscape CSS.
+            Montato solo in non-fullscreen e se `inputMapping` è presente. */}
+        {inputMapping && !fullscreen.isFullscreen && (
           <TouchOverlay
             core={rom.core}
             inputMapping={inputMapping}
@@ -343,6 +377,7 @@ export function Player({
             hapticsEnabled={hapticsEnabled}
             hideWhenGamepad={hideOverlayWhenGamepad}
             gamepadConnected={gamepadConnected}
+            isFullscreen={false}
           />
         )}
       </div>

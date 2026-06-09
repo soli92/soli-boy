@@ -115,28 +115,73 @@ body {
 }
 
 /* --- TouchOverlay safe-area ---------------------------------------------- */
-/* INCREMENT 3 — L'overlay è ora figlio di .sb-screen (position:relative stabile).
-   Il bottom offset di D-pad e pulsanti è calcolato direttamente in TouchOverlay.tsx
-   via `calc(X% + env(safe-area-inset-bottom, 0px))` come valore inline sul
-   position:absolute dei singoli gruppi di tasti, che è l'unico modo affidabile per
-   rispettare il safe-area su elementi absolutely positioned (padding sul wrapper
-   non influenza il calcolo di `bottom` dei figli assoluti).
-   Il blocco padding-bottom/left/right rimane qui SOLO per retrocompat visiva su
-   browser che supportano env() e layout future che possano usarlo, ma non ha più
-   effetto diretto sulla posizione dei tasti. */
+/* Variante B — L'overlay è ora sibling di .sb-screen in non-fullscreen.
+   In fullscreen l'overlay è ancora figlio di .sb-screen (INCREMENT 3 invariato).
+   Safe-area gestita inline via calc() in TouchOverlay.tsx per il caso fullscreen/
+   landscape (position:absolute); per portrait-flow, padding è applicato inline. */
 .sb-touch-overlay {
-  /* padding-bottom/left/right su wrapper overlay: no-op per position:absolute dei
-     figli, mantenuto per eventuali contenuti non-assoluti futuri. */
+  /* Padding safe-area per non-fullscreen portrait (gestito anche inline in TSX,
+     mantenuto qui per eventuale override cascade futuro). */
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left:   env(safe-area-inset-left,   0px);
   padding-right:  env(safe-area-inset-right,  0px);
 }
 
-/* --- Orientamento LANDSCAPE ------------------------------------------------
-   Player espanso in orizzontale; overlay D-pad a sinistra, pulsanti a destra.
-   Le classi condizionali `sb-touch-landscape` / `sb-touch-dpad-ls` /
-   `sb-touch-btns-ls` sono applicate da TouchOverlay.tsx via useLandscape().
-   -------------------------------------------------------------------------*/
+/* ============================================================================
+   Variante B — .sb-player-layout: wrapper che gestisce i 3 layout responsive
+   ----------------------------------------------------------------------------
+   Contiene .sb-screen + .sb-touch-overlay (sibling in non-fullscreen).
+
+   PORTRAIT non-fullscreen (default):
+     flex-column → .sb-screen sopra, .sb-touch-overlay sotto.
+     I controlli non si sovrappongono allo schermo.
+
+   LANDSCAPE non-fullscreen:
+     Il layout 3-colonne (D-pad | schermo | pulsanti) è emulato tramite
+     .sb-touch-landscape che posiziona in assoluto D-pad e pulsanti ai lati
+     del .sb-player-layout (position:relative). Il .sb-screen occupa lo spazio
+     centrale. L'overlay è trasparente (pointer-events:none; background nessuno).
+
+   FULLSCREEN:
+     Il wrapper non influenza il layout (l'overlay è figlio di .sb-screen
+     montato condizionalmente da Player.tsx). Classe .sb-player-fullscreen
+     applicata per reset layout.
+   ============================================================================ */
+
+.sb-player-layout {
+  /* Portrait default: colonna verticale. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  /* position:relative per ancorare l'overlay landscape ai bordi del wrapper. */
+  position: relative;
+  width: 100%;
+}
+
+/* --- Portrait non-fullscreen: overlay sotto lo schermo -------------------- */
+/* .sb-touch-portrait-flow: layout a riga con D-pad a sinistra e pulsanti
+   a destra, centrato verticalmente, spazio tra i gruppi gestito da flex.
+   I tasti compaiono nella riga sotto .sb-screen senza sovrapposizioni. */
+.sb-touch-overlay.sb-touch-portrait-flow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  /* Altezza minima pari al gruppo di tasti più alto (D-pad 120px + scale max). */
+  min-height: 132px;
+  padding-top:    var(--sd-space-sm, 8px);
+  padding-bottom: max(var(--sd-space-sm, 8px), env(safe-area-inset-bottom, 0px));
+  padding-left:   max(var(--sd-space-md, 12px), env(safe-area-inset-left, 0px));
+  padding-right:  max(var(--sd-space-md, 12px), env(safe-area-inset-right, 0px));
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* In portrait-flow il config toggle è inline (alignSelf:flex-end in TSX inline style). */
+
+/* --- Landscape non-fullscreen: layout 3-colonne --------------------------- */
 @media (orientation: landscape) {
   /* Nel landscape .sb-app riduce il gap verticale (meno spazio in altezza). */
   .sb-app {
@@ -145,17 +190,27 @@ body {
     padding-bottom: max(var(--sd-space-sm, 8px), env(safe-area-inset-bottom));
   }
 
-  /* L'overlay occupa tutto il viewport; i gruppi si riposizionano ai lati. */
+  /* .sb-player-layout landscape: riga con schermo al centro, overlay ai lati.
+     L'overlay ha position:absolute su tutto il wrapper; D-pad a sinistra,
+     pulsanti a destra tramite le regole .sb-dpad / .sb-ab sotto. */
+  .sb-player-layout:not(.sb-player-fullscreen) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  /* L'overlay in landscape occupa l'intera area del .sb-player-layout
+     (position:absolute; inset:0, impostato inline in TouchOverlay.tsx quando
+     landscape=true). Safe-area laterale rispettata. */
   .sb-touch-overlay.sb-touch-landscape {
-    /* In landscape rispettiamo anche la safe-area laterale (notch landscape). */
     padding-left:  max(var(--sd-space-sm, 8px), env(safe-area-inset-left,   0px));
     padding-right: max(var(--sd-space-sm, 8px), env(safe-area-inset-right,  0px));
   }
 
-  /* D-pad: ancorato a sinistra (override dei valori inline calcolati in %).
-     INCREMENT 3 — l'overlay è ora figlio di .sb-screen: safe-area-inset-left
-     rimane valido (la safe area è relativa al viewport fisico del device,
-     non al containing block dell'elemento). */
+  /* D-pad: ancorato a sinistra del .sb-player-layout (ora il containing block
+     dell'overlay landscape). safe-area-inset-left rimane valido (relativo al
+     viewport fisico del device, non al containing block). */
   .sb-touch-overlay.sb-touch-landscape .sb-dpad {
     left: max(var(--sd-space-md, 12px), env(safe-area-inset-left, 0px)) !important;
     right: auto !important;
@@ -165,8 +220,7 @@ body {
     transform-origin: left center;
   }
 
-  /* Pulsanti azione: ancorati a destra.
-     INCREMENT 3 — stesso rationale del D-pad per safe-area-inset-right. */
+  /* Pulsanti azione: ancorati a destra del .sb-player-layout. */
   .sb-touch-overlay.sb-touch-landscape .sb-ab {
     right: max(var(--sd-space-md, 12px), env(safe-area-inset-right, 0px)) !important;
     left: auto !important;
@@ -175,6 +229,13 @@ body {
     transform: translateY(-50%) scale(var(--sb-touch-scale, 1)) !important;
     transform-origin: right center;
   }
+}
+
+/* --- Fullscreen: il wrapper è trasparente al layout ----------------------- */
+/* In fullscreen il .sb-screen occupa il viewport; il .sb-player-layout non
+   influenza il layout (l'overlay è figlio di .sb-screen, non del wrapper). */
+.sb-player-layout.sb-player-fullscreen {
+  display: contents;
 }
 
 .sb-app {

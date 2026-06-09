@@ -47,6 +47,15 @@ export interface TouchOverlayProps {
    * Propagato da `useGamepadDetection` a livello Player/App.
    */
   gamepadConnected?: boolean;
+  /**
+   * Variante B — true quando il Player è in modalità schermo intero.
+   * In fullscreen l'overlay usa `position:absolute; inset:0` ancorato a
+   * `.sb-screen` (comportamento INCREMENT 3 invariato).
+   * In non-fullscreen portrait l'overlay è reso nel flusso normale (sotto
+   * lo schermo); in landscape usa il layout a 3 colonne via CSS.
+   * Default: false (portrait non-fullscreen).
+   */
+  isFullscreen?: boolean;
 }
 
 /** Determina se il dispositivo è touch-primary. */
@@ -124,6 +133,7 @@ export function TouchOverlay({
   hapticsEnabled = false,
   hideWhenGamepad = true,
   gamepadConnected = false,
+  isFullscreen = false,
 }: TouchOverlayProps) {
   // Solo su touch device.
   if (!isTouchDevice()) return null;
@@ -137,6 +147,7 @@ export function TouchOverlay({
       inputMapping={inputMapping}
       storage={storage}
       hapticsEnabled={hapticsEnabled}
+      isFullscreen={isFullscreen}
     />
   );
 }
@@ -147,12 +158,18 @@ export function TouchOverlay({
  * Il guard rimane nel `TouchOverlay` wrapper, che è il componente
  * pubblico. Gli hook possono essere chiamati condizionalmente QUI
  * perché questo componente è reso solo su touch device.
+ *
+ * Variante B — tre modalità di layout:
+ * 1. fullscreen: position:absolute; inset:0 — overlay copre .sb-screen (INCREMENT 3 invariato)
+ * 2. landscape non-fullscreen: overlay sibling di .sb-screen, CSS 3-col gestisce il posizionamento
+ * 3. portrait non-fullscreen: overlay in flusso normale sotto .sb-screen (position:static)
  */
 function TouchOverlayInner({
   core,
   inputMapping,
   storage,
   hapticsEnabled = false,
+  isFullscreen = false,
 }: TouchOverlayProps) {
   const { config, setConfig, save } = useTouchOverlayConfig(storage);
   const [showConfig, setShowConfig] = useState(false);
@@ -163,14 +180,34 @@ function TouchOverlayInner({
   const landscape = useLandscape();
   const buttons = BUTTON_MAP[core] ?? BUTTON_MAP["gambatte"];
 
-  const overlayStyle: React.CSSProperties = {
-    ...configToCssVars(config),
-    position: "absolute",
-    inset: 0,
-    pointerEvents: "none",
-    zIndex: 10,
-    opacity: config.opacity,
-  };
+  // Variante B — layout mode derivato da isFullscreen + landscape.
+  // fullscreen: overlay assoluto dentro .sb-screen (comportamento originale)
+  // landscape non-fs: layout a 3 colonne via CSS (.sb-player-layout wrapper in Player.tsx)
+  // portrait non-fs: overlay nel flusso normale sotto .sb-screen (position:static)
+  const isAbsoluteOverlay = isFullscreen || landscape;
+
+  const overlayStyle: React.CSSProperties = isAbsoluteOverlay
+    ? {
+        // Fullscreen / landscape: overlay assoluto ancorato al containing block.
+        ...configToCssVars(config),
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        zIndex: 10,
+        opacity: config.opacity,
+      }
+    : {
+        // Portrait non-fullscreen: flusso normale, nessun overlay.
+        // Il posizionamento dei tasti è gestito via flexbox nel .sb-player-layout.
+        ...configToCssVars(config),
+        position: "relative",
+        pointerEvents: "none",
+        opacity: config.opacity,
+        // Padding safe-area bottom per iPhone notch/home indicator.
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+      };
 
   // INCREMENT 3 — safe-area-inset-bottom viene sommato al bottom offset dell'elemento
   // posizionato in assoluto: `padding-bottom` sul wrapper overlay non influenza
@@ -178,37 +215,63 @@ function TouchOverlayInner({
   // per il calcolo di `bottom`). Usiamo `calc()` per garantire che D-pad e pulsanti
   // non finiscano sotto il home indicator / notch inferiore su iPhone.
   // Su browser senza supporto env() l'espressione torna al solo `${X}%` (fallback 0px).
-  const dpadStyle: React.CSSProperties = {
-    position: "absolute",
-    left: `${config.dpadOffsetX}%`,
-    bottom: `calc(${config.dpadOffsetY}% + env(safe-area-inset-bottom, 0px))`,
-    pointerEvents: "auto",
-    transform: `scale(${config.scale})`,
-    transformOrigin: "bottom left",
-  };
+  const dpadStyle: React.CSSProperties = isAbsoluteOverlay
+    ? {
+        position: "absolute",
+        left: `${config.dpadOffsetX}%`,
+        bottom: `calc(${config.dpadOffsetY}% + env(safe-area-inset-bottom, 0px))`,
+        pointerEvents: "auto",
+        transform: `scale(${config.scale})`,
+        transformOrigin: "bottom left",
+      }
+    : {
+        // Portrait non-fullscreen: position nel flusso, gestito da flexbox parent.
+        position: "relative",
+        pointerEvents: "auto",
+        transform: `scale(${config.scale})`,
+        transformOrigin: "bottom left",
+      };
 
-  const buttonsStyle: React.CSSProperties = {
-    position: "absolute",
-    right: `${config.buttonsOffsetX}%`,
-    bottom: `calc(${config.buttonsOffsetY}% + env(safe-area-inset-bottom, 0px))`,
-    pointerEvents: "auto",
-    transform: `scale(${config.scale})`,
-    transformOrigin: "bottom right",
-  };
+  const buttonsStyle: React.CSSProperties = isAbsoluteOverlay
+    ? {
+        position: "absolute",
+        right: `${config.buttonsOffsetX}%`,
+        bottom: `calc(${config.buttonsOffsetY}% + env(safe-area-inset-bottom, 0px))`,
+        pointerEvents: "auto",
+        transform: `scale(${config.scale})`,
+        transformOrigin: "bottom right",
+      }
+    : {
+        // Portrait non-fullscreen: position nel flusso, gestito da flexbox parent.
+        position: "relative",
+        pointerEvents: "auto",
+        transform: `scale(${config.scale})`,
+        transformOrigin: "bottom right",
+      };
 
-  const configButtonStyle: React.CSSProperties = {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    pointerEvents: "auto",
-    zIndex: 11,
-    opacity: config.opacity,
-  };
+  const configButtonStyle: React.CSSProperties = isAbsoluteOverlay
+    ? {
+        position: "absolute",
+        top: 8,
+        right: 8,
+        pointerEvents: "auto",
+        zIndex: 11,
+        opacity: config.opacity,
+      }
+    : {
+        // Portrait non-fullscreen: posizionato in flusso, allineato a destra.
+        position: "relative",
+        pointerEvents: "auto",
+        opacity: config.opacity,
+        alignSelf: "flex-end",
+      };
 
   // TSK-064 — classe condizionale per il layout landscape.
+  // Variante B — classe portrait-flow per layout a colonna (non-fullscreen portrait).
   const overlayClassName = [
     "sb-touch-overlay",
     landscape ? "sb-touch-landscape" : "",
+    !isAbsoluteOverlay ? "sb-touch-portrait-flow" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -219,6 +282,7 @@ function TouchOverlayInner({
       aria-hidden="true"
       data-testid="sb-touch-overlay"
       data-landscape={landscape ? "true" : "false"}
+      data-fullscreen={isFullscreen ? "true" : "false"}
       style={overlayStyle}
     >
       {/* Config toggle: pulsante pill in alto a destra */}
