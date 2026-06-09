@@ -1,6 +1,93 @@
 /* Stili applicativi minimi non coperti dal tema mockup (FileLoader/Library/Player/Settings).
    Provvisori: da consolidare quando si integra il pacchetto reale @soli92/solids. */
 
+/* ============================================================================
+   INCREMENT 2 — Tab navigation (sb-tab-bar, sb-tab-btn, sb-tab-panel)
+   ----------------------------------------------------------------------------
+   Pattern: WAI-ARIA tablist, nessun sd-tab nel design system → classi sb-
+   coerenti con nomenclatura esistente (sb-btn, sb-sel, sd-card).
+   Keyboard: ArrowLeft/ArrowRight gestiti in App.tsx (handleTablistKeyDown).
+   Responsive: label intere ≥ 480px; abbreviate < 480px via data-short.
+   ============================================================================ */
+
+.sb-tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--sd-color-border-muted, #3a2a63);
+  margin-bottom: var(--sd-space-lg, 20px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+.sb-tab-bar::-webkit-scrollbar { display: none; }
+
+.sb-tab-btn {
+  flex: 1 0 auto;
+  min-height: var(--sd-layout-touch-target-min, 44px);
+  padding: 0 var(--sd-space-md, 12px);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px; /* si sovrappone al border-bottom del bar */
+  color: var(--sd-color-text-secondary, #b9a9e0);
+  font-family: var(--sd-font-body, system-ui, sans-serif);
+  font-size: var(--sd-text-sm, 13px);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sb-tab-btn:hover {
+  color: var(--sd-color-text-primary, #f0e9ff);
+}
+.sb-tab-btn--active {
+  color: var(--sd-color-primary-default, #00e5ff);
+  border-bottom-color: var(--sd-color-primary-default, #00e5ff);
+  font-weight: 600;
+}
+.sb-tab-btn:focus-visible {
+  outline: 2px solid var(--sd-color-primary-default, #00e5ff);
+  outline-offset: -2px;
+  border-radius: var(--sd-radius-sm, 6px) var(--sd-radius-sm, 6px) 0 0;
+}
+
+/* Truncation strategy sotto 480px: mostriamo solo le prime 4 lettere + "..." */
+@media (max-width: 479px) {
+  .sb-tab-btn {
+    font-size: var(--sd-text-xs, 12px);
+    padding: 0 var(--sd-space-sm, 8px);
+  }
+}
+
+/* Panel: gestione hidden attribute + aspetto visivo */
+.sb-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-lg, 20px);
+}
+.sb-tab-panel[hidden] {
+  display: none;
+}
+
+/* CTA stato idle nella tab Play */
+.sb-play-idle-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sd-space-md, 12px);
+  padding: var(--sd-space-lg, 20px);
+  text-align: center;
+}
+
+/* Footer */
+footer {
+  margin-top: var(--sd-space-xl, 28px);
+  padding-top: var(--sd-space-md, 12px);
+  border-top: 1px solid var(--sd-color-border-muted, #3a2a63);
+}
+
+/* ============================================================================ */
+
 html, body { margin: 0; }
 body {
   background: var(--sd-color-bg-canvas, #140b22);

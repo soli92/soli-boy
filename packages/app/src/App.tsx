@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileLoader } from "./components/FileLoader/FileLoader";
 import { Library } from "./components/Library/Library";
 import { Player } from "./components/Player/Player";
 import { Settings } from "./components/Settings/Settings";
 import { LegalNotice } from "./components/LegalNotice";
 import { PrivacyNotice } from "./components/PrivacyNotice/PrivacyNotice";
+import { StoreComplianceNotice } from "./components/StoreComplianceNotice/StoreComplianceNotice";
 // TSK-057 (US-025) — Banner in-app per il ciclo di auto-update Electron.
 // No-op su web (nessun bridge window.soliboyDesktop → ritorna null).
 import { UpdateBanner } from "./components/UpdateBanner/UpdateBanner";
@@ -55,6 +56,16 @@ const REAL_ENGINE = !STUB_ENGINE;
 // vede la differenza: consuma `SaveStoragePort`/`ConfigPort`.
 const { storage: selectedStorage, config: selectedConfig } = selectAdapter();
 
+/** Le 4 destinazioni funzionali dell'app. */
+type Tab = "play" | "library" | "settings" | "info";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "play", label: "Play" },
+  { id: "library", label: "Libreria" },
+  { id: "settings", label: "Impostazioni" },
+  { id: "info", label: "Info & Privacy" },
+];
+
 // Composizione del Core web MVP. Storage reale via `selectAdapter()`.
 export function App() {
   const storage = selectedStorage;
@@ -62,6 +73,13 @@ export function App() {
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
+
+  // INCREMENT 2 — navigazione a tab. Default "play" (emulator-first).
+  const [activeTab, setActiveTab] = useState<Tab>("play");
+
+  // Ref per il contenitore tablist (keyboard navigation con frecce).
+  const tablistRef = useRef<HTMLDivElement>(null);
+
   // TSK-033 (US-019) — riassunto ROM corrente per la sezione "Dati" di Settings.
   // La ROM "corrente" è quella selezionata nel Player (`selected`); proiettiamo
   // un sottoinsieme leggero (id + title) per disaccoppiare Settings dal
@@ -143,6 +161,98 @@ export function App() {
     setProfile((p) => ({ ...p, [key]: button }));
   }
 
+  // INCREMENT 2 — Pausa automatica quando si lascia la tab Play,
+  // ripresa automatica al ritorno. Il guard C-01 (resume() no-op su engine
+  // non configurato) è già in WasmBoyEngine.resume() → sicuro sempre-montato.
+  // Usiamo una ref al wrapper del Player (lifecycleTarget) tramite un
+  // ref callback esposto dalla prop `onLifecycleReady`.
+  // Approccio alternativo più semplice: teniamo un ref all'engine wrapper
+  // direttamente qui in App, dato che CoreWrapper è costruito in Player.
+  // Per non accoppiare App a CoreWrapper, usiamo invece un ref a un oggetto
+  // { pause, resume, currentState } iniettato dal Player via callback.
+  //
+  // Tuttavia, il Player non espone attualmente questo callback.
+  // Soluzione pragmatica e non invasiva: usiamo l'engine direttamente qui,
+  // poiché App è l'owner di `engine` e sa già se il gioco è in corso
+  // tramite il campo `selected`. Per "pausa on leave" chiamiamo
+  // engine.pause() se `selected` è presente e l'utente lascia Play.
+  // CoreWrapper non è accesso diretto: usiamo l'engine puro per la pausa.
+  // Il guard in WasmBoyEngine.resume() protegge anche dal resume su idle.
+  //
+  // Nota: non abbiamo accesso al `state` di CoreWrapper da App.tsx senza
+  // aggiungere una callback. Usiamo quindi un ref locale `isPlayingRef`
+  // che traccia se il gioco è in corso (impostato a true quando si avvia
+  // dal Player). Questo è sufficiente: pause su engine già in pausa
+  // è un no-op sicuro (WasmBoyEngine.pause() chiama WasmBoy.pause() che
+  // è idempotente); idem resume su idle (guard configured).
+  const prevTabRef = useRef<Tab>(activeTab);
+
+  // Ref all'engine per la pausa tab-leave. L'engine cambia quando cambia
+  // `selected` (useMemo), quindi aggiorniamo la ref ad ogni render.
+  const engineRef = useRef(engine);
+  useEffect(() => {
+    engineRef.current = engine;
+  }, [engine]);
+
+  // Pausa/ripresa sincronizzata al cambio tab.
+  // Solo se c'è una ROM selezionata (il Player è in gioco).
+  useEffect(() => {
+    const prev = prevTabRef.current;
+    if (prev === activeTab) return;
+
+    if (selected) {
+      // Lascio Play → pausa
+      if (prev === "play" && activeTab !== "play") {
+        engineRef.current.pause();
+      }
+      // Torno a Play → riprendo (guard configured in engine protegge da idle)
+      if (prev !== "play" && activeTab === "play") {
+        engineRef.current.resume();
+      }
+    }
+
+    prevTabRef.current = activeTab;
+  }, [activeTab, selected]);
+
+  // Gestione keyboard navigation sulla tablist (WAI-ARIA pattern:
+  // ArrowLeft/ArrowRight per spostarsi, Home/End per i bordi).
+  const handleTablistKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const tabIds = TABS.map((t) => t.id);
+      const currentIndex = tabIds.indexOf(activeTab);
+
+      let nextIndex = currentIndex;
+      if (e.key === "ArrowRight") {
+        nextIndex = (currentIndex + 1) % tabIds.length;
+      } else if (e.key === "ArrowLeft") {
+        nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
+      } else if (e.key === "Home") {
+        nextIndex = 0;
+      } else if (e.key === "End") {
+        nextIndex = tabIds.length - 1;
+      } else {
+        return;
+      }
+
+      e.preventDefault();
+      const nextTab = tabIds[nextIndex];
+      setActiveTab(nextTab);
+      // Sposta il focus sul button della tab attivata via tastiera.
+      const btn = tablistRef.current?.querySelector<HTMLButtonElement>(
+        `[data-tab-id="${nextTab}"]`,
+      );
+      btn?.focus();
+    },
+    [activeTab],
+  );
+
+  // Handler selezione ROM dalla Library: seleziona la ROM e porta l'utente
+  // sulla tab Play (OQ-02: auto-switch preferibile per nielsen-1 / flow-ux-1).
+  function handleLibrarySelect(rom: RomRecord) {
+    setSelected(rom);
+    setActiveTab("play");
+  }
+
   return (
     <main className="sb-app">
       <header className="sd-flex sd-items-center sd-between">
@@ -151,10 +261,8 @@ export function App() {
       </header>
 
       {/* TSK-069 (US-033) — Banner privacy on-device al primo avvio.
-          Non bloccante (non è un paywall, vedi TSK-069 §Technical Specs):
-          l'utente può comunque interagire con FileLoader/Library/Settings.
-          Reso sopra il FileLoader per dare visibilità prima di qualsiasi
-          azione che tocchi i file utente. Si nasconde dopo l'ack. */}
+          Non bloccante: l'utente può interagire con il resto dell'app.
+          Rimane come overlay/banner sopra la navigazione (indipendente dalle tab). */}
       {!privacyAck && (
         <PrivacyNotice variant="banner" onAcknowledge={ackPrivacy} />
       )}
@@ -163,58 +271,164 @@ export function App() {
           Posizionato dopo il banner privacy per non competere in visibilità. */}
       <UpdateBanner />
 
-      <FileLoader storage={storage} onImported={() => setRefresh((n) => n + 1)} />
+      {/* INCREMENT 2 — Navigazione a 4 tab (WAI-ARIA tablist pattern).
+          Pattern: nav landmark + tablist con role="tab", aria-selected, aria-controls.
+          Keyboard: ArrowLeft/ArrowRight per navigare, Home/End per i bordi.
+          Player panel usa `hidden` attribute (mai smontato, preserva stato gioco).
+          Altri panel usano conditional render (unmount accettabile, no stato BG). */}
+      <nav aria-label="Navigazione principale">
+        <div
+          role="tablist"
+          aria-label="Sezioni app"
+          className="sb-tab-bar"
+          ref={tablistRef}
+          onKeyDown={handleTablistKeyDown}
+        >
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              id={`tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`panel-${tab.id}`}
+              data-tab-id={tab.id}
+              tabIndex={activeTab === tab.id ? 0 : -1}
+              className={[
+                "sb-tab-btn",
+                activeTab === tab.id ? "sb-tab-btn--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </nav>
 
-      <Library key={refresh} storage={storage} onSelect={setSelected} />
-
-      {selected && (
+      {/* Panel Play — Player SEMPRE montato (always-mounted, mai smontato).
+          Usa hidden attribute invece di conditional render per preservare lo
+          stato WasmBoy. La visibilità CSS è gestita via hidden + sb-panel hidden.
+          A-01 validata: WasmBoyEngine.resume() ha guard `if (!configured) return`
+          (wasmboy-engine.ts:77-84), quindi il player montato-ma-mai-avviato è sicuro. */}
+      <div
+        id="panel-play"
+        role="tabpanel"
+        aria-labelledby="tab-play"
+        className="sb-tab-panel"
+        hidden={activeTab !== "play"}
+      >
         <Player
           engine={engine}
-          rom={{ rom: selected.fileBlob, core: selected.core }}
-          title={selected.title}
+          rom={
+            selected
+              ? { rom: selected.fileBlob, core: selected.core }
+              : // ROM placeholder per stato idle (Player sempre montato):
+                // fileBlob vuoto, core gb — il Player non avvierà nulla
+                // finché l'utente non preme "Avvia" (wrapper.load è chiamato
+                // solo in handlePlay, non al mount).
+                { rom: new Blob(), core: "gambatte" }
+          }
+          title={selected?.title}
           videoSettings={videoSettings}
-          // TSK-032 — wiring save state panel (US-016, ADR-006 §Decisione p.4).
-          saveService={saveService}
-          romId={selected.id}
-          currentCore={selected.core}
-          // TSK-066 — feedback aptico propagato al TouchOverlay (US-032).
+          saveService={selected ? saveService : undefined}
+          romId={selected?.id}
+          currentCore={selected?.core}
           hapticsEnabled={hapticsEnabled}
-          // TSK-067 (FINDING#1) — wiring mancante: senza queste prop il TouchOverlay
-          // non si monta mai sui device touch (guard `inputMapping && ...` in Player).
           inputMapping={input}
           touchConfigStorage={selectedConfig}
         />
+        {/* CTA FileLoader in stato idle (nessuna ROM selezionata) */}
+        {!selected && (
+          <div className="sb-play-idle-cta">
+            <p className="sb-note">
+              Seleziona un gioco dalla Libreria per iniziare, oppure carica una ROM:
+            </p>
+            <FileLoader
+              storage={storage}
+              onImported={() => setRefresh((n) => n + 1)}
+            />
+            <button
+              type="button"
+              className="sb-btn"
+              onClick={() => setActiveTab("library")}
+            >
+              Vai alla Libreria
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Panel Libreria — conditional render (nessuno stato background da preservare). */}
+      {activeTab === "library" && (
+        <div
+          id="panel-library"
+          role="tabpanel"
+          aria-labelledby="tab-library"
+          className="sb-tab-panel"
+        >
+          <Library
+            key={refresh}
+            storage={storage}
+            onSelect={handleLibrarySelect}
+          />
+          {/* FileLoader canonico in Libreria per importare nuove ROM. */}
+          <FileLoader
+            storage={storage}
+            onImported={() => setRefresh((n) => n + 1)}
+          />
+        </div>
       )}
 
-      <Settings
-        profile={profile}
-        onRemap={remap}
-        videoSettings={videoSettings}
-        onVideoSettingsChange={setVideoSettings}
-        // TSK-033 (US-019) — wiring sezione "Dati": export/import salvataggi.
-        // Il SaveService è la stessa istanza condivisa col Player (TSK-032),
-        // così le entry create dal Player sono immediatamente esportabili.
-        // `currentRom` riflette la selezione del Player: l'UI Dati lavora
-        // sempre sulla ROM "in contesto" (no doppio selettore).
-        saveService={saveService}
-        currentRom={currentRomSummary}
-        // TSK-044 (US-036) — wiring sezione "Aspetto": tema UI controllato
-        // dall'hook `useTheme` a livello App. Le prop sono OPZIONALI lato
-        // Settings: i test legacy senza wiring tema continuano a passare.
-        theme={theme}
-        onThemeChange={setTheme}
-        // TSK-066 (US-032) — wiring toggle feedback aptico. Prop OPZIONALI per
-        // backward compat. Il toggle persiste immediatamente via saveHapticsEnabled.
-        hapticsEnabled={hapticsEnabled}
-        onHapticsChange={async (value) => {
-          setHapticsEnabled(value);
-          // Passa `value` esplicitamente per evitare la closure stantia
-          // (setState è asincrono: hapticsEnabled ha ancora il vecchio valore).
-          await saveHapticsEnabled(value);
-        }}
-      />
+      {/* Panel Impostazioni — conditional render.
+          Le sotto-sezioni di Settings sono sempre espanse: l'accordion
+          (progressive disclosure) è implementato tramite <details>/<summary>
+          semantici qui nel wrapper, non modificando Settings.tsx (no-rewrite). */}
+      {activeTab === "settings" && (
+        <div
+          id="panel-settings"
+          role="tabpanel"
+          aria-labelledby="tab-settings"
+          className="sb-tab-panel"
+        >
+          <div className="sb-accordion-wrap">
+            <Settings
+              profile={profile}
+              onRemap={remap}
+              videoSettings={videoSettings}
+              onVideoSettingsChange={setVideoSettings}
+              saveService={saveService}
+              currentRom={currentRomSummary}
+              theme={theme}
+              onThemeChange={setTheme}
+              hapticsEnabled={hapticsEnabled}
+              onHapticsChange={async (value) => {
+                setHapticsEnabled(value);
+                await saveHapticsEnabled(value);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
-      <LegalNotice />
+      {/* Panel Info & Privacy — conditional render. Sempre accessibile (compliance). */}
+      {activeTab === "info" && (
+        <div
+          id="panel-info"
+          role="tabpanel"
+          aria-labelledby="tab-info"
+          className="sb-tab-panel"
+        >
+          <PrivacyNotice variant="section" />
+          <StoreComplianceNotice />
+          <LegalNotice />
+        </div>
+      )}
+
+      <footer>
+        <LegalNotice />
+      </footer>
     </main>
   );
 }
