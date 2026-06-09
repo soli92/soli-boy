@@ -91,6 +91,11 @@ export interface PlayerProps {
    * Se assente, la config TouchOverlay usa solo lo stato locale (no crash).
    */
   touchConfigStorage?: ConfigPort;
+  /**
+   * TSK-066 — Feedback aptico abilitato (US-032).
+   * Propagato al TouchOverlay; default false (no vibrazione).
+   */
+  hapticsEnabled?: boolean;
 }
 
 export function Player({
@@ -104,6 +109,7 @@ export function Player({
   currentCore,
   inputMapping,
   touchConfigStorage,
+  hapticsEnabled = false,
 }: PlayerProps) {
   const wrapper = useMemo(() => new CoreWrapper(engine), [engine]);
   const [state, setState] = useState(wrapper.currentState);
@@ -359,6 +365,7 @@ export function Player({
           core={rom.core}
           inputMapping={inputMapping}
           storage={touchConfigStorage}
+          hapticsEnabled={hapticsEnabled}
         />
       )}
     </section>

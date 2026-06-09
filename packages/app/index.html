@@ -2,7 +2,9 @@
 <html lang="it" data-theme="90s-party">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- TSK-064 — viewport-fit=cover: necessario per env(safe-area-inset-*)
+         su iOS/Android con notch e home indicator (US-030). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <!-- Favicon standard (SVG preferita dai browser moderni, PNG come fallback) -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />

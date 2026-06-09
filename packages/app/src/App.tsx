@@ -29,6 +29,9 @@ import { makeVideoSettingsPort } from "./components/Player/video-settings-port";
 // stesso pattern adottato per le `Resa video` (TSK-036).
 import { useTheme } from "./components/ThemeSelector/useTheme";
 import { makeThemePort } from "./components/ThemeSelector/theme-port";
+// TSK-066 (US-032) — wiring feedback aptico: hook + porta IndexedDB (chiave `"haptics-enabled"`).
+// Stato sollevato a livello App: Settings ne riceve il toggle, TouchOverlay l'enabled flag.
+import { useHapticsConfig } from "./components/TouchOverlay/useHapticsConfig";
 
 // TSK-025 (ADR-005): selezione engine. Default ENGINE REALE per-piattaforma via
 // registry (l'utente che apre la webapp vuole emulare davvero). Lo StubEngine
@@ -86,6 +89,12 @@ export function App() {
   // prop opzionali — sezione "Aspetto" attiva solo qui (test legacy intatti).
   const themePort = useMemo(() => makeThemePort(selectedConfig), []);
   const { theme, setTheme } = useTheme(themePort);
+
+  // TSK-066 (US-032) — stato feedback aptico. ConfigPort riusa `selectedConfig`
+  // (store `config`, chiave `haptics-enabled`). Persistenza on `setHapticsEnabled`
+  // seguita da `saveHapticsEnabled` (chiamata dal toggle in Settings).
+  const { hapticsEnabled, setHapticsEnabled, saveHapticsEnabled } =
+    useHapticsConfig(selectedConfig);
 
   // TSK-069 (US-033) — Stato presa visione informativa privacy on-device.
   // Stesso pattern di `useTheme`: porta concreta (IndexedDB `config`, chiave
@@ -160,6 +169,8 @@ export function App() {
           saveService={saveService}
           romId={selected.id}
           currentCore={selected.core}
+          // TSK-066 — feedback aptico propagato al TouchOverlay (US-032).
+          hapticsEnabled={hapticsEnabled}
         />
       )}
 
@@ -180,6 +191,15 @@ export function App() {
         // Settings: i test legacy senza wiring tema continuano a passare.
         theme={theme}
         onThemeChange={setTheme}
+        // TSK-066 (US-032) — wiring toggle feedback aptico. Prop OPZIONALI per
+        // backward compat. Il toggle persiste immediatamente via saveHapticsEnabled.
+        hapticsEnabled={hapticsEnabled}
+        onHapticsChange={async (value) => {
+          setHapticsEnabled(value);
+          // Passa `value` esplicitamente per evitare la closure stantia
+          // (setState è asincrono: hapticsEnabled ha ancora il vecchio valore).
+          await saveHapticsEnabled(value);
+        }}
       />
 
       <LegalNotice />

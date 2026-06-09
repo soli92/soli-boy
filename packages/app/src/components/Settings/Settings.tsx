@@ -122,6 +122,15 @@ export interface SettingsProps {
   theme?: string;
   /** Callback invocata al cambio tema (US-036). */
   onThemeChange?: (theme: string) => void;
+  /**
+   * TSK-066 (US-032) — feedback aptico abilitato. Se passato insieme a
+   * `onHapticsChange`, la sezione "Mobile" mostra il toggle haptics.
+   * Prop OPZIONALI per backward compat: i test legacy senza wiring haptics
+   * non renderizzano la sezione.
+   */
+  hapticsEnabled?: boolean;
+  /** Callback invocata al cambio del toggle feedback aptico (US-032). */
+  onHapticsChange?: (enabled: boolean) => void;
 }
 
 /** Etichette user-facing per i valori di scala. */
@@ -164,6 +173,8 @@ export function Settings({
   currentRom,
   theme,
   onThemeChange,
+  hapticsEnabled,
+  onHapticsChange,
 }: SettingsProps) {
   const [saved, setSaved] = useState(false);
 
@@ -481,6 +492,32 @@ export function Settings({
           <p className="sb-lbl">Aspetto — tema UI</p>
           <ul className="sb-keymap" aria-label="Impostazioni aspetto">
             <ThemeSelector theme={theme} onThemeChange={onThemeChange} />
+          </ul>
+        </>
+      )}
+
+      {/* TSK-066 (US-032) — Mobile: feedback aptico.
+          Sezione opzionale: renderizzata solo se App.tsx ha cablato
+          `hapticsEnabled` + `onHapticsChange`. I test legacy che non passano
+          queste prop non vedono la sezione. */}
+      {hapticsEnabled !== undefined && onHapticsChange !== undefined && (
+        <>
+          <p className="sb-lbl">Mobile — feedback aptico</p>
+          <ul className="sb-keymap" aria-label="Impostazioni mobile">
+            <li className="sb-row">
+              <span className="sb-key">Vibrazione ai controlli</span>
+              <button
+                type="button"
+                className={`sb-tog${hapticsEnabled ? " on" : ""}`}
+                role="switch"
+                aria-checked={hapticsEnabled}
+                aria-label="Feedback aptico"
+                data-testid="sb-haptics-toggle"
+                onClick={() => onHapticsChange(!hapticsEnabled)}
+              >
+                <span className="knob" />
+              </button>
+            </li>
           </ul>
         </>
       )}

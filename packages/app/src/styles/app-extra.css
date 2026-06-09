@@ -8,6 +8,77 @@ body {
   font-family: var(--sd-font-body, system-ui, sans-serif);
 }
 
+/* ============================================================================
+   TSK-064 — Layout responsivo mobile: safe areas + orientamento (US-030)
+   ----------------------------------------------------------------------------
+   `env(safe-area-inset-*)` richiede `viewport-fit=cover` nel meta viewport
+   (aggiunto in index.html). Su browser che non supportano env() le espressioni
+   tornano 0, quindi il layout rimane corretto.
+
+   PORTRAIT (default): Player sopra, TouchOverlay sotto.
+   LANDSCAPE: Player espanso, overlay ai lati (D-pad sinistra, pulsanti destra).
+   ============================================================================ */
+
+/* Shell principale: rispetta la safe area su tutti i lati. */
+.sb-app {
+  padding-top:    max(var(--sd-space-lg, 20px), env(safe-area-inset-top));
+  padding-right:  max(var(--sd-space-lg, 20px), env(safe-area-inset-right));
+  padding-bottom: max(var(--sd-space-lg, 20px), env(safe-area-inset-bottom));
+  padding-left:   max(var(--sd-space-lg, 20px), env(safe-area-inset-left));
+}
+
+/* --- TouchOverlay safe-area ---------------------------------------------- */
+/* Bottom del D-pad e dei pulsanti non invade il home indicator. */
+.sb-touch-overlay {
+  /* Le inset sono 0 di default; su iPhone con notch/home bar le var CSS
+     aggiungono il margine corretto. pointer-events: none rimane sul wrapper
+     (gestito inline in TouchOverlay.tsx). */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left:   env(safe-area-inset-left,   0px);
+  padding-right:  env(safe-area-inset-right,  0px);
+}
+
+/* --- Orientamento LANDSCAPE ------------------------------------------------
+   Player espanso in orizzontale; overlay D-pad a sinistra, pulsanti a destra.
+   Le classi condizionali `sb-touch-landscape` / `sb-touch-dpad-ls` /
+   `sb-touch-btns-ls` sono applicate da TouchOverlay.tsx via useLandscape().
+   -------------------------------------------------------------------------*/
+@media (orientation: landscape) {
+  /* Nel landscape .sb-app riduce il gap verticale (meno spazio in altezza). */
+  .sb-app {
+    gap: var(--sd-space-sm, 8px);
+    padding-top:    max(var(--sd-space-sm, 8px), env(safe-area-inset-top));
+    padding-bottom: max(var(--sd-space-sm, 8px), env(safe-area-inset-bottom));
+  }
+
+  /* L'overlay occupa tutto il viewport; i gruppi si riposizionano ai lati. */
+  .sb-touch-overlay.sb-touch-landscape {
+    /* In landscape rispettiamo anche la safe-area laterale (notch landscape). */
+    padding-left:  max(var(--sd-space-sm, 8px), env(safe-area-inset-left,   0px));
+    padding-right: max(var(--sd-space-sm, 8px), env(safe-area-inset-right,  0px));
+  }
+
+  /* D-pad: ancorato a sinistra (override dei valori inline calcolati in %). */
+  .sb-touch-overlay.sb-touch-landscape .sb-dpad {
+    left: max(var(--sd-space-md, 12px), env(safe-area-inset-left, 0px)) !important;
+    right: auto !important;
+    top: 50%;
+    bottom: auto !important;
+    transform: translateY(-50%) scale(var(--sb-touch-scale, 1)) !important;
+    transform-origin: left center;
+  }
+
+  /* Pulsanti azione: ancorati a destra. */
+  .sb-touch-overlay.sb-touch-landscape .sb-ab {
+    right: max(var(--sd-space-md, 12px), env(safe-area-inset-right, 0px)) !important;
+    left: auto !important;
+    top: 50%;
+    bottom: auto !important;
+    transform: translateY(-50%) scale(var(--sb-touch-scale, 1)) !important;
+    transform-origin: right center;
+  }
+}
+
 .sb-app {
   max-width: 920px;
   margin: 0 auto;

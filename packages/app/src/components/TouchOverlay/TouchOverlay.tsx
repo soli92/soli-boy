@@ -1,12 +1,15 @@
 // TSK-060 — TouchOverlay: D-pad + pulsanti virtuali per mobile (US-026).
 // TSK-061 — Config posizione/dimensione/opacità persistita (US-027).
+// TSK-064 — Layout responsivo: classi landscape + safe-area CSS (US-030).
+// TSK-066 — Feedback aptico opzionale via Capacitor Haptics (US-032).
 //
 // Visibile solo su touch device (`window.matchMedia('(pointer: coarse)')`).
 // `aria-hidden="true"`: elemento puramente touch, non nel tab order.
 // Stile via token solids (CSS custom properties, classi sb-/sd-).
 // Persistenza config via ConfigPort (store `config`, chiave `touch-overlay`).
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useHaptics } from "./useHaptics";
 import type { Core } from "../../domain/types";
 import type { InputMapping } from "../../domain/input-mapping";
 import type { GameButton } from "../../core/core-wrapper";
@@ -27,12 +30,40 @@ export interface TouchOverlayProps {
    * vive solo nello stato locale (no crash — backward compat).
    */
   storage?: ConfigPort;
+  /**
+   * TSK-066 — Feedback aptico abilitato (default: false).
+   * Valore derivato da `useHapticsConfig(storage)` a livello App; passato come
+   * prop per rendere il componente testabile senza Capacitor.
+   */
+  hapticsEnabled?: boolean;
 }
 
 /** Determina se il dispositivo è touch-primary. */
 function isTouchDevice(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(pointer: coarse)").matches;
+}
+
+/**
+ * TSK-064 — Hook che osserva il media query `(orientation: landscape)`.
+ * Ritorna `true` quando il dispositivo è in landscape.
+ * Usa `matchMedia` + listener per aggiornare lo stato alla rotazione.
+ */
+function useLandscape(): boolean {
+  const [landscape, setLandscape] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(orientation: landscape)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(orientation: landscape)");
+    const handler = (e: MediaQueryListEvent) => setLandscape(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return landscape;
 }
 
 /** Stile CSS inline derivato dalla `TouchOverlayConfig` (CSS custom properties). */
@@ -48,14 +79,22 @@ function configToCssVars(cfg: TouchOverlayConfig): React.CSSProperties {
   } as React.CSSProperties;
 }
 
-/** Handler touch riutilizzabile che chiama `inputMapping.sendTouchInput`. */
-function useTouchHandlers(inputMapping: InputMapping) {
+/**
+ * Handler touch riutilizzabile che chiama `inputMapping.sendTouchInput`.
+ * TSK-066: il parametro `onTouchStart` opzionale viene invocato prima di
+ * `sendTouchInput` (es. triggerImpact per haptics).
+ */
+function useTouchHandlers(
+  inputMapping: InputMapping,
+  onTouchStartExtra?: () => void,
+) {
   const handleTouchStart = useCallback(
     (button: GameButton) => (e: React.TouchEvent) => {
       e.preventDefault();
+      onTouchStartExtra?.();
       inputMapping.sendTouchInput(button, true);
     },
-    [inputMapping],
+    [inputMapping, onTouchStartExtra],
   );
   const handleTouchEnd = useCallback(
     (button: GameButton) => (e: React.TouchEvent) => {
@@ -71,6 +110,7 @@ export function TouchOverlay({
   core,
   inputMapping,
   storage,
+  hapticsEnabled = false,
 }: TouchOverlayProps) {
   // Solo su touch device.
   if (!isTouchDevice()) return null;
@@ -80,6 +120,7 @@ export function TouchOverlay({
       core={core}
       inputMapping={inputMapping}
       storage={storage}
+      hapticsEnabled={hapticsEnabled}
     />
   );
 }
@@ -95,10 +136,15 @@ function TouchOverlayInner({
   core,
   inputMapping,
   storage,
+  hapticsEnabled = false,
 }: TouchOverlayProps) {
   const { config, setConfig, save } = useTouchOverlayConfig(storage);
   const [showConfig, setShowConfig] = useState(false);
-  const { handleTouchStart, handleTouchEnd } = useTouchHandlers(inputMapping);
+  // TSK-066 — feedback aptico opzionale.
+  const { triggerImpact } = useHaptics(hapticsEnabled);
+  const { handleTouchStart, handleTouchEnd } = useTouchHandlers(inputMapping, triggerImpact);
+  // TSK-064 — orientamento landscape.
+  const landscape = useLandscape();
   const buttons = BUTTON_MAP[core] ?? BUTTON_MAP["gambatte"];
 
   const overlayStyle: React.CSSProperties = {
@@ -137,11 +183,20 @@ function TouchOverlayInner({
     opacity: config.opacity,
   };
 
+  // TSK-064 — classe condizionale per il layout landscape.
+  const overlayClassName = [
+    "sb-touch-overlay",
+    landscape ? "sb-touch-landscape" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
-      className="sb-touch-overlay"
+      className={overlayClassName}
       aria-hidden="true"
       data-testid="sb-touch-overlay"
+      data-landscape={landscape ? "true" : "false"}
       style={overlayStyle}
     >
       {/* Config toggle: pulsante pill in alto a destra */}
