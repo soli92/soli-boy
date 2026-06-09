@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.18"
+pattern_version: "2.19"   # bump 2.18→2.19 (2026-06-09): attivazione EP-013 analytics dogfooding per battle-test v2.19.0-rc (RUN #2/#3 gate EP-012). Delta v2.19 derivabile = analytics; il resto di v2.19 è governance meta (release gate, complexity-budget) non scaffoldata in factory derivate (ADR-033 §C).
 
 owner: soli92
 language: it
@@ -301,3 +301,25 @@ notes: |
    - context (Graphify-cloud): knowledge graph di packages/app come context
      replacement, confidence-gated. Warm-up: /graphify-sync app (graphify >= 0.8.22 OK).
      Side-channel .graphify-state/ non versionato (R.G6).
+
+# === Task Analytics (PATTERN §21, EP-009/EP-013) — ATTIVATO 2026-06-09 (upgrade v2.19) ===
+# Importato per il battle-test v2.19.0-rc (RUN #2/#3 del gate EP-012): il gate richiede
+# analytics_events_count > 0 per ogni RUN-REPORT quando dogfooding è on (ADR-041 §C). Misura
+# il costo reale degli agenti che sviluppano soli-boy. NB: precedente nota "analytics NON
+# importato (fuori scope v2.18)" superata da questo upgrade.
+analytics:
+  measurement:
+    enabled: true                               # master switch EP-009 (ADR-021/022)
+    agent: true                                 # analytics-reporter + /analytics
+    store: jsonl
+    rotation: monthly
+    event_store_path: analytics/events          # side-channel gitignored (ADR-021 §A)
+    pricing_table_path: analytics/pricing.yaml
+    rate_card_path: analytics/rates.yaml
+    rate_basis: fully-loaded
+  dogfooding:
+    enabled: true                               # EP-013: harvest token usage su SessionEnd (hook in .claude/settings.json)
+    privacy_policy_path: analytics/PRIVACY.md   # ADR-040 §G
+    lock_strategy: flock-advisory               # ADR-039 §A
+    lock_timeout_seconds: 5
+    idempotency_strategy: hash-compound         # ADR-039 §C

@@ -30,3 +30,7 @@ packages/app/public/test-roms/*
 !packages/app/public/test-roms/gba-tests-thumb.gba
 
 .vercel
+
+# EP-013 analytics events side-channel (ADR-021 §A) — gitignored
+analytics/events/
+analytics/reports/

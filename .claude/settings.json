@@ -16,5 +16,19 @@
       "Bash(curl http://localhost:*)",
       "Bash(curl -s http://localhost:*)"
     ]
+  },
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/tools/analytics/harvest-session-tokens.py\" --from-hook --project soli-boy 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Analytics: harvest token usage (EP-013 dogfooding)"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -524,3 +524,14 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
   - Report iter-2: `code_quality/reports/TSK-{003,014,038,040,044}-a11y-iter-2.{json,md}`; run aggregati `code_quality/reports/ep012-runs/all-runs-iter2.json` + `all-runs-iter2-synthetic.json`; screenshot `ep012-runs/iter2-*.png` (9 PNG).
   - `wiki/gaps.md`: gap `ds-color-contrast-cross-cutting-90s-party-dark` marcato CHIUSO (append-only) con breakdown dei 5 override e ratio raggiunti. Sub-gap cyberpunk incluso e risolto.
   - Build: `npm --prefix packages/app run build` verde (tsc --noEmit + vite build).
+
+## 2026-06-09 — upgrade v2.18 → v2.19 (attivazione EP-013 analytics dogfooding)
+[2026-06-09] develop UPGRADE-v2.19 → done · factory pattern_version 2.18→2.19
+  - Scope: portare il delta v2.19 *derivabile* in soli-boy per abilitare il battle-test v2.19.0-rc (RUN #2/#3 del gate EP-012 del meta-framework). Il resto di v2.19 è governance meta (release-validation-gate, complexity-budget) NON scaffoldata in factory derivate (ADR-033 §C) → non applicabile a soli-boy.
+  - Delta applicato (additivo, non distruttivo):
+    1. `.claude/tools/analytics/` — 11 tool (record-event.sh, harvest-session-tokens.py, compute-agentic-cost.sh, generate-report.sh, analyze-timeline.sh, …).
+    2. `analytics/{pricing.yaml,rates.yaml,PRIVACY.md, *.template}` versionati; `analytics/events/` + `analytics/reports/` gitignored (ADR-021 §A).
+    3. `.claude/settings.json` — hook SessionEnd `harvest-session-tokens.py --project soli-boy` (EP-013 dogfooding).
+    4. `factory.config.yaml` — blocco `analytics: {measurement.enabled, dogfooding.enabled}` + bump `pattern_version: "2.19"`. Nota precedente "analytics NON importato (fuori scope v2.18)" superata.
+  - Smoke test: `record-event.sh` OK (evento UPGRADE-v2.19 appeso a analytics/events/2026-06.jsonl, hash 487e76e7). PII boundary enforced (event_id/api_key/password/prompt rifiutati, ADR-040 §A). flock non disponibile su questo FS → degradazione graceful advisory (ADR-039 §A).
+  - Razionale battle-test: il gate richiede analytics_events_count > 0 per ogni RUN-REPORT quando dogfooding è on (ADR-041 §C). soli-boy ora emette eventi reali durante i run #2/#3.
