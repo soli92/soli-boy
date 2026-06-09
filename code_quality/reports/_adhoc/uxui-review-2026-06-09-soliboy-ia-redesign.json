@@ -1,0 +1,186 @@
+{
+  "report_id": "uxui-review-2026-06-09-soliboy-ia-redesign",
+  "agent": "ux-ui-reviewer (ADR-020, US-030)",
+  "schema": "ux_ui_review",
+  "mode": "no-visual",
+  "mode_rationale": "Target is a pre-implementation design proposal (no rendered artifact). Declared no-visual by caller. Evidence collected via Read/Grep on packages/app/src/.",
+  "timestamp": "2026-06-09",
+  "rubric_mode": "strict",
+  "target_design": "code_quality/reports/_adhoc/uxui-design-2026-06-09-soliboy-ia-redesign.md",
+  "tsk": "adhoc",
+  "verdict": "conditional",
+  "verdict_rationale": "The IA redesign correctly addresses all 3 confirmed problems (emulator-first viewport, TouchOverlay anchor, Settings wall). The nav-4-tab resolution of F-01 is sound and well-reasoned. Two conditional blockers require resolution before implementation: (C-01) the TouchOverlay anchor proposal contains a structural inaccuracy in its description of the current bug—the overlay is already a child of <section .sb-app> inside Player, not of the App-level <main .sb-app>—which affects the scope of the fix; (C-02) Assumption A-01 (WasmBoy mount-vs-start) needs verification against wasmboy-engine.ts evidence before committing to always-mounted Player. One design gap (no-DS-tab) is correctly surfaced by designer and confirmed by source scan. Open questions OQ-01 through OQ-06 are well-posed and must be answered before implementation.",
+
+  "findings": [
+    {
+      "id": "F-R01",
+      "severity": "minor",
+      "category": "structural_accuracy",
+      "rubric_ref": "nielsen-1 (visibility of system status) — indirectly: accurate system description is prerequisite for correct fix",
+      "title": "TouchOverlay anchor: the described bug scope is narrower than stated",
+      "description": "The design proposal states that TouchOverlayInner is mounted as a child of <section .sb-app> which 'flots over all page content'. Evidence from Player.tsx (line 247) confirms that Player itself renders <section className=\"sb-app\">, and the TouchOverlay is a child of that Player-level section, NOT of the App-level <main className=\"sb-app\"> (App.tsx line 147). The TouchOverlay covers the Player section, not the entire page. This makes the overlap with Settings/Library conditional on the Player section extending down past those elements (which it can do due to position:absolute + inset:0 on a section that is itself in normal flow). The proposed fix (anchor to .sb-screen) is still correct and desirable, but the impact statement overstates the current bug: the overlay does not float over Settings if the Player section is rendered below Settings in the DOM, because absolute positioning is constrained to the nearest positioned ancestor. The actual bug is that .sb-screen does NOT have position:relative in the static CSS (solids-theme.css line 153-156 shows no position property); position:relative is injected as a scoped <style> tag by Player.tsx at runtime (scoped selector .sb-screen[data-video-scope='...']). This means the CSS-custom-property offset percentages in dpadStyle/buttonsStyle are relative to the nearest static-positioned ancestor, not to .sb-screen. The fix remains Variante A, but the rationale should reference this scoping mechanism.",
+      "evidence": "Player.tsx:247 — <section className=\"sb-app\">; solids-theme.css:153-156 — .sb-screen has no position property; Player.tsx:255-264 — position:relative injected via scoped <style> tag; TouchOverlay.tsx:166-191 — overlayStyle position:absolute inset:0 dpadStyle position:absolute left:X% bottom:Y%",
+      "recommendation": "Correct the bug description in the implementation spec. The fix target remains .sb-screen as proposed, but document that .sb-screen's position:relative is runtime-injected (scoped style tag) and verify that the TouchOverlay mount point change is compatible with this scoping mechanism.",
+      "blocks_implementation": false
+    },
+    {
+      "id": "F-R02",
+      "severity": "conditional",
+      "category": "assumption_risk",
+      "rubric_ref": "nielsen-1 (visibility of system status) + flow-ux-3 (error prevention in design assumptions)",
+      "title": "A-01 WasmBoy always-mounted: evidence is positive but not conclusive for all lifecycle paths",
+      "description": "The proposal assumes (A-01, confidence: medium) that mounting the Player component without calling handlePlay does not trigger WasmBoy execution. Evidence from wasmboy-engine.ts confirms that WasmBoy.config() and WasmBoy.loadROM() are called only inside load() which is called from CoreWrapper.load() which is called only inside handlePlay() (Player.tsx:188-202). The component mount itself (useMemo, useState, useRef) does not trigger any WasmBoy API. This validates A-01 for the current implementation. However: (a) useAppLifecycle (Player.tsx:151) observes the Visibility API and calls wrapper.pause/resume — if the Player is mounted but the game is idle (never started), resume() would call WasmBoy.play() on an unconfigured engine (WasmBoyEngine has no guard in resume() for !configured, unlike load()). (b) useGamepadDetection (Player.tsx:129) starts polling if inputMapping is present regardless of play state. These are minor but should be verified before committing to always-mounted.",
+      "evidence": "wasmboy-engine.ts:59-70 — load() and start() only called via handlePlay; wasmboy-engine.ts:76-80 — resume() has no !configured guard; Player.tsx:136-151 — useAppLifecycle calls wrapper.resume() unconditionally on visibility restore",
+      "recommendation": "Before implementation, verify that useAppLifecycle.resume() on an idle (never-started) WasmBoyEngine is a no-op or add a guard (e.g., check wrapper.currentState === 'idle' before calling resume in the lifecycle hook). If confirmed safe, A-01 becomes high confidence and the always-mounted architecture is sound.",
+      "blocks_implementation": true
+    },
+    {
+      "id": "F-R03",
+      "severity": "minor",
+      "category": "design_system_gap",
+      "rubric_ref": "ui-visual-4 (consistency with design system tokens)",
+      "title": "No sd-tab or sd-accordion in @soli92/solids — confirmed by source scan",
+      "description": "Assumption A-04 (confidence: low) is confirmed by source evidence: grep for sd-tab and sd-accordion across @soli92/solids/dist/css/ returns no results. The app-extra.css and solids-theme.css also contain no tab or accordion component classes. The designer correctly flags this and proposes sb- custom classes as fallback. This is a known gap, not a design error. The proposal's markup spec (role=tab, aria-selected, role=tabpanel, aria-expanded) is semantically correct per ARIA APG Tab Panel pattern regardless of DS token availability.",
+      "evidence": "grep sd-tab|sd-accordion on /packages/app/node_modules/@soli92/solids/dist/css/ — no matches; app-extra.css — no tab/accordion classes",
+      "recommendation": "Implement tab bar and accordion with sb-tab-bar / sb-accordion custom classes consistent with existing sb-btn / sb-sel / sd-card naming. Document as a DS extension request for @soli92/solids v2+. The ARIA semantics in the proposal are correct and should be preserved as-is.",
+      "blocks_implementation": false
+    },
+    {
+      "id": "F-R04",
+      "severity": "minor",
+      "category": "nav_pattern_soundness",
+      "rubric_ref": "nielsen-7 (flexibility and efficiency) + flow-ux-1 (primary task reachability)",
+      "title": "Tab-bar in top position on mobile: correct choice given TouchOverlay conflict, but tab label truncation on narrow viewport is unaddressed",
+      "description": "The proposal correctly positions the tab bar at the top on mobile portrait (§3b, rationale: avoid conflict with bottom-positioned TouchOverlay). This is sound and resolves the overlay/navigation conflict. However, 4 tabs with labels [Play, Libreria, Impostazioni, Info & Privacy] at narrow viewport widths (320-375px) may require truncation or icon-only fallback. The design specifies 'icon + label' for mobile but does not specify icons for any tab. 'Info & Privacy' is the longest label (14 chars); at 320px with 4 equal-width tabs each tab has ~80px — this can accommodate 'Play' and 'Lib' but 'Impostazioni' and 'Info & Privacy' will overflow or require font-size reduction. This is a layout detail, not an IA error.",
+      "evidence": "Design §3b wireframe — tab bar labels: [Play, Lib, Imp, Info]; no icon specification in the proposal",
+      "recommendation": "Define a truncation/icon strategy for the 4 tabs at 320px viewport. Options: (a) icon-only on very narrow viewports with tooltip/label on long-press; (b) shorter labels ('Info' instead of 'Info & Privacy', 'Settings' → 'Config'). This is a detail for the implementation spec, not a blocker.",
+      "blocks_implementation": false
+    },
+    {
+      "id": "F-R05",
+      "severity": "pass",
+      "category": "ia_resolution",
+      "rubric_ref": "nielsen-8 (aesthetic and minimalist design) + flow-ux-2 (reduce cognitive load)",
+      "title": "4-tab nav resolves F-01 (Settings wall) — structurally sound",
+      "description": "The proposal correctly separates the 4 functional destinations (Play/Libreria/Impostazioni/Info&Privacy) by user intent. The Settings accordion (§6) reduces the vertical wall from 7 always-expanded subsections to 5 collapsed panels. Both interventions address nielsen-8 (aesthetic-minimalist) and reduce cognitive load for first-time users. No finding: this is a positive assessment.",
+      "evidence": "Settings.tsx:394-625 — 7 sections always rendered in sequence; design proposal §6 — accordion with 5 sections collapsed by default; App.tsx:189-215 — Settings always in DOM unconditionally",
+      "recommendation": "No action required. Implementation should ensure accordion items default to closed (aria-expanded=false) and that the 'Controlli' section (key remapping, most-used) is first as proposed.",
+      "blocks_implementation": false
+    },
+    {
+      "id": "F-R06",
+      "severity": "pass",
+      "category": "touchoverlay_fix_soundness",
+      "rubric_ref": "ui-visual-2 (spatial layout coherence) + flow-ux-4 (direct manipulation proximity)",
+      "title": "Variante A (anchor to .sb-screen) is technically sound",
+      "description": "The proposal's Variante A is confirmed by source: .sb-screen has position:relative injected at runtime via scoped <style> (Player.tsx:257). Moving the TouchOverlayInner to be a child of the .sb-screen div (screenRef) would anchor the absolute overlay to the viewport area. The fullscreen rationale (Fullscreen API on .sb-screen brings children with it) is correct: requestFullscreen is called on screenRef (Player.tsx:162, useFullscreen hook). Note: the scoped position:relative uses a data-video-scope selector — the TouchOverlay as a sibling of .sb-canvas-host inside .sb-screen would inherit this correctly.",
+      "evidence": "Player.tsx:297-331 — .sb-screen div with ref={screenRef}; Player.tsx:255-264 — scoped position:relative; Player.tsx:162 — useFullscreen(screenRef); TouchOverlay.tsx:166-169 — position:absolute inset:0",
+      "recommendation": "No blocker. When implementing, ensure the TouchOverlay is inserted as a child of the screenRef div (alongside .sb-canvas-host and .sb-scanline), not as a sibling of .sb-screen. Verify z-index stacking: overlay uses z-index:10, .sb-canvas-host uses position:absolute inset:0 (no explicit z-index). Add z-index:1 on .sb-canvas-host to ensure canvas is below the overlay.",
+      "blocks_implementation": false
+    },
+    {
+      "id": "F-R07",
+      "severity": "minor",
+      "category": "a11y_design",
+      "rubric_ref": "ui-a11y-1 (landmark structure) + ui-a11y-2 (focus management)",
+      "title": "Tab panel hidden attribute strategy: verify React conditional render vs HTML hidden",
+      "description": "The design proposes using the HTML hidden attribute on inactive tabpanels. In React, this is typically implemented as {activeTab === 'play' && <div ...>} (conditional render, component unmounts) vs <div hidden={activeTab !== 'play'}> (element stays in DOM, visually hidden). The always-mounted Player requirement (OQ-01, A-01) forces the Player to use the hidden-attribute strategy, not conditional render. The design's markup spec uses the hidden attribute, which is correct for the Player panel. For the other panels (Library, Settings, Info), conditional render is acceptable and simpler. The design does not distinguish these two cases — implementors need this guidance to avoid accidentally unmounting the Player.",
+      "evidence": "Design §8 markup spec — all panels use 'hidden' attribute; Design A-01 + OQ-01 — Player must stay mounted; Player.tsx:125-151 — hooks depend on continuous mount (useGamepadDetection, useAppLifecycle)",
+      "recommendation": "Clarify in the implementation spec: Player panel uses CSS-hidden (display:none or hidden attribute, component stays mounted); other panels (Library, Settings, Info) can use conditional render (component unmounts when not active, acceptable since they have no continuous background state). This avoids the complexity of keeping Library/Settings in the DOM unnecessarily.",
+      "blocks_implementation": false
+    },
+    {
+      "id": "F-R08",
+      "severity": "pass",
+      "category": "emulator_first",
+      "rubric_ref": "nielsen-1 (visibility of system status) + flow-ux-1 (primary task first)",
+      "title": "Emulator-first layout (idle viewport placeholder) resolves the 'app identity' problem",
+      "description": "The current App.tsx renders Player conditionally (selected !== null), meaning new users see only FileLoader + Library + Settings — the app does not communicate that it is an emulator until after ROM selection. The proposal's idle placeholder on .sb-screen resolves this correctly. This is not a preference: it directly addresses the violation of nielsen-1 (the system's primary state and identity should be visible on arrival).",
+      "evidence": "App.tsx:170-187 — {selected && <Player ...>}; design §3a — Player always in DOM on tab Play with idle placeholder",
+      "recommendation": "No finding. Implementation note: the idle placeholder text should be meaningful ('Seleziona un gioco dalla Libreria per iniziare') not generic ('Premi Avvia' — current text in Player.tsx:320 when state=idle which will never render since Player won't mount without a ROM in current code). The current 'Premi Avvia' text in the idle state div (Player.tsx:320) will need updating for the new flow.",
+      "blocks_implementation": false
+    }
+  ],
+
+  "open_questions_assessment": [
+    {
+      "id": "OQ-01",
+      "designer_question": "Player mounted during tab navigation? Or auto-pause acceptable?",
+      "reviewer_assessment": "Well-posed. Finding F-R02 adds a specific implementation risk (useAppLifecycle.resume on idle engine) that should be resolved as part of answering this question. Recommend always-mounted with CSS-hidden, plus a guard in useAppLifecycle.",
+      "priority": "high — blocks F-R02 conditional"
+    },
+    {
+      "id": "OQ-02",
+      "designer_question": "Auto-switch to Play tab after ROM selection?",
+      "reviewer_assessment": "Well-posed. From a UX perspective (nielsen-1, flow-ux-1) auto-switch is preferable: the user intent of selecting a ROM is to play it. The alternative (manual navigation) introduces an unnecessary extra step. However this is a product decision, not a UX rule violation either way.",
+      "priority": "medium"
+    },
+    {
+      "id": "OQ-03",
+      "designer_question": "FileLoader: only in Library tab or also in Play tab (idle state)?",
+      "reviewer_assessment": "Well-posed. Duplicating FileLoader in Play (idle) and Library is acceptable UX for discoverability on first use (nielsen-6: recognition rather than recall). However it introduces two entry points for the same action. Recommend: Play tab shows a CTA link/button 'Vai alla Libreria per aggiungere ROM' (navigation, not duplication) when library is empty; FileLoader stays canonical in Library.",
+      "priority": "low"
+    },
+    {
+      "id": "OQ-04",
+      "designer_question": "TouchOverlay: Variante A (anchor to .sb-screen) or Variante B (3-column landscape)?",
+      "reviewer_assessment": "Well-posed. Finding F-R06 confirms Variante A is technically sound. From a UX standpoint, Variante A is the minimum viable fix (resolves the anchor problem, low effort). Variante B is an enhancement for landscape ergonomics (pattern used by Delta/RetroArch). These are not mutually exclusive: Variante A as the first implementation step, Variante B as a follow-up enhancement.",
+      "priority": "medium — resolved by F-R06 recommendation"
+    },
+    {
+      "id": "OQ-05",
+      "designer_question": "Settings accordion: conditional sections omitted or shown as disabled?",
+      "reviewer_assessment": "Well-posed. Settings.tsx shows conditional sections via prop presence (theme/haptics optional). Consistent with current pattern: omit when prop absent. In accordion context, omitting empty sections is cleaner than showing disabled items (nielsen-8 minimalist). No UX rule violation either way.",
+      "priority": "low"
+    },
+    {
+      "id": "OQ-06",
+      "designer_question": "Info & Privacy tab: always visible or only if privacy not yet confirmed?",
+      "reviewer_assessment": "Well-posed. Privacy information should be permanently accessible (GDPR-related, also App Store review requirement). The tab should always be visible. The PrivacyNotice banner (first-run) is orthogonal to the tab content availability. No conflict between always-visible tab and dismissible banner.",
+      "priority": "medium — UX recommendation: always visible"
+    }
+  ],
+
+  "rubric_summary": {
+    "nielsen_10": {
+      "N1_visibility_system_status": "pass — idle viewport placeholder resolves current gap",
+      "N2_match_real_world": "pass — tab labels (Play/Libreria/Impostazioni/Info&Privacy) match user mental models",
+      "N3_user_control": "pass — accordion is expandable, nav is reversible, no destructive actions proposed",
+      "N4_consistency_standards": "pass — tab pattern is standard on mobile/desktop; ARIA semantics correct",
+      "N5_error_prevention": "conditional — A-01 risk (F-R02): always-mounted Player could trigger resume on unconfigured engine",
+      "N6_recognition_recall": "pass — tab labels + idle placeholder reduce recall burden",
+      "N7_flexibility_efficiency": "minor gap — F-R04: narrow viewport tab truncation unaddressed",
+      "N8_aesthetic_minimalist": "pass — proposal directly resolves the Settings wall (F-01)",
+      "N9_help_recover_errors": "n/a — not in scope of this design proposal",
+      "N10_help_documentation": "pass — Info & Privacy tab provides dedicated location for legal/privacy content"
+    },
+    "ui_visual_6": {
+      "UV1_hierarchy": "pass — Play tab primary, others secondary/tertiary as proposed",
+      "UV2_spatial_layout": "pass — viewport-first, controls below, save state collapsible",
+      "UV3_typography": "n/a — no typography changes proposed",
+      "UV4_consistency_ds": "minor — F-R03: no sd-tab/sd-accordion in DS, requires custom classes",
+      "UV5_density": "pass — accordion reduces density in Settings section",
+      "UV6_responsive": "minor — F-R04: narrow viewport label truncation"
+    },
+    "flow_ux_5": {
+      "FU1_primary_task_reachability": "pass — Play tab default, emulator-first",
+      "FU2_cognitive_load": "pass — tab separation + accordion",
+      "FU3_error_prevention": "conditional — F-R02",
+      "FU4_direct_manipulation": "pass — F-R06 TouchOverlay anchor",
+      "FU5_feedback": "pass — tab active state, accordion expand/collapse state"
+    }
+  },
+
+  "conditionals": [
+    {
+      "id": "C-01",
+      "finding_ref": "F-R02",
+      "condition": "Verify useAppLifecycle.resume() is safe on an idle (never-started) WasmBoyEngine, or add a guard. Confirm A-01 confidence can be raised to high before committing to always-mounted Player.",
+      "owner": "fe-dev / maintainer"
+    }
+  ],
+
+  "no_auto_eval": true,
+  "reviewed_design": "uxui-design-2026-06-09-soliboy-ia-redesign",
+  "next_step": "Resolve C-01 (A-01 verification), answer OQ-01 through OQ-06 with maintainer, then pass to fe-dev for implementation."
+}

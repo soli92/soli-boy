@@ -1,0 +1,170 @@
+{
+  "report_id": "uxui-design-2026-06-09-soliboy-ia-redesign",
+  "agent": "ui-designer",
+  "schema": "ux_ui_design",
+  "timestamp": "2026-06-09",
+  "deliverable_type": ["ia_redesign", "wireframe", "component_spec"],
+  "tsk": "adhoc",
+  "brief_summary": "Ridisegno IA + layout emulator-first per soli-boy: 3 finding (viewport piccolo, TouchOverlay mal posizionato, muro configurazione Settings).",
+  "supersedes_context": "uxui-review-2026-06-09-15-25-soliboy-home",
+
+  "ia_navigation": {
+    "type": "tab_bar",
+    "tabs": [
+      {
+        "id": "play",
+        "label": "Play",
+        "default": true,
+        "components": ["Player", "FileLoader (idle only)", "SaveStatePanel"]
+      },
+      {
+        "id": "library",
+        "label": "Libreria",
+        "default": false,
+        "components": ["Library", "FileLoader (secondary CTA)"]
+      },
+      {
+        "id": "settings",
+        "label": "Impostazioni",
+        "default": false,
+        "components": ["Settings (accordionata: Controlli, Resa video, Aspetto, Mobile, Dati)"]
+      },
+      {
+        "id": "info",
+        "label": "Info & Privacy",
+        "default": false,
+        "components": ["PrivacyNotice (section)", "StoreComplianceNotice", "LegalNotice"]
+      }
+    ]
+  },
+
+  "wireframes": {
+    "desktop": {
+      "description": "Layout emulator-first. Player sempre nel DOM (tab Play). Viewport centrato, max-width 640px, aspect-ratio GB/GBC/GBA. Controlli sotto. FileLoader solo se idle.",
+      "player_prominence": "primary — max-width 640px, centrato, aspect-ratio preservato"
+    },
+    "mobile_portrait": {
+      "description": "Tab bar compatta in alto. Viewport occupa max larghezza. Controlli runtime sotto in HUD compatto. TouchOverlay ancorato a .sb-screen.",
+      "player_prominence": "primary — full-width, top of content area"
+    },
+    "mobile_landscape": {
+      "description": "Layout 3 colonne: D-pad | Viewport | Tasti azione. Tab bar collassata a icon-only in header.",
+      "player_prominence": "center column — flanked by virtual controls"
+    }
+  },
+
+  "touch_overlay": {
+    "current_problem": "Overlay ancorato a <section .sb-app> (intera pagina) — tasti virtuali flottano sopra Settings/Library",
+    "proposed_anchor": ".sb-screen (position: relative già presente via CSS scoped in Player.tsx)",
+    "variant_a": {
+      "label": "Overlay dentro .sb-screen (cambio ancoraggio minimo)",
+      "effort": "low",
+      "description": "TouchOverlay diventa figlio di screenRef div. inset:0 si riferisce al viewport. Fullscreen porta l'overlay con sé."
+    },
+    "variant_b": {
+      "label": "Layout 3 colonne in landscape (D-pad | schermo | tasti)",
+      "effort": "medium",
+      "description": "In landscape i tasti non si sovrappongono al viewport ma si affiancano lateralmente. Pattern classico emulatori mobile."
+    },
+    "safe_area_css": "env(safe-area-inset-*) per notch/home indicator su iPhone X+ e Android con notch",
+    "target_size_status": "conforme — 44x44px (D-pad), 50x50px (AB), in linea con --sd-layout-touch-target-min:44px"
+  },
+
+  "accessibility": {
+    "landmark_navigation": "Aggiungere <nav aria-label='Navigazione principale'> per la tab bar",
+    "tab_semantics": "role=tab, aria-selected, aria-controls per tab button; role=tabpanel, aria-labelledby, hidden per panel",
+    "accordion_settings": "aria-expanded su trigger, aria-controls su pannello content",
+    "focus_order_play_tab": ["skip-link", "header+nav", "viewport .sb-screen", "controlli runtime", "HUD", "SaveStatePanel", "FileLoader (se idle)"],
+    "touch_overlay_a11y": "aria-hidden=true invariato (controlli touch non accessibili via tastiera by design)"
+  },
+
+  "assumptions": [
+    {
+      "id": "A-01",
+      "statement": "Player può stare sempre montato nella DOM (anche fuori tab Play) senza avviare il core. WasmBoy non si inizializza al mount — lo fa handlePlay.",
+      "confidence": "medium",
+      "needs_verification": true
+    },
+    {
+      "id": "A-02",
+      "statement": "Fullscreen API funziona correttamente quando la tab Play è attiva.",
+      "confidence": "high",
+      "needs_verification": false
+    },
+    {
+      "id": "A-03",
+      "statement": "App usata su mobile touch e desktop. Tab bar è pattern riconoscibile su entrambe.",
+      "confidence": "high",
+      "needs_verification": false
+    },
+    {
+      "id": "A-04",
+      "statement": "@soli92/solids potrebbe non esporre componenti tab/accordion. Da verificare — eventualmente implementare con classi sb- custom.",
+      "confidence": "low",
+      "needs_verification": true
+    },
+    {
+      "id": "A-05",
+      "statement": "PrivacyNotice banner rimane overlay/banner a prescindere dalla navigazione tab.",
+      "confidence": "high",
+      "needs_verification": false
+    },
+    {
+      "id": "A-06",
+      "statement": "Selezione ROM dalla Libreria trigghera auto-switch alla tab Play.",
+      "confidence": "high",
+      "needs_verification": false
+    }
+  ],
+
+  "open_questions": [
+    {
+      "id": "OQ-01",
+      "question": "Il Player deve rimanere montato durante navigazione ad altre tab? O pausa automatica è accettabile?",
+      "impact": "Architettura del layout — Player sempre nel DOM vs condizionale a tab attiva",
+      "stakeholder": "maintainer"
+    },
+    {
+      "id": "OQ-02",
+      "question": "Auto-switch a tab Play dopo selezione ROM dalla Libreria: comportamento desiderato?",
+      "impact": "Wiring onSelect ↔ navigazione in App.tsx",
+      "stakeholder": "maintainer"
+    },
+    {
+      "id": "OQ-03",
+      "question": "FileLoader: solo in tab Libreria o anche in tab Play (stato idle)?",
+      "impact": "Positioning FileLoader nell'IA",
+      "stakeholder": "maintainer"
+    },
+    {
+      "id": "OQ-04",
+      "question": "TouchOverlay: Variante A (ancoraggio a .sb-screen, sforzo basso) o Variante B (layout 3 colonne landscape, sforzo medio)?",
+      "impact": "Entità del refactoring CSS del TouchOverlay",
+      "stakeholder": "maintainer / fe-dev"
+    },
+    {
+      "id": "OQ-05",
+      "question": "Accordion Settings: sezioni condizionali (tema/haptics) omesse o mostrate come disabled se prop mancante?",
+      "impact": "Logica render accordion Settings",
+      "stakeholder": "fe-dev"
+    },
+    {
+      "id": "OQ-06",
+      "question": "Privacy tab: come gestire il banner vs sezione privacy nel nuovo layout a tab?",
+      "impact": "Posizionamento PrivacyNotice nell'IA",
+      "stakeholder": "maintainer"
+    }
+  ],
+
+  "rationale_summary": [
+    "Player sempre visibile in tab Play (emulator-first): il viewport è il contenuto primario.",
+    "Tab bar per separare destinazioni funzionali (Play/Libreria/Impostazioni/Info) con obiettivi utente distinti.",
+    "Accordion dentro Impostazioni per progressive disclosure delle sotto-sezioni di configurazione.",
+    "TouchOverlay ancorato a .sb-screen (position:relative) invece che all'intera pagina — semanticamente corretto.",
+    "Safe-area CSS per compatibilità con notch/home indicator su mobile."
+  ],
+
+  "no_auto_eval": true,
+  "handoff_note": "Passare a /ux-ui-review --tsk=adhoc per la valutazione. Il designer non auto-valuta (ADR-020 §H).",
+  "ui_design_spec_suggestion": "code_quality/reports/_adhoc/uxui-design-2026-06-09-soliboy-ia-redesign.md"
+}
