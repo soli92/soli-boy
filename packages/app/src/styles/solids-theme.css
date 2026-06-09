@@ -165,6 +165,13 @@ body{
   display:flex;align-items:center;justify-content:center;color:var(--sd-color-text-secondary);
   font-size:20px;cursor:pointer;
 }
+/* TSK-067 FINDING#2 — posizionamento a croce dei tasti D-pad. Senza queste regole
+   i 4 .dp si impilano tutti a top/left:0 (sovrapposti) e dp-right intercetta i tap
+   destinati a dp-up (rivelato dall'e2e mobile). Container 120px, tasto 44px → centro a 44px. */
+.dp-up{top:0;left:44px;}
+.dp-down{top:88px;left:44px;}
+.dp-left{top:44px;left:0;}
+.dp-right{top:44px;left:88px;}
 .dp-center{position:absolute;top:44px;left:44px;width:32px;height:32px;background:var(--sd-color-bg-surface);}
 .sb-ab{position:relative;width:120px;height:120px;}
 .ab{

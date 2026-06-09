@@ -165,6 +165,14 @@ Fonti: `wiki/log.md` §"2026-06-03 — develop TSK-024 (qa)"; ADR-004 (`wiki/con
 
 Re-scan iter-2 (axe-playwright, 3 temi × 2 viewport + scope sintetico): **0 finding `color-contrast` major/critical** su tutte le combinazioni. I 5 TSK sorgente (TSK-003, TSK-014, TSK-038, TSK-040, TSK-044) sono `a11y_status: pass` con report `code_quality/reports/TSK-*-a11y-iter-2.{json,md}`. Sub-gap cyberpunk incluso e risolto. Tracce: `code_quality/reports/ep012-runs/all-runs-iter2.json`, `all-runs-iter2-synthetic.json`, screenshot `iter2-*`. Build `packages/app` verde post-fix.
 
+## 2026-06-09 — app-inputmapping-not-wired-to-player (FINDING#1 TSK-067)
+**Origine:** qa-dev @ TSK-067 (e2e mobile smoke)
+**Gap:** `App.tsx` crea l'istanza `InputMapping` (variabile locale `input`) ma **non la passa** come prop `inputMapping` al `<Player>`. Di conseguenza `<TouchOverlay>` (montato in Player solo se `inputMapping` è presente — guard `{inputMapping && <TouchOverlay .../>}`) non viene mai renderizzato nel DOM reale, anche su un context touch/mobile. Il componente `TouchOverlay` e il prop `inputMapping` del Player sono stati implementati in TSK-060 con backward-compat (prop opzionale); il wiring in App.tsx è rimasto incompleto.
+**Evidenza:** test e2e TSK-067 `Test 1` fallisce con `[data-testid="sb-touch-overlay"]` not found in DOM dopo avvio ROM su context iPhone 13 (mobile, hasTouch:true, pointer:coarse).
+**Fix richiesto:** in `packages/app/src/App.tsx`, aggiungere `inputMapping={input}` e `touchConfigStorage={selectedConfig}` alle props di `<Player>`. Non richiede nuove dipendenze. Una riga di modifica.
+**Impatto:** bloccante per US-026 (controlli touch su device reale). Tests TSK-067 Test 1, Test 2, Test 4 diventano verdi non appena questo wiring è completato.
+**Azione richiesta:** aprire TSK bugfix (layer fe) per completare il wiring App.tsx → Player (inputMapping, touchConfigStorage). TPM da notificare.
+
 ## 2026-06-05 — rom-gated-ui-substates-not-exercised-headless
 **Origine:** scan a11y retroattivo EP-012/TSK-081 (componenti ROM-gated: Player, controls, SaveStatePanel, Fullscreen, Settings sub-sezioni).
 **Gap:** alcuni sub-stati della UI ROM-gated NON sono esercitabili banalmente in Playwright headless e quindi NON sono coperti dallo scan automatico iter-1:

@@ -171,6 +171,10 @@ export function App() {
           currentCore={selected.core}
           // TSK-066 — feedback aptico propagato al TouchOverlay (US-032).
           hapticsEnabled={hapticsEnabled}
+          // TSK-067 (FINDING#1) — wiring mancante: senza queste prop il TouchOverlay
+          // non si monta mai sui device touch (guard `inputMapping && ...` in Player).
+          inputMapping={input}
+          touchConfigStorage={selectedConfig}
         />
       )}
 

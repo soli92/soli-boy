@@ -19,6 +19,20 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // TSK-067 — progetto mobile: emula iPhone 13 con Chromium (hasTouch: true,
+    // pointer: coarse). `defaultBrowserType` del device è webkit (non installato
+    // in CI), quindi eseguiamo su Chromium sovrascrivendo il browser.
+    // Eseguibile con: npm run e2e -- --project=mobile
+    {
+      name: "mobile",
+      use: {
+        ...devices["iPhone 13"],
+        // Forza Chromium per compatibilità ambienti senza WebKit installato.
+        // hasTouch, viewport (390x664), deviceScaleFactor (3), isMobile restano
+        // dal device descriptor: pointer:coarse è garantito da hasTouch:true.
+        browserName: "chromium",
+      },
+    },
   ],
   webServer: {
     command: "npx vite --port 4173 --strictPort",
