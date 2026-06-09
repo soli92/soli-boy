@@ -1,6 +1,6 @@
 # CLAUDE.md — soli-boy
 
-Questo repo è una **Agentic Factory llm-wiki++ v2.18** scaffoldata da `factory-bootstrap`.
+Questo repo è una **Agentic Factory llm-wiki++ v2.19** scaffoldata da `factory-bootstrap`.
 Segue il contratto universale definito in [`PATTERN.md`](PATTERN.md) (agent-agnostic,
 multi-adapter, compression layer a due assi).
 
@@ -18,7 +18,8 @@ Vedi [`factory.config.yaml`](factory.config.yaml):
 | Code Quality Review (CQRL) | ON |
 | FE Visual Oracle (v2.17) | ON — `fe_correctness.enabled: true`, Playwright in `packages/app` |
 | Accessibility Testing (v2.18) | ON — `a11y.enabled: true`, agente `a11y-specialist`; richiede `axe-playwright` |
-| UX/UI Review & Design (v2.18) | ON — `ux_ui.enabled: true`, agenti `ux-ui-reviewer` + `ui-designer` |
+| UX/UI Review & Design (v2.18) | ON — `ux_ui.enabled: true`, agenti `ux-ui-reviewer` + `ui-designer` (tool callable via ADR-064) |
+| FE Functional Oracle (EP-018) | OPT-IN — `fe_correctness.functional_oracle.enabled`; acceptance-spec in `code_quality/acceptance/`, esecutore `qa-dev` |
 | Compression OUTPUT (Caveman) | ON — `conservative` |
 | Compression CONTEXT (Graphify) | ON — `graphify-cloud`, target `app` |
 
@@ -63,6 +64,11 @@ adapter contemporaneamente.
   vedi [`wiki/runbooks/ux-ui-review-runbook.md`](wiki/runbooks/ux-ui-review-runbook.md)
 - **UX/UI design (v2.18)**: `/ux-ui-design <brief>` — wireframe/spec/flussi/copy (no-auto-eval: passa
   sempre alla review); vedi [`wiki/runbooks/ux-ui-design-runbook.md`](wiki/runbooks/ux-ui-design-runbook.md)
+- **Functional oracle (EP-018, opt-in)**: `/functional-oracle <TSK-id|app>` — *esercita* il flusso reale
+  (serve app + carica fixture ROM + interazione Playwright + asserzioni domain-agnostic + verdict
+  deterministico, critic LLM advisory). Acceptance-spec in
+  [`code_quality/acceptance/soliboy.acceptance.yaml`](code_quality/acceptance/soliboy.acceptance.yaml);
+  ordering `develop → visual-oracle → ux-ui-review/a11y → functional-oracle → code-review`.
 - Pubblicare kanban su GitHub: `/kanban-publish [show|run|dry-run]`
 - Premortem su epica/feature: `/premortem`
 - **Compression output**: `/compression [show|set|policy|dry-run]`

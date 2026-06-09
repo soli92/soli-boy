@@ -33,12 +33,19 @@ npm run typecheck  # tsc --noEmit
 npm run build      # build di produzione
 ```
 
-Moduli implementati (Wave 1):
-- `src/storage/` — adapter IndexedDB + store `roms` (persistenza on-device).
-- `src/domain/` — riconoscimento piattaforma → core di emulazione.
-- `src/components/` — componenti UI su solids (es. avviso legale).
+Struttura UI: l'app è organizzata in **navigazione a 4 tab** (`Play` / `Libreria` /
+`Impostazioni` / `Info & Privacy`) — la home è **emulator-first** (il viewport di gioco è il
+contenuto primario, proporzioni 3:2). I controlli touch (`TouchOverlay`) si adattano:
+sotto lo schermo in portrait, 3 colonne in landscape, overlay ai bordi in fullscreen.
 
-## Gestione del progetto (Agentic Factory llm-wiki++ v2.17)
+Moduli principali:
+- `src/storage/` — adapter IndexedDB / filesystem nativo + persistenza on-device (ROM, save-state).
+- `src/core/` — wrapper engine (WasmBoy GB/GBC, mGBA GBA) + lifecycle.
+- `src/domain/` — riconoscimento piattaforma → core di emulazione.
+- `src/components/` — UI su solids: `Player` (viewport), `Library`, `FileLoader`, `Settings`
+  (accordion), `TouchOverlay`, `PrivacyNotice`, `ThemeSelector`.
+
+## Gestione del progetto (Agentic Factory llm-wiki++ v2.19)
 
 Oltre a essere l'app, questo repo è gestito come **Agentic Factory**: una knowledge base
 wiki-style + pipeline multi-agente (ingest → planning → design → task → sviluppo) governata
@@ -54,13 +61,17 @@ memory/ code_quality/    side-channel (memoria, regole/report qualità)
 ```
 
 Comandi factory: `/run` · `/sync-docs` · `/query` · `/dev` · `/review` · `/visual-oracle`
-· `/kanban-publish` · `/premortem` · `/compression` · `/graphify-sync`. Quick start in
+· `/a11y` · `/ux-ui-review` · `/ux-ui-design` · `/functional-oracle` · `/kanban-publish`
+· `/premortem` · `/compression` · `/graphify-sync`. Quick start in
 [`CLAUDE.md`](CLAUDE.md), configurazione in [`factory.config.yaml`](factory.config.yaml).
 
-> **v2.17 — FE Visual Oracle** (ON): i TSK frontend passano da una verifica visiva
-> (render headless Playwright + screenshot multi-viewport/tema + critica) prima della code
-> review. Ordering `develop → visual-oracle → review`. Vedi
-> [`wiki/runbooks/visual-oracle-installation.md`](wiki/runbooks/visual-oracle-installation.md).
+> **Pipeline di correttezza FE** (ON): i TSK frontend attraversano una catena di gate opt-in
+> `develop → visual-oracle → ux-ui-review/a11y → functional-oracle → code-review`.
+> - **Visual Oracle** (v2.17): render headless + screenshot multi-viewport/tema + critica visiva.
+> - **A11y + UX/UI Review/Design** (v2.18): scan WCAG 2.2 AA + critica su rubrica anti-soggettività.
+> - **Functional Oracle** (EP-018, v2.20): *esercita* il flusso reale (carica una ROM di test →
+>   avvia → asserzioni sul comportamento), non solo l'aspetto — verdict deterministico. Schema
+>   acceptance-spec in [`code_quality/acceptance/soliboy.acceptance.yaml`](code_quality/acceptance/soliboy.acceptance.yaml).
 
 ## Stato del progetto
 
