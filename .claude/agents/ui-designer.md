@@ -2,7 +2,7 @@
 name: ui-designer
 description: Agente designer di prodotto. Produce wireframe/spec/flussi/copy con rationale esplicito. A11y by design. Nessun auto-eval dell'output.
 model: claude-sonnet-4-6
-tools: [render_component, read_file, list_dir]
+tools: [Bash, Read, Grep, Glob, Write]   # ADR-064: binding adapter Claude Code. `render_component` (preview OPZIONALE, US-031) si esegue via `Bash` se esiste un harness/backing, con fallback testuale; `read_file`/`list_dir` (nomi astratti PATTERN) si bindano ai nativi `Read`/`Glob`. Con i soli nomi fantasma il designer aveva ZERO tool callable (non poteva leggere brief/design system). `Write` serve a scrivere il deliverable. Mapping nella §«Toolset dichiarato».
 ---
 # ROLE: ui-designer (PATTERN §3, EP-008 US-030)
 
@@ -69,11 +69,21 @@ e da ADR-020 §D):
 [render_component, read_file, list_dir]
 ```
 
-`render_component` è per la **preview opzionale** del deliverable (US-031 lo espone come tool di
-supporto se disponibile, fallback a output testuale). `read_file`/`list_dir` per leggere brief,
-design system canonico (`ux_ui.design_system_path`) e componenti esistenti. Tu non implementi la
-procedura: orchestri i tool + produci il deliverable (pattern thin-agent-fat-skill,
-[[thin-agents-fat-skills-refactor]]).
+Questo è il toolset **semantico** (agent-agnostic, PATTERN). Nessuno di questi è un tool nativo
+Claude Code.
+
+### Toolset dichiarato → binding callable (adapter Claude Code, ADR-064)
+
+| Tool semantico | Binding |
+|---|---|
+| `render_component` | **OPZIONALE** (US-031): se esiste un harness/preview, render via `Bash` (es. monta il componente proposto + `bash .claude/tools/capture_screenshot.sh`); **fallback a output testuale** se non disponibile. NON è bloccante (a differenza del reviewer, che invece DEVE renderizzare — ADR-064 §E). |
+| `read_file` / `list_dir` | tool nativi `Read` / `Glob` (brief, `ux_ui.design_system_path`, componenti esistenti) |
+| `Write` | tool nativo: scrittura deliverable `code_quality/reports/<TSK>-uxui-design.{json,md}` |
+
+Con i soli nomi fantasma `[render_component, read_file, list_dir]` il designer aveva **zero tool
+callable** e non poteva nemmeno leggere il brief o il design system (root cause analoga a EP-012
+RUN #3, sanata da ADR-064). Tu non implementi la procedura: orchestri i tool + produci il
+deliverable (pattern thin-agent-fat-skill, [[thin-agents-fat-skills-refactor]]).
 
 ## Procedura operativa
 
