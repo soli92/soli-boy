@@ -68,6 +68,43 @@ else:                                             # target visivo ma nessun altr
     → applica STOP-condition fail-loud (vedi sotto)
 ```
 
+### Step 1.0 — Serve & ambiente di render (app-lifecycle, ADR-064)
+
+Prerequisito **prima** di `capture_screenshot`/`run_a11y_scan`: i tool sono script Playwright via
+`Bash` (ADR-064 §binding). Richiedono (a) Playwright/axe risolvibili da `node_modules` e Node
+compatibile, (b) un **target raggiungibile**. Risolvere così:
+
+```
+# 1. Risolvi il code_path/package target (dal TSK frontmatter o da factory.config.yaml.code_paths).
+#    Le invocazioni dei tool .sh vanno eseguite da QUESTA CWD (require('playwright') risolve dalla CWD).
+# 2. Determina il target servito:
+if target è URL http/https già live:
+    SERVED_URL = target                              # nessun avvio
+elif esiste build servibile (dist/) OR serve dev-server:
+    avvia un server effimero in background:
+      preferisci  `npm run preview` / `vite preview --port <p>`  (build esistente)
+      fallback    `npm run dev`                                  (dev-server)
+    attendi health-check HTTP 200 su http://127.0.0.1:<p>/  (poll, timeout 30s)
+    SERVED_URL = http://127.0.0.1:<p>/
+    REGISTRA il pid per il teardown (vedi Step 6)
+else:
+    → STOP-condition fail-loud (target visivo non servibile)
+```
+
+> **Nota Node/CWD (ADR-064 §D)**: se il server fallisce con «Vite requires Node 20.19+» o i tool
+> falliscono con `Cannot find module 'playwright'`, l'ambiente Node/CWD è errato — è un **errore
+> tecnico fail-loud**, NON un degrado a `no-visual`. Allinea Node (`.nvmrc`) e CWD al package target.
+
+**Invocazione concreta** (sostituisce lo pseudo-`capture_screenshot(...)` della cascata):
+
+```
+bash <factory>/.claude/tools/capture_screenshot.sh \
+     --target "$SERVED_URL" --viewports "desktop,mobile" --out "<output_dir>"
+```
+
+Il **teardown** del server effimero avviene nello Step 6 (o `finally`): `kill <pid>` — mai lasciare
+processi orfani. `output_dir` è la cartella asset del report (vedi Step 5).
+
 **STOP-condition fail-loud (ADR-063 §A)** — si attiva in DUE casi:
 
 1. **`capture_screenshot` restituisce vuoto / errore / tool-not-callable** in modalità visiva

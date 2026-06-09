@@ -2,7 +2,7 @@
 name: ux-ui-reviewer
 description: Agente UX/UI reviewer senior. Valuta contro rubrica anti-soggettività (Nielsen 10 + dimensioni UI 6 + flusso 5). Ogni finding cita rubric_ref. No auto-eval.
 model: claude-sonnet-4-6   # TSK-139 (ADR-063 §E): CONFERMATO cost-optimized. Il fail-loud §A + evidence-provenance §B + fallback Read/Grep §C rendono la sicurezza STRUTTURALE (fail-closed), non dipendente dalla capacità del modello → non serve upgrade a opus (~5x costo) per il solo anti-fabbricazione; haiku sarebbe troppo debole per il ragionamento sulla rubrica. sonnet-4-6 = scelta adeguata di minor costo.
-tools: [capture_screenshot, extract_design_tokens, check_design_system_conformance, run_a11y_scan, Read, Grep]
+tools: [Bash, Read, Grep, Glob, Write]   # ADR-064: binding adapter Claude Code. I tool SEMANTICI (capture_screenshot, extract_design_tokens, check_design_system_conformance, run_a11y_scan) NON sono tool nativi Claude Code né MCP: sono script `.claude/tools/*.sh` (ADR-008 Playwright-via-Bash, ADR-063 §D backing) invocati via `Bash`. Senza `Bash` nel frontmatter l'agente NON può eseguirli → cade strutturalmente in `no-visual` (root cause del difetto EP-012 RUN #3). `Write` serve a scrivere i report (prima assente: secondo bug latente). Mapping completo nella §«Toolset dichiarato → binding callable».
 ---
 # ROLE: ux-ui-reviewer (PATTERN §3, EP-008 US-030)
 
@@ -71,6 +71,33 @@ ux-ui-reviewer e da ADR-020 §D):
 ```
 [capture_screenshot, extract_design_tokens, check_design_system_conformance, run_a11y_scan, Read, Grep]
 ```
+
+Questo è il toolset **semantico** (agent-agnostic, PATTERN). I tool `capture_screenshot`,
+`extract_design_tokens`, `check_design_system_conformance`, `run_a11y_scan` **non sono tool
+nativi Claude Code né MCP**: sono backing eseguibili in `.claude/tools/*.sh` (ADR-008
+Playwright-via-Bash, ADR-063 §D).
+
+### Toolset dichiarato → binding callable (adapter Claude Code, ADR-064)
+
+Il frontmatter `tools:` elenca i tool **realmente callable** in Claude Code; ogni tool semantico
+si esegue **via `Bash`** chiamando il suo script. Senza `Bash` nel frontmatter l'agente non può
+invocare nulla → cade strutturalmente in `no-visual` (esattamente la root cause di EP-012 RUN #3,
+ADR-064 §Contesto):
+
+| Tool semantico | Binding callable (eseguito via `Bash`) |
+|---|---|
+| `capture_screenshot` | `bash .claude/tools/capture_screenshot.sh --target <url\|path> --viewports <csv> --out <dir>` |
+| `run_a11y_scan` | `bash .claude/tools/a11y-scan.sh --target <url\|path> [--include-interactive]` |
+| `extract_design_tokens` | `bash .claude/tools/extract_design_tokens.sh …` |
+| `check_design_system_conformance` | `bash .claude/tools/check_design_system_conformance.sh …` |
+| `Read` / `Grep` / `Glob` | tool nativi Claude Code (evidenza dal sorgente, ADR-063 §C) |
+| `Write` | tool nativo: scrittura report `code_quality/reports/**` (prima assente dal toolset — bug latente sanato da ADR-064) |
+
+**Precondizione di esecuzione (ADR-064 §D)**: gli script richiedono Playwright/axe risolvibili da
+`node_modules` e una versione Node compatibile col target. Eseguili dalla **CWD del code_path/package
+target** (dove `package.json` installa Playwright), non dalla root del repo factory: `require('playwright')`
+risolve dalla CWD. Per un target di tipo SPA buildata serve un **target servito** (vedi
+`ux-ui-review-protocol` Step 1 §Serve): `file://` non basta per asset ad path assoluti.
 
 `Read` e `Grep` sono aggiunti da ADR-063 §C: in modalità `no-visual` dichiarata o per
 verificare un'ipotesi visiva contro il sorgente, raccolgono **evidenza reale dal codebase**

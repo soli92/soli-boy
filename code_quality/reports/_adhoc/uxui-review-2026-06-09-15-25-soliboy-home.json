@@ -1,0 +1,45 @@
+{
+  "report_id": "uxui-review-2026-06-09-15-25-soliboy-home",
+  "target": "http://127.0.0.1:4317/",
+  "mode": "visual",
+  "agent": "ux-ui-reviewer (pipeline ADR-064, esecuzione reale)",
+  "rubric_strict": true,
+  "timestamp": "2026-06-09 15:25",
+  "verdict": "conditional",
+  "evidence_dir": "uxui-review-2026-06-09-15-25-soliboy-home/",
+  "summary": { "critical": 0, "major": 1, "minor": 2, "open_questions": 3, "discarded_findings": 1 },
+  "findings": [
+    {
+      "id": "F-01",
+      "rubric_ref": "nielsen-8;ui-visual-hierarchy",
+      "severity": "major",
+      "evidence": "uxui-review-2026-06-09-15-25-soliboy-home/screenshot_desktop_*.png",
+      "summary": "Idle dominato da muro di configurazione espanso; azione primaria (load ROM / viewport gioco) senza prominenza; manca progressive disclosure."
+    },
+    {
+      "id": "F-02",
+      "rubric_ref": "nielsen-2",
+      "severity": "minor",
+      "evidence": "packages/app/src/components/Settings/Settings.tsx:397-411",
+      "summary": "Rimappatura controlli mostra la chiave grezza del profilo come label di riga, non un nome leggibile."
+    },
+    {
+      "id": "F-03",
+      "rubric_ref": "a11y:landmark-unique",
+      "severity": "minor",
+      "evidence": "uxui-review-2026-06-09-15-25-soliboy-home/a11y.json",
+      "summary": "section[role=region] senza nome accessibile univoco (delega EP-007)."
+    }
+  ],
+  "open_questions": [
+    "Stato funzionale con ROM caricata non catturato: richiede oracolo funzionale (fuori scope ADR-064). Spiega 'funzionalmente non usabile'.",
+    "Temi dark/light non differenziati in questa passata.",
+    "Leggibilità fine limitata dalla risoluzione fullPage."
+  ],
+  "discarded_findings": [
+    {
+      "hypothesis": "Etichette controlli corrotte/duplicate (Accendi/Accelerati/AccelerSghi)",
+      "reason": "Grep sul sorgente: 0 occorrenze. Misread del thumbnail a bassa risoluzione. NON emesso (guard evidence-provenance ADR-063 §B)."
+    }
+  ]
+}

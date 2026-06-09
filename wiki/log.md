@@ -564,3 +564,4 @@ Implementazione completata. Nessun TSK BE bloccante.
 5. **DoD "provider cloud"** — non richiede implementazione extra: il picker di sistema (via `<input type="file">`) include automaticamente Google Drive e iCloud su Android/iOS rispettivamente. Non è necessario alcun plugin aggiuntivo.
 6. **DoD "smoke test su emulatore"** — gate umano (richiede Android Studio/Xcode, assenti in env agent); marcato come requisito umano nella DoD del TSK.
 
+[2026-06-09 15:25] ux-ui-review http://127.0.0.1:4317/ (soli-boy home, prima review VISIVA reale post-ADR-064) → conditional (1 major, 2 minor, 1 finding scartato anti-fabbricazione)

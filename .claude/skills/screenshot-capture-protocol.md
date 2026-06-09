@@ -98,6 +98,14 @@ parametri e non legge mai la config. La risoluzione avviene nel caller:
 
 ---
 
+## CWD di esecuzione (ADR-064 §D)
+
+Lo snippet Node fa `require('playwright')`, che risolve da `node_modules` **della CWD**. Esegui il
+runner / lo script `.claude/tools/capture_screenshot.sh` dalla **directory del code_path/package
+target** (dove `package.json` installa Playwright), non dalla root del repo factory. Eseguirlo dalla
+CWD sbagliata produce `Cannot find module 'playwright'`: è un **errore tecnico fail-loud** (exit ≠ 0),
+non un degrado silenzioso a `no-visual`. Idem per la versione Node: allinea al `.nvmrc` del target.
+
 ## Fail-loud su Playwright mancante
 
 Se Playwright non è disponibile nel project host → **STOP fail-loud**, nessun degrado
