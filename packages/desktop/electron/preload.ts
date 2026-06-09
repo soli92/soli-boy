@@ -65,6 +65,12 @@ const api = {
     ipcRenderer.on("update:event", listener);
     return () => ipcRenderer.removeListener("update:event", listener);
   },
+  /**
+   * Richiede al main process di uscire e installare l'aggiornamento scaricato
+   * (ADR-008). Invocabile SOLO dopo aver ricevuto un evento `{ type: "downloaded" }`.
+   * Nel renderer il bridge è no-op su web (nessun `window.soliboyDesktop`).
+   */
+  quitAndInstall: (): void => ipcRenderer.send("update:quitAndInstall"),
 } as const;
 
 export type SoliboyDesktopApi = typeof api;

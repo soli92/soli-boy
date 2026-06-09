@@ -5,6 +5,9 @@ import { Player } from "./components/Player/Player";
 import { Settings } from "./components/Settings/Settings";
 import { LegalNotice } from "./components/LegalNotice";
 import { PrivacyNotice } from "./components/PrivacyNotice/PrivacyNotice";
+// TSK-057 (US-025) — Banner in-app per il ciclo di auto-update Electron.
+// No-op su web (nessun bridge window.soliboyDesktop → ritorna null).
+import { UpdateBanner } from "./components/UpdateBanner/UpdateBanner";
 import { makePrivacyAckPort } from "./components/PrivacyNotice/privacy-port";
 import { usePrivacyAck } from "./components/PrivacyNotice/usePrivacyAck";
 // TSK-055 — punto unico di selezione runtime: IndexedDB su web/mobile,
@@ -155,6 +158,10 @@ export function App() {
       {!privacyAck && (
         <PrivacyNotice variant="banner" onAcknowledge={ackPrivacy} />
       )}
+
+      {/* TSK-057 (US-025) — Banner auto-update: no-op su web (guard in UpdateBanner).
+          Posizionato dopo il banner privacy per non competere in visibilità. */}
+      <UpdateBanner />
 
       <FileLoader storage={storage} onImported={() => setRefresh((n) => n + 1)} />
 

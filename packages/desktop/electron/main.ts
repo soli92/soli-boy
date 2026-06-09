@@ -307,6 +307,20 @@ function setupAutoUpdater(win: BrowserWindow): void {
   setInterval(() => void autoUpdater.checkForUpdates(), 4 * 60 * 60 * 1000);
 }
 
+/**
+ * Canale IPC per il quit-and-install dell'auto-update (ADR-008).
+ * Registrato una sola volta a livello app (non dipende dalla singola BrowserWindow).
+ * Il renderer lo invoca via `window.soliboyDesktop.quitAndInstall()` SOLO dopo
+ * aver ricevuto un evento `{ type: "downloaded" }` dall'autoUpdater.
+ * Sicuro perché `contextIsolation: true` + `nodeIntegration: false`: solo il
+ * preload whitelistato può raggiungere questo canale.
+ */
+function registerUpdateIpc(): void {
+  ipcMain.on("update:quitAndInstall", () => {
+    autoUpdater.quitAndInstall();
+  });
+}
+
 async function createWindow(): Promise<BrowserWindow> {
   const win = new BrowserWindow({
     width: 1100,
@@ -346,6 +360,7 @@ async function createWindow(): Promise<BrowserWindow> {
 app.whenReady().then(() => {
   registerAppProtocol();
   registerFsIpc();
+  registerUpdateIpc();
   void createWindow();
 
   app.on("activate", () => {
