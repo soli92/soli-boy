@@ -143,7 +143,8 @@ export function App() {
   return (
     <main className="sb-app">
       <header className="sd-flex sd-items-center sd-between">
-        <span className="sb-title">Soli-boy</span>
+        {/* a11y (EP-012 window A): h1 invece di span → fix WCAG page-has-heading-one. */}
+        <h1 className="sb-title">Soli-boy</h1>
       </header>
 
       {/* TSK-069 (US-033) — Banner privacy on-device al primo avvio.
