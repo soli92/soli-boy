@@ -36,6 +36,17 @@ export interface TouchOverlayProps {
    * prop per rendere il componente testabile senza Capacitor.
    */
   hapticsEnabled?: boolean;
+  /**
+   * TSK-062 — Nasconde l'overlay quando un gamepad Bluetooth è connesso
+   * (default: true). Impostare a `false` per mostrare sempre l'overlay
+   * anche con gamepad attivo (toggle "Nascondi overlay con gamepad" in Settings).
+   */
+  hideWhenGamepad?: boolean;
+  /**
+   * TSK-062 — true se ≥1 gamepad è attualmente connesso.
+   * Propagato da `useGamepadDetection` a livello Player/App.
+   */
+  gamepadConnected?: boolean;
 }
 
 /** Determina se il dispositivo è touch-primary. */
@@ -111,9 +122,14 @@ export function TouchOverlay({
   inputMapping,
   storage,
   hapticsEnabled = false,
+  hideWhenGamepad = true,
+  gamepadConnected = false,
 }: TouchOverlayProps) {
   // Solo su touch device.
   if (!isTouchDevice()) return null;
+  // TSK-062 — auto-hide: se un gamepad è connesso e `hideWhenGamepad` è true,
+  // l'overlay non viene reso (CSS `display: none` equivalente — no DOM overhead).
+  if (hideWhenGamepad && gamepadConnected) return null;
 
   return (
     <TouchOverlayInner

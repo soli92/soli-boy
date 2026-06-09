@@ -25,6 +25,10 @@
 // L'EmulatorEngine (EmulatorJS in runtime) è iniettato → componente testabile.
 
 import { useId, useMemo, useRef, useState } from "react";
+// TSK-062 — Gamepad detection: auto-hide TouchOverlay quando un controller BT è connesso.
+import { useGamepadDetection } from "../../domain/useGamepadDetection";
+// TSK-065 — App lifecycle: pausa/ripresa emulazione in background via Capacitor + visibility API.
+import { useAppLifecycle } from "../../domain/useAppLifecycle";
 import {
   CoreWrapper,
   type EmulatorEngine,
@@ -96,6 +100,11 @@ export interface PlayerProps {
    * Propagato al TouchOverlay; default false (no vibrazione).
    */
   hapticsEnabled?: boolean;
+  /**
+   * TSK-062 — Nasconde il TouchOverlay quando un gamepad BT è connesso (default: true).
+   * Corrisponde al toggle "Nascondi overlay con gamepad" in Settings (US-028).
+   */
+  hideOverlayWhenGamepad?: boolean;
 }
 
 export function Player({
@@ -110,9 +119,36 @@ export function Player({
   inputMapping,
   touchConfigStorage,
   hapticsEnabled = false,
+  hideOverlayWhenGamepad = true,
 }: PlayerProps) {
   const wrapper = useMemo(() => new CoreWrapper(engine), [engine]);
   const [state, setState] = useState(wrapper.currentState);
+
+  // TSK-062 — Gamepad API: rilevamento connessione controller BT.
+  // L'inputMapping viene passato così il polling dei pulsanti invia input al core.
+  const { connected: gamepadConnected } = useGamepadDetection(inputMapping);
+
+  // TSK-065 — App lifecycle: pausa/ripresa emulazione quando l'app va in background.
+  // Passiamo `wrapper` come target (ha pause/resume/currentState).
+  // Re-sincroniamo `state` locale dopo le chiamate interne al wrapper, ma
+  // useAppLifecycle chiama direttamente wrapper.pause/resume: il `state` React
+  // si desincronizza. Per mantenere coerenza, passiamo un proxy che aggiorna
+  // `setState` insieme ai metodi del wrapper.
+  const lifecycleTarget = useMemo(() => ({
+    pause() {
+      wrapper.pause();
+      setState(wrapper.currentState);
+    },
+    resume() {
+      wrapper.resume();
+      setState(wrapper.currentState);
+    },
+    get currentState() {
+      return wrapper.currentState;
+    },
+  }), [wrapper]);
+
+  useAppLifecycle(lifecycleTarget);
   const [error, setError] = useState<string | null>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   // TSK-041 — host React-vuoto per il canvas imperativo dell'engine. Sta
@@ -366,6 +402,8 @@ export function Player({
           inputMapping={inputMapping}
           storage={touchConfigStorage}
           hapticsEnabled={hapticsEnabled}
+          hideWhenGamepad={hideOverlayWhenGamepad}
+          gamepadConnected={gamepadConnected}
         />
       )}
     </section>
