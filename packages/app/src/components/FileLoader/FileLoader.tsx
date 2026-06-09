@@ -1,15 +1,47 @@
 // TSK-003 — FileLoader: selettore file + drag & drop (US-001).
 // Carica una ROM fornita dall'utente e la importa via dominio (importRom, TSK-002).
 // UI su classi solids. Errore comprensibile su file non valido.
+//
+// TSK-063 — Capacitor path: su mobile nativo l'elemento <input type="file">
+// apre il picker di sistema (inclusi provider cloud Google Drive/iCloud) e
+// fornisce già oggetti `File` tramite l'evento onChange — nessuna modifica al
+// flusso principale. Il prop `onCapacitorUri` gestisce il caso in cui un file
+// arrivi tramite URI esterna (deep-link, Android intent): legge il contenuto
+// via Filesystem.readFile e lo converte in File prima di passarlo a handleFile.
+// [^src: management/kanban/EP-007-esperienza-mobile/US-029-caricamento-file-mobile/TSK-063.md]
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { StoragePort } from "../../storage/port";
 import { importRom } from "../../domain/rom-library";
+import {
+  isCapacitorNative,
+  readFileFromUri,
+  filenameFromUri,
+  type CapacitorFilesystemApi,
+} from "./useCapacitorFilePicker";
 
 export interface FileLoaderProps {
   storage: StoragePort;
   /** Callback con l'id della ROM importata. */
   onImported?: (id: string) => void;
+  /**
+   * TSK-063 — Riceve un ref-callback con la funzione `handleCapacitorUri`,
+   * così il parent (es. App) può invocarla quando riceve un Android intent o
+   * un iOS deep-link contenente un file URI. No-op se non fornito.
+   *
+   * Esempio:
+   *   const uriHandlerRef = useRef<((uri: string) => Promise<void>) | null>(null);
+   *   <FileLoader registerUriHandler={(fn) => { uriHandlerRef.current = fn; }} .../>
+   *   // Poi: uriHandlerRef.current?.("file:///storage/emulated/0/rom.gbc");
+   */
+  registerUriHandler?: (handler: (uri: string) => Promise<void>) => void;
+  /**
+   * TSK-063 — Iniettabile per i test (mock di `@capacitor/filesystem`).
+   * In runtime non serve mai passarlo esplicitamente: viene caricato in modo
+   * lazy da `readFileFromUri` via import dinamico. Presente solo per facilitare
+   * l'iniezione del mock nel test senza dover mock-are l'intero modulo ESM.
+   */
+  _filesystemApi?: CapacitorFilesystemApi | null;
 }
 
 /** Legge i primi byte per la conferma da contenuto, in modo difensivo (jsdom non ha Blob.arrayBuffer). */
@@ -23,7 +55,12 @@ async function readHeader(file: Blob): Promise<Uint8Array | undefined> {
   }
 }
 
-export function FileLoader({ storage, onImported }: FileLoaderProps) {
+export function FileLoader({
+  storage,
+  onImported,
+  registerUriHandler,
+  _filesystemApi,
+}: FileLoaderProps) {
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,6 +71,37 @@ export function FileLoader({ storage, onImported }: FileLoaderProps) {
     if (res.ok) onImported?.(res.id);
     else setError(res.reason);
   }
+
+  /**
+   * TSK-063 — Gestisce un URI file esterno (Android intent / iOS deep-link).
+   * Risolve il contenuto via Capacitor Filesystem, costruisce un File e
+   * delega a handleFile (identico al path <input>).
+   * Sicuro da invocare anche in ambiente web: il guard `isCapacitorNative()`
+   * garantisce il no-op fuori dal contesto nativo.
+   */
+  async function handleCapacitorUri(uri: string) {
+    if (!isCapacitorNative()) return;
+    const filename = filenameFromUri(uri);
+    const file = await readFileFromUri(uri, filename, _filesystemApi);
+    if (!file) {
+      setError("Impossibile leggere il file dal percorso indicato.");
+      return;
+    }
+    await handleFile(file);
+  }
+
+  // TSK-063 — Registra l'handler URI nel parent alla prima resa.
+  // Dipendenza stabile: `registerUriHandler` è una funzione di callback
+  // fornita dal parent; `handleCapacitorUri` varia a ogni render (closure)
+  // ma per questo pattern di "registrazione" ci interessa solo il montaggio.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    registerUriHandler?.(handleCapacitorUri);
+    // Intenzionalmente vuoto: registriamo una sola volta al mount.
+    // Il pattern è analogo a un ref-setter. Se il parent cambia
+    // `registerUriHandler` tra render, la nuova registrazione avviene
+    // al successivo montaggio (behavior accettabile per questo use-case).
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="sb-loader">

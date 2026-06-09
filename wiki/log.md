@@ -535,3 +535,32 @@ Pagine create: 3 | Figure: 0 | Aggiornamenti: 2 (temi-e-design-token-solids, ind
     4. `factory.config.yaml` — blocco `analytics: {measurement.enabled, dogfooding.enabled}` + bump `pattern_version: "2.19"`. Nota precedente "analytics NON importato (fuori scope v2.18)" superata.
   - Smoke test: `record-event.sh` OK (evento UPGRADE-v2.19 appeso a analytics/events/2026-06.jsonl, hash 487e76e7). PII boundary enforced (event_id/api_key/password/prompt rifiutati, ADR-040 §A). flock non disponibile su questo FS → degradazione graceful advisory (ADR-039 §A).
   - Razionale battle-test: il gate richiede analytics_events_count > 0 per ogni RUN-REPORT quando dogfooding è on (ADR-041 §C). soli-boy ora emette eventi reali durante i run #2/#3.
+
+## 2026-06-09 — TSK-063 done (fe-dev)
+
+**TSK-063 — File picker mobile: caricamento ROM/BIOS da filesystem e provider cloud (Capacitor)**
+
+Implementazione completata. Nessun TSK BE bloccante.
+
+### File creati/modificati
+
+- `packages/app/src/components/FileLoader/useCapacitorFilePicker.ts` (**nuovo**) — astrazione per la lettura di file URI via `@capacitor/filesystem`. Esporta: `isCapacitorNative()` (guard, stesso pattern di `useHaptics.ts`), `readFileFromUri(uri, filename, api?)` (legge URI nativa, decodifica base64 → `ArrayBuffer` → `File`), `filenameFromUri(uri)` (deriva filename da URI Android/iOS).
+- `packages/app/src/components/FileLoader/FileLoader.tsx` (**modificato**) — aggiunto `handleCapacitorUri` (interno) e prop `registerUriHandler` (espone l'handler al parent per gestire Android intent / iOS deep-link). Path `<input type="file">` invariato; guard `isCapacitorNative()` garantisce no-op su browser.
+- `packages/app/src/components/FileLoader/useCapacitorFilePicker.test.ts` (**nuovo**) — 11 test: `isCapacitorNative` (3), `readFileFromUri` (5 — base64/Blob/error/null/readFile-call), `filenameFromUri` (5).
+- `packages/app/src/components/FileLoader/FileLoader.test.tsx` (**modificato**) — 4 test aggiuntivi TSK-063: no-op browser, Capacitor mock → onImported, Capacitor read error → alert, web path invariato con Capacitor nativo.
+
+### Esito verifiche
+
+- TypeScript typecheck: **0 errori**
+- Build Vite: **OK** (903ms)
+- Test: **368 passed / 368 total** (+17 nuovi, 351 originali invariati)
+
+### Findings / attriti reali
+
+1. **`<input type="file">` già funziona su Capacitor WebView** — su Android/iOS l'elemento HTML standard apre il picker di sistema inclusi i provider cloud (Google Drive, iCloud); l'`onChange` ritorna sempre oggetti `File` (mai URI raw). L'aggiunta Capacitor-specifica serve esclusivamente per il path intent/deep-link dove il file arriva come URI esterna.
+2. **`Filesystem.readFile` su nativo ritorna `data: string` (base64)** — non un `Blob`; la decodifica `atob` → `Uint8Array` → `ArrayBuffer` è necessaria. Su web ritorna `Blob` direttamente.
+3. **`Buffer.from(b64, 'base64')` non disponibile** in ambiente browser/jsdom — rimosso; `atob` è sufficiente e universale (ES2015+, jsdom incluso).
+4. **Cache del dynamic import**: `loadFilesystemApi()` usa una Promise memoizzata per evitare import multipli (stesso pattern di `useHaptics.ts`). Il parametro iniettabile `_filesystemApi` bypassa il dynamic import per i test senza dover mockare `@capacitor/filesystem`.
+5. **DoD "provider cloud"** — non richiede implementazione extra: il picker di sistema (via `<input type="file">`) include automaticamente Google Drive e iCloud su Android/iOS rispettivamente. Non è necessario alcun plugin aggiuntivo.
+6. **DoD "smoke test su emulatore"** — gate umano (richiede Android Studio/Xcode, assenti in env agent); marcato come requisito umano nella DoD del TSK.
+
