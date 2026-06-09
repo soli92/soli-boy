@@ -28,7 +28,9 @@ no-op: l'assenza del file non produce ERROR di lint (R.P3, opt-in totale).
 Riferimenti: ADR-017 (riuso single-source dell'infra screenshot), ADR-018 (default fallback
 design system — 5 famiglie di token), ADR-019 (ordering pipeline `develop → visual-oracle →
 ux-ui-review → code-review`, Punto 1 Fase 4-ter), ADR-020 (schema consolidato: config block
-`ux_ui:`, frontmatter TSK, side-channel, vincoli reviewer). Runbook narrativo source-of-truth:
+`ux_ui:`, frontmatter TSK, side-channel, vincoli reviewer), ADR-063 (anti-fabbricazione: fail-loud
+su evidenza visiva indisponibile — STOP-condition Step 1 §A; guard evidence-provenance Step 5 §B).
+Runbook narrativo source-of-truth:
 [`wiki/runbooks/ux-ui-review-runbook.md`](../../wiki/runbooks/ux-ui-review-runbook.md).
 Wiki: [[ux-ui-review-design-capability]], [[ux-ui-rubric-anti-subjectivity]].
 
@@ -36,6 +38,7 @@ Wiki: [[ux-ui-review-design-capability]], [[ux-ui-rubric-anti-subjectivity]].
 [^src: design_&_architecture/decisions/ADR-018.md §Decisione]
 [^src: design_&_architecture/decisions/ADR-019.md §Decisione]
 [^src: design_&_architecture/decisions/ADR-020.md §Decisione]
+[^src: design_&_architecture/decisions/ADR-063.md §A]
 [^src: wiki/concepts/ux-ui-rubric-anti-subjectivity.md §Regola operativa]
 
 ---
@@ -57,11 +60,37 @@ elif target è componente isolato AND harness disponibile (Storybook/preview):
 elif target è mockup statico (immagine/PNG):
     input diretto (NIENTE rendering)
     modalità = "mockup"                           # dichiarare nel report che è un mockup
-else:                                             # solo codice sorgente, niente rendering
-    modalità = "no-visual"
-    CHIEDI CHIARIMENTO al caller, NON procedere su solo codice sorgente.
-    → vedi sezione «Fallback senza input visivo» (qualità drasticamente ridotta, dichiararlo)
+elif mode == "no-visual" esplicito OR target è codebase/file (codice sorgente dichiarato):
+    modalità = "no-visual"                        # SOLO se dichiarato esplicitamente — vedi nota
+    → vedi sezione «Fallback senza input visivo»
+else:                                             # target visivo ma nessun altro branch coperto
+    modalità = "UNKNOWN"
+    → applica STOP-condition fail-loud (vedi sotto)
 ```
+
+**STOP-condition fail-loud (ADR-063 §A)** — si attiva in DUE casi:
+
+1. **`capture_screenshot` restituisce vuoto / errore / tool-not-callable** in modalità visiva
+   (target = URL | componente | mockup-con-render): la review NON procede e NON produce finding.
+2. **`screenshots: []` dopo invocazione di `capture_screenshot`** in modalità visiva: questo stato
+   NON attiva silenziosamente la modalità `no-visual`; attiva il fail-loud.
+
+In entrambi i casi: **STOP immediato**. Emettere il seguente messaggio canonico (invariante):
+
+> «Evidenza visiva non disponibile (capture_screenshot/render fallito o tool non registrato):
+> review UX/UI impossibile. Non si producono finding senza evidenza (ADR-063). Verificare la
+> disponibilità dei tool / l'ambiente di render.»
+
+Uscire dalla skill. **Non procedere agli Step 2-6.** Fail-closed, non fail-graceful.
+Questa STOP-condition è analoga a `a11y-scan.sh` («Tool run_a11y_scan richiede Playwright +
+axe-playwright → exit 1»): la capability si ferma rumorosamente quando l'evidenza manca.
+
+**Nota modalità `no-visual` (ADR-063 §A)**: la modalità `no-visual` (review di sola
+struttura/codice senza render) deve essere **dichiarata esplicitamente** (`--mode=no-visual` o
+`target` di tipo codebase/file). `screenshots: []` da `capture_screenshot` vuoto NON attiva
+silenziosamente `no-visual`: attiva la STOP-condition fail-loud sopra. Per avviare una review
+`no-visual`: invocare la skill con `mode: no-visual` esplicito; in `no-visual` Step 1 raccoglie
+evidenza via `Read`/`Grep` sul sorgente (ADR-063 §C).
 
 - La cattura screenshot **delega a `screenshot-capture-protocol`** (skill condivisa, ADR-017):
   niente cattura inline qui. La matrice `viewports` è risolta **nel caller** con la cascade:
@@ -71,14 +100,16 @@ else:                                             # solo codice sorgente, niente
   default per la review euristica (un solo theme sufficiente).
 - Modalità `mockup`: aggiungere `summary.input_note: "input = mockup statico, non rendering live"`.
 
-**Output**: `{target, modalità, screenshots: [{viewport, theme, path}]}` (o `screenshots: []` se
-`no-visual`).
+**Output**: `{target, modalità, screenshots: [{viewport, theme, path}]}` (o `screenshots: []`
+solo se `modalità = "no-visual"` dichiarata esplicitamente).
 
 **Criterio di completamento**: `modalità` risolta a uno dei 4 valori; per `url`/`component-harness`
-gli screenshot sono prodotti; per `mockup` l'input è dichiarato; per `no-visual` si entra nel
-fallback (non si producono finding su dimensioni visive senza rendering).
+gli screenshot sono prodotti E non vuoti (altrimenti STOP-condition); per `mockup` l'input è
+dichiarato; per `no-visual` (solo se dichiarato esplicitamente) si entra nel fallback (non si
+producono finding su dimensioni visive senza rendering).
 
 [^src: management/kanban/EP-008-ux-ui-review-design-capability/US-028-skill-ux-ui-review-protocol/US-028.md §Step 1]
+[^src: design_&_architecture/decisions/ADR-063.md §A]
 
 ---
 
@@ -229,7 +260,7 @@ output standard) + una sintesi leggibile in Markdown:
       "location": "...",
       "description": "...",
       "recommendation": "...",
-      "evidence": "screenshot_2.png",
+      "evidence": "screenshots/desktop-1280.png (Step 1, capture_screenshot output)",
       "opinion": false
     }
   ],
@@ -238,6 +269,15 @@ output standard) + una sintesi leggibile in Markdown:
   "tokens_source": "design_system|css|figma|defaults"
 }
 ```
+
+Il campo `evidence` è **obbligatorio e non nullable** in ogni finding: deve referenziare un
+artefatto reale prodotto negli Step 1/2. Valori ammessi:
+- Modalità visiva: path screenshot esistente su disco prodotto da Step 1
+  (es. `screenshots/desktop-1280.png`).
+- Token/conformance: output di `extract_design_tokens` o `check_design_system_conformance`
+  prodotti in Step 2 (es. `code_quality/reports/TSK-042-uxui-review-iter-1/tokens.json`).
+- Modalità `no-visual`: path file/snippet letto via `Read`/`Grep` in Step 1
+  (es. `src/App.tsx:42 (Read output, Step 1)`).
 
 - **Regola invariante**: ogni `finding` cita un `rubric_ref` (asse 1/2/3 o regola DS).
   **Niente finding "a sensazione".** Domande aperte di contesto utente/business → `open_questions`,
@@ -248,6 +288,27 @@ output standard) + una sintesi leggibile in Markdown:
   senza `rubric_ref` è un errore di procedura (scartalo o assegnagli un ref); se `false`, emetti
   un WARNING ma procedi.
 
+**Guard di SOSTANZA — evidence-provenance (ADR-063 §B)**:
+
+Ogni finding deve avere un campo `evidence` che referenzia un artefatto reale prodotto negli
+Step 1/2. **Regola di rigetto**: se `evidence` è `null`, stringa vuota, path non esistente su
+disco, o non tracciabile a un artefatto degli Step 1/2 → il finding viene **rigettato** (non
+emesso nel report). Questo vale in entrambe le modalità (visiva e `no-visual`): il tipo di
+artefatto atteso cambia (screenshot vs. `Read`/`Grep` output), la regola di rigetto è invariante.
+
+Questo guard è **complementare** a `rubric_strict` (forma): `rubric_strict` verifica che ogni
+finding citi una rubrica (guardia anti-soggettività); `evidence-provenance` verifica che ogni
+finding citi un artefatto reale (guardia anti-fabbricazione). Un finding valido deve soddisfare
+**entrambi** i guard:
+- finding con `rubric_ref` ma `evidence: null` → rigettato da `evidence-provenance`.
+- finding con `evidence` valida ma senza `rubric_ref` → rigettato da `rubric_strict`.
+- finding con entrambi valorizzati e verificabili → emesso.
+
+Il guard `evidence-provenance` si applica **indipendentemente** dal valore di `rubric_strict`
+(anche se `rubric_strict: false`, la verifica dell'evidenza resta obbligatoria).
+
+[^src: design_&_architecture/decisions/ADR-063.md §B]
+
 **Output**: report JSON + digest Markdown. Side-channel storage (ADR-020 §E, riuso CQRL):
 `code_quality/reports/<TSK-id>-uxui-review-iter-<N>.{json,md}` (con TSK), oppure
 `code_quality/reports/_adhoc/uxui-review-<YYYY-MM-DD-HH-MM>-<slug>.{json,md}` (standalone).
@@ -255,10 +316,13 @@ Gli screenshot/tokens/conformance vivono in `code_quality/reports/<TSK-id>-uxui-
 
 **Criterio di completamento**: report JSON conforme allo schema (6 campi top-level:
 `target`, `type`, `summary`, `findings`, `positive_findings`, `open_questions`; + `tokens_source`);
-ogni finding con `rubric_ref`; digest Markdown prodotto.
+ogni finding con `rubric_ref` e `evidence` verificabile (guard forma + sostanza entrambi soddisfatti);
+i finding che non superano uno dei due guard sono stati scartati prima dell'emissione;
+digest Markdown prodotto.
 
 [^src: management/kanban/EP-008-ux-ui-review-design-capability/US-028-skill-ux-ui-review-protocol/US-028.md §Step 5]
 [^src: wiki/concepts/ux-ui-review-design-capability.md §Schema di output standard]
+[^src: design_&_architecture/decisions/ADR-063.md §B]
 
 ---
 
@@ -289,12 +353,15 @@ Enforced nella skill (US-028 §Vincoli del reviewer, ADR-020 §H):
 
 ---
 
-## Fallback senza input visivo
+## Fallback senza input visivo (modalità `no-visual` esplicita)
 
-Branch `no-visual` della cascata dello Step 1 (solo codice sorgente, nessun rendering disponibile):
+Branch `no-visual` della cascata dello Step 1: **richiede dichiarazione esplicita** (`mode: no-visual`
+o `target` di tipo codebase/file). NON si attiva da `screenshots: []` su un target visivo —
+in quel caso si applica la STOP-condition fail-loud (ADR-063 §A).
 
-1. **Priorità**: ottenere uno screenshot ASAP. Chiedi al caller URL/route, harness Storybook, o
-   mockup. La review su solo codice è **drasticamente ridotta** — dichiararlo nel report
+1. **Priorità**: se il caller non ha dichiarato esplicitamente `no-visual`, ottenere uno screenshot
+   ASAP. Chiedi URL/route, harness Storybook, o mockup. La review su solo codice è **drasticamente
+   ridotta** — dichiararlo nel report
    (`summary.coverage_note: "solo codice sorgente, nessun rendering — review ridotta"`).
 2. **Cosa si può fare senza rendering**: limitare la review alla **struttura logica del flusso**
    (Asse 3 — dimensioni di flusso UX) + **coerenza codice/DS** (Step 2 conformance check).
