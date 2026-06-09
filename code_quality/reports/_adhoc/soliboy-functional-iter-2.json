@@ -1,0 +1,15 @@
+{
+  "report_id": "soliboy-functional-iter-2",
+  "type": "functional_oracle",
+  "verdict": "pass",
+  "iterations": 2,
+  "supersedes": "soliboy-functional-iter-1 (false negative)",
+  "assertions_results": [
+    { "id": "engine-running", "kind": "selector_visible", "severity": "blocking", "pass": true, "detail": "button 'Pausa' present → running" },
+    { "id": "avvia-consumed", "kind": "selector_absent", "severity": "blocking", "pass": true, "detail": "'Avvia' gone after start" },
+    { "id": "canvas-advancing", "kind": "canvas_pixel_variance", "severity": "advisory", "pass": "n/a", "detail": "distinct=1/12 expected for static test-ROM" },
+    { "id": "no-console-error", "kind": "console_no_error", "severity": "advisory", "pass": true }
+  ],
+  "collateral_finding": { "id": "canvas-collapsed-height", "detail": "canvas native 240x160 rendered at CSS 378x24px — height collapsed, aspect-ratio broken (quantifies maintainer 'emulator too small'); feeds UX backlog" },
+  "calibration_lessons": ["assert state via deterministic app signal not HUD text", "canvas_pixel_variance blocking only with animated fixture", "validate first oracle run against reality", "recommend app expose data-state on .sb-screen"]
+}

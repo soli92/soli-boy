@@ -569,3 +569,4 @@ Implementazione completata. Nessun TSK BE bloccante.
 [2026-06-09 17:05] CORREZIONE functional-oracle soliboy-iter-1: verdict reject INVALIDATO (falso negativo). Maintainer conferma: emulazione PARTE. Cause: fixture test-ROM statica + canvas piccolo default + assert HUD. Finding UX reali registrati (emulatore small, touch overlay, info su home → nav dedicata).
 
 [2026-06-09 17:30] ux-ui-design soli-boy IA redesign (brief: F-01 muro configurazione + viewport piccolo + TouchOverlay posizionamento) → ia_redesign+wireframe+touchoverlay_repositioning
+[2026-06-09 17:20] functional-oracle soliboy iter-2 → PASS: engine running confermato (bottone Pausa presente). Falso negativo iter-1 risolto (assert via segnale app, non testo HUD). Finding collaterale: canvas CSS 378x24px (altezza collassata) → backlog UX.
