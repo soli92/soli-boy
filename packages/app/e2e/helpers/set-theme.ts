@@ -193,6 +193,24 @@ export async function setThemeViaDB(
 export async function setThemeViaSelector(page: Page, theme: UiTheme): Promise<void> {
   assertValidTheme(theme);
 
+  // IA a 4 tab (increment 2): il ThemeSelector vive nella sezione "Aspetto"
+  // della tab Impostazioni, dentro un <details> chiuso di default. Navighiamo
+  // alla tab e apriamo l'accordion prima di localizzare il <select>. Idempotente:
+  // se tab/accordion non esistono (UI legacy single-screen) prosegue invariato.
+  const settingsTab = page.getByRole("tab", { name: "Impostazioni" });
+  if ((await settingsTab.count()) > 0) {
+    await settingsTab.click();
+    const aspetto = page.locator("details", {
+      has: page.getByText("Aspetto — tema UI"),
+    });
+    if ((await aspetto.count()) > 0) {
+      const isOpen = await aspetto.evaluate(
+        (d) => (d as HTMLDetailsElement).open,
+      );
+      if (!isOpen) await aspetto.locator("summary").click();
+    }
+  }
+
   const select = page.getByLabel("Tema dell'interfaccia");
   const count = await select.count();
   if (count === 0) {

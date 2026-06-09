@@ -125,6 +125,8 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
+    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+    await page.getByRole("tab", { name: "Libreria" }).click();
 
     // Attendi che la ROM compaia in libreria.
     await expect(
@@ -156,6 +158,8 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
+    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 10_000 });
@@ -206,6 +210,8 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
+    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 5_000 });
@@ -245,14 +251,17 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
+    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 5_000 });
 
-    // Naviga su settings se esiste.
-    const settingsLink = page.getByRole("button", { name: /settings|impostazioni/i });
-    if (await settingsLink.isVisible()) {
-      await settingsLink.click();
+    // Naviga sulla tab Impostazioni (IA a 4 tab, increment 2) per esercitare
+    // settings/temi: nessuna di queste interazioni deve emettere richieste esterne.
+    const settingsTab = page.getByRole("tab", { name: "Impostazioni" });
+    if (await settingsTab.isVisible()) {
+      await settingsTab.click();
       await page.waitForTimeout(500);
     }
 

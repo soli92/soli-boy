@@ -24,6 +24,9 @@ test("carica una ROM GB → compare in libreria → avvia → pausa", async ({ p
     buffer: Buffer.from("ROMDATA-GB"),
   });
 
+  // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+  await page.getByRole("tab", { name: "Libreria" }).click();
+
   // la ROM appare in libreria con titolo e piattaforma (tile, non il chip filtro)
   const tile = page.getByRole("button", { name: "tetris GB" });
   await expect(tile).toBeVisible();
@@ -47,10 +50,14 @@ test("file non supportato mostra errore e non entra in libreria", async ({ page 
     buffer: Buffer.from("x"),
   });
   await expect(page.getByRole("alert")).toBeVisible();
+  // IA a 4 tab (increment 2): lo stato vuoto "Nessun gioco" è nella Libreria.
+  await page.getByRole("tab", { name: "Libreria" }).click();
   await expect(page.getByText(/nessun gioco/i)).toBeVisible();
 });
 
 test("Settings: rimappatura comando (US-013)", async ({ page }) => {
+  // IA a 4 tab (increment 2): la rimappatura controlli è nella tab Impostazioni.
+  await page.getByRole("tab", { name: "Impostazioni" }).click();
   const sel = page.getByLabel("Pulsante per ArrowUp");
   await expect(sel).toHaveValue("up");
   await sel.selectOption("a");

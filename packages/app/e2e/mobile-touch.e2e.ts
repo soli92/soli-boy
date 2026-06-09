@@ -37,6 +37,8 @@ async function loadStubRom(page: import("@playwright/test").Page) {
     mimeType: "application/octet-stream",
     buffer: Buffer.from("ROMDATA-GB"),
   });
+  // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+  await page.getByRole("tab", { name: "Libreria" }).click();
   // Attende che la ROM appaia in libreria.
   const tile = page.getByRole("button", { name: "test GB" });
   await expect(tile).toBeVisible();

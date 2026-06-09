@@ -30,6 +30,8 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     test.slow();
     await page.goto("/?engine=real");
     await page.getByLabel("Carica ROM").setInputFiles(romPath);
+    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(page.getByText(romTitle)).toBeVisible();
     await page.getByText(romTitle).click();
     await page.getByRole("button", { name: /avvia/i }).click();
@@ -49,6 +51,8 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     test.slow();
     await page.goto("/?engine=real");
     await page.getByLabel("Carica ROM").setInputFiles(romPath);
+    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
+    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(page.getByText(romTitle)).toBeVisible();
     await page.getByText(romTitle).click();
     await page.getByRole("button", { name: /avvia/i }).click();

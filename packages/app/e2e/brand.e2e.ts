@@ -24,6 +24,8 @@ test("manifest.webmanifest raggiungibile", async ({ page }) => {
 
 test("logo Soli-boy visibile nella Library", async ({ page }) => {
   await page.goto("/");
+  // IA a 4 tab (increment 2): l'header con logo è dentro la tab Libreria.
+  await page.getByRole("tab", { name: "Libreria" }).click();
   // TSK-046 rende il logo come <img alt="Soli-boy"> (non un form control):
   // getByAltText è il locator corretto; getByLabel è riservato ai form control.
   await expect(page.getByAltText("Soli-boy")).toBeVisible();
