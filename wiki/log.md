@@ -566,3 +566,4 @@ Implementazione completata. Nessun TSK BE bloccante.
 
 [2026-06-09 15:25] ux-ui-review http://127.0.0.1:4317/ (soli-boy home, prima review VISIVA reale post-ADR-064) → conditional (1 major, 2 minor, 1 finding scartato anti-fabbricazione)
 [2026-06-09 16:54] functional-oracle soliboy (carica ROM gba-tests-thumb → avvia) → REJECT: emulazione non avanza (canvas congelato, stato mai running; COOP/COEP ok → causa app-level). Prima esecuzione funzionale reale EP-018.
+[2026-06-09 17:05] CORREZIONE functional-oracle soliboy-iter-1: verdict reject INVALIDATO (falso negativo). Maintainer conferma: emulazione PARTE. Cause: fixture test-ROM statica + canvas piccolo default + assert HUD. Finding UX reali registrati (emulatore small, touch overlay, info su home → nav dedicata).

@@ -7,11 +7,34 @@ fixture: packages/app/public/test-roms/gba-tests-thumb.gba (test ROM mGBA, freel
 agent: functional-oracle (pipeline EP-018, esecuzione reale)
 timestamp: 2026-06-09 16:54
 verdict: reject
+verdict_status: INVALIDATO — falso negativo (correzione maintainer 2026-06-09, vedi §CORREZIONE)
 iterations: 1
 evidence_dir: soliboy-functional-iter-1/
 ---
 
-# Functional Oracle — soli-boy: carica ROM → avvia → **l'emulazione NON parte**
+> ## ⚠️ CORREZIONE (feedback maintainer, 2026-06-09) — questo è un FALSO REJECT
+>
+> Il maintainer ha confermato che **l'emulazione PARTE davvero**. Il verdict `reject` di questo
+> report è un **falso negativo** dell'oracolo. Cause radice del falso negativo (calibrazione EP-018):
+> 1. **Fixture inadatta**: `gba-tests-thumb.gba` è una ROM di **test CPU** che mostra una schermata
+>    di risultati **quasi statica** → `canvas_pixel_variance ≈ 0` è l'esito ATTESO anche con
+>    emulazione funzionante. La primitiva richiede una **ROM animata** (gioco/demo), non un test ROM.
+> 2. **Canvas piccolo di default**: il viewport dell'emulatore è minuscolo finché non si clicca
+>    "Schermo intero" → poche centinaia di byte di dataURL, segnale di variance debole.
+> 3. **Assert di stato fragile**: ho cercato "In esecuzione" nel testo di `.sb-screen`; lo stato
+>    `running` va letto da un **segnale reale dell'engine** (es. `data-state` / API wrapper), non dall'HUD.
+>
+> **Lezione EP-018 (azionabile)**: (a) le acceptance-spec per app «a tela» devono usare fixture
+> **animate** e/o un baseline di variance noto; (b) preferire un assert di stato deterministico
+> esposto dall'app (`data-state="running"`) a un match testuale dell'HUD; (c) un oracolo funzionale
+> al primo giro va **validato contro la realtà** prima di fidarsi del verdict. Onestà: l'oracolo ha
+> sbagliato, e va detto — stessa disciplina che ha fatto scartare il finding "label corrotte".
+>
+> I finding UX/UI reali (emulatore piccolo di default, touch overlay mal posizionato, sezioni
+> informative sulla home) sono tracciati a parte (vedi log + backlog soli-boy), e **confermano** la
+> F-01 della review visiva (`uxui-review-2026-06-09-15-25-soliboy-home`, "muro di configurazione").
+
+# Functional Oracle — soli-boy: carica ROM → avvia → ~~l'emulazione NON parte~~ (FALSO NEGATIVO, vedi correzione sopra)
 
 > **Prima esecuzione funzionale reale di soli-boy.** Esercita il flusso core con una ROM di test reale
 > (non uno screenshot statico). È ciò che né la review visiva (EP-008) né l'a11y (EP-007) né uno

@@ -6,6 +6,9 @@
   "fixture": "packages/app/public/test-roms/gba-tests-thumb.gba",
   "timestamp": "2026-06-09 16:54",
   "verdict": "reject",
+  "verdict_status": "INVALIDATED_FALSE_NEGATIVE",
+  "false_negative_root_cause": ["fixture gba-tests-thumb is a near-static CPU test ROM (variance~0 expected even when running)", "emulator canvas tiny by default until fullscreen", "running-state asserted via HUD text instead of engine data-state"],
+  "correction_source": "maintainer confirmed emulation does start (2026-06-09)",
   "iterations": 1,
   "assertions_results": [
     { "id": "canvas-advancing", "kind": "canvas_pixel_variance", "severity": "blocking", "pass": false, "detail": "distinct=2/8, canvas frozen after first frame" },
