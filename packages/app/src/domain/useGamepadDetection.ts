@@ -51,6 +51,10 @@ export function useGamepadDetection(
 
   // Ref per il frame handle del loop rAF (cancellazione al cleanup).
   const rafRef = useRef<number | null>(null);
+  // CQRL F-1 (major): flag autoritativo separato dall'handle rAF. Senza, un poll()
+  // già dequeued dal browser ri-schedula un frame DOPO stopPolling() → leak/loop
+  // concorrenti su disconnect/reconnect rapidi. poll() fa early-return se inattivo.
+  const pollingActiveRef = useRef<boolean>(false);
   // Ref per lo stato pressed precedente: evita di inviare duplicati quando
   // un pulsante rimane premuto tra due frame consecutivi.
   const prevPressedRef = useRef<Record<number, boolean>>({});
@@ -72,8 +76,10 @@ export function useGamepadDetection(
   const startPolling = useCallback(() => {
     if (!hasGamepadApi()) return;
     if (rafRef.current !== null) return; // già in corso
+    pollingActiveRef.current = true;
 
     function poll() {
+      if (!pollingActiveRef.current) return; // CQRL F-1: stop autoritativo, niente reschedule
       const pads = navigator.getGamepads();
       const mapping = inputMappingRef.current;
 
@@ -97,6 +103,7 @@ export function useGamepadDetection(
 
   /** Ferma il loop rAF. */
   const stopPolling = useCallback(() => {
+    pollingActiveRef.current = false; // CQRL F-1: blocca il reschedule prima di cancellare
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;

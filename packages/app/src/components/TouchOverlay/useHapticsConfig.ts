@@ -71,10 +71,17 @@ export function useHapticsConfig(storage?: ConfigPort): UseHapticsConfigReturn {
     async (value?: boolean) => {
       if (!storage) return;
       const toSave = value !== undefined ? value : hapticsEnabled;
-      await storage.setConfig<string>(
-        HAPTICS_CONFIG_KEY,
-        toSave ? "true" : "false",
-      );
+      // CQRL F-2 (minor): il call-site (App.tsx onHapticsChange) tratta questa come
+      // fire-and-forget; senza try/catch un rigetto di setConfig diventa una floating
+      // promise (unhandled rejection). Contenuto + log non bloccante.
+      try {
+        await storage.setConfig<string>(
+          HAPTICS_CONFIG_KEY,
+          toSave ? "true" : "false",
+        );
+      } catch (err) {
+        console.warn("[haptics] persistenza preferenza fallita:", err);
+      }
     },
     [storage, hapticsEnabled],
   );

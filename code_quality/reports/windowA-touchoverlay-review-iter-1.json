@@ -1,0 +1,103 @@
+{
+  "tsk_id": "windowA-touchoverlay",
+  "iter": 1,
+  "reviewer_version": "code-reviewer v2.18",
+  "generated_at": "2026-06-09T00:00:00Z",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "19",
+    "runtime": "browser + capacitor (vite)",
+    "confidence": 0.95,
+    "stack_mode": "guided",
+    "stack_notes": "React 19 + TypeScript + Vite + Capacitor. Scope: TouchOverlay (D-pad/pulsanti virtuali + config persistita + haptics + layout responsivo), gamepad detection, app lifecycle suspend/resume, engine button mapping (wasmboy/mgba). Commits f9d1dbe..HEAD (8d3496b, b2a4289, 7b7f156, ad6cef8 — TSK-060/061/064/066/062/065/067). tsc --noEmit OK; 56/56 unit test TouchOverlay+gamepad verde."
+  },
+  "verdict": "conditional",
+  "summary": "Codice complessivamente di buona qualità: ben commentato, idiomatico React 19, con guard SSR/jsdom e backward-compat sistematici. I 4 finding pre-segnalati sono stati gestiti correttamente in 3 casi su 4 (Rules-of-Hooks via componente Inner, Partial<Record> guard in wasmboy, haptics primo-touch documentato come trade-off intenzionale). Restano: (F-1, major) il loop rAF del gamepad ha una race residua reale su disconnect — la closure poll() non verifica rafRef prima di rischedulare, quindi un frame gia dequeued dal browser resuscita il loop dopo stopPolling(), causando un rAF leak (connected=false ma loop ancora attivo); (F-2, minor) onHapticsChange resta tipizzata (enabled)=>void mentre App.tsx passa un handler async che fa await — la rejection di saveHapticsEnabled e silenziosamente persa (floating promise non gestita al call-site, type mismatch sync/async); (F-3, minor) useHaptics perde il feedback sul primo touch nativo — trade-off documentato ma migliorabile con prefetch al mount quando enabled; (F-4, nit) duplicazione del set di GameButton tra button-map/BTN-wasmboy/BTN-mgba senza single-source. Nessun blocker. Il codice puo essere accettato dopo F-1 (race rAF) e idealmente F-2 (tipo async).",
+  "findings": [
+    {
+      "id": "F-1",
+      "severity": "major",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "confidence": 0.85,
+      "title": "Race residua nel loop rAF del gamepad: poll() risuscita il loop dopo stopPolling() su disconnect rapido",
+      "location": "packages/app/src/domain/useGamepadDetection.ts:76-96,99-105",
+      "description": "Il finding pre-segnalato (race rAF su disconnect rapido) e stato mitigato ma non eliminato. La closure interna poll() (riga 76-93) termina sempre con `rafRef.current = requestAnimationFrame(poll)` SENZA verificare se il polling e ancora attivo. stopPolling() (riga 99-105) chiama cancelAnimationFrame(rafRef.current) e poi `rafRef.current = null`. Se al momento della disconnessione un poll() e gia stato dequeued dal browser e sta eseguendo (o e gia in coda di microtask post-cancel), il cancelAnimationFrame cancella il frame *gia consumato* e poi poll() rischedula un NUOVO frame, riassegnando rafRef.current: il loop riparte nonostante stopPolling sia stato chiamato e connected sia gia false. Effetto: rAF leak (loop che gira a vuoto su navigator.getGamepads() che ritorna null) finche il componente non viene smontato. Su disconnect/reconnect rapidi si possono accumulare piu loop concorrenti (ogni handleConnected che trova rafRef===null dopo un cancel fallito ne avvia un altro). prevPressedRef viene azzerato in stopPolling, il che e corretto, ma non frena il loop fantasma. La guardia `if (rafRef.current !== null) return` in startPolling protegge dal doppio-avvio solo se rafRef e in uno stato coerente — cosa che la race compromette.",
+      "recommendation": "Introdurre un flag autoritativo `pollingActiveRef` (boolean) separato dall'handle rAF. poll() deve verificare `if (!pollingActiveRef.current) return;` come prima istruzione (esce senza rischedulare). startPolling setta pollingActiveRef.current=true prima del primo requestAnimationFrame; stopPolling setta pollingActiveRef.current=false prima di cancelAnimationFrame. Questo rende il teardown idempotente e immune al frame-in-flight. In alternativa, far rischedulare poll() solo se `rafRef.current !== null` non basta (la race e proprio sull'assegnazione di rafRef): serve un flag separato dall'handle.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-2",
+      "severity": "minor",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "pass": "idiomaticity",
+      "confidence": 0.9,
+      "title": "onHapticsChange tipizzata (enabled)=>void ma il call-site passa un handler async: floating promise + type mismatch",
+      "location": "packages/app/src/components/Settings/Settings.tsx:133; packages/app/src/App.tsx:201-206",
+      "description": "Il finding pre-segnalato e ancora presente. Settings.tsx:133 dichiara `onHapticsChange?: (enabled: boolean) => void`. App.tsx:201 fornisce `onHapticsChange={async (value) => { setHapticsEnabled(value); await saveHapticsEnabled(value); }}`. Una funzione async e assegnabile a `=>void` (TS lo consente per covarianza del return), ma cio nasconde due problemi: (1) la Promise restituita e floating — se saveHapticsEnabled (scrittura IndexedDB via ConfigPort.setConfig) rigetta, la rejection e completamente persa, nessun catch, nessun log, nessun feedback all'utente che il toggle non e stato persistito (lo stato React resta true ma la preferenza non sopravvive al reload). (2) Il chiamante in Settings (`onClick={() => onHapticsChange(!hapticsEnabled)}`, riga 516) ignora il valore di ritorno: anche volendo, non puo await-are. Il commento ai righi 203-205 dimostra che il trade-off della closure stantia e stato compreso, ma il fallimento di persistenza non e gestito. Da notare: useHapticsConfig.saveHapticsEnabled fa `await storage.setConfig(...)` SENZA try/catch interno (a differenza del load al mount che ha catch), quindi la reject si propaga fino al call-site dove viene persa.",
+      "recommendation": "Due opzioni. (a) Cambiare il tipo in `onHapticsChange?: (enabled: boolean) => void | Promise<void>` e gestire la rejection al call-site App.tsx con un .catch che logga (console.warn '[haptics] persistenza fallita') coerente con il pattern best-effort gia usato altrove (useTheme.port.save). (b) Spostare il try/catch dentro saveHapticsEnabled (come gia fatto per il load) cosi la funzione non rigetta mai e il toggle resta best-effort silenzioso ma loggato. L'opzione (a)+(b) combinata e la piu robusta: tipo onesto + log del fallimento.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-3",
+      "severity": "minor",
+      "rule_id": "TS-DESIGN-002",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-002.md",
+      "pass": "design",
+      "confidence": 0.7,
+      "title": "useHaptics perde il feedback sul primo touch nativo: import lazy on-demand invece di prefetch quando enabled",
+      "location": "packages/app/src/components/TouchOverlay/useHaptics.ts:55-70",
+      "description": "Il finding pre-segnalato e stato gestito con un trade-off ESPLICITAMENTE documentato (righe 65-68: 'Il feedback aptico sul primo touch viene perso ... Questo e intenzionale: preferiamo un primo touch silenzioso a un errore di runtime'). La scelta e difendibile e onesta. Tuttavia il design e migliorabile senza compromessi: l'import dinamico di @capacitor/haptics viene avviato solo al PRIMO triggerImpact, quindi il primo tap dell'utente (su nativo, con haptics abilitato) non vibra mai. Poiche enabled e noto a render-time e isCapacitorNative() e valutabile al mount, si potrebbe pre-caricare il modulo in un useEffect quando (enabled && isCapacitorNative()), eliminando il buco del primo touch senza introdurre errori (il catch resta). L'attuale soluzione e accettabile ma sub-ottimale per la UX del feedback aptico, che e l'intero scopo della feature (US-032).",
+      "recommendation": "Aggiungere un `useEffect(() => { if (enabled && isCapacitorNative() && !importedRef.current) { importedRef.current = true; import('@capacitor/haptics').then(mod => { hapticsRef.current = mod as unknown as HapticsApi; }).catch(() => {}); } }, [enabled]);` per prefetch del modulo quando il toggle viene attivato, cosi triggerImpact trova gia l'istanza pronta al primo touch. Mantenere il fallback lazy in triggerImpact come rete di sicurezza. In alternativa, se la scelta lazy resta, e accettabile: il commento e gia chiaro — declassare a nit.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-4",
+      "severity": "minor",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "confidence": 0.65,
+      "title": "Il set di pulsanti per-core e duplicato tra button-map.ts, BTN(wasmboy) e BTN(mgba) senza single-source",
+      "location": "packages/app/src/components/TouchOverlay/button-map.ts:22-49; packages/app/src/core/wasmboy-engine.ts:24-28; packages/app/src/core/mgba-engine.ts:55-60",
+      "description": "L'estensione di GameButton con 'l'/'r' (TSK-060) e propagata in tre punti scollegati: button-map.ts elenca i VirtualButton per core (mgba ha L/R, gambatte no), wasmboy-engine.ts usa Partial<Record<GameButton,...>> omettendo l/r (guard a runtime corretto, riga 113-115), mgba-engine.ts usa Record<GameButton,string> completo con L/R. Il Partial<Record> in wasmboy e la scelta GIUSTA (type-safe: il compilatore non obbliga a mappare l/r su GB) ed e il modo corretto di onorare l'estensione del tipo — questo era il finding pre-segnalato ed e risolto bene. Il residuo di design e che 'quali pulsanti ha quale core' vive in BUTTON_MAP (UI) e separatamente nei BTN dei due engine (runtime): aggiungere un nuovo core o un nuovo pulsante richiede aggiornare 2-3 punti senza che il compilatore lo segnali in tutti i casi (il Partial<Record> in particolare e silenzioso su omissioni). Non e un bug — i due engine coprono core diversi e la separazione UI/runtime e legittima — ma e un punto di drift futuro.",
+      "recommendation": "Opzionale (basso ROI immediato): documentare in button-map.ts un commento che richiami i due BTN engine come punti da sincronizzare quando si estende GameButton, oppure derivare i label-set da una mappa core->capabilities condivisa. Dato che mgba usa Record completo, un futuro pulsante aggiunto a GameButton causerebbe un errore di compilazione in mgba (buono) ma un silenzioso no-op in wasmboy (Partial). Accettabile cosi com'e; segnalato per consapevolezza, non blocca.",
+      "auto_fixable": false
+    }
+  ],
+  "positives": [
+    "Rules-of-Hooks: il finding sul conditional return in TouchOverlay e risolto idiomaticamente con il pattern wrapper/Inner — TouchOverlay (riga 120-142) fa i due early-return (isTouchDevice, hideWhenGamepad+gamepadConnected) SENZA chiamare alcun hook, delegando tutti gli hook a TouchOverlayInner reso solo su touch device. Soluzione React-corretta e ben commentata (riga 144-150).",
+    "wasmboy BTN usa Partial<Record<GameButton, keyof WasmBoyJoypadState>> con guard `if (!key) return` in sendInput (riga 24-28, 113-115): modo type-safe corretto di gestire l'estensione GameButton con l/r assenti su Game Boy. mgba usa Record completo perche GBA ha davvero L/R. Coerente col dominio.",
+    "Guard SSR/jsdom sistematici e corretti: hasGamepadApi(), hasDocument(), isCapacitorNative(), isTouchDevice() — tutti gli hook degradano a no-op senza crash in test/PWA. Backward-compat via prop opzionali (storage?, hapticsEnabled?, target nullable) applicata ovunque.",
+    "useGamepadDetection: inputMappingRef + targetRef stabili evitano il restart del loop/listener a ogni cambio referenziale dell'istanza; prevPressedRef previene l'invio di duplicati per pulsanti tenuti premuti tra frame; gestito l'edge case del gamepad gia connesso al mount (riga 122-128).",
+    "useAppLifecycle: doppio segnale (Visibility API + Capacitor appStateChange) con import dinamico di @capacitor/app, cleanup del listener nativo via handle.remove() al teardown, guard sullo stato (pause solo se running, resume solo se paused) — niente leak, niente transizioni spurie.",
+    "Player.lifecycleTarget (riga 137-149): proxy memoizzato che ri-sincronizza lo state React (setState) dopo wrapper.pause/resume, risolvendo correttamente la desincronizzazione tra stato del wrapper e stato React — problema reale ben diagnosticato e risolto.",
+    "Accessibilita coerente con REACT-A11Y-001: l'overlay e aria-hidden e fuori dal tab order (tabIndex=-1) by design (input touch-only), scelta corretta perche i controlli sono duplicati da tastiera/gamepad accessibili altrove.",
+    "Copertura test solida: 56/56 unit test verdi su TouchOverlay+gamepad, e2e mobile 27/27 (iPhone 13 + Chromium). I 2 finding rivelati dall'e2e (wiring inputMapping mancante, D-pad impilato) sono stati fixati nello stesso commit ad6cef8 con commit message CQRL-style tracciabile.",
+    "tsc --noEmit pulito su tutto il package app: nessun any implicito, nessuna non-null assertion non giustificata nei file in scope (le poche `(window as any).Capacitor` hanno eslint-disable mirato e commento)."
+  ],
+  "loop_status": {
+    "previous_iter": null,
+    "no_progress_detected": false,
+    "regression_detected": false,
+    "iterations_remaining": 2
+  },
+  "task_package": {
+    "tsk_id": "windowA-touchoverlay",
+    "iter": 1,
+    "verdict": "conditional",
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 60,
+      "blast_radius_warning": [],
+      "blast_radius_note": "Graphify pre-check non applicato. F-1 e isolato a useGamepadDetection.ts (consumatori: Player.tsx via {connected}); F-2 tocca App.tsx call-site + opz. useHapticsConfig.ts; F-3 isolato a useHaptics.ts."
+    },
+    "findings_to_fix": ["F-1"],
+    "findings_low_effort": ["F-2"],
+    "findings_optional": ["F-3", "F-4"],
+    "priority_order": "F-1 (flag pollingActiveRef per chiudere la race rAF — major) -> F-2 (tipo async + catch su saveHapticsEnabled) -> F-3 (prefetch haptics, opzionale) -> F-4 (commento sync-point, opzionale)"
+  }
+}
