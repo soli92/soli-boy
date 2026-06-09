@@ -172,10 +172,16 @@ function TouchOverlayInner({
     opacity: config.opacity,
   };
 
+  // INCREMENT 3 — safe-area-inset-bottom viene sommato al bottom offset dell'elemento
+  // posizionato in assoluto: `padding-bottom` sul wrapper overlay non influenza
+  // `position:absolute` dei figli (il padding non fa parte del containing block height
+  // per il calcolo di `bottom`). Usiamo `calc()` per garantire che D-pad e pulsanti
+  // non finiscano sotto il home indicator / notch inferiore su iPhone.
+  // Su browser senza supporto env() l'espressione torna al solo `${X}%` (fallback 0px).
   const dpadStyle: React.CSSProperties = {
     position: "absolute",
     left: `${config.dpadOffsetX}%`,
-    bottom: `${config.dpadOffsetY}%`,
+    bottom: `calc(${config.dpadOffsetY}% + env(safe-area-inset-bottom, 0px))`,
     pointerEvents: "auto",
     transform: `scale(${config.scale})`,
     transformOrigin: "bottom left",
@@ -184,7 +190,7 @@ function TouchOverlayInner({
   const buttonsStyle: React.CSSProperties = {
     position: "absolute",
     right: `${config.buttonsOffsetX}%`,
-    bottom: `${config.buttonsOffsetY}%`,
+    bottom: `calc(${config.buttonsOffsetY}% + env(safe-area-inset-bottom, 0px))`,
     pointerEvents: "auto",
     transform: `scale(${config.scale})`,
     transformOrigin: "bottom right",

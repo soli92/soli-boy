@@ -328,6 +328,23 @@ export function Player({
             data-testid="scanline-overlay"
           />
         )}
+        {/* INCREMENT 3 — TouchOverlay spostato DENTRO .sb-screen (figlio diretto)
+            per ancorarlo al viewport di gioco. Con position:relative stabile su
+            .sb-screen (solids-theme.css), il position:absolute;inset:0 dell'overlay
+            si risolve correttamente sul game viewport e non sull'intera pagina.
+            overflow:hidden su .sb-screen clippa l'overlay ai bordi del viewport.
+            Montato solo se la composizione App inietta `inputMapping` (backward
+            compat invariata). */}
+        {inputMapping && (
+          <TouchOverlay
+            core={rom.core}
+            inputMapping={inputMapping}
+            storage={touchConfigStorage}
+            hapticsEnabled={hapticsEnabled}
+            hideWhenGamepad={hideOverlayWhenGamepad}
+            gamepadConnected={gamepadConnected}
+          />
+        )}
       </div>
       <div className="sb-hud">
         <span>{rom.core}</span>
@@ -388,22 +405,6 @@ export function Player({
           romId={romId}
           currentCore={currentCore}
           isRunning={running}
-        />
-      )}
-      {/* TSK-060 — TouchOverlay: D-pad + pulsanti virtuali su dispositivo touch
-          (US-026/US-027). Montato solo se la composizione App inietta
-          `inputMapping` (backward compat: test e composizioni legacy invariati).
-          Visibilità touch-device effettuata internamente al componente.
-          Posizionato DOPO il pannello save state perché l'overlay usa
-          `position:absolute` sopra il viewport (z-index gestito internamente). */}
-      {inputMapping && (
-        <TouchOverlay
-          core={rom.core}
-          inputMapping={inputMapping}
-          storage={touchConfigStorage}
-          hapticsEnabled={hapticsEnabled}
-          hideWhenGamepad={hideOverlayWhenGamepad}
-          gamepadConnected={gamepadConnected}
         />
       )}
     </section>

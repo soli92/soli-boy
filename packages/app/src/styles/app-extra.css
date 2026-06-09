@@ -115,11 +115,18 @@ body {
 }
 
 /* --- TouchOverlay safe-area ---------------------------------------------- */
-/* Bottom del D-pad e dei pulsanti non invade il home indicator. */
+/* INCREMENT 3 — L'overlay è ora figlio di .sb-screen (position:relative stabile).
+   Il bottom offset di D-pad e pulsanti è calcolato direttamente in TouchOverlay.tsx
+   via `calc(X% + env(safe-area-inset-bottom, 0px))` come valore inline sul
+   position:absolute dei singoli gruppi di tasti, che è l'unico modo affidabile per
+   rispettare il safe-area su elementi absolutely positioned (padding sul wrapper
+   non influenza il calcolo di `bottom` dei figli assoluti).
+   Il blocco padding-bottom/left/right rimane qui SOLO per retrocompat visiva su
+   browser che supportano env() e layout future che possano usarlo, ma non ha più
+   effetto diretto sulla posizione dei tasti. */
 .sb-touch-overlay {
-  /* Le inset sono 0 di default; su iPhone con notch/home bar le var CSS
-     aggiungono il margine corretto. pointer-events: none rimane sul wrapper
-     (gestito inline in TouchOverlay.tsx). */
+  /* padding-bottom/left/right su wrapper overlay: no-op per position:absolute dei
+     figli, mantenuto per eventuali contenuti non-assoluti futuri. */
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left:   env(safe-area-inset-left,   0px);
   padding-right:  env(safe-area-inset-right,  0px);
@@ -145,7 +152,10 @@ body {
     padding-right: max(var(--sd-space-sm, 8px), env(safe-area-inset-right,  0px));
   }
 
-  /* D-pad: ancorato a sinistra (override dei valori inline calcolati in %). */
+  /* D-pad: ancorato a sinistra (override dei valori inline calcolati in %).
+     INCREMENT 3 — l'overlay è ora figlio di .sb-screen: safe-area-inset-left
+     rimane valido (la safe area è relativa al viewport fisico del device,
+     non al containing block dell'elemento). */
   .sb-touch-overlay.sb-touch-landscape .sb-dpad {
     left: max(var(--sd-space-md, 12px), env(safe-area-inset-left, 0px)) !important;
     right: auto !important;
@@ -155,7 +165,8 @@ body {
     transform-origin: left center;
   }
 
-  /* Pulsanti azione: ancorati a destra. */
+  /* Pulsanti azione: ancorati a destra.
+     INCREMENT 3 — stesso rationale del D-pad per safe-area-inset-right. */
   .sb-touch-overlay.sb-touch-landscape .sb-ab {
     right: max(var(--sd-space-md, 12px), env(safe-area-inset-right, 0px)) !important;
     left: auto !important;

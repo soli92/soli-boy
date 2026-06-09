@@ -153,8 +153,14 @@ body{
 /* TSK — Fix B: canvas schiacciato. L'aspect-ratio effettivo è iniettato inline
    da videoSettingsToContainerStyle (3/2 per "original", 4/3 per "4:3",
    auto per "stretch"). overflow:hidden: il canvas non fuoriesce dal
-   border-radius. */
+   border-radius.
+   INCREMENT 3 — position:relative aggiunta nel CSS statico (non solo via <style>
+   scoped a runtime in Player.tsx) per garantire che il TouchOverlay (position:absolute
+   inset:0 figlio di .sb-screen) si ancori al viewport di gioco in modo affidabile,
+   indipendentemente dall'ordine di mount del tag <style> scoped. La regola runtime
+   rimane (ridondante ma non conflittuale). */
 .sb-screen{
+  position:relative;
   background:var(--sd-screen-bg);border:1px solid var(--sd-color-border-muted);
   border-radius:var(--sd-radius-md);display:flex;align-items:center;justify-content:center;
   overflow:hidden;
