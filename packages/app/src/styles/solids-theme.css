@@ -90,6 +90,10 @@ body{
   display:flex;align-items:center;justify-content:center;font-size:20px;
 }
 .sb-title{font-family:var(--sd-font-heading);font-weight:600;color:var(--sd-color-text-primary);}
+/* Header con logo brand: l'h1 fa da contenitore all'immagine (margin azzerato
+   così non aggiunge spazio attorno al logo). */
+.sb-title--logo{margin:0;line-height:0;}
+.sb-logo{display:block;height:40px;width:auto;max-width:200px;}
 
 /* buttons */
 .sb-btn{

@@ -24,7 +24,7 @@
 // Monta il viewport di gioco e avvia l'esecuzione tramite CoreWrapper (ADR-003).
 // L'EmulatorEngine (EmulatorJS in runtime) è iniettato → componente testabile.
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 // TSK-062 — Gamepad detection: auto-hide TouchOverlay quando un controller BT è connesso.
 import { useGamepadDetection } from "../../domain/useGamepadDetection";
 // TSK-065 — App lifecycle: pausa/ripresa emulazione in background via Capacitor + visibility API.
@@ -37,6 +37,10 @@ import {
 import type { Core } from "../../domain/types";
 import { useFullscreen } from "./useFullscreen";
 import { SaveStatePanel, type SaveServicePort } from "./SaveStatePanel";
+import type {
+  AutosaveSramResult,
+  RestoreSramResult,
+} from "../../domain/save-service";
 import {
   aspectToCanvasObjectFit,
   filterShowsScanlineOverlay,
@@ -50,6 +54,18 @@ import {
 import type { InputMapping } from "../../domain/input-mapping";
 import type { ConfigPort } from "../../storage/port";
 import { TouchOverlay } from "../TouchOverlay/TouchOverlay";
+
+/**
+ * Operazioni SRAM (salvataggio in-game/batteria, US-017) consumate dal Player
+ * per ripristinare il salvataggio all'avvio e persisterlo quando si lascia il
+ * gioco. Segregato dal `SaveServicePort` (save state, US-016): il `SaveService`
+ * di dominio le implementa entrambe, ma i due gruppi hanno cicli di vita diversi
+ * (SRAM = lifecycle del gioco; save state = azione esplicita dell'utente).
+ */
+export interface SramPort {
+  restoreSram(engine: EmulatorEngine, romId: string): Promise<RestoreSramResult>;
+  autosaveSram(engine: EmulatorEngine, romId: string): Promise<AutosaveSramResult>;
+}
 
 export interface PlayerProps {
   /** Engine di emulazione (EmulatorJS in runtime). */
@@ -72,7 +88,7 @@ export interface PlayerProps {
    * Se assente, il pannello "Save state" non viene reso (composizione legacy
    * o test focalizzati su altri aspetti del Player non lo richiedono).
    */
-  saveService?: SaveServicePort;
+  saveService?: SaveServicePort & Partial<SramPort>;
   /**
    * TSK-032 — ID della ROM in sessione, usato dal pannello save state per
    * filtrare ed etichettare le entry (US-018 AC2: solo i saves del gioco
@@ -185,6 +201,19 @@ export function Player({
     effectiveSettings.filter,
   );
 
+  // US-017 — persiste la SRAM (salvataggio in-game/batteria) della ROM corrente.
+  // Best-effort: un fallimento non deve impedire pausa/stop/uscita. No-op se la
+  // composizione non fornisce il SaveService o non c'è una ROM in sessione.
+  async function persistSram() {
+    if (!saveService?.autosaveSram || !romId) return;
+    try {
+      await saveService.autosaveSram(engine, romId);
+    } catch {
+      // Salvataggio best-effort: l'engine può non esporre la SRAM (capability)
+      // o non avere battery RAM. Non propaghiamo nell'area errori del Player.
+    }
+  }
+
   async function handlePlay() {
     setError(null);
     try {
@@ -196,8 +225,17 @@ export function Player({
       // canvas resterebbe comunque dentro `.sb-screen`, ma senza l'isolamento.
       const container =
         canvasHostRef.current ?? screenRef.current ?? undefined;
-      if (wrapper.currentState === "idle")
+      if (wrapper.currentState === "idle") {
         await wrapper.load({ ...rom, container });
+        // US-017 — ripristina la SRAM persistita PRIMA di avviare il loop, così
+        // il gioco parte con il salvataggio in-game della sessione precedente
+        // (senza questo wiring la SRAM veniva persa: restoreSram non era mai
+        // invocato da nessun consumatore). No-op se non c'è SaveService/ROM o
+        // se non esiste SRAM salvata.
+        if (saveService?.restoreSram && romId) {
+          await saveService.restoreSram(engine, romId);
+        }
+      }
       wrapper.start();
       setState(wrapper.currentState);
     } catch (e) {
@@ -207,6 +245,10 @@ export function Player({
 
   // TSK-014 — controlli di esecuzione (US-011).
   function handlePause() {
+    // Persisti la SRAM (fire-and-forget): WasmBoy mantiene la memoria della
+    // cartuccia anche dopo pause/stop, quindi non serve bloccare il comando di
+    // pausa. Tenere il handler sincrono preserva il contratto UI (pausa immediata).
+    void persistSram();
     wrapper.pause();
     setState(wrapper.currentState);
   }
@@ -215,6 +257,7 @@ export function Player({
     setState(wrapper.currentState);
   }
   function handleStop() {
+    void persistSram();
     wrapper.stop();
     setState(wrapper.currentState);
   }
@@ -230,6 +273,31 @@ export function Player({
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+
+  // US-017 — autosave SRAM quando l'app passa in background o la pagina viene
+  // scaricata. Su mobile l'utente raramente preme "Arresta": tipicamente manda
+  // l'app in background (visibilitychange → hidden) o chiude la scheda
+  // (pagehide). Senza questo il salvataggio in-game andrebbe perso. Best-effort,
+  // attivo solo quando c'è un gioco in esecuzione con SaveService + ROM.
+  useEffect(() => {
+    if (!saveService?.autosaveSram || !romId) return;
+    if (typeof document === "undefined") return;
+    const flush = () => {
+      if (wrapper.currentState !== "running") return;
+      void saveService.autosaveSram?.(engine, romId).catch(() => {
+        /* best-effort, vedi persistSram */
+      });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [saveService, romId, engine, wrapper]);
 
   const idle = state === "idle";
   const running = state === "running";

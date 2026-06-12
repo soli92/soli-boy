@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// Logo brand orizzontale: sostituisce il testo "Soli-boy" nell'header.
+// Vite risolve l'import SVG in una URL servibile (asset pipeline).
+import logoUrl from "./assets/soliboy-logo-horizontal.svg";
 import { FileLoader } from "./components/FileLoader/FileLoader";
 import { Library } from "./components/Library/Library";
 import { Player } from "./components/Player/Player";
@@ -256,8 +259,12 @@ export function App() {
   return (
     <main className="sb-app">
       <header className="sd-flex sd-items-center sd-between">
-        {/* a11y (EP-012 window A): h1 invece di span → fix WCAG page-has-heading-one. */}
-        <h1 className="sb-title">Soli-boy</h1>
+        {/* a11y (EP-012 window A): h1 mantenuto per WCAG page-has-heading-one.
+            Il nome accessibile dell'heading è fornito dall'alt dell'immagine
+            del logo brand (sostituisce il testo "Soli-boy"). */}
+        <h1 className="sb-title sb-title--logo">
+          <img className="sb-logo" src={logoUrl} alt="Soli-boy" />
+        </h1>
       </header>
 
       {/* TSK-069 (US-033) — Banner privacy on-device al primo avvio.

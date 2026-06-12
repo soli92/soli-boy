@@ -123,7 +123,17 @@ function useTouchHandlers(
     },
     [inputMapping],
   );
-  return { handleTouchStart, handleTouchEnd };
+  // onTouchCancel: l'OS può cancellare il touch in corso (es. long-press che
+  // apre il menu nativo, gesture di sistema, chiamata in arrivo). In quel caso
+  // `touchend` NON arriva e il pulsante resterebbe "premuto" → il personaggio
+  // continua a camminare nella direzione del tasto tenuto. Rilasciamo qui con
+  // la stessa logica del touchend (rilascio del pulsante).
+  return { handleTouchStart, handleTouchEnd, handleTouchCancel: handleTouchEnd };
+}
+
+/** Blocca il menu contestuale nativo (copia/condividi) sul long-press. */
+function preventContextMenu(e: React.MouseEvent) {
+  e.preventDefault();
 }
 
 export function TouchOverlay({
@@ -175,7 +185,7 @@ function TouchOverlayInner({
   const [showConfig, setShowConfig] = useState(false);
   // TSK-066 — feedback aptico opzionale.
   const { triggerImpact } = useHaptics(hapticsEnabled);
-  const { handleTouchStart, handleTouchEnd } = useTouchHandlers(inputMapping, triggerImpact);
+  const { handleTouchStart, handleTouchEnd, handleTouchCancel } = useTouchHandlers(inputMapping, triggerImpact);
   // TSK-064 — orientamento landscape.
   const landscape = useLandscape();
   const buttons = BUTTON_MAP[core] ?? BUTTON_MAP["gambatte"];
@@ -324,6 +334,8 @@ function TouchOverlayInner({
             data-testid={`sb-touch-dpad-${button}`}
             onTouchStart={handleTouchStart(button)}
             onTouchEnd={handleTouchEnd(button)}
+            onTouchCancel={handleTouchCancel(button)}
+            onContextMenu={preventContextMenu}
           >
             {label}
           </button>
@@ -347,6 +359,8 @@ function TouchOverlayInner({
             data-testid={`sb-touch-btn-${button}`}
             onTouchStart={handleTouchStart(button)}
             onTouchEnd={handleTouchEnd(button)}
+            onTouchCancel={handleTouchCancel(button)}
+            onContextMenu={preventContextMenu}
           >
             {label}
           </button>

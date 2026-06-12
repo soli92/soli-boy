@@ -224,6 +224,24 @@ body {
      applicata per reset layout.
    ============================================================================ */
 
+/* --- Touch hardening sui controlli virtuali ------------------------------- */
+/* Sui device touch il long-press sui tasti virtuali attivava: highlight del
+   testo del bottone, il menu nativo iOS/Android (copia/condividi/rilevamento
+   testo) e gesti del browser che "incastravano" l'input. Disattiviamo
+   selezione testo, callout iOS, tap-highlight e — sui soli tasti di gioco —
+   ogni gesto di default del browser (touch-action:none), così il touchstart/end
+   resta gestito interamente da React (vedi anche onTouchCancel in TouchOverlay). */
+.sb-touch-overlay {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.sb-touch-overlay .dp,
+.sb-touch-overlay .ab {
+  touch-action: none;
+}
+
 .sb-player-layout {
   /* Portrait default: colonna verticale. */
   display: flex;
