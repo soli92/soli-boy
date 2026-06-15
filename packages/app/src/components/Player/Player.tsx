@@ -547,6 +547,7 @@ export function Player({
         <div
           ref={screenRef}
           className="sb-screen"
+          role="img"
           aria-label="Schermo di gioco"
           data-state={state}
           data-video-scope={scopeId}

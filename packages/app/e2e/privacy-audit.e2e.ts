@@ -164,9 +164,13 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 10_000 });
 
-    // Seleziona la ROM e avvia.
+    // Seleziona la ROM. TSK-100: auto-start attivo, non serve click Avvia.
     await page.getByRole("button", { name: GAME_TILE_NAME }).click();
-    await page.getByRole("button", { name: /avvia/i }).click();
+    // TSK-101: gestisci gate dialog se un gioco è già in corso.
+    const changeDialog1 = page.getByRole("dialog", { name: /cambia gioco/i });
+    if (await changeDialog1.isVisible()) {
+      await page.getByRole("button", { name: /cambia gioco/i }).click();
+    }
 
     // Attendi che il pulsante "Salva nello slot 1" sia abilitato.
     const saveBtn = page.getByRole("button", { name: "Salva nello slot 1" });
@@ -215,8 +219,12 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
     await expect(
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 5_000 });
+    // TSK-100: auto-start attivo, non serve click Avvia.
     await page.getByRole("button", { name: GAME_TILE_NAME }).click();
-    await page.getByRole("button", { name: /avvia/i }).click();
+    const changeDialog2 = page.getByRole("dialog", { name: /cambia gioco/i });
+    if (await changeDialog2.isVisible()) {
+      await page.getByRole("button", { name: /cambia gioco/i }).click();
+    }
     await page.waitForTimeout(1_000);
 
     // Filtra: escludiamo esplicitamente eventuali richieste CDN preflight (CORS option)

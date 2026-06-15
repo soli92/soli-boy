@@ -45,12 +45,18 @@ async function loadStubRom(page: import("@playwright/test").Page) {
   return tile;
 }
 
-/** Avvia la ROM e aspetta lo schermo di gioco. */
+/** Avvia la ROM e aspetta lo schermo di gioco.
+ * TSK-100: il click sulla tile attiva l'auto-start (preferenza default ON),
+ * quindi non occorre cliccare "Avvia" esplicitamente. */
 async function startRom(page: import("@playwright/test").Page) {
   const tile = await loadStubRom(page);
   await tile.click();
-  await page.getByRole("button", { name: /avvia/i }).click();
-  await expect(page.getByLabel("Schermo di gioco")).toBeVisible();
+  // TSK-101: gestisci gate dialog se un gioco è già in corso.
+  const changeDialog = page.getByRole("dialog", { name: /cambia gioco/i });
+  if (await changeDialog.isVisible()) {
+    await page.getByRole("button", { name: /cambia gioco/i }).click();
+  }
+  await expect(page.getByLabel("Schermo di gioco")).toBeVisible({ timeout: 10_000 });
 }
 
 // ---------------------------------------------------------------------------
