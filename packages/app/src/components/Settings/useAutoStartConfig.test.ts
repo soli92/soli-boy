@@ -32,10 +32,11 @@ function makeConfig(
       // comportamento di un ConfigPort store-singolo).
       if (key === AUTO_START_CONFIG_KEY) return initial;
       return undefined;
-    }) as ConfigPort["getConfig"],
-    setConfig: vi.fn(
-      setFn ?? (async () => {}),
-    ) as ConfigPort["setConfig"],
+    }),
+    setConfig: vi.fn(setFn ?? (async () => {})),
+  } as unknown as ConfigPort & {
+    getConfig: ReturnType<typeof vi.fn>;
+    setConfig: ReturnType<typeof vi.fn>;
   };
 }
 

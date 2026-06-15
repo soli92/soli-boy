@@ -25,7 +25,7 @@ function makeRecord(id: string, romId: string): SaveStateRecord {
     romId,
     slot: 1,
     snapshotBlob: new Blob(["data"]),
-    core: "wasmboy",
+    core: "gambatte",
     createdAt: Date.now(),
   };
 }
