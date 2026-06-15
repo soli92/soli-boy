@@ -664,4 +664,18 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 - Pattern note: nessuna porta dedicata creata (ThemePort-style); riusiamo `ConfigPort` come per haptics, riducendo footprint. Single-writer della chiave `auto-start-from-library` è il toggle in Settings (`onAutoStartChange` → `saveAutoStartFromLibrary`).
 - Status: `todo → done`. DoD completo (5/5 checkbox).
 
+## 2026-06-15 — TSK-099 (EP-014/US-052) — qa-dev — Fix unsafe Error cast + test isolamento useTabPause/useSaveData
+
+- Agent: qa-dev
+- TSK: TSK-099 — layer qa, consumer agent, priority P2, estimate S
+- Dependencies: TSK-098 (done — hook useTabPause + useSaveData estratti)
+- Fix: sostituisce 3 occorrenze di `(e as Error).message` in `useSaveData.ts` (blocchi catch di `refresh`, `handleExport`, `handleImportFile`) con il pattern type-safe `e instanceof Error ? e.message : String(e)`. `useTabPause.ts` non aveva blocchi catch.
+- Files created:
+  - `packages/app/src/domain/useTabPause.test.ts`: 8 test renderHook. Coperture: mount no-op, play→library pause(), library→play resume(), play→settings pause(), library→settings no-op (non-play→non-play), play→library senza ROM no-op, library→play senza ROM no-op, ciclo completo, stessa tab re-render no-op.
+  - `packages/app/src/domain/useSaveData.test.ts`: 23 test renderHook. Coperture: refresh chiama listSaveStates; filtro romId esatto (AC US-018); listSaveStates throw Error + non-Error con guard String(e); handleExport ok/not-found/rom-not-found/throw Error/throw non-Error; busy lifecycle; handleImportFile ok con refresh; handleImportFile ok romId diverso (no refresh); tutti i reason error; handleImportFile throw Error/non-Error; saveService=undefined no-op.
+- Files modified:
+  - `packages/app/src/domain/useSaveData.ts`: 3 cast `(e as Error).message` → `e instanceof Error ? e.message : String(e)`.
+- Test result: 31/31 nuovi test pass; 510/511 totali (1 failure pre-esistente in App.gameChangeDialog.test.tsx: `engineRef not defined` in `confirmGameChange` App.tsx:537 — bug introdotto in TSK-101, aperto per TSK separato).
+- Status: `todo → done`. DoD completo (4/4 checkbox).
+
 2026-06-15 | fe-dev | develop TSK-098 (EP-014/US-052) → done | packages/app/src/domain/useTabPause.ts (new), packages/app/src/domain/useSaveData.ts (new), packages/app/src/App.tsx, packages/app/src/components/Settings/Settings.tsx | Estrazione hook useTabPause<T>(engine, activeTab, selected, playTab) + useSaveData(saveService, currentRomId). Complessità cognitiva: AppContent 22→13, Settings 19→10. 459/459 test pass; tsc clean.
