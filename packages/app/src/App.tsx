@@ -28,7 +28,7 @@ import {
 } from "./domain/input-mapping";
 import { SaveService } from "./domain/save-service";
 import type { RomRecord } from "./storage/types";
-import type { GameButton } from "./core/core-wrapper";
+import type { GameButton, SessionState } from "./core/core-wrapper";
 import { useVideoSettings } from "./components/Player/useVideoSettings";
 import { makeVideoSettingsPort } from "./components/Player/video-settings-port";
 // TSK-044 (US-036) — wiring tema UI: hook + porta IndexedDB (chiave `"ui-theme"`).
@@ -39,6 +39,12 @@ import { makeThemePort } from "./components/ThemeSelector/theme-port";
 // TSK-066 (US-032) — wiring feedback aptico: hook + porta IndexedDB (chiave `"haptics-enabled"`).
 // Stato sollevato a livello App: Settings ne riceve il toggle, TouchOverlay l'enabled flag.
 import { useHapticsConfig } from "./components/TouchOverlay/useHapticsConfig";
+// TSK-102 (US-053) — wiring preferenza "Avvio automatico dalla libreria":
+// hook + porta IndexedDB (chiave `"auto-start-from-library"`, store `config`).
+// Stato sollevato a livello App: Settings riceve il toggle, `handleLibrarySelect`
+// rispetta il valore per decidere se impostare `autoStartFromLibrary` (flag di
+// auto-avvio della selezione corrente) a true o false.
+import { useAutoStartConfig } from "./components/Settings/useAutoStartConfig";
 
 // TSK-025 (ADR-005): selezione engine. Default ENGINE REALE per-piattaforma via
 // registry (l'utente che apre la webapp vuole emulare davvero). Lo StubEngine
@@ -112,6 +118,170 @@ function StorageInitErrorFallback({ error }: { error: Error }) {
   );
 }
 
+/**
+ * TSK-101 (US-053) — Dialog modale "Cambia gioco?" (UX-CF1-02).
+ *
+ * Renderizzato da `AppContent` quando l'utente tap'a una ROM diversa mentre il
+ * Player è `running` o `paused`. Implementazione zero-dep (no portal: rimaniamo
+ * dentro l'albero `<main>` esistente — l'overlay copre il viewport via CSS
+ * fixed, sufficiente per il modale "blocking" richiesto dall'AC).
+ *
+ * A11y:
+ * - `role="dialog"` + `aria-modal="true"` + `aria-labelledby`/`aria-describedby`.
+ * - Focus trap: cattura Tab/Shift+Tab dentro il dialog (handler keydown su
+ *   container), focus iniziale sul bottone "Cambia gioco" (azione primaria;
+ *   l'utente che ha già tap'ato la tile sta esprimendo intent di switch — il
+ *   focus iniziale sull'azione distruttiva è coerente, ma "Annulla" resta
+ *   sempre raggiungibile con Esc).
+ * - Esc → onCancel (AC5).
+ * - Enter su "Cambia gioco" focused → onConfirm (gestito nativo via type="button"
+ *   + focus iniziale; il browser invia il click sul button focused).
+ *
+ * Lo stop dell'engine + lo swap di `selected` sono responsabilità di
+ * `confirmGameChange` in `AppContent`: il dialog è puramente UI.
+ */
+interface ConfirmGameChangeDialogProps {
+  /** Titolo della ROM in esecuzione (per l'esplicativo). */
+  currentTitle: string | undefined;
+  /** Titolo della ROM target (cosa l'utente vuole avviare). */
+  pendingTitle: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function ConfirmGameChangeDialog({
+  currentTitle,
+  pendingTitle,
+  onConfirm,
+  onCancel,
+}: ConfirmGameChangeDialogProps) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Focus iniziale sull'azione primaria (Cambia gioco). L'utente può sempre
+  // premere Esc per annullare (AC5). Setto un microtask per permettere al
+  // browser di completare il mount prima del focus().
+  useEffect(() => {
+    confirmRef.current?.focus();
+  }, []);
+
+  // Esc → Annulla (AC5). Listener a document per intercettare anche quando
+  // il focus uscisse dal dialog per qualche motivo (defensive).
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onCancel]);
+
+  // Focus trap: Tab/Shift+Tab rimbalzano fra i due bottoni (AC5).
+  // Implementazione minimale (2 elementi focusable noti); pattern standard
+  // WAI-ARIA dialog (modal). Niente lib esterne (no react-focus-lock) per
+  // mantenere zero-dep — sufficiente per il contratto qui.
+  function onDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Tab") return;
+    const focusables = [cancelRef.current, confirmRef.current].filter(
+      (el): el is HTMLButtonElement => el !== null,
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  return (
+    <div
+      className="sb-dialog-backdrop"
+      // Overlay che intercetta click esterni → annulla (UX standard modal
+      // "click outside" = cancel). Mantiene l'utente sull'azione safe.
+      onClick={onCancel}
+      data-testid="confirm-game-change-backdrop"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0, 0, 0, 0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-game-change-title"
+        aria-describedby="confirm-game-change-desc"
+        className="sb-dialog"
+        // Stop propagation: click sul body del dialog non chiude il modal.
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={onDialogKeyDown}
+        data-testid="confirm-game-change-dialog"
+        style={{
+          background: "var(--sd-color-bg-elevated, #1a1430)",
+          color: "var(--sd-color-text-primary, #f0e9ff)",
+          padding: "1.5rem",
+          borderRadius: "0.5rem",
+          maxWidth: "32rem",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+        }}
+      >
+        <h2
+          id="confirm-game-change-title"
+          style={{ marginTop: 0, marginBottom: "0.75rem" }}
+        >
+          Cambia gioco?
+        </h2>
+        <p id="confirm-game-change-desc" style={{ marginBottom: "1.25rem" }}>
+          {currentTitle
+            ? `Stai per avviare "${pendingTitle}" mentre "${currentTitle}" è in corso. `
+            : `Stai per avviare "${pendingTitle}" mentre un altro gioco è in corso. `}
+          Lo stato corrente non sarà salvato in autosave: i progressi non
+          salvati andranno persi.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "0.5rem",
+          }}
+        >
+          <button
+            ref={cancelRef}
+            type="button"
+            className="sb-btn"
+            onClick={onCancel}
+            data-action="cancel"
+          >
+            Annulla
+          </button>
+          <button
+            ref={confirmRef}
+            type="button"
+            className="sb-btn sb-btn-primary sb-danger"
+            onClick={onConfirm}
+            data-action="confirm"
+          >
+            Cambia gioco
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Composizione del Core web MVP. Storage reale via `selectAdapter()`.
 // TSK-096 — separata da App (thin shell) per rispettare react-hooks/rules-of-hooks.
 function AppContent({
@@ -126,22 +296,36 @@ function AppContent({
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
   // TSK-100 (US-053) — Auto-start ROM dalla Library (UX-CF1-01 "tap = start").
-  // Indica se la selezione corrente proviene dalla Library: in caso affermativo
-  // il Player avvia la ROM automaticamente, senza richiedere il click su
-  // "Avvia". Default ON (impostato a `true` in `handleLibrarySelect`); TSK-102
-  // (toggle Settings "Avvio automatico dalla libreria") farà passare qui un
-  // valore preferenza-driven invece dell'hardcoded ON.
+  // Indica se la selezione corrente proviene dalla Library E deve auto-avviarsi:
+  // in caso affermativo il Player avvia la ROM automaticamente, senza richiedere
+  // il click su "Avvia". Default false (`handleLibrarySelect` lo imposta a true
+  // SOLO se la preferenza utente è ON — vedi TSK-102 sotto).
+  //
+  // TSK-102 (US-053) — Il valore è ora preferenza-driven via
+  // `useAutoStartConfig` (hook + ConfigPort, chiave `auto-start-from-library`,
+  // default ON). Con preferenza OFF, `handleLibrarySelect` continua a popolare
+  // `selected` e a switchare su Play, ma NON imposta il flag a true: il Player
+  // resta in idle finché l'utente non preme "Avvia" (comportamento legacy
+  // pre-TSK-100).
   //
   // Backward compat: il flag transita al Player via prop `autoStart`; il
   // Player garantisce no-loop via ref interno (`autoStartedForRomRef` su
-  // identità Blob). Una nuova selezione dalla Library riattiva il trigger;
-  // i path NON-library (FileLoader → setRefresh, banner CTA) NON impostano
-  // questo flag a true → Player resta legacy (richiede click "Avvia"). Quando
-  // c'è una nuova ROM, riportiamo il flag a true esplicitamente — non
-  // resettiamo a false dopo l'auto-start: la prop riflette "la selezione
-  // corrente è da Library", non "deve auto-avviare in questo istante" (lo
-  // stato is-already-started è gestito dal Player).
+  // identità Blob). I path NON-library (FileLoader → setRefresh, banner CTA)
+  // NON impostano questo flag a true → Player resta legacy (richiede click
+  // "Avvia"). La prop riflette "la selezione corrente è da Library E deve
+  // auto-avviare", non "deve auto-avviare in questo istante" (lo stato
+  // is-already-started è gestito dal Player).
   const [autoStartFromLibrary, setAutoStartFromLibrary] = useState(false);
+
+  // TSK-101 (US-053) — Gate di conferma cambio gioco (UX-CF1-02).
+  // `playerState` traccia a livello App lo stato osservato del Player
+  // ("idle" | "loaded" | "running" | "paused"), aggiornato dalla callback
+  // `onStateChange` del Player. La sorgente di verità resta nel `CoreWrapper`
+  // (R.M1): qui osserviamo solo per decidere se aprire il dialog.
+  // `pendingRom` è la ROM tap'd dalla Library mentre il gate è aperto; viene
+  // sostituita a `selected` SOLO dopo conferma esplicita dell'utente.
+  const [playerState, setPlayerState] = useState<SessionState>("idle");
+  const [pendingRom, setPendingRom] = useState<RomRecord | null>(null);
 
   // INCREMENT 2 — navigazione a tab. Default "play" (emulator-first).
   const [activeTab, setActiveTab] = useState<Tab>("play");
@@ -190,6 +374,18 @@ function AppContent({
   // seguita da `saveHapticsEnabled` (chiamata dal toggle in Settings).
   const { hapticsEnabled, setHapticsEnabled, saveHapticsEnabled } =
     useHapticsConfig(config);
+
+  // TSK-102 (US-053) — preferenza "Avvio automatico dalla libreria".
+  // ConfigPort riusa `config` (store `config`, chiave `auto-start-from-library`).
+  // Default ON (vedi `DEFAULT_AUTO_START_FROM_LIBRARY` in useAutoStartConfig).
+  // La preferenza è CONSULTATA da `handleLibrarySelect`/`confirmGameChange` per
+  // decidere se impostare il flag `autoStartFromLibrary` (selezione-corrente) a
+  // true (auto-avvio) o false (Player resta in idle, comportamento pre-TSK-100).
+  const {
+    autoStartFromLibrary: autoStartPreference,
+    setAutoStartFromLibrary: setAutoStartPreference,
+    saveAutoStartFromLibrary,
+  } = useAutoStartConfig(config);
 
   // TSK-069 (US-033) — Stato presa visione informativa privacy on-device.
   // Stesso pattern di `useTheme`: porta concreta (IndexedDB `config`, chiave
@@ -324,12 +520,67 @@ function AppContent({
   // Handler selezione ROM dalla Library: seleziona la ROM e porta l'utente
   // sulla tab Play (OQ-02: auto-switch preferibile per nielsen-1 / flow-ux-1).
   // TSK-100 (US-053) — imposta `autoStartFromLibrary=true` così il Player avvia
-  // automaticamente la ROM (UX-CF1-01 "tap = start"). Default ON; TSK-102
-  // sostituirà l'hardcoded con la preferenza Settings.
+  // automaticamente la ROM (UX-CF1-01 "tap = start").
+  //
+  // TSK-102 (US-053) — Il flag `autoStartFromLibrary` (selezione-corrente) è
+  // ora driven dalla preferenza utente `autoStartPreference` (Settings →
+  // "Avvio automatico dalla libreria", default ON): con preferenza OFF il
+  // Player NON auto-avvia; l'utente preme "Avvia" dal Player (AC4). Il tap
+  // continua a popolare `selected` e a switchare su Play (AC4: "seleziona la
+  // ROM e cambia tab Play, ma il Player non avvia automaticamente").
+  //
+  // TSK-101 (US-053) — Gate di conferma cambio gioco (UX-CF1-02): se il Player
+  // è in stato `running` o `paused` con una ROM DIVERSA, intercettiamo il tap
+  // e apriamo un dialog modale ("Cambia gioco?") invece di sostituire `selected`.
+  // Casi:
+  // - stesso `rom.id` → no-op (AC2). Già selezionato/in esecuzione, niente da fare.
+  //   Si entra comunque in Play (lo facciamo sotto, ma senza re-impostare
+  //   `autoStartFromLibrary=true`: la ROM è la stessa, evitiamo cicli di
+  //   auto-start sul Player già running).
+  // - Player idle/loaded (mai avviato o stoppato) → swap diretto, senza dialog.
+  // - Player running/paused con ROM DIVERSA → mostra dialog; lo swap effettivo
+  //   avviene in `confirmGameChange`.
   function handleLibrarySelect(rom: RomRecord) {
+    // AC2: stessa ROM corrente → no-op (no dialog, no re-trigger autoStart).
+    if (selected && selected.id === rom.id) {
+      setActiveTab("play");
+      return;
+    }
+    // AC1: gioco attivo (running/paused) con ROM diversa → gate.
+    const gameActive = playerState === "running" || playerState === "paused";
+    if (selected && gameActive) {
+      setPendingRom(rom);
+      return;
+    }
+    // Player idle/loaded (o nessuna ROM precedente) → swap diretto.
     setSelected(rom);
-    setAutoStartFromLibrary(true);
+    // TSK-102 (US-053) — solo se la preferenza è ON propaghiamo il flag di
+    // auto-avvio al Player; con preferenza OFF resta `false` (Player in idle).
+    setAutoStartFromLibrary(autoStartPreference);
     setActiveTab("play");
+  }
+
+  // TSK-101 (US-053) — Conferma del dialog "Cambia gioco?" (AC4).
+  // Pipeline: stop dell'engine corrente (forza `idle` lato Player → l'effect
+  // di autoStart riarmato ripartirà con la nuova ROM) → swap `selected` →
+  // chiude dialog e porta su Play. `engineRef.current.stop()` è idempotente
+  // (vedi WasmBoyEngine stop, anche su engine non configurato).
+  function confirmGameChange() {
+    if (!pendingRom) return;
+    engineRef.current.stop();
+    setSelected(pendingRom);
+    // TSK-102 (US-053) — la conferma del gate eredita la preferenza utente
+    // sullo stesso asse di `handleLibrarySelect`: con preferenza ON la nuova
+    // ROM auto-avvia, con OFF il Player resta in idle e attende "Avvia".
+    setAutoStartFromLibrary(autoStartPreference);
+    setPendingRom(null);
+    setActiveTab("play");
+  }
+
+  // TSK-101 (US-053) — Annulla dialog "Cambia gioco?" (AC3).
+  // Dialog chiuso, ROM in esecuzione non cambiata, nessun side-effect.
+  function cancelGameChange() {
+    setPendingRom(null);
   }
 
   return (
@@ -422,6 +673,7 @@ function AppContent({
           inputMapping={input}
           touchConfigStorage={config}
           autoStart={autoStartFromLibrary}
+          onStateChange={setPlayerState}
         />
         {/* CTA FileLoader in stato idle (nessuna ROM selezionata) */}
         {!selected && (
@@ -491,6 +743,15 @@ function AppContent({
                 setHapticsEnabled(value);
                 await saveHapticsEnabled(value);
               }}
+              autoStartFromLibrary={autoStartPreference}
+              onAutoStartChange={async (value) => {
+                // TSK-102 (US-053) — stesso pattern del toggle haptics:
+                // aggiorna lo stato in memoria e poi persiste via ConfigPort
+                // (fire-and-forget con log non bloccante in caso di reject —
+                // vedi `saveAutoStartFromLibrary` in useAutoStartConfig).
+                setAutoStartPreference(value);
+                await saveAutoStartFromLibrary(value);
+              }}
             />
           </div>
         </div>
@@ -508,6 +769,20 @@ function AppContent({
           <StoreComplianceNotice />
           <LegalNotice />
         </div>
+      )}
+
+      {/* TSK-101 (US-053) — Dialog modale "Cambia gioco?" (UX-CF1-02).
+          Reso solo quando `pendingRom !== null`: l'utente ha tap'ato una ROM
+          diversa mentre il Player è running/paused (vedi `handleLibrarySelect`).
+          Lo swap effettivo di `selected` + stop engine avvengono in
+          `confirmGameChange`. */}
+      {pendingRom && (
+        <ConfirmGameChangeDialog
+          currentTitle={selected?.title}
+          pendingTitle={pendingRom.title}
+          onConfirm={confirmGameChange}
+          onCancel={cancelGameChange}
+        />
       )}
 
       <footer>

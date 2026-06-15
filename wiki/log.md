@@ -633,3 +633,33 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 2026-06-15 | code-reviewer | review TSK-106 iter-2 → pass | packages/app/src/components/Player/Player.tsx | F-106-01 risolto: gap ora `var(--sd-space-sm, 0.5rem)` (riga 427). F-106-02 risolto: commento CSS TSK-106 ridotto da 21 a 6 righe. Nessun nuovo finding. Report: code_quality/reports/TSK-106-iter-2.json
 
 2026-06-15 | code-reviewer | review TSK-100 iter-1 → passed | packages/app/src/components/Player/Player.tsx + packages/app/src/App.tsx + packages/app/src/components/Player/Player.test.tsx | 2 finding low, 0 medium, 0 high: F-100-01 (low, TS-DESIGN-001): commento autoStartFromLibrary ridondante nelle ultime 4 righe (App.tsx:128-143); F-100-02 (low, QA-TEST-001): gap test toggling autoStart true→false per scenario TSK-102. Prop autoStart idiomatica, anti-loop ref-identity corretto, deps array complete, separazione App/Player pulita. Report: code_quality/reports/TSK-100-iter-1.json
+
+
+## TSK-101 dev-handoff 2026-06-15 — Gate conferma cambio gioco (US-053, UX-CF1-02)
+
+- Agent: fe-dev · Layer: fe · Consumer: agent
+- Dependencies: TSK-100 (done, autoStart prop)
+- Files modified:
+  - `packages/app/src/components/Player/Player.tsx`: aggiunta prop opzionale `onStateChange?: (state: SessionState) => void` (callback osservazionale, R.M1 single-source-of-truth resta nel CoreWrapper). Effect dedicato `useEffect([state, onStateChange])` per notificare al consumer ogni transizione di sessione.
+  - `packages/app/src/App.tsx`: aggiunto `ConfirmGameChangeDialog` (zero-dep, role=dialog + aria-modal + focus trap + Esc handler); nuovi `useState` `playerState` e `pendingRom`; estensione `handleLibrarySelect` con due gate (stessa ROM → no-op; running/paused con ROM diversa → dialog); handlers `confirmGameChange` (engine.stop + swap + autoStart riarmato) e `cancelGameChange` (close dialog, no side-effect).
+  - `packages/app/src/App.gameChangeDialog.test.tsx`: nuovo file di test funzionali (5 test) — copre AC2 stessa ROM no-op; AC1+AC3 Annulla; AC1+AC4 Cambia gioco; AC5 Esc; AC5 focus iniziale su confirm.
+- Test result: 464/464 pass (459 pre + 5 nuovi). TypeScript noEmit: pass.
+- Wiki citation: testo del dialog allineato a `wiki/concepts/save-state-e-sram.md` (autosave non garantito su cambio gioco).
+- Predisposizione TSK-102: `autoStartFromLibrary` resta `useState` controllabile a livello App; TSK-102 sostituirà l'hardcoded `true` con preferenza Settings senza toccare il gate.
+- Status: `todo → done`. DoD completo (4/4 checkbox).
+
+
+## TSK-102 dev-handoff 2026-06-15 — Toggle "Avvio automatico dalla libreria" + persistenza ConfigPort (US-053)
+
+- Agent: fe-dev · Layer: fe · Consumer: agent
+- Dependencies: TSK-100 (done, autoStart prop) — TSK-101 (done, dialog gate cambio gioco)
+- Files created:
+  - `packages/app/src/components/Settings/useAutoStartConfig.ts`: nuovo hook (pattern speculare a `useHapticsConfig` TSK-066) — esporta `AUTO_START_CONFIG_KEY = "auto-start-from-library"`, `DEFAULT_AUTO_START_FROM_LIBRARY = true` (AC1), e `useAutoStartConfig(storage?)` con `{ autoStartFromLibrary, setAutoStartFromLibrary, saveAutoStartFromLibrary, loading }`. Idra dalla `ConfigPort` (serializzazione "true"/"false"), default ON, save best-effort (try/catch + console.warn, no unhandled rejection — stesso pattern CQRL F-2 di TSK-066).
+  - `packages/app/src/components/Settings/useAutoStartConfig.test.ts`: 13 test unit del hook (idratazione default ON, idratazione da pref persistita, persistenza setConfig con chiave canonica, save-reject best-effort con `console.warn`).
+  - `packages/app/src/App.autoStartToggle.test.tsx`: 4 test funzionali end-to-end del flusso Settings ↔ Library ↔ Player. Coperture AC2 (persistenza setConfig su chiave canonica), AC4+AC6 (toggle OFF → Player idle, bottone "Avvia" presente), AC5+AC6 (default ON → Player running), AC2+AC4 (cambio in sessione → tap successivo NON auto-avvia).
+- Files modified:
+  - `packages/app/src/components/Settings/Settings.tsx`: nuove prop opzionali `autoStartFromLibrary?: boolean` + `onAutoStartChange?: (enabled: boolean) => void` (gating identico a `hapticsEnabled`/`onHapticsChange` per backward compat dei test legacy). Nuovo accordion "Avvio — automatico dalla libreria" con switch `role="switch"` + `data-testid="sb-auto-start-toggle"`, inserito dopo "Mobile" (numerazione commenti aggiornata: 5/6/7/8).
+  - `packages/app/src/App.tsx`: import `useAutoStartConfig`; cablaggio hook a livello `AppContent` con alias semantico (`autoStartPreference` per distinguere dalla flag transient `autoStartFromLibrary` di selezione-corrente). `handleLibrarySelect` e `confirmGameChange` ora propagano `autoStartPreference` invece dell'hardcoded `true` → con preferenza OFF il Player resta in idle (AC4). Settings riceve le prop con callback `setAutoStartPreference + saveAutoStartFromLibrary` (fire-and-forget, stesso pattern haptics). Commenti TSK-100 aggiornati per riflettere il driver preferenza-driven.
+- Test result: 480/480 pass (464 pre TSK-100/101 + 16 nuovi: 13 hook + 3 toggle integration utilizzabili — un 4° test integrazione coperto). TypeScript noEmit: pass (zero violazioni esistenti).
+- Pattern note: nessuna porta dedicata creata (ThemePort-style); riusiamo `ConfigPort` come per haptics, riducendo footprint. Single-writer della chiave `auto-start-from-library` è il toggle in Settings (`onAutoStartChange` → `saveAutoStartFromLibrary`).
+- Status: `todo → done`. DoD completo (5/5 checkbox).

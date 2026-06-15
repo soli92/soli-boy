@@ -33,6 +33,7 @@ import {
   CoreWrapper,
   type EmulatorEngine,
   type LoadOptions,
+  type SessionState,
 } from "../../core/core-wrapper";
 import type { Core } from "../../domain/types";
 import { useFullscreen } from "./useFullscreen";
@@ -155,6 +156,28 @@ export interface PlayerProps {
    * `handleLibrarySelect`).
    */
   autoStart?: boolean;
+  /**
+   * TSK-101 (US-053) — Callback osservazionale sullo stato di sessione del
+   * Player ("idle" | "loaded" | "running" | "paused").
+   *
+   * App.tsx la usa per tracciare a livello composizione lo stato del Player
+   * senza duplicare la sorgente di verità: lo stato canonico resta nel
+   * `CoreWrapper` (R.M1 single-source-of-truth). Necessaria per il gate di
+   * conferma cambio gioco (UX-CF1-02): tap su una ROM diversa mentre il
+   * Player è `running` o `paused` apre un dialog modale ("Cambia gioco?")
+   * prima di sostituire `selected`. Senza esposizione di `state` ad App.tsx
+   * il gate sarebbe scollegato dalla realtà del gioco.
+   *
+   * Contratto:
+   * - Invocata al mount con lo stato iniziale ("idle").
+   * - Invocata a ogni transizione di `state` (idle/loaded/running/paused),
+   *   dopo che il `setState` ha causato il re-render.
+   * - Semantica fire-and-forget: il Player non si aspetta alcun ritorno.
+   *
+   * Backward compat: default `undefined` → no-op (nessuna call), tutti i test
+   * legacy continuano a passare invariati.
+   */
+  onStateChange?: (state: SessionState) => void;
 }
 
 export function Player({
@@ -171,6 +194,7 @@ export function Player({
   hapticsEnabled = false,
   hideOverlayWhenGamepad = true,
   autoStart = false,
+  onStateChange,
 }: PlayerProps) {
   const wrapper = useMemo(() => new CoreWrapper(engine), [engine]);
   const [state, setState] = useState(wrapper.currentState);
@@ -376,6 +400,19 @@ export function Player({
       window.removeEventListener("pagehide", flush);
     };
   }, [saveService, romId, engine, wrapper]);
+
+  // TSK-101 (US-053) — Notifica osservazionale ad App.tsx delle transizioni di
+  // stato del Player (idle/loaded/running/paused). Effect dedicato e
+  // disaccoppiato dalle ramificazioni di handlePlay/Pause/Resume/Stop: react
+  // sincronizza `state` con `wrapper.currentState`, quindi è sufficiente
+  // osservare `state` per coprire tutti i path (anche `useAppLifecycle` e
+  // lifecycleTarget che chiamano `setState`). Una variabile esterna effimera
+  // sarebbe equivalente; useEffect garantisce che il consumer riceva la nuova
+  // identità DOPO il commit (rispetta R.M1: consumer in linea con la render
+  // tree).
+  useEffect(() => {
+    onStateChange?.(state);
+  }, [state, onStateChange]);
 
   const idle = state === "idle";
   const running = state === "running";

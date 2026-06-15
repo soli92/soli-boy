@@ -131,6 +131,16 @@ export interface SettingsProps {
   hapticsEnabled?: boolean;
   /** Callback invocata al cambio del toggle feedback aptico (US-032). */
   onHapticsChange?: (enabled: boolean) => void;
+  /**
+   * TSK-102 (US-053) — preferenza "Avvio automatico dalla libreria" abilitata.
+   * Se passata insieme a `onAutoStartChange`, la sezione "Avvio" mostra il
+   * toggle relativo (opt-out della UX "tap = start" introdotta da TSK-100).
+   * Prop OPZIONALI per backward compat: i test legacy senza wiring non
+   * renderizzano la sezione (gating speculare a haptics/theme).
+   */
+  autoStartFromLibrary?: boolean;
+  /** Callback invocata al cambio del toggle "Avvio automatico" (US-053 AC2). */
+  onAutoStartChange?: (enabled: boolean) => void;
 }
 
 /** Etichette user-facing per i valori di scala. */
@@ -175,6 +185,8 @@ export function Settings({
   onThemeChange,
   hapticsEnabled,
   onHapticsChange,
+  autoStartFromLibrary,
+  onAutoStartChange,
 }: SettingsProps) {
   const [saved, setSaved] = useState(false);
 
@@ -542,7 +554,40 @@ export function Settings({
         </details>
       )}
 
-      {/* === Accordion 5: Dati — salvataggi (export/import) (chiuso) ======== */}
+      {/* === Accordion 5: Avvio — auto-start dalla libreria (chiuso, opzionale) === */}
+      {/* TSK-102 (US-053) — Toggle "Avvio automatico dalla libreria".
+          Permette di opt-out dalla UX "tap = start" introdotta da TSK-100:
+          con toggle OFF il tap su una tile della Library seleziona la ROM e
+          porta su Play, ma NON avvia automaticamente — l'utente preme "Avvia"
+          dal Player (comportamento legacy pre-TSK-100).
+          Sezione opzionale: renderizzata solo se App.tsx ha cablato le prop
+          (modalità controllata via `useAutoStartConfig`). I test legacy che
+          non passano queste prop non vedono la sezione (parità haptics/theme). */}
+      {autoStartFromLibrary !== undefined && onAutoStartChange !== undefined && (
+        <details>
+          <summary className="sb-lbl">
+            Avvio — automatico dalla libreria
+          </summary>
+          <ul className="sb-keymap" aria-label="Impostazioni avvio">
+            <li className="sb-row">
+              <span className="sb-key">Avvio automatico dalla libreria</span>
+              <button
+                type="button"
+                className={`sb-tog${autoStartFromLibrary ? " on" : ""}`}
+                role="switch"
+                aria-checked={autoStartFromLibrary}
+                aria-label="Avvio automatico dalla libreria"
+                data-testid="sb-auto-start-toggle"
+                onClick={() => onAutoStartChange(!autoStartFromLibrary)}
+              >
+                <span className="knob" />
+              </button>
+            </li>
+          </ul>
+        </details>
+      )}
+
+      {/* === Accordion 6: Dati — salvataggi (export/import) (chiuso) ======== */}
       {/* TSK-033 — Dati (US-019): export/import salvataggi.
           Sezione sempre visibile per UX prevedibile; disabilitata con nota
           se manca `saveService` (es. test legacy senza wiring) o non ci sono
@@ -635,7 +680,7 @@ export function Settings({
         )}
       </details>
 
-      {/* === Accordion 6: Legale (chiuso) ==================================== */}
+      {/* === Accordion 7: Legale (chiuso) ==================================== */}
       {/* TSK-070 (US-034) — Sezione "Legale" SEMPRE consultabile, posta
           PRIMA della sezione Privacy così il cross-link interno "qui sotto"
           è coerente (vedi StoreComplianceNotice.tsx). Avviso esplicito
@@ -650,7 +695,7 @@ export function Settings({
         <StoreComplianceNotice headingHidden />
       </details>
 
-      {/* === Accordion 7: Privacy (chiuso) =================================== */}
+      {/* === Accordion 8: Privacy (chiuso) =================================== */}
       {/* TSK-069 (US-033) — Sezione "Privacy" SEMPRE consultabile.
           Incondizionata (no prop gating) perché il contenuto è statico e
           riflette il modello on-device dell'app (ADR-002 §Conseguenze).
