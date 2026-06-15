@@ -162,14 +162,23 @@ export async function setThemeViaDB(
   // Reload: l'app legge `"ui-theme"` da IDB al mount via `useTheme` (async effect).
   await page.reload();
 
+  // TSK-102: dopo il reload, React esegue in sequenza più hook che leggono
+  // da ConfigPort in parallelo (useTheme, useAutoStartConfig, useHapticsConfig,
+  // useVideoSettings, usePrivacyAck). Ogni lettura IDB può aggiungersi al tempo
+  // di hydration totale. Attendiamo che il JS applicativo abbia eseguito i
+  // microtask post-render prima di interrogare il DOM.
+  await page.waitForLoadState("load");
+
   // Attende che `useTheme` completi il `port.load()` e applichi `data-theme`.
   // Usiamo `waitForFunction` con polling invece di un timeout fisso per essere
   // deterministici: il test avanza non appena il DOM riflette il valore corretto.
+  // Timeout aumentato a 10s per coprire la latenza aggiuntiva introdotta dai
+  // nuovi hook ConfigPort (TSK-102: auto-start-from-library).
   const applied = await page.waitForFunction(
     ({ attr, expected }: { attr: string; expected: string }) =>
       document.documentElement.getAttribute(attr) === expected,
     { attr: DATA_THEME_ATTR, expected: theme },
-    { timeout: 5_000, polling: 100 },
+    { timeout: 10_000, polling: 100 },
   ).then(() => true).catch(() => false);
 
   if (!applied) {

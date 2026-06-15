@@ -44,7 +44,11 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     // Slot occupato (meta non più "vuoto") e nessun alert (snapshot mGBA riuscito).
     const slotMeta = page.getByTestId(`sb-savestate-meta-${SLOT}`);
     await expect(slotMeta).not.toHaveText("vuoto", { timeout: 5_000 });
-    await expect(page.getByRole("alert")).not.toBeVisible();
+    // TSK-096: StorageInitErrorFallback aggiunge <main role="alert"> al DOM quando
+    // selectAdapter() lancia. Restringiamo il controllo all'errore del Player
+    // (sb-storage-init-error non deve essere visibile) + nessun alert di Player.
+    await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible();
+    await expect(page.locator('.sb-app .sb-note[role="alert"]')).not.toBeVisible();
   });
 
   test("salva stato → carica stato: nessun errore, canvas resta visibile", async ({ page }) => {
@@ -70,7 +74,11 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     await loadBtn.click();
 
     // restore mGBA riuscito: nessun alert, canvas ancora vivo.
-    await expect(page.getByRole("alert")).not.toBeVisible({ timeout: 5_000 });
+    // TSK-096: StorageInitErrorFallback aggiunge <main role="alert"> al DOM quando
+    // selectAdapter() lancia. Stessa strategia del test precedente: escludiamo
+    // il fallback storage e verifichiamo solo gli alert di gioco/Player.
+    await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('.sb-app .sb-note[role="alert"]')).not.toBeVisible({ timeout: 5_000 });
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 5_000 });
   });
 });

@@ -31,16 +31,30 @@ test("carica una ROM GB → compare in libreria → avvia → pausa", async ({ p
   const tile = page.getByRole("button", { name: "tetris GB" });
   await expect(tile).toBeVisible();
 
-  // selezione → Player → Avvia
+  // TSK-100: click su tile → auto-start (preferenza default ON) — il Player
+  // avvia automaticamente, "Avvia" non è più necessario. Se il gate dialog
+  // "Cambia gioco?" (TSK-101) è aperto (ROM diversa già in esecuzione),
+  // lo confermiamo prima di procedere.
   await tile.click();
-  await page.getByRole("button", { name: /avvia/i }).click();
-  await expect(page.getByLabel("Schermo di gioco")).toHaveText("tetris");
+  const changeDialog = page.getByRole("dialog", { name: /cambia gioco/i });
+  if (await changeDialog.isVisible()) {
+    await page.getByRole("button", { name: /cambia gioco/i }).click();
+  }
+
+  // TSK-103: il titolo ROM è nell'HUD (.sb-hud, role="status"), non nello
+  // schermo (.sb-screen). Verifichiamo stato running via data-state sul viewport.
+  const screen = page.locator(".sb-screen");
+  await expect(screen).toHaveAttribute("data-state", "running", { timeout: 10_000 });
+  const hud = page.locator(".sb-hud");
+  await expect(hud).toContainText("tetris");
 
   // controlli (US-011): pausa → ripresa
   await page.getByRole("button", { name: /pausa/i }).click();
-  await expect(page.getByText("In pausa")).toBeVisible();
+  // TSK-103: "In pausa" è nell'HUD (.sb-hud, role="status"), non nello schermo.
+  await expect(hud).toContainText("In pausa");
   await page.getByRole("button", { name: /riprendi/i }).click();
-  await expect(page.getByLabel("Schermo di gioco")).toHaveText("tetris");
+  await expect(screen).toHaveAttribute("data-state", "running", { timeout: 5_000 });
+  await expect(hud).toContainText("tetris");
 });
 
 test("file non supportato mostra errore e non entra in libreria", async ({ page }) => {
@@ -52,7 +66,12 @@ test("file non supportato mostra errore e non entra in libreria", async ({ page 
   await expect(page.getByRole("alert")).toBeVisible();
   // IA a 4 tab (increment 2): lo stato vuoto "Nessun gioco" è nella Libreria.
   await page.getByRole("tab", { name: "Libreria" }).click();
-  await expect(page.getByText(/nessun gioco/i)).toBeVisible();
+  // TSK-103: getByText(/nessun gioco/i) ora matcha sia la Library ("Nessun gioco.
+  // Carica una ROM per iniziare.") sia l'HUD ("Nessun gioco selezionato"). Usiamo
+  // il selettore contestuale scoped alla sezione "Libreria giochi" per disambiguare.
+  await expect(
+    page.locator('[aria-label="Libreria giochi"]').getByText(/nessun gioco/i)
+  ).toBeVisible();
 });
 
 test("Settings: rimappatura comando (US-013)", async ({ page }) => {

@@ -106,8 +106,9 @@ test.describe("TSK-024 — e2e engine reale (WasmBoyEngine/GB) ciclo completo @s
       await expect(screen).toHaveAttribute("data-state", "paused", {
         timeout: 5_000,
       });
-      // Il Player mostra "In pausa" nel corpo dello schermo (Player.tsx: paused ? "In pausa" : ...).
-      await expect(screen).toContainText("In pausa");
+      // TSK-103: "In pausa" è ora nell'HUD (.sb-hud, role="status"), non dentro
+      // .sb-screen. Lo schermo contiene solo il canvas host + overlay "⏸".
+      await expect(page.locator(".sb-hud")).toContainText("In pausa");
       // Il bottone Riprendi deve essere visibile; Pausa non deve esserlo.
       await expect(
         page.getByRole("button", { name: /riprendi/i }),
