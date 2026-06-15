@@ -572,3 +572,7 @@ Implementazione completata. Nessun TSK BE bloccante.
 [2026-06-09 17:20] functional-oracle soliboy iter-2 → PASS: engine running confermato (bottone Pausa presente). Falso negativo iter-1 risolto (assert via segnale app, non testo HUD). Finding collaterale: canvas CSS 378x24px (altezza collassata) → backlog UX.
 [2026-06-09 17:55] residui redesign soli-boy: TouchOverlay Variante B (portrait controlli SOTTO lo schermo, landscape 3-col, fullscreen overlay invariato) + Settings accordion (7 details, 1 aperta/6 chiuse). Verificato: 420 test, typecheck, mobile overlayBelowScreen=true, functional running=true.
 [2026-06-09 18:00] chiusura residui-cosmetici: doppio-header Legale/Privacy risolto (prop headingHidden, sbLblCount=1) + marker <details> stilizzato DS (chevron ^ , nativo nascosto). 420 test, typecheck, build OK. Residuo device fisico: non automatizzabile (resta verifica umana).
+
+[2026-06-15 10:00] fe-dev | develop | TSK-085 | EP-019 art-director statement prodotto: design_&_architecture/ux-design-rationale-ep019.md (INTENT/PROBLEM/RATIONALE/CONSTRAINTS + DESIGN SPEC DSL 3 layout + CRITIC PASS verdict conditional)
+2026-06-15 15:30 | docs-dev | develop | TSK-090 | EP-019 critic report globale: 2 finding non previsti (backlog sincronizzato), 1 capability iterata (scale test), debito EP-018 saldato
+2026-06-15 15:35 | qa-dev | develop | TSK-091 | EP-018 re-check: functional oracle stabile, falso-negativo iter-1 risolto, debito v2.20 saldato
