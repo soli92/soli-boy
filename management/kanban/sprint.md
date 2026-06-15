@@ -288,36 +288,36 @@ I seguenti 6 TSK FE `done` hanno ricevuto skip motivato direttamente nel frontma
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-092 | Fix restoreSram best-effort in handlePlay | US-050 | EP-014 | fe | agent | P0 | S | todo | — |
-| TSK-093 | Guard ROM Blob vuoto in WasmBoyEngine.load | US-050 | EP-014 | be | agent | P0 | XS | todo | — |
-| TSK-094 | Atomicità putSaveState: try-unlink su manifest fail | US-050 | EP-014 | be | agent | P0 | S | todo | — |
+| TSK-092 | Fix restoreSram best-effort in handlePlay | US-050 | EP-014 | fe | agent | P0 | S | done | — |
+| TSK-093 | Guard ROM Blob vuoto in WasmBoyEngine.load | US-050 | EP-014 | be | agent | P0 | XS | done | — |
+| TSK-094 | Atomicità putSaveState: try-unlink su manifest fail | US-050 | EP-014 | be | agent | P0 | S | done | — |
 
 ### Wave 2 — Fix stale closure + HUD Player (parallelo)
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-095 | Fix stale closure handleCapacitorUri FileLoader.tsx | US-051 | EP-014 | fe | agent | P1 | S | todo | — |
-| TSK-096 | Fix useMemo deps stale + selectAdapter Error Boundary | US-051 | EP-014 | fe | agent | P1 | M | todo | — |
-| TSK-097 | Fix handleFile async try/catch FileLoader.tsx | US-051 | EP-014 | fe | agent | P1 | XS | todo | — |
-| TSK-103 | HUD Player user-facing: romTitle + stati italiani + overlay pausa | US-054 | EP-015 | fe | agent | P1 | M | todo | — |
-| TSK-105 | Aspect-ratio CSS invariante su .sb-screen (idle no-jump) | US-055 | EP-015 | fe | agent | P1 | S | todo | — |
+| TSK-095 | Fix stale closure handleCapacitorUri FileLoader.tsx | US-051 | EP-014 | fe | agent | P1 | S | done | — |
+| TSK-096 | Fix useMemo deps stale + selectAdapter Error Boundary | US-051 | EP-014 | fe | agent | P1 | M | done | — |
+| TSK-097 | Fix handleFile async try/catch FileLoader.tsx | US-051 | EP-014 | fe | agent | P1 | XS | done | — |
+| TSK-103 | HUD Player user-facing: romTitle + stati italiani + overlay pausa | US-054 | EP-015 | fe | agent | P1 | M | done | — |
+| TSK-105 | Aspect-ratio CSS invariante su .sb-screen (idle no-jump) | US-055 | EP-015 | fe | agent | P1 | S | done | — |
 
 ### Wave 3 — QA + dipendenti da Wave 2 (dopo Wave 2)
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-104 | Visual oracle + test funzionale HUD Player | US-054 | EP-015 | qa | agent | P1 | S | todo | TSK-103 |
-| TSK-106 | Layout slot fissi controlli Player | US-055 | EP-015 | fe | agent | P1 | M | todo | TSK-105 |
-| TSK-100 | Avvio automatico ROM da Library | US-053 | EP-015 | fe | agent | P0 | M | todo | TSK-104 |
+| TSK-104 | Visual oracle + test funzionale HUD Player | US-054 | EP-015 | qa | agent | P1 | S | done | TSK-103 |
+| TSK-106 | Layout slot fissi controlli Player | US-055 | EP-015 | fe | agent | P1 | M | done | TSK-105 |
+| TSK-100 | Avvio automatico ROM da Library | US-053 | EP-015 | fe | agent | P0 | M | done | TSK-104 |
 
 ### Wave 4 — Gate conferma + toggle + refactor (dopo Wave 3)
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-101 | Gate conferma cambio gioco: dialog modale | US-053 | EP-015 | fe | agent | P0 | M | todo | TSK-100 |
-| TSK-102 | Toggle Settings "Avvio automatico dalla libreria" | US-053 | EP-015 | fe | agent | P0 | S | todo | TSK-100 |
-| TSK-098 | Estrai hook useTabPause + useSaveData | US-052 | EP-014 | fe | agent | P2 | M | todo | — |
-| TSK-099 | Fix unsafe Error cast + test hook isolamento | US-052 | EP-014 | qa | agent | P2 | S | todo | TSK-098 |
+| TSK-101 | Gate conferma cambio gioco: dialog modale | US-053 | EP-015 | fe | agent | P0 | M | done | TSK-100 |
+| TSK-102 | Toggle Settings "Avvio automatico dalla libreria" | US-053 | EP-015 | fe | agent | P0 | S | done | TSK-100 |
+| TSK-098 | Estrai hook useTabPause + useSaveData | US-052 | EP-014 | fe | agent | P2 | M | done | — |
+| TSK-099 | Fix unsafe Error cast + test hook isolamento | US-052 | EP-014 | qa | agent | P2 | S | done | TSK-098 |
 
 DAG Sprint 12:
 - Wave 1 (parallelo, P0): TSK-092 ‖ TSK-093 ‖ TSK-094
@@ -402,9 +402,10 @@ chiudersi prima che TSK-114 sia done.
   `ds-color-contrast-cross-cutting-90s-party-dark`. 6 TSK skip motivato applicato (infra/asset non-DOM).
 - **Sprint 11 — Design Intelligence (EP-013):** TSK-085..091 done.
   EP-019 UX audit chiuso. EP-018 Functional Oracle re-check PASS. EP-022 Token Ledger attivo.
-- **Sprint 12 — Robustezza codice (EP-014) + UX Player (EP-015):** 13 TSK todo (TSK-092..106).
-  EP-014 P0: TSK-092..097 (fix runtime critical + stale closure). EP-014 P2: TSK-098..099 (refactor).
-  EP-015 P0/P1: TSK-100..106 (auto-avvio, HUD, stabilità visiva).
+- **Sprint 12 — Robustezza codice (EP-014) + UX Player (EP-015):** 15/15 TSK done (TSK-092..106).
+  EP-014 P0: TSK-092..097 done. EP-014 P2: TSK-098..099 done (refactor hook + test isolamento).
+  EP-015 P0/P1: TSK-100..106 done (auto-avvio, HUD, gate cambio gioco, toggle, stabilità visiva).
+  480/480 test pass. Complessità cognitiva App.tsx + Settings.tsx sotto soglia 15.
 - **Sprint 13 — UX Library/Settings (EP-016) + A11y (EP-017):** 13 TSK todo (TSK-107..119).
   EP-016 P1/P2: TSK-107..114. EP-017 P1/P2: TSK-115..119.
   Blocco: TSK-119 (US-061) dipende da TSK-114 (US-059 rimozione aria-hidden TouchOverlay).
