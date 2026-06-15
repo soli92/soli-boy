@@ -48,9 +48,10 @@ const FAKE_ROM = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Naviga all'app con StubEngine e pulisce IDB per isolamento. */
+/** Naviga all'app con StubEngine. L'isolamento IDB è garantito dal contesto
+ * Playwright (context-per-test): addInitScript persisterebbe attraverso i
+ * page.reload() di setThemeViaDB cancellando il tema appena scritto. */
 async function gotoApp(page: import("@playwright/test").Page): Promise<void> {
-  await page.addInitScript(() => indexedDB.deleteDatabase("soli-boy"));
   await page.goto("/?engine=stub");
 }
 
