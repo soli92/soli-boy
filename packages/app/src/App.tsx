@@ -125,6 +125,23 @@ function AppContent({
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
+  // TSK-100 (US-053) — Auto-start ROM dalla Library (UX-CF1-01 "tap = start").
+  // Indica se la selezione corrente proviene dalla Library: in caso affermativo
+  // il Player avvia la ROM automaticamente, senza richiedere il click su
+  // "Avvia". Default ON (impostato a `true` in `handleLibrarySelect`); TSK-102
+  // (toggle Settings "Avvio automatico dalla libreria") farà passare qui un
+  // valore preferenza-driven invece dell'hardcoded ON.
+  //
+  // Backward compat: il flag transita al Player via prop `autoStart`; il
+  // Player garantisce no-loop via ref interno (`autoStartedForRomRef` su
+  // identità Blob). Una nuova selezione dalla Library riattiva il trigger;
+  // i path NON-library (FileLoader → setRefresh, banner CTA) NON impostano
+  // questo flag a true → Player resta legacy (richiede click "Avvia"). Quando
+  // c'è una nuova ROM, riportiamo il flag a true esplicitamente — non
+  // resettiamo a false dopo l'auto-start: la prop riflette "la selezione
+  // corrente è da Library", non "deve auto-avviare in questo istante" (lo
+  // stato is-already-started è gestito dal Player).
+  const [autoStartFromLibrary, setAutoStartFromLibrary] = useState(false);
 
   // INCREMENT 2 — navigazione a tab. Default "play" (emulator-first).
   const [activeTab, setActiveTab] = useState<Tab>("play");
@@ -306,8 +323,12 @@ function AppContent({
 
   // Handler selezione ROM dalla Library: seleziona la ROM e porta l'utente
   // sulla tab Play (OQ-02: auto-switch preferibile per nielsen-1 / flow-ux-1).
+  // TSK-100 (US-053) — imposta `autoStartFromLibrary=true` così il Player avvia
+  // automaticamente la ROM (UX-CF1-01 "tap = start"). Default ON; TSK-102
+  // sostituirà l'hardcoded con la preferenza Settings.
   function handleLibrarySelect(rom: RomRecord) {
     setSelected(rom);
+    setAutoStartFromLibrary(true);
     setActiveTab("play");
   }
 
@@ -400,6 +421,7 @@ function AppContent({
           hapticsEnabled={hapticsEnabled}
           inputMapping={input}
           touchConfigStorage={config}
+          autoStart={autoStartFromLibrary}
         />
         {/* CTA FileLoader in stato idle (nessuna ROM selezionata) */}
         {!selected && (

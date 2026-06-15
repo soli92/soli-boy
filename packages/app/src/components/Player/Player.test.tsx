@@ -127,6 +127,118 @@ describe("Player", () => {
     ).not.toBeInTheDocument();
   });
 
+  describe("TSK-100 (US-053) — autoStart prop: avvio automatico ROM dalla Library", () => {
+    it("AC2: con autoStart=true e ROM materiale il Player avvia automaticamente (no click 'Avvia')", async () => {
+      const engine = fakeEngine();
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+          title="Pokemon Red"
+          autoStart={true}
+        />,
+      );
+
+      // Nessun click su "Avvia": l'effetto useEffect deve invocare handlePlay
+      // al mount. Aspettiamo che lo stato diventi running (presenza del bottone
+      // "Pausa" implica state === "running").
+      await screen.findByRole("button", { name: /pausa/i });
+      expect(engine.load).toHaveBeenCalledOnce();
+      expect(engine.start).toHaveBeenCalledOnce();
+    });
+
+    it("AC default OFF (backward compat): senza autoStart il Player resta idle (richiede click 'Avvia')", async () => {
+      const engine = fakeEngine();
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+          title="Tetris"
+        />,
+      );
+
+      // Nessun click → Player deve restare idle. Aspettiamo un microtick per
+      // assicurarci che nessun useEffect autoStart sia scattato.
+      await Promise.resolve();
+      expect(engine.load).not.toHaveBeenCalled();
+      expect(engine.start).not.toHaveBeenCalled();
+      // Bottone "Avvia" ancora presente (state === idle).
+      expect(screen.getByRole("button", { name: /avvia/i })).toBeInTheDocument();
+    });
+
+    it("F-100-01: autoStart=true con ROM placeholder (Blob vuoto) NON avvia (App stato idle senza ROM)", async () => {
+      const engine = fakeEngine();
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(), core: "gambatte" }}
+          autoStart={true}
+        />,
+      );
+      // Blob vuoto = placeholder App.tsx stato idle senza ROM: NON deve avviare.
+      await Promise.resolve();
+      expect(engine.load).not.toHaveBeenCalled();
+      expect(engine.start).not.toHaveBeenCalled();
+    });
+
+    it("F-100-02: autoStart=true non rilancia handlePlay su re-render con stessa ROM (no loop)", async () => {
+      const engine = fakeEngine();
+      const blob = new Blob(["x"]);
+      const { rerender } = render(
+        <Player
+          engine={engine}
+          rom={{ rom: blob, core: "gambatte" }}
+          title="Tetris"
+          autoStart={true}
+        />,
+      );
+      await screen.findByRole("button", { name: /pausa/i });
+      expect(engine.load).toHaveBeenCalledOnce();
+      expect(engine.start).toHaveBeenCalledOnce();
+
+      // Re-render con la STESSA identità di Blob: il ref interno
+      // `autoStartedForRomRef` deve fare guard → handlePlay NON ri-eseguito.
+      // Cambiamo solo una prop ininfluente (title) per forzare il re-render.
+      rerender(
+        <Player
+          engine={engine}
+          rom={{ rom: blob, core: "gambatte" }}
+          title="Tetris (revised)"
+          autoStart={true}
+        />,
+      );
+      await Promise.resolve();
+      expect(engine.load).toHaveBeenCalledOnce();
+      expect(engine.start).toHaveBeenCalledOnce();
+    });
+
+    it("AC4: errore di load con autoStart=true è gestito come esistente (alert area, no crash)", async () => {
+      const engine = {
+        ...fakeEngine(),
+        load: vi.fn<EmulatorEngine["load"]>(async () => {
+          throw new Error("ROM non valida");
+        }),
+      } satisfies EmulatorEngine;
+
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+          title="Broken ROM"
+          autoStart={true}
+        />,
+      );
+
+      // L'errore di load viene catturato da handlePlay (catch block esistente)
+      // e mostrato come alert. Stesso path del click manuale.
+      const alert = await screen.findByRole("alert");
+      expect(alert).toHaveTextContent("ROM non valida");
+      // Il Player resta in stato idle (bottone "Avvia" ancora visibile).
+      expect(screen.getByRole("button", { name: /avvia/i })).toBeInTheDocument();
+      expect(engine.start).not.toHaveBeenCalled();
+    });
+  });
+
   it("TSK-032: con saveService il pannello è reso, e si abilita quando il gioco è in esecuzione (US-016 AC1)", async () => {
     const saveService: SaveServicePort = {
       saveState: vi.fn(async (_e, romId: string, slot: number) => `${romId}:${slot}:0:id`),

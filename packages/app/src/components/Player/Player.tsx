@@ -133,6 +133,28 @@ export interface PlayerProps {
    * Corrisponde al toggle "Nascondi overlay con gamepad" in Settings (US-028).
    */
   hideOverlayWhenGamepad?: boolean;
+  /**
+   * TSK-100 (US-053) — Avvio automatico ROM dalla Library (UX-CF1-01 "tap = start").
+   *
+   * Quando `true` e il Player è in stato `idle` con una ROM "reale" (fileBlob
+   * non vuoto), il Player invoca `handlePlay()` automaticamente al mount /
+   * all'aggiornamento della ROM, senza richiedere il click manuale su "Avvia".
+   *
+   * Backward compat: default `false`/`undefined` → comportamento legacy
+   * (l'utente preme manualmente "Avvia"). Il trigger è guardato da un ref
+   * interno (`autoStartedForRomRef`) che memorizza l'identità del Blob ROM già
+   * autoavviato: una nuova ROM riattiva il trigger; ri-render con la stessa ROM
+   * è no-op (no loop, no doppi `wrapper.load`).
+   *
+   * NB: blob "vuoti" (placeholder `new Blob()` di App.tsx in stato idle, vedi
+   * App.tsx#385-393) sono ignorati — l'auto-avvio richiede una ROM materiale.
+   *
+   * TSK-102 (futuro) — il toggle Settings "Avvio automatico dalla libreria"
+   * controllerà a livello App.tsx il valore qui passato (oggi App.tsx ne usa
+   * un default ON quando la selezione viene dalla Library, vedi
+   * `handleLibrarySelect`).
+   */
+  autoStart?: boolean;
 }
 
 export function Player({
@@ -148,6 +170,7 @@ export function Player({
   touchConfigStorage,
   hapticsEnabled = false,
   hideOverlayWhenGamepad = true,
+  autoStart = false,
 }: PlayerProps) {
   const wrapper = useMemo(() => new CoreWrapper(engine), [engine]);
   const [state, setState] = useState(wrapper.currentState);
@@ -299,6 +322,35 @@ export function Player({
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+
+  // TSK-100 (US-053) — Auto-start ROM dalla Library (UX-CF1-01 "tap = start").
+  // Trigger una sola volta per identità del Blob ROM: il ref memorizza l'ultimo
+  // blob autoavviato così su re-render con la stessa ROM non rilanciamo
+  // `handlePlay`. Il ref si resetta implicitamente quando il blob cambia (nuova
+  // ROM in sessione). `handlePlayRef` è aggiornato ad ogni render perché
+  // `handlePlay` chiude su `wrapper`/`saveService`/`romId`/`rom`/`engine`: senza
+  // ref-stable la deps array sarebbe enorme e fragile (esaustivo solo a costo
+  // di riavviare l'effect su ogni input). Pattern già utilizzato da React docs
+  // per "trigger su evento" — vedi useEffectEvent (pattern equivalente).
+  const handlePlayRef = useRef(handlePlay);
+  useEffect(() => {
+    handlePlayRef.current = handlePlay;
+  });
+  const autoStartedForRomRef = useRef<Blob | null>(null);
+  useEffect(() => {
+    if (!autoStart) return;
+    if (state !== "idle") return;
+    // F-100-01: ignora blob "placeholder" vuoti (App.tsx in stato idle senza
+    // ROM selezionata monta `new Blob()` per tenere il Player sempre montato).
+    // L'auto-avvio richiede una ROM materiale.
+    if (rom.rom.size === 0) return;
+    // F-100-02: stessa identità Blob già autoavviata → no-op (no loop su
+    // re-render). React garantisce stable identity per la stessa `rom` prop
+    // finché App.tsx non costruisce un nuovo oggetto LoadOptions.
+    if (autoStartedForRomRef.current === rom.rom) return;
+    autoStartedForRomRef.current = rom.rom;
+    void handlePlayRef.current();
+  }, [autoStart, state, rom.rom]);
 
   // US-017 — autosave SRAM quando l'app passa in background o la pagina viene
   // scaricata. Su mobile l'utente raramente preme "Arresta": tipicamente manda

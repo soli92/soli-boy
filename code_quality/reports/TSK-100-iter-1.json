@@ -1,0 +1,52 @@
+{
+  "tsk_id": "TSK-100",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "test_runner": "vitest",
+    "confidence": 0.98,
+    "detection_mode": "guided"
+  },
+  "findings": [
+    {
+      "id": "F-100-01",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "file": "packages/app/src/App.tsx",
+      "line": 128,
+      "line_end": 143,
+      "title": "Commento autoStartFromLibrary ridondante nelle ultime 4 righe",
+      "description": "Il blocco commento sul useState `autoStartFromLibrary` (righe 128-143, 16 righe totali) reitera nelle ultime 4 righe concetti già espressi nelle prime 12 e nel JSDoc di PlayerProps.autoStart (Player.tsx:136-157). La semantica 'non resettiamo a false dopo l'auto-start' e la predisposizione TSK-102 sono documentate due volte con frasi quasi identiche. Riduzione a ~10 righe sufficiente a coprire il WHY senza duplicazione.",
+      "false_positive_risk": "low",
+      "note": "Non blocca: la logica è corretta e il WHY di base è giustificato. Finding cosmetico."
+    },
+    {
+      "id": "F-100-02",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "file": "packages/app/src/components/Player/Player.test.tsx",
+      "line": 130,
+      "line_end": 240,
+      "title": "Manca test per toggling autoStart true→false a runtime",
+      "description": "I 5 test TSK-100 coprono: AC2 happy path, backward compat (undefined), F-100-01 blob vuoto, F-100-02 no-loop re-render, AC4 errore load. Non è coperto il caso in cui `autoStart` passi da `true` a `false` durante il ciclo di vita del componente montato (scenario rilevante per TSK-102 che controllerà il flag via preferenza Settings). Con autoStart=false dopo un avvio già avvenuto il comportamento atteso è: nessun avvio aggiuntivo, stato invariato. La logica attuale è corretta (guard `if (!autoStart) return`), ma non c'è regressione test che lo blocchi se TSK-102 introduce un bug in questa transizione.",
+      "false_positive_risk": "low",
+      "note": "Delegabile a qa-dev. Non blocca: TSK-102 è in backlog, la feature attuale è correttamente testata per lo scope corrente."
+    }
+  ],
+  "verdict": "pass",
+  "summary": "Codice TSK-100 idiomatico, design pulito, robusto. Prop autoStart opzionale con default false preserva backward compat. Anti-loop via ref su identità Blob corretto e affidabile. Pattern handlePlayRef (ref aggiornato a ogni render) è l'equivalente useEffectEvent documentato da React: idiomatico in React 18. Deps array [autoStart, state, rom.rom] corrette e complete. Separazione responsabilità App/Player (quando vs come) pulita. 5 test coprono i casi critici. 2 finding low non bloccanti: commento ridondante (cosmetics) e gap test toggling per scenario futuro TSK-102.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_risk": false
+  },
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "2.21"
+}
