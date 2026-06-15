@@ -128,7 +128,7 @@ export function useSaveData(
       setList([]);
       setMessage({
         kind: "error",
-        text: `Impossibile leggere i salvataggi: ${(e as Error).message}`,
+        text: `Impossibile leggere i salvataggi: ${e instanceof Error ? e.message : String(e)}`,
       });
     }
   }, [saveService, currentRomId]);
@@ -161,7 +161,7 @@ export function useSaveData(
       } catch (e) {
         setMessage({
           kind: "error",
-          text: `Esportazione fallita: ${(e as Error).message}`,
+          text: `Esportazione fallita: ${e instanceof Error ? e.message : String(e)}`,
         });
       } finally {
         setBusy(false);
@@ -203,7 +203,7 @@ export function useSaveData(
         // Difensivo: importSave non dovrebbe lanciare, ma l'I/O del File può.
         setMessage({
           kind: "error",
-          text: `Importazione fallita: ${(e as Error).message}`,
+          text: `Importazione fallita: ${e instanceof Error ? e.message : String(e)}`,
         });
       } finally {
         setBusy(false);
