@@ -1,6 +1,6 @@
 # CLAUDE.md — soli-boy
 
-Questo repo è una **Agentic Factory llm-wiki++ v2.19** scaffoldata da `factory-bootstrap`.
+Questo repo è una **Agentic Factory llm-wiki++ v2.21** scaffoldata da `factory-bootstrap`.
 Segue il contratto universale definito in [`PATTERN.md`](PATTERN.md) (agent-agnostic,
 multi-adapter, compression layer a due assi).
 
@@ -19,7 +19,9 @@ Vedi [`factory.config.yaml`](factory.config.yaml):
 | FE Visual Oracle (v2.17) | ON — `fe_correctness.enabled: true`, Playwright in `packages/app` |
 | Accessibility Testing (v2.18) | ON — `a11y.enabled: true`, agente `a11y-specialist`; richiede `axe-playwright` |
 | UX/UI Review & Design (v2.18) | ON — `ux_ui.enabled: true`, agenti `ux-ui-reviewer` + `ui-designer` (tool callable via ADR-064) |
-| FE Functional Oracle (EP-018) | OPT-IN — `fe_correctness.functional_oracle.enabled`; acceptance-spec in `code_quality/acceptance/`, esecutore `qa-dev` |
+| FE Functional Oracle (v2.20, EP-018) | ON — `fe_correctness.functional_oracle.enabled: true`; acceptance-spec in `code_quality/acceptance/`, esecutore `qa-dev` |
+| Design Intelligence Layer (v2.21, EP-019) | ON — `design_intelligence.enabled: true`; art_director + critic_enabled + intention_economy ON; `generator_tool: none` |
+| Token Ledger (v2.21, EP-022) | ON — `analytics.token_ledger.enabled: true`; hook Stop in `.claude/settings.json`, display inline dopo ogni risposta |
 | Compression OUTPUT (Caveman) | ON — `conservative` |
 | Compression CONTEXT (Graphify) | ON — `graphify-cloud`, target `app` |
 
@@ -64,11 +66,18 @@ adapter contemporaneamente.
   vedi [`wiki/runbooks/ux-ui-review-runbook.md`](wiki/runbooks/ux-ui-review-runbook.md)
 - **UX/UI design (v2.18)**: `/ux-ui-design <brief>` — wireframe/spec/flussi/copy (no-auto-eval: passa
   sempre alla review); vedi [`wiki/runbooks/ux-ui-design-runbook.md`](wiki/runbooks/ux-ui-design-runbook.md)
-- **Functional oracle (EP-018, opt-in)**: `/functional-oracle <TSK-id|app>` — *esercita* il flusso reale
-  (serve app + carica fixture ROM + interazione Playwright + asserzioni domain-agnostic + verdict
+- **Functional oracle (v2.20, EP-018)**: `/functional-oracle <TSK-id|app>` — *esercita* il flusso reale
+  (serve app + carica fixture + interazione Playwright + asserzioni domain-agnostic + verdict
   deterministico, critic LLM advisory). Acceptance-spec in
   [`code_quality/acceptance/soliboy.acceptance.yaml`](code_quality/acceptance/soliboy.acceptance.yaml);
   ordering `develop → visual-oracle → ux-ui-review/a11y → functional-oracle → code-review`.
+- **Design Intelligence Layer (v2.21, EP-019)**: attivo via `design_intelligence.enabled: true`.
+  Pipeline FE estesa: `art-director-coordination` (DSL tema vincolante, R.D1) → `design-rationale`
+  (reasoning-first, R.D2) → `ux-ui-design` → `critic/judge` (6 principi, NON oracolo R.D3) +
+  `intention_economy`. Vedi `art-director-coordination-protocol.md`, `llm-generator-separation-protocol.md`.
+- **Token Ledger (v2.21, EP-022)**: `/token-ledger [--full]` — mostra token reali + costo stimato
+  della sessione corrente. Display automatico dopo ogni risposta via hook Stop (compact one-liner
+  `◉ TOKENS in:Xk out:Xk │ sessione: ~$X`). Non scrive nell'event store (display-only).
 - Pubblicare kanban su GitHub: `/kanban-publish [show|run|dry-run]`
 - Premortem su epica/feature: `/premortem`
 - **Compression output**: `/compression [show|set|policy|dry-run]`
@@ -84,3 +93,5 @@ adapter contemporaneamente.
   propagate-resolution**.
 - Compression: R.C1 (`to_user`/`to_artifact`/`propagate_resolution` sempre off) ·
   R.G5 (`.graphify-state/` write-restricted, solo `graphify-sync`).
+- Design Intelligence: R.D1 (no bypass DSL art-director) · R.D2 (reasoning-first obbligatorio) ·
+  R.D3 (Critic/Judge NON è oracolo — mai verdict deterministico bloccante, PATTERN §24).

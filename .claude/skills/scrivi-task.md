@@ -172,3 +172,28 @@ versioning vive in git. Il path resta quindi stabile nel frontmatter.
 **Backward compat.** Un TSK FE **senza** `ui_design_spec:` resta pienamente valido: **0 ERROR di lint**.
 Il campo è additivo e opt-in; la sua assenza non è mai un errore (il fe-dev sviluppa dalle specifiche
 esistenti — corpo TSK, State Matrix, eventuale `visual_reference:`).
+
+## Layer FE — Functional Oracle (EP-018, ADR-065/067, v2.20)
+
+> Sezione opt-in (EP-018, `fe_correctness.functional_oracle.enabled: true`). Campi frontmatter
+> opzionali per tracciare il verdict del Functional Oracle sul TSK FE.
+
+**Campi opzionali** (nessuna ERROR di lint se assenti):
+
+```yaml
+functional_status: pending | pass | conditional | reject  # verdict oracle (single-writer: qa-dev)
+functional_acceptance_spec: code_quality/acceptance/<TSK-id>.acceptance.yaml  # path spec del TSK
+```
+
+**`functional_status`** — aggiornato esclusivamente dalla `functional-oracle-protocol` (single-writer
+`qa-dev`). Analogo a `visual_status` (Visual Oracle) e `ux_ui_status` (UX/UI Review). Il TPM
+**non modifica** questo campo manualmente — solo la skill può scriverlo dopo esecuzione reale.
+Valori: `pending` (oracle non eseguito o in corso) | `pass` | `conditional` (pass con warning
+advisory del critic) | `reject` (almeno una asserzione binaria ha fallito).
+
+**`functional_acceptance_spec`** — path alla spec di acceptance YAML del TSK. Il file appartiene
+al progetto (non al framework): lo scrive chi conosce il dominio dell'app. Schema:
+`code_quality/acceptance/<TSK-id>.acceptance.yaml` (glob `acceptance_spec_glob` in config).
+
+**Backward compat.** Assenza di entrambi i campi → no-op totale. Check 4z (`lint-checks`) è
+WARNING-only sulla coerenza, mai ERROR.

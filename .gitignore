@@ -34,3 +34,4 @@ packages/app/public/test-roms/*
 # EP-013 analytics events side-channel (ADR-021 §A) — gitignored
 analytics/events/
 analytics/reports/
+.factory-upgrade-backup/

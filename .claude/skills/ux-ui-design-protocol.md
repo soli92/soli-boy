@@ -81,6 +81,42 @@ eventualmente usati sono tracciati per lo Step 5.
 
 ---
 
+## Step 2-bis — Art-Director Coordination (EP-019, gate condizionale, ADR-068)
+
+> **Gate condizionale**: questo step è attivo SOLO se
+> `factory.config.yaml.design_intelligence.enabled: true` AND
+> `factory.config.yaml.design_intelligence.art_director: true`.
+> A flag spento → **no-op totale**, si passa direttamente allo Step 3 (backward compat R.P3).
+
+**Input**: `{ds_source, tokens, known_patterns[]}` dallo Step 2 + TSK-id corrente.
+
+**Azione** — invocare la skill
+[`art-director-coordination-protocol`](./art-director-coordination-protocol.md):
+
+1. La skill produce la **DSL intermedia `art_director_spec`** (colori, tipografia, spaziatura,
+   gerarchia, component variants) che vincola i generatori FE prima della produzione.
+2. Il path della DSL (`code_quality/reports/<TSK-id>-art-director-spec.{json,md}`) è l'output
+   canonico. Il fe-dev e i generatori consumano la DSL **solo via path** (R.D1 — no canale
+   laterale, no stile inline al di fuori della DSL, ADR-068 §C).
+3. Se la skill ritorna `status: fail` (token non tracciabili) → iterare max 2 volte prima di
+   gate umano.
+4. Se la skill ritorna `status: noop` (flag spento) → proseguire normalmente allo Step 3.
+
+**Design Rationale gate** (se `art_director: true`): prima di passare allo Step 3, il designer
+documenta il **rationale strutturato** come pre-deliverable:
+- _Perché questo tema e non un'alternativa?_ (minimo 1 punto per scelta non ovvia)
+- _Come le scelte del DS vincolano il deliverable?_ (linea per ogni token hard)
+- _Rischi o trade-off identificati?_ (opzionale, se presenti)
+Il rationale è parte del deliverable del designer (Step 5 — assunzioni) e input per la review
+(Step 3-bis di `ux-ui-review-protocol` quando `critic_enabled: true`).
+
+**Output**: `{art_director_spec_path, ds_level, validation_status}` | `{status: "noop"}`.
+
+**Criterio di completamento**: `art_director_spec` validata (pass/warn) o noop dichiarato;
+path registrato come input per Step 3 e Step 6 (Handoff).
+
+---
+
 ## Step 3 — Produci il deliverable (4 tipi)
 
 **Input**: brief (Step 1) + ancoraggio DS (Step 2).

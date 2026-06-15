@@ -190,3 +190,26 @@ pienamente valido: il fe-dev sviluppa dalle specifiche esistenti (corpo TSK, Sta
 Cross-link: [ADR-019](../../design_&_architecture/decisions/ADR-019.md),
 [ADR-020](../../design_&_architecture/decisions/ADR-020.md),
 [US-032](../../management/kanban/EP-008-ux-ui-review-design-capability/US-032-integrazione-visual-oracle-cqrl-scheduler/US-032.md).
+
+## Functional Oracle — fallback esecutore (EP-018, ADR-067 §A, v2.20)
+
+Il **principale esecutore** del Functional Oracle (EP-018) è **`qa-dev`**. Il `fe-dev` agisce come
+**fallback esecutore** solo quando `qa-dev` non è nella topologia della factory
+(`topology` senza layer `qa`). In questo caso, il `fe-dev` esegue la
+[`functional-oracle-protocol`](../skills/functional-oracle-protocol.md) con le stesse 5 fasi
+(Serve → Load Fixture → Drive Scenario → Assert Outcomes → Diff+Loop).
+
+**Distinzione di ruolo**: il `fe-dev` sviluppa il componente (Fase 4 Develop); il `qa-dev` verifica
+che funzioni davvero (Functional Oracle, step separato). Se il `fe-dev` è il fallback esecutore, i due
+step restano logicamente distinti: il `fe-dev` completa il Develop, poi rientra come esecutore oracle.
+Non c'è conflitto di single-writer perché il Develop è completato prima dell'oracle.
+
+**Prerequisito Playwright**: il `fe-dev` deve avere accesso a Playwright (stesso prerequisito del
+visual-oracle, già configurato in `packages/app`). Se Playwright non è disponibile → ABORT con
+messaggio canonico (ADR-067 §A): «Functional oracle richiede Playwright. Installare in
+`<code_path>` o configurare `qa-dev` nella topologia come esecutore primario.»
+
+**No-op a flag spento (R.P3).** Se `fe_correctness.functional_oracle.enabled: false` — nessuna
+invocazione del functional oracle, comportamento fe-dev identico a v2.19.
+
+Cross-link: [ADR-067](../../design_&_architecture/decisions/ADR-067.md) §A.

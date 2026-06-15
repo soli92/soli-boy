@@ -271,6 +271,28 @@ logicamente dopo la Fase 4-bis Visual Verification e prima della Fase 5. Paralle
 - **Effetto sul DAG**: non aumenta i livelli; estende la durata effettiva di L2 per i TSK FE
   quando `ux_ui.enabled: true`.
 
+## Dominio `functional-oracle` (v2.20, EP-018)
+
+Il Functional Oracle ([`functional-oracle-protocol`](./functional-oracle-protocol.md), esecutore
+`qa-dev` in modalità functional-oracle, fallback `fe-dev` ADR-067 §A) sui TSK FE è candidato
+alla wave quando `scheduler.domains.functional-oracle: true` (abilitato automaticamente quando
+`factory.config.yaml.fe_correctness.functional_oracle.enabled: true`, ADR-066). **Inquadramento:
+sub-step di L2 (develop), NON un nuovo livello DAG** — analogo a `visual-oracle` e `ux-ui-review`.
+Gira dopo la Fase 4-ter UX/UI Review e prima della Fase 5. Parallelizzazione:
+
+- **Cross-app → parallel**: oracle su app distinte (code_path diversi) parallelizzabile — nessuno
+  shared state tra factory diverse.
+- **Same-app → serial**: gli iter dello stesso app/TSK (loop bounded da
+  `fe_correctness.functional_oracle.max_iterations`) sono serializzati — `functional_status` e
+  il report sono single-writer per TSK (ADR-066).
+- **Composizione con `ux-ui-review`**: il functional oracle attende `ux_ui_status` non-pending
+  (e `visual_status` non-pending). Ordering completo con tutti gli opt-in attivi:
+  `develop → visual-oracle → ux-ui-review → functional-oracle → code-review`.
+- **Verdict fail-closed**: il critic LLM è advisory sul trace — **mai** nel path pass/fail
+  (ADR-065). Solo le asserzioni binarie determinano il verdict.
+- **Effetto sul DAG**: non aumenta i livelli; estende la durata effettiva di L2 per i TSK FE
+  quando `fe_correctness.functional_oracle.enabled: true`.
+
 ## Quando NON eseguire (short-circuit)
 
 - `factory.config.yaml.scheduler.enabled: false` → l'orchestrator esegue il

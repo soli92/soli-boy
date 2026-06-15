@@ -167,13 +167,20 @@ su identità — i due sono entità diverse).
 prodotto, lasciando il gate umano obbligatorio (ADR-020 §Decisione, US-030 §Comando
 /ux-ui-design). Mai collassare design + review nello stesso flusso automatico.
 
-**Ordering pipeline FE.** La review UX/UI è un sub-step di Develop FE (L2), interposto
-tra visual-oracle e code-review: **develop → visual-oracle → ux-ui-review →
-code-review** (ADR-019). Composizione con flag parziali: senza visual oracle →
-`develop → ux-ui-review → code-review`. Il design (`ux-ui-design`) è **off-DAG /
-pre-TSK** (fonte upstream di `ui_design_spec:`), fuori da questo ordering.
+**Ordering pipeline FE.** Con tutti gli opt-in attivi (v2.20), la pipeline FE completa è:
+**develop → visual-oracle → ux-ui-review → functional-oracle → code-review** (ADR-019 + ADR-067).
+Composizione con flag parziali: senza functional oracle → `develop → visual-oracle → ux-ui-review →
+code-review`. Senza visual oracle → `develop → ux-ui-review → functional-oracle → code-review`.
+Il design (`ux-ui-design`) è **off-DAG / pre-TSK** (fonte upstream di `ui_design_spec:`).
 Precondition: `visual_status` è ABORT-gate (ADR-013), `ux_ui_status` è nota
-informativa (no ABORT — ADR-019 Punto 2).
+informativa (no ABORT — ADR-019 Punto 2), `functional_status: reject` è nota informativa al
+code-reviewer (il verdict binario è fail-closed nell'oracle, ma non blocca il CQRL che può
+rilevare cause root — ADR-067 §C).
+
+**Oracle Gate cascade FE (v2.20).** L'Oracle Pre-Check FE (flag `dispatch_gate`) è esteso al
+`functional_status`: se `functional_oracle.enabled: true` AND il TSK ha `functional_status: reject`,
+l'orchestrator suggerisce di rieseguire il functional oracle prima del dispatch del CQRL
+(analogo a `visual_status` per il visual oracle). Non è un ABORT automatico — gate umano (R.14).
 
 **Single-writer.** Il `ux_ui_status:` sul TSK target è scritto solo dall'agente che
 esegue la review (`ux-ui-reviewer` se scaffoldato, altrimenti `fe-dev`/`qa-dev` via

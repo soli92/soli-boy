@@ -254,6 +254,51 @@ valido; nessun finding di contrasto cromatico (delegato a Step 4); i punti opina
 
 ---
 
+## Step 3-bis — Critic/Judge Design (EP-019, gate condizionale, ADR-070)
+
+> **Gate condizionale**: questo step è attivo SOLO se
+> `factory.config.yaml.design_intelligence.enabled: true` AND
+> `factory.config.yaml.design_intelligence.critic_enabled: true`.
+> A flag spento → **no-op totale**, si passa direttamente allo Step 4 (backward compat R.P3).
+
+**Input**: evidence visiva dello Step 1 (screenshot) + `findings[]` dello Step 3 +
+(se disponibile) `art_director_spec_path` (prodotta dallo Step 2-bis di
+`ux-ui-design-protocol` — il reviewer la legge, non la modifica).
+
+**Azione** — critica strutturata sui **6 principi del Critic/Judge Design** (ADR-070):
+
+| Principio | Domanda | Peso |
+|---|---|---|
+| Coerenza tematica | Il deliverable rispetta la DSL art-director (se presente)? | hard |
+| Gerarchia visiva | C'è una gerarchia chiara di peso visivo (primary/secondary/tertiary)? | hard |
+| Leggibilità | Il testo è leggibile a tutti i viewport? (font size, contrast, line-height) | hard |
+| Economia visiva | Nessun elemento privo di scopo (ogni pixel ha una ragione d'essere)? | medium |
+| Feedback dello stato | Ogni azione ha feedback visivo (loading, error, success, empty)? | medium |
+| Reversibilità percepita | Azioni distruttive segnalano chiaramente le conseguenze? | medium |
+
+Per ogni principio: `pass` | `warn` | `fail` con motivazione. Ogni `fail` diventa un
+finding aggiunto a `findings[]` con `rubric_ref: "EP-019/critic/<principio>"`.
+
+**Regola R.D3** (PATTERN §24, ADR-070 §D): il Critic/Judge è uno **strumento di refinement,
+NON un oracolo**. Un `fail` su uno o più principi è input per il loop di refinement (bounded
+da `ux_ui.max_iterations`), non un blocco automatico. Il verdict finale resta umano (R.14).
+
+**Intention Economy** (se `design_intelligence.rubric_intention_economy: true`, ADR-070 §E):
+aggiunge una sotto-dimensione di resolution velocity a ogni finding:
+- _Resolution velocity_ (3 domande): «Questo finding è azionabile in 1 iterazione? Il fix è
+  proporzionato all'impatto? Il reviewer sa esattamente cosa cambiare?»
+- Verdict per finding: `pass` (alta velocity) | `warn` (media) | `fail` (bassa — finding
+  troppo vago o fix sproporzionato).
+Aggiunge `intention_economy` a ciascun finding nel report.
+
+**Output**: `{critic_verdict: "pass|warn|fail", critic_findings[], intention_economy_findings[]?}`.
+Append a `findings[]` per il report Step 5.
+
+**Criterio di completamento**: 6 principi valutati; ogni fail ha motivazione e `rubric_ref`;
+R.D3 dichiarato nel summary (il critic non è oracolo).
+
+---
+
 ## Step 4 — Delega a11y
 
 **Input**: `target` (stesso dello Step 1), `factory.config.yaml.ux_ui.delegate_a11y_to_ep007`.

@@ -345,6 +345,32 @@ Distinto da Check 4o: 4o enforce lo scan a11y (`a11y.required_on_fe_done`, campo
 4p enforce la review UX/UI (`ux_ui.required_on_fe_done`, campo `ux_ui_status`) — gate, trigger
 e campi frontmatter indipendenti, possono coesistere (a11y e ux-ui sono capability distinte).
 
+### 4z — Incoerenza `functional_status` ↔ report (FE Functional Oracle, EP-018, v2.20)
+
+**WARNING-only**. Verificare che il campo frontmatter `functional_status:` (se presente) sia
+coerente con l'ultimo report dell'oracle disponibile in `code_quality/reports/`.
+
+**Trigger**: `factory.config.yaml.fe_correctness.functional_oracle.enabled: true` E il TSK ha
+layer `fe` con `status: done` E dichiara `functional_status:` valorizzato.
+
+**Condizione di WARNING**: `functional_status: pass` ma nessun report oracle trovato
+in `code_quality/reports/<TSK-id>-functional-oracle-*.md`; oppure l'ultimo report ha
+verdict diverso da `pass`. Non è un ERROR meccanico (il report potrebbe essere in altro path
+o il TSK potrebbe non avere acceptance-spec): WARNING-only, nessun heal-eligible.
+
+**Esenzione**: TSK senza `functional_status:` nel frontmatter → no-op totale.
+
+**Formato warning**:
+```
+[WARNING][functional-oracle][4z] TSK-XXX: functional_status: pass ma nessun report oracle trovato in code_quality/reports/. Verificare coerenza o rimuovere il campo se il functional oracle non è stato eseguito.
+```
+
+**Gating**: `factory.config.yaml.fe_correctness.functional_oracle.enabled: true`
+(backward compat). Se assente o `false` → no-op totale (Check 4z non si applica).
+
+**Numerazione**: «4z» segue «4p» (UX/UI v2.18, EP-008 US-032) nella serie alfabetica;
+non collide con alcun check esistente in questo file.
+
 ## Citation audit (periodico)
 
 Per ogni `[^src: <path> §<sez>]` in `wiki/**`:

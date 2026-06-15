@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.19"   # bump 2.18→2.19 (2026-06-09): attivazione EP-013 analytics dogfooding per battle-test v2.19.0-rc (RUN #2/#3 gate EP-012). Delta v2.19 derivabile = analytics; il resto di v2.19 è governance meta (release gate, complexity-budget) non scaffoldata in factory derivate (ADR-033 §C).
+pattern_version: "2.21"   # bump 2.19→2.21 (2026-06-15): upgrade a v2.20 (FE Functional Oracle EP-018) + v2.21 (Design Intelligence Layer EP-019 + Token Ledger EP-022). Tutte le capabilities abilitate.
 
 owner: soli92
 language: it
@@ -100,6 +100,7 @@ scheduler:
     visual-oracle: true  # v2.17 — sub-step di L2 (develop); attivo perché fe_correctness.enabled: true
     a11y: true           # v2.18 NEW (EP-007 ADR-016 §C) — parallel cross-TSK, serial same-TSK; composto inline con visual-oracle in Modalità 1
     ux-ui-review: true   # v2.18 NEW (EP-008 ADR-020 §C / ADR-019 §Punto 3) — sub-step di L2 (develop), aspetta visual_status non-pending
+    functional-oracle: true  # v2.20 NEW EP-018 (ADR-066) — serial same-app, parallel cross-app; attivato da functional_oracle.enabled: true
 
 # Code Quality Review Layer (PATTERN §19) — ON.
 code_quality:
@@ -159,6 +160,19 @@ fe_correctness:
     max_states: 3
   dispatch_gate: false
 
+  # === FE Functional Oracle (v2.20, EP-018, PATTERN §3) — ON ==================
+  # Esercita il flusso reale dell'app: serve → fixture → interazione Playwright →
+  # asserzioni domain-agnostic → verdict deterministico. Terza forma di correctness FE:
+  # Visual Oracle (osserva), UX/UI Review (giudica), Functional Oracle (verifica funziona).
+  # Esecutore: qa-dev (fallback fe-dev, ADR-067 §A). Fail-closed: verdict binario dalle
+  # asserzioni, critic LLM solo advisory. Dominio scheduler: serial same-app (ADR-066).
+  # Acceptance-spec: code_quality/acceptance/*.acceptance.yaml (progetto, non framework).
+  functional_oracle:
+    enabled: true                 # master switch EP-018
+    max_iterations: 3             # loop bound (ADR-067 §C)
+    critic: advisory              # advisory (default) | off — mai nel path pass/fail
+    acceptance_spec_glob: "code_quality/acceptance/*.acceptance.yaml"
+
 # === Accessibility Testing (v2.18, EP-007, PATTERN §3 operazione Accessibility Scan,
 # ADR-014..018) — ON. Pre-screening WCAG 2.2 AA stack-agnostico via tool deterministico
 # run_a11y_scan (Playwright + axe-playwright), consumato da accessibility-testing-protocol.
@@ -210,6 +224,23 @@ ux_ui:
     designer: true                  # ui-designer attivo (scelta owner 2026-06-05)
   required_on_fe_done: true         # → Lint Check 4p WARNING-only ATTIVO (ADR-020 §G) — gate owner 2026-06-05
   delegate_a11y_to_ep007: true      # ux-ui-reviewer invoca run_a11y_scan (ADR-014)
+
+# === Design Intelligence Layer (v2.21, EP-019, PATTERN §24) — ON ================
+# Estende EP-008 (UX/UI) con coordinamento tematico centralizzato.
+# Dipendenza: enabled: true richiede ux_ui.enabled: true (fail-loud al boot, ADR-071 §B).
+# Regole: R.D1 (no bypass DSL art-director), R.D2 (reasoning-first), R.D3 (critic non oracolo).
+#
+# enabled                : master switch
+# art_director           : gate art-director-coordination + design-rationale (ADR-068)
+# generator_tool         : none | plop | yeoman — LLM-Generator Separation (ADR-069)
+# critic_enabled         : passo Critic/Judge 6 principi visivi (ADR-070)
+# rubric_intention_economy: asse Intention Economy (ADR-070 §E)
+design_intelligence:
+  enabled: true
+  art_director: true              # art-director-coordination-protocol attivo (ADR-068)
+  generator_tool: none            # none | plop | yeoman (installa prima il generatore)
+  critic_enabled: true            # Critic/Judge Design 6 principi (ADR-070)
+  rubric_intention_economy: true  # Intention Economy axis (ADR-070 §E)
 
 # === Compression Layer (PATTERN §20) — ENTRAMBI gli assi ON =======================
 compression:
@@ -323,3 +354,15 @@ analytics:
     lock_strategy: flock-advisory               # ADR-039 §A
     lock_timeout_seconds: 5
     idempotency_strategy: hash-compound         # ADR-039 §C
+
+  # --- Token Ledger (v2.21, EP-022) — visibilità economica inline dopo ogni operazione.
+  #     Legge i token REALI dal transcript JSONL (message.usage), non stime.
+  #     Mostra one-liner ◉ TOKENS ... dopo ogni risposta Claude via hook Stop.
+  #     Complementa harvest-session-tokens.py (batch writer EP-013) con display real-time.
+  #     Non scrive nell'event store (display-only, nessuna duplicazione eventi EP-013).
+  token_ledger:
+    enabled: true                 # master switch — hook Stop attivo in settings.json
+    display_mode: compact         # compact (one-liner) | full (box con breakdown)
+    show_cache_savings: true      # mostra risparmio cache nel one-liner
+    auto_call_on_wave_close: false # opt-in: orchestrator chiama --full a wave_close
+    pricing_fallback: prefix-based # fallback se pricing.yaml assente

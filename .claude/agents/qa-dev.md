@@ -100,3 +100,35 @@ puramente additiva.
 Cross-link: [ADR-014](../../design_&_architecture/decisions/ADR-014.md),
 [US-024](../../management/kanban/EP-007-accessibility-testing-capability/US-024-skill-accessibility-testing-protocol/US-024.md),
 [US-025](../../management/kanban/EP-007-accessibility-testing-capability/US-025-tool-run-a11y-scan/US-025.md).
+
+## Functional Oracle (EP-018, v2.20)
+
+Il `qa-dev` è il **principale esecutore** della skill
+[`functional-oracle-protocol`](../skills/functional-oracle-protocol.md) (EP-018, ADR-067).
+Quando `factory.config.yaml.fe_correctness.functional_oracle.enabled: true` e il task ha
+`layer: fe` con `status: done` (o viene invocato via `/functional-oracle <TSK-id>`), il qa-dev
+esegue la pipeline completa:
+
+1. **Serve** — avvia l'app (build/dev server con health-check).
+2. **Load Fixture** — carica le fixture dell'acceptance-spec (`functional_acceptance_spec:` nel TSK
+   o glob `acceptance_spec_glob` in config).
+3. **Drive Scenario** — guida l'interazione Playwright scriptata tramite
+   `interaction-drive-protocol` (skill condivisa, single source dell'interazione).
+4. **Assert Outcomes** — esegue le asserzioni binarie domain-agnostic (`canvas_pixel_variance`,
+   `attr_equals`, `selector_visible`, `storage_key_present`, `console_no_error`, …).
+5. **Diff + Loop** — verdict deterministico fail-closed dalle asserzioni. Critic LLM advisory
+   sul trace (mai nel path pass/fail, ADR-065). Loop bounded da `max_iterations`.
+
+**Verdict**: `pass` | `conditional` (asserzioni passano + critic advisory warning) | `reject`
+(almeno una asserzione binaria fallisce). Single-writer su `functional_status:` nel frontmatter
+del TSK target. Report side-channel: `code_quality/reports/<TSK-id>-functional-oracle-iter-<N>.md`.
+
+**Ordering**: `develop → visual-oracle → ux-ui-review → functional-oracle → code-review`
+(ADR-067). Il functional oracle attende `visual_status` e `ux_ui_status` non-pending.
+
+**No-op a flag spento (R.P3).** Se `fe_correctness.functional_oracle.enabled: false` —
+comportamento qa-dev identico a v2.19.
+
+Cross-link: [ADR-065](../../design_&_architecture/decisions/ADR-065.md),
+[ADR-066](../../design_&_architecture/decisions/ADR-066.md),
+[ADR-067](../../design_&_architecture/decisions/ADR-067.md).
