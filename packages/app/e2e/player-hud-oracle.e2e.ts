@@ -57,14 +57,21 @@ async function gotoApp(page: import("@playwright/test").Page): Promise<void> {
 
 /**
  * Carica la ROM fake, avvia e porta il Player in stato `running`.
+ * TSK-100: il click sulla tile attiva l'auto-start (preferenza default ON),
+ * quindi non occorre cliccare "Avvia" esplicitamente.
  * Ritorna dopo che il pulsante "Pausa" e visibile (stato running confermato).
  */
 async function bringToRunning(page: import("@playwright/test").Page): Promise<void> {
   await page.getByLabel("Carica ROM").setInputFiles(FAKE_ROM);
   await page.getByRole("tab", { name: "Libreria" }).click();
   await page.getByRole("button", { name: "tetris GB" }).click();
-  await page.getByRole("button", { name: /avvia/i }).click();
-  await expect(page.getByRole("button", { name: /pausa/i })).toBeVisible();
+  // TSK-101: se è già in corso un gioco diverso compare il gate dialog;
+  // in questi test partiamo sempre da idle, ma lo gestiamo per robustezza.
+  const changeDialog = page.getByRole("dialog", { name: /cambia gioco/i });
+  if (await changeDialog.isVisible()) {
+    await page.getByRole("button", { name: /cambia gioco/i }).click();
+  }
+  await expect(page.getByRole("button", { name: /pausa/i })).toBeVisible({ timeout: 10_000 });
 }
 
 /** Porta il Player da running a paused. */
