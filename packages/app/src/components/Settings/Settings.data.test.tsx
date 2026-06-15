@@ -149,10 +149,16 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
     await waitFor(() =>
       expect((screen.getByLabelText("Salvataggio da esportare") as HTMLSelectElement).value).toBe("ss-a"),
     );
+    // Attendi esplicitamente che il bottone Esporta sia abilitato: in CI il
+    // re-render che aggiorna `selectedSaveStateId` (e quindi `exportDisabled`)
+    // può essere in volo tra il `waitFor` precedente e il click. Un bottone
+    // disabled in React non invoca onClick. Timeout a 3 s per CI lento.
+    const exportBtn = screen.getByRole("button", { name: /esporta/i });
+    await waitFor(() => expect(exportBtn).not.toBeDisabled(), { timeout: 3_000 });
 
-    fireEvent.click(screen.getByRole("button", { name: /esporta/i }));
+    fireEvent.click(exportBtn);
 
-    await waitFor(() => expect(port.exportSaveState).toHaveBeenCalledWith("ss-a"));
+    await waitFor(() => expect(port.exportSaveState).toHaveBeenCalledWith("ss-a"), { timeout: 3_000 });
     // URL allocato sul blob, anchor cliccato, URL revocato.
     expect(createSpy).toHaveBeenCalledTimes(1);
     expect(clickSpy).toHaveBeenCalledTimes(1);
