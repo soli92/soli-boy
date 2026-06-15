@@ -66,20 +66,28 @@ export function FileLoader({
 
   async function handleFile(file: File) {
     setError(null);
-    const header = await readHeader(file);
-    const res = await importRom(file.name, file, storage, header);
-    if (res.ok) onImported?.(res.id);
-    else setError(res.reason);
+    try {
+      const header = await readHeader(file);
+      const res = await importRom(file.name, file, storage, header);
+      if (res.ok) onImported?.(res.id);
+      else setError(res.reason);
+    } catch (err) {
+      // TSK-097 — Guard runtime inattesi (es. IDB closed, TypeError da storage).
+      // Senza questo wrap l'eccezione diventerebbe Promise rejected non gestita
+      // e l'utente non vedrebbe alcun feedback.
+      if (import.meta.env.DEV) console.error("FileLoader.handleFile:", err);
+      setError("Errore inatteso durante l'importazione — riprovare");
+    }
   }
 
-  /**
-   * TSK-063 — Gestisce un URI file esterno (Android intent / iOS deep-link).
-   * Risolve il contenuto via Capacitor Filesystem, costruisce un File e
-   * delega a handleFile (identico al path <input>).
-   * Sicuro da invocare anche in ambiente web: il guard `isCapacitorNative()`
-   * garantisce il no-op fuori dal contesto nativo.
-   */
-  async function handleCapacitorUri(uri: string) {
+  // TSK-095 — Pattern "latest ref" per evitare stale closure.
+  // Il handler URI è registrato nel parent al mount (listener Capacitor fuori
+  // dal ciclo render di React) ma deve usare sempre l'ultima versione di
+  // storage/onImported/_filesystemApi. Aggiorniamo `handlerRef.current` a ogni
+  // render così la closure stabile (registrata una sola volta) delega sempre
+  // all'implementazione corrente — niente listener duplicati, niente stale.
+  const handlerRef = useRef<(uri: string) => Promise<void>>(async () => {});
+  handlerRef.current = async (uri: string) => {
     if (!isCapacitorNative()) return;
     const filename = filenameFromUri(uri);
     const file = await readFileFromUri(uri, filename, _filesystemApi);
@@ -88,20 +96,11 @@ export function FileLoader({
       return;
     }
     await handleFile(file);
-  }
+  };
 
-  // TSK-063 — Registra l'handler URI nel parent alla prima resa.
-  // Dipendenza stabile: `registerUriHandler` è una funzione di callback
-  // fornita dal parent; `handleCapacitorUri` varia a ogni render (closure)
-  // ma per questo pattern di "registrazione" ci interessa solo il montaggio.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    registerUriHandler?.(handleCapacitorUri);
-    // Intenzionalmente vuoto: registriamo una sola volta al mount.
-    // Il pattern è analogo a un ref-setter. Se il parent cambia
-    // `registerUriHandler` tra render, la nuova registrazione avviene
-    // al successivo montaggio (behavior accettabile per questo use-case).
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    registerUriHandler?.((uri: string) => handlerRef.current(uri));
+  }, [registerUriHandler]);
 
   return (
     <div className="sb-loader">

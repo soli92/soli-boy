@@ -1,0 +1,55 @@
+{
+  "tsk_id": "TSK-097",
+  "iter": 2,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "2.14",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "test_runner": "vitest",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "files_reviewed": [
+    "packages/app/src/components/FileLoader/FileLoader.tsx",
+    "packages/app/src/components/FileLoader/FileLoader.test.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [],
+  "findings_count": {
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "resolved_findings": [
+    {
+      "id": "F-097-01",
+      "iter_raised": 1,
+      "iter_resolved": 2,
+      "rule_id": "QA-TEST-001",
+      "resolution": "Asserzione esplicita aggiunta a FileLoader.test.tsx:205-208: expect(errSpy).toHaveBeenCalledWith('FileLoader.handleFile:', expect.any(TypeError)) prima di errSpy.mockRestore(). Il branch DEV console.error e' ora verificato comportamentalmente."
+    }
+  ],
+  "verdict": "pass",
+  "verdict_rationale": "F-097-01 risolto correttamente: l'asserzione expect(errSpy).toHaveBeenCalledWith('FileLoader.handleFile:', expect.any(TypeError)) e' stata aggiunta alla riga 205 del test TSK-097, prima di errSpy.mockRestore(). La copertura del branch if (import.meta.env.DEV) console.error(...) e' ora esplicita e resiliente a future modifiche. Nessun nuovo finding. Nessuna regressione in file non toccati dalla fix. Tutte e tre le passate (idiomaticita, design, robustezza) sono pulite.",
+  "summary": {
+    "pass_idiomaticity": "OK — componente funzionale con props tipizzate, nessun side-effect nel corpo render, cast nel test giustificato dal contesto.",
+    "pass_design": "OK — try/catch intenzionalmente generico (scope TSK), messaggio canonico coerente con AC-2, guard DEV idiomatico Vite, separazione concern mantenuta.",
+    "pass_robustness": "OK — F-097-01 risolto. Branch console.error ora asserito esplicitamente. try/catch copre correttamente entrambi i punti di fallimento I/O (readHeader + importRom)."
+  },
+  "loop_status": {
+    "iter": 2,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false,
+    "prior_finding_ids": ["F-097-01"],
+    "resolved_this_iter": ["F-097-01"],
+    "open_finding_ids": []
+  }
+}

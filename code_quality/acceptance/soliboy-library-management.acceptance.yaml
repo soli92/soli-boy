@@ -1,0 +1,59 @@
+# Acceptance-spec soli-boy — flusso: library management
+# Schema: .claude/schemas/acceptance-spec.schema.yaml (EP-018, ADR-065).
+# Flusso: carica ROM → compare nella libreria (GameTile visibile) →
+#         click su GameTile → Player monta (Avvia visibile) → verifica nome ROM
+# Selector source:
+#   - Library.tsx: section[aria-label="Libreria giochi"], ul.sb-grid, button.sb-game
+#     (GameTile: button.sb-game con testo "<titolo> <platform>")
+#   - Player.tsx: button.sb-btn.sb-btn-primary con testo "Avvia" (stato idle)
+#   - App.tsx: FileLoader con input[aria-label="Carica ROM"]
+
+app: soliboy
+target: http://127.0.0.1:4173/
+
+fixtures:
+  - id: test-rom
+    path: packages/app/public/test-roms/gba-tests-thumb.gba
+    load_via:
+      selector: 'input[aria-label="Carica ROM"]'
+      action: set_input_files
+
+scenario:
+  # Step 0 — dismetti banner privacy se presente
+  - { action: click, selector: 'button:has-text("Ho capito")', optional: true }
+  # Step 1 — carica ROM tramite FileLoader (tab Play, area idle-cta)
+  - { action: set_input_files, selector: 'input[aria-label="Carica ROM"]', fixture: test-rom }
+  # Step 2 — naviga esplicitamente alla tab Libreria per verificare la presenza della tile
+  - { action: click, selector: 'button[data-tab-id="library"]' }
+  - { action: wait_for, selector: 'section[aria-label="Libreria giochi"]', state: visible, timeout_ms: 5000 }
+  # Step 3 — attendi la griglia della libreria con la ROM caricata
+  - { action: wait_for, selector: 'ul[aria-label="Risultati libreria"]', state: visible, timeout_ms: 5000 }
+  # Step 4 — click sulla GameTile della ROM (button.sb-game con testo del titolo)
+  - { action: click, selector: 'button:has-text("gba-tests-thumb")' }
+  # Step 5 — App auto-switcha a tab Play; attendi il Player in stato idle
+  - { action: wait_for, selector: 'button:has-text("Avvia")', state: visible, timeout_ms: 5000 }
+
+assertions:
+  # BLOCKING — dopo set_input_files la griglia della Library contiene la ROM
+  # (verificato dal selector ul.sb-grid che è visibile dopo la navigazione alla tab Library)
+  - id: library-grid-visible
+    severity: blocking
+    kind: selector_visible
+    selector: 'ul[aria-label="Risultati libreria"]'
+  # BLOCKING — dopo click GameTile il button Avvia è visibile nel Player
+  - id: player-avvia-visible
+    severity: blocking
+    kind: selector_visible
+    selector: 'button:has-text("Avvia")'
+  # BLOCKING — la tile della ROM è nella griglia (verifica tramite button.sb-game con testo ROM)
+  - id: rom-tile-visible
+    severity: blocking
+    kind: selector_visible
+    selector: 'button:has-text("gba-tests-thumb")'
+  # ADVISORY — nessun errore console
+  - id: no-console-error
+    severity: advisory
+    kind: console_no_error
+
+thresholds:
+  advisory_max: 1

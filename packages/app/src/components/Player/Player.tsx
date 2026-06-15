@@ -67,6 +67,18 @@ export interface SramPort {
   autosaveSram(engine: EmulatorEngine, romId: string): Promise<AutosaveSramResult>;
 }
 
+// TSK-103 — etichette HUD localizzate (UX-018): centralizzate qui per
+// evitare drift fra componente, test e visual/functional oracle. Lo stato
+// `loaded` (transitorio post-load, pre-start) eredita la label di idle:
+// l'utente lo percepisce come "non ancora avviato".
+const HUD_STATE_LABELS: Record<"idle" | "loaded" | "running" | "paused", string> = {
+  idle: "Premi Avvia",
+  loaded: "Premi Avvia",
+  running: "In esecuzione",
+  paused: "In pausa",
+};
+const HUD_TITLE_IDLE = "Nessun gioco selezionato";
+
 export interface PlayerProps {
   /** Engine di emulazione (EmulatorJS in runtime). */
   engine: EmulatorEngine;
@@ -232,8 +244,22 @@ export function Player({
         // (senza questo wiring la SRAM veniva persa: restoreSram non era mai
         // invocato da nessun consumatore). No-op se non c'è SaveService/ROM o
         // se non esiste SRAM salvata.
+        // TSK-092 — SRAM = persistenza best-effort (vedi wiki
+        // `save-state-e-sram.md`): un reject di `restoreSram` (SRAM assente,
+        // IDB transitorio, engine senza capability) NON deve interrompere
+        // l'avvio del gioco né mostrare "ROM non trovata" all'utente — quel
+        // messaggio appartiene esclusivamente al fallimento di `wrapper.load()`.
+        // Try/catch separato e log non-error (`console.warn`) per coerenza con
+        // `persistSram` (best-effort, vedi sopra).
         if (saveService?.restoreSram && romId) {
-          await saveService.restoreSram(engine, romId);
+          try {
+            await saveService.restoreSram(engine, romId);
+          } catch (sramErr) {
+            console.warn(
+              "[Player] restoreSram best-effort failed; continuing without SRAM restore",
+              sramErr,
+            );
+          }
         }
       }
       wrapper.start();
@@ -323,6 +349,17 @@ export function Player({
       <style>{`
         .sb-screen[data-video-scope="${scopeId}"] {
           position: relative;
+          /* TSK-105 — aspect-ratio invariante in ogni stato (idle/running/paused).
+             Token locale soli-boy (non @soli92/solids DS); valore allineato a
+             DEFAULT_SCREEN_ASPECT_RATIO in useVideoSettings.ts — modificare in
+             sincronia. Lo style inline di videoSettingsToContainerStyle
+             sovrascrive per "original"/"4:3"; per "stretch" nessun override
+             inline → la CSS fallback garantisce altezza visibile (no jump).
+             Fullscreen: la UA applica width:100%/height:100% sul container
+             — aspect-ratio resta attivo ma il container si espande a tutto
+             schermo (verificato, visual oracle pass TSK-105). */
+          --sb-canvas-aspect: 3 / 2;
+          aspect-ratio: var(--sb-canvas-aspect);
         }
         /* TSK-041 — host React-vuoto per il canvas imperativo: riempie
            l'intero box di .sb-screen cosi la resa visiva resta identica.
@@ -338,6 +375,22 @@ export function Player({
           object-fit: ${canvasObjectFit};
           image-rendering: ${canvasImageRendering};
           display: block;
+        }
+        /* TSK-103 — Overlay icona pausa (UX-019): centrato sopra il canvas,
+           non interagibile, opacity ~0.6, font-size ≥48px. Usa il token di
+           testo primario di SoliDS con fallback bianco. */
+        .sb-screen[data-video-scope="${scopeId}"] .sb-pause-overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+          font-size: 96px;
+          line-height: 1;
+          opacity: 0.6;
+          color: var(--sd-color-text-primary, #f0e9ff);
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
         }
         ${
           // F-037-03: la regola dell'overlay viene serializzata SOLO quando il
@@ -401,7 +454,18 @@ export function Player({
             className="sb-canvas-host"
             data-testid="sb-canvas-host"
           />
-          {running ? (title ?? "In esecuzione") : paused ? "In pausa" : "Premi Avvia"}
+          {/* TSK-103 — Overlay icona pausa (UX-019): elemento puramente visivo
+              centrato sopra il canvas quando `state === "paused"`. aria-hidden
+              perché il cambio di stato è già annunciato dall'HUD aria-live. */}
+          {paused && (
+            <div
+              className="sb-pause-overlay"
+              aria-hidden="true"
+              data-testid="pause-overlay"
+            >
+              ⏸
+            </div>
+          )}
           {/* TSK-037 — Overlay scanline (US-022): reso solo con filter=scanline.
               Dentro `.sb-screen` per ereditare lo scoping CSS sopra. Fratello
               (NON figlio) dell'host canvas: vedi TSK-041. */}
@@ -449,9 +513,18 @@ export function Player({
           />
         )}
       </div>
-      <div className="sb-hud">
-        <span>{rom.core}</span>
-        <span>{state}</span>
+      {/* TSK-103 — HUD user-facing (UX-018): mostra `title` (ROM corrente) e
+          stato in italiano. aria-live="polite" annuncia i cambi di stato senza
+          interrompere lo screen reader. */}
+      <div
+        className="sb-hud"
+        role="status"
+        aria-label="Stato giocatore"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span>{title ?? HUD_TITLE_IDLE}</span>
+        <span>{HUD_STATE_LABELS[state]}</span>
       </div>
       <div className="sd-flex sd-gap-sm">
         {idle && (

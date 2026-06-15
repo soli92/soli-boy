@@ -1,0 +1,51 @@
+{
+  "verdict": "pass",
+  "iterations": 1,
+  "assertions_results": [
+    {
+      "id": "settings-section-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "section[aria-label='Impostazioni controlli'] visibile dopo navigazione tab Impostazioni"
+    },
+    {
+      "id": "controls-accordion-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "details[open] summary.sb-lbl visibile — accordion 'Controlli — rimappatura' aperto di default"
+    },
+    {
+      "id": "keymap-list-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "ul.sb-keymap visibile — lista rimappatura tasti presente nella sezione Controlli"
+    },
+    {
+      "id": "save-profile-button-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text('Salva profilo') visibile — sezione profili presente e funzionale"
+    },
+    {
+      "id": "no-console-error",
+      "kind": "console_no_error",
+      "severity": "advisory",
+      "outcome": "pass",
+      "detail": "0 errori console"
+    },
+    {
+      "id": "no-5xx",
+      "kind": "network_no_5xx",
+      "severity": "advisory",
+      "outcome": "pass",
+      "detail": "0 risposte 5xx nel network log — nessun errore server"
+    }
+  ],
+  "critic_findings": [],
+  "trace_path": "code_quality/reports/soliboy-settings-functional-iter-1/",
+  "timestamp": "2026-06-15T00:00:00Z"
+}

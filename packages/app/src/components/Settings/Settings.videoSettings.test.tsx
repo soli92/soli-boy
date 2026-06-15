@@ -31,8 +31,8 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
     );
     const scaleSel = screen.getByLabelText("Fattore di scala") as HTMLSelectElement;
     const aspectSel = screen.getByLabelText("Aspect ratio") as HTMLSelectElement;
-    // Default: scale=auto, aspect=original.
-    expect(scaleSel.value).toBe("auto");
+    // Default: scale=2 (emulator-first, TSK-086), aspect=original.
+    expect(scaleSel.value).toBe("2");
     expect(aspectSel.value).toBe("original");
     // Le opzioni includono i fattori 1x..5x e gli aspect richiesti.
     expect(
@@ -138,7 +138,7 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
     await waitFor(() => expect(port.load).toHaveBeenCalled());
     const scale = screen.getByLabelText("Fattore di scala") as HTMLSelectElement;
     const aspect = screen.getByLabelText("Aspect ratio") as HTMLSelectElement;
-    expect(scale.value).toBe("auto");
+    expect(scale.value).toBe("2");
     expect(aspect.value).toBe("original");
   });
 });

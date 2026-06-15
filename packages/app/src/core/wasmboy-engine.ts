@@ -58,6 +58,15 @@ export class WasmBoyEngine implements EmulatorEngine {
 
   async load(opts: LoadOptions): Promise<void> {
     if (!opts.container) throw new Error("WasmBoyEngine.load: container DOM mancante.");
+    // TSK-093 (P3-10, finding code-review): App.tsx passa al Player un `new Blob()` come
+    // placeholder ROM quando `selected === null` (stato idle). Una race condition (utente
+    // preme "Avvia" prima che `selected` sia valorizzato) inoltrerebbe un Uint8Array vuoto
+    // a `WasmBoy.loadROM`, con comportamento imprevedibile della lib. Guard precoce con
+    // messaggio canonico distinguibile: il catch in Player.handlePlay lo mostrerà all'utente
+    // come normale errore di caricamento (AC-4).
+    if (opts.rom.size === 0) {
+      throw new Error("WasmBoyEngine.load: ROM vuota — Blob privo di contenuto.");
+    }
     const canvas = this.ensureCanvas(opts.container);
     await WasmBoy.config(WASMBOY_OPTIONS, canvas);
     this.configured = true;

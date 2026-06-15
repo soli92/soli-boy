@@ -1,0 +1,73 @@
+{
+  "tsk_id": "TSK-103",
+  "iter": 2,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.21 (claude-sonnet-4-6)",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "stack_mode": "guided",
+    "confidence": 0.97,
+    "degraded": false
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Player/Player.tsx",
+    "packages/app/src/components/Player/Player.test.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "iter1_findings_resolved": [
+    {
+      "id": "F-103-01",
+      "severity": "high",
+      "status": "resolved",
+      "evidence": "Il bare text node `{running ? (title ?? HUD_STATE_LABELS.running) : paused ? HUD_STATE_LABELS.paused : HUD_STATE_LABELS.idle}` che era dentro `.sb-screen` è stato rimosso. Player.tsx:452-456 ora contiene solo l'host canvas React-vuoto e l'overlay pausa condizionale. I test sono stati aggiornati: `findByText` (singola occorrenza) in tutto il file; nessun residuo di `findAllByText` per le stringhe di stato. Nessun commento di giustificazione della duplicazione rimasto."
+    },
+    {
+      "id": "F-103-02",
+      "severity": "medium",
+      "status": "resolved",
+      "evidence": "Risolto per via transitiva da F-103-03. I test HUD non usano più `document.querySelector('.sb-hud')` né la variabile `hud` con operatore `!`. Le query `screen.getByRole('status', { name: /stato giocatore/i })` restituiscono `HTMLElement` direttamente: nessun non-null assertion presente nel file. Grep su `hud!` in Player.test.tsx: zero occorrenze."
+    },
+    {
+      "id": "F-103-03",
+      "severity": "low",
+      "status": "resolved",
+      "evidence": "Player.tsx righe 521-522: `role=\"status\"` e `aria-label=\"Stato giocatore\"` aggiunti al `.sb-hud`. Player.test.tsx righe 78, 113: `document.querySelector('.sb-hud')` sostituito con `screen.getByRole('status', { name: /stato giocatore/i })`. Nessun residuo di querySelector per l'HUD. Query Testing Library idiomatica, non dipende dalla struttura CSS."
+    }
+  ],
+  "findings": [],
+  "regression_check": {
+    "new_findings_in_untouched_files": false,
+    "notes": "Il diff si concentra su Player.tsx e Player.test.tsx. Nessun nuovo problema rilevato nelle tre passate (idiomaticità, design, robustezza). Le note positive di iter-1 restano confermate."
+  },
+  "verdict": "pass",
+  "summary": {
+    "total_findings": 0,
+    "by_severity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "blocking": false,
+    "rationale": "Tutti e tre i finding di iter-1 sono stati risolti correttamente. F-103-01 (high): il bare text node orfano dentro .sb-screen è rimosso; i test sono ora a singola occorrenza per le stringhe di stato. F-103-02 (medium): risolto per via transitiva — nessun operatore ! presente. F-103-03 (low): aria-label aggiunto al .sb-hud; i test usano screen.getByRole semantico. Il codice soddisfa tutti gli Acceptance Criteria del TSK-103. Nessun nuovo finding introdotto dalla fix. Verdict: pass.",
+    "positive_notes": [
+      "HUD_STATE_LABELS e HUD_TITLE_IDLE confermati come costanti idiomatiche e tipizzate.",
+      "aria-live='polite' + aria-atomic='true' + role='status' + aria-label='Stato giocatore': semantica ARIA completa per live region.",
+      "Overlay pausa scoped con data-video-scope, aria-hidden='true', data-testid='pause-overlay': idiomatico, testabile, non interagibile.",
+      "Test TSK-103 coprono: idle, running, paused, riprendi (overlay dismounted), senza title (fallback HUD_TITLE_IDLE). Copertura comportamentale completa.",
+      "findByText (singola occorrenza) per le stringhe di stato: asserzione più precisa, non adattata a duplicazioni DOM.",
+      "restoreSram best-effort in try/catch separato con console.warn: confermato idiomatico."
+    ]
+  },
+  "loop_status": {
+    "current_iter": 2,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false
+  }
+}

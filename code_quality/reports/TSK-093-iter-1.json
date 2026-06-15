@@ -1,0 +1,23 @@
+{
+  "tsk_id": "TSK-093",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "vitest",
+    "runtime": "node",
+    "context": ["robustness", "emulator-engine", "unit-test"],
+    "confidence": 0.95,
+    "mode": "full"
+  },
+  "iter": 1,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "v2.12",
+  "findings": [],
+  "verdict": "pass",
+  "summary": "Tutti e 5 gli Acceptance Criteria sono soddisfatti. Il guard `opts.rom.size === 0` è posizionato correttamente prima di qualsiasi side-effect su WasmBoy (prima di `ensureCanvas` e prima di `WasmBoy.config`). Il messaggio di errore è esatto, deterministico e distinguibile. Il catch esterno di `handlePlay` in Player.tsx cattura l'errore senza regressioni. I due test (Blob vuoto + regressione Blob valido) coprono in modo completo il requisito. Nessuna violation di regole canonical rilevata nelle 3 passate (idiomaticità, design, robustezza).",
+  "loop_status": {
+    "current_iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression_detected": false
+  }
+}

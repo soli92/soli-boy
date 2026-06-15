@@ -1,0 +1,159 @@
+{
+  "tsk_id": "TSK-096",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "test_runner": "vitest",
+    "confidence": "EXTRACTED",
+    "mode": "stack-aware"
+  },
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.21 (PATTERN §19)",
+  "files_reviewed": [
+    "packages/app/src/App.tsx",
+    "packages/app/src/App.test.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-01",
+      "pass": "design",
+      "rule_id": "TS-DESIGN-001",
+      "rule_ref": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "severity": "low",
+      "confidence": 0.80,
+      "file": "packages/app/src/App.tsx",
+      "line_start": 80,
+      "line_end": 81,
+      "title": "STORAGE_INIT_ERROR_MESSAGE esportato da modulo produzione esclusivamente per i test",
+      "description": "La costante `STORAGE_INIT_ERROR_MESSAGE` è esportata da `App.tsx` con commento esplicito '(esportata per i test di regressione TSK-096)'. La regola TS-DESIGN-001 segnala che simboli esportati per uso esclusivo dei test riducono la superficie pubblica del modulo e possono essere usati impropriamente. In questo caso specifico la costante è anche usata nel markup JSX di `StorageInitErrorFallback` (linea 106), quindi non è test-only pura — l'export è tecnicamente giustificato per evitare magic string. Tuttavia il commento contestualizza l'export come motivato dai test, non dal consumo in produzione, creando ambiguità nella lettura dell'API pubblica del modulo.",
+      "suggestion": "Rimuovere il riferimento ai test dal commento, enfatizzando che la costante è il messaggio UI canonico (DRY, evita magic string) e che i test la importano come conseguenza, non come motivazione primaria. Alternativamente, estrarre la costante in un file dedicato `storage-error-messages.ts` con export pulito.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-02",
+      "pass": "design",
+      "rule_id": "REACT-IDIOM-001",
+      "rule_ref": "code_quality/rules/canonical/REACT-IDIOM-001.md",
+      "severity": "medium",
+      "confidence": 0.85,
+      "file": "packages/app/src/App.tsx",
+      "line_start": 115,
+      "line_end": 126,
+      "title": "Early return prima degli hook in App(): design fragile e non idiomatico React",
+      "description": "La funzione componente `App()` esegue un early return a linea 120-122 (`if (storageInitError !== null) return <StorageInitErrorFallback />`) prima di qualsiasi chiamata a hook (useMemo, useState, ecc.). Il commento documenta che il branch è 'stabile per tutto il ciclo di vita del modulo', il che è corretta per il comportamento runtime attuale.\n\nIl problema è di design e manutenibilità: (1) eslint-plugin-react-hooks segnala questa forma come violazione di 'Rules of Hooks' perché lo strumento non può provare staticamente la stabilità del branch — qualsiasi CI con react-hooks/rules-of-hooks abilitato fallirebbe; (2) un futuro sviluppatore che aggiunge un hook 'universale' (analytics, i18n context, feature flags) prima del guard introduce silenziosamente una hook-order violation reale; (3) TypeScript strict + React 18 Concurrent Mode possono in theory invocare il body della funzione in ordini non deterministici durante il reconciler in dev mode con StrictMode.\n\nIl pattern idiomatico e sostenibile è separare il branching in un wrapper component: `AppShell` decide se montare `StorageInitErrorFallback` o `App` (che ora può usare hook incondizionatamente), oppure usare un componente Error Boundary React (class component con componentDidCatch) per gestire errori di init. Questa scelta elimina la potenziale violazione delle Rules of Hooks e rende il codice audit-safe.",
+      "suggestion": "Refactoring: creare un componente wrapper `AppRoot` (o rinominare l'attuale `App` in `AppContent`) che decide quale albero montare basandosi su `storageInitError`: `function AppRoot() { if (storageInitError !== null) return <StorageInitErrorFallback error={storageInitError} />; return <AppContent />; }`. `AppContent` (l'attuale body di `App`) usa hook senza early return. Export `AppRoot` come default. Questo separa la logica di branching dalla logica di rendering con hook.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-03",
+      "pass": "idiomaticity",
+      "rule_id": "TS-IDIOM-002",
+      "rule_ref": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "severity": "medium",
+      "confidence": 0.75,
+      "file": "packages/app/src/App.tsx",
+      "line_start": 125,
+      "line_end": 126,
+      "title": "Non-null assertion tramite `as NonNullable<...>` non necessaria dopo guard esplicito",
+      "description": "Le linee 125-126 castano `selectedStorage` e `selectedConfig` a `NonNullable<typeof selectedStorage>` tramite `as`. Il cast è funzionalmente corretto dato il guard a linea 120 (se `storageInitError !== null` siamo nel branch fallback; nel branch normale il try/catch garantisce l'assegnazione).\n\nTuttavia TypeScript non è in grado di narroware autonomamente queste variabili di modulo (sono `let` module-level, non variabili locali al componente), quindi il cast è necessario per il compilatore. La regola TS-IDIOM-002 richiede che le non-null assertion abbiano un commento che ne giustifichi la sicurezza — il commento presente ('per costruzione') è presente ma sintetico.\n\nIl problema più profondo è che il pattern `let x: T | null` + `as NonNullable<T>` è un code smell che segnala una tensione tra il design scelto (variabili di modulo mutabili) e il type system. Una soluzione design-level che eliminerebbe il bisogno del cast è descrita in F-02 (wrapper component): se `AppContent` riceve `storage` e `config` come props, il tipo è direttamente `T` (non-null per costruzione nel JSX del wrapper), eliminando cast e module-state.",
+      "suggestion": "Nel breve termine: espandere il commento del cast per essere esplicito (es. `// storage è non-null: il try/catch a module-load assicura che selectedStorage sia assegnato se storageInitError è null`). Nel medio termine: risolvere con il refactoring F-02 che passa storage/config come props typed, eliminando i cast.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-04",
+      "pass": "robustness",
+      "rule_id": "TS-ROBUST-001",
+      "rule_ref": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "low",
+      "confidence": 0.80,
+      "file": "packages/app/src/App.tsx",
+      "line_start": 71,
+      "line_end": 77,
+      "title": "Errore di init storage non loggato — osservabilità assente",
+      "description": "Il catch del try/catch (linee 75-77) assegna `storageInitError` ma non esegue alcun logging. In produzione, quando `selectAdapter()` lancia (es. `NativeFsAdapter` non riesce a inizializzare il filesystem Electron), l'errore è silenzioso per il layer di osservabilità: non compare nei log del browser/Electron, non è inviato a nessun error tracking.\n\nLa regola TS-ROBUST-001 richiede che gli errori ai confini (storage) siano gestiti/propagati in modo esplicito. Il fallback UI è corretto per l'utente, ma la propagazione verso il layer ops/debug è assente. Per un'applicazione Electron (desktop) dove il bridge può fallire per ragioni di configurazione o permessi filesystem, il log è critico per il triage.",
+      "suggestion": "Aggiungere `console.error('[soli-boy] Storage init failed:', err)` nel catch block prima dell'assegnazione di `storageInitError`. Questo è un intervento minimale (una riga) che non rompe nulla e abilita il triage anche senza error tracking esterno. Se in futuro viene integrato un error tracking (Sentry, etc.), il `console.error` è il punto di aggancio naturale.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-05",
+      "pass": "robustness",
+      "rule_id": "QA-TEST-001",
+      "rule_ref": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "low",
+      "confidence": 0.70,
+      "file": "packages/app/src/App.test.tsx",
+      "line_start": 1,
+      "line_end": 53,
+      "title": "Test coverage: manca il path 'selectAdapter OK' in App.test.tsx; nessun test smoke per il render normale post-fix",
+      "description": "Il file `App.test.tsx` contiene un solo test che copre il path di fallback (selectAdapter lancia). Il path nominale (selectAdapter OK → app si avvia normalmente con tutti i componenti) non è coperto da un test dedicato in questo file. L'acceptance criterion 3 del TSK ('L'app si avvia normalmente quando selectAdapter non lancia') è dichiarato soddisfatto, ma non è verificato da un test automatizzato specifico per questo TSK.\n\nQuesta lacuna di coverage non è bloccante perché altri test del progetto (Library, Player, Settings) sono già test di integrazione parziale che presuppongono il comportamento nominale. Tuttavia un test smoke dedicato 'App renders without error when selectAdapter succeeds' darebbe evidenza diretta dell'acceptance criterion 3 e sarebbe utile come regression guard per future modifiche al module-load pattern.\n\nNota: per competenza, il completamento del test spetta a qa-dev — questo finding è informativo verso qa-dev.",
+      "suggestion": "Segnalare a qa-dev: aggiungere un secondo describe/it in App.test.tsx (con mock di selectAdapter che restituisce bundle valido) che verifica che il componente App si monta senza errori e che il fallback non è presente. Questo copre l'AC-3 del TSK-096.",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "conditional",
+  "summary": {
+    "total_findings": 5,
+    "by_severity": {
+      "critical": 0,
+      "major": 0,
+      "medium": 2,
+      "low": 3
+    },
+    "pass_blocking": false,
+    "conditional_findings": ["F-02", "F-03"],
+    "informational_findings": ["F-01", "F-04", "F-05"],
+    "notes": "La fix TSK-096 è funzionalmente corretta e soddisfa i requisiti del TSK (P3-01 protetto, P1-01/P1-02 deps corrette, fallback UI WAI-ARIA, test regressione). I due finding medium (F-02, F-03) riguardano la sostenibilità del design scelto: early return prima degli hook è un pattern fragile che richiede refactoring in un wrapper component per essere audit-safe con react-hooks/rules-of-hooks. I finding low sono osservabilità e coverage gaps minori. Nessun finding blocca il merge, ma F-02 richiede attenzione nell'iterazione successiva."
+  },
+  "loop_status": {
+    "current_iter": 1,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression_detected": false,
+    "previous_report": null
+  },
+  "task_package": {
+    "tsk_id": "TSK-096",
+    "iter": 1,
+    "verdict": "conditional",
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 80,
+      "priority_findings": ["F-02", "F-03", "F-04"]
+    },
+    "findings_for_devagent": [
+      {
+        "id": "F-02",
+        "priority": 1,
+        "action": "Refactoring: introdurre un wrapper component AppRoot che esegue il branch storageInitError/AppContent, spostando il corpo attuale di App() in AppContent() senza early return prima degli hook. Aggiornare main.tsx (o il punto di mount) per usare AppRoot."
+      },
+      {
+        "id": "F-03",
+        "priority": 2,
+        "action": "Nel breve termine: espandere il commento sul cast as NonNullable per essere esplicito sulla garanzia fornita dal try/catch. Nel medio termine: risolto automaticamente dal refactoring F-02 (le props typed eliminano il cast)."
+      },
+      {
+        "id": "F-04",
+        "priority": 3,
+        "action": "Aggiungere console.error('[soli-boy] Storage init failed:', err) nel catch block (App.tsx:75) per garantire osservabilità dell'errore nei log browser/Electron."
+      },
+      {
+        "id": "F-01",
+        "priority": 4,
+        "action": "Aggiornare il commento di STORAGE_INIT_ERROR_MESSAGE per enfatizzare la funzione UI primaria (DRY, messaggio canonico) piuttosto che il beneficio per i test."
+      },
+      {
+        "id": "F-05",
+        "priority": 5,
+        "action": "QA-DEV: aggiungere test smoke path nominale in App.test.tsx (selectAdapter OK → App monta senza fallback)."
+      }
+    ]
+  }
+}

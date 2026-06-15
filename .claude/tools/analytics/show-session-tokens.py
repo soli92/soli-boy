@@ -183,34 +183,46 @@ def fmt_k(n: int) -> str:
 # Display
 # ---------------------------------------------------------------------------
 
-def display_compact(totals: dict, cost: float, savings: float) -> None:
+def display_compact(totals: dict, cost: float, savings: float, as_json: bool = False) -> None:
     cache_note = f"  💾 -{savings:.4f}$" if savings > 0.0001 else ""
-    print(
+    text = (
         f"◉ TOKENS  "
         f"in:{fmt_k(totals['input'])}  "
         f"out:{fmt_k(totals['output'])}"
         f"{cache_note}"
         f"  │  sessione: ~${cost:.4f}"
     )
+    if as_json:
+        print(json.dumps({"systemMessage": text}))
+    else:
+        print(text)
 
 
-def display_full(totals: dict, cost: float, savings: float, models_seen: set) -> None:
+def display_full(totals: dict, cost: float, savings: float, models_seen: set, as_json: bool = False) -> None:
     model_str = ", ".join(sorted(normalize_model(m) for m in models_seen)) or "unknown"
     border = "─" * 52
-    print(f"\n╭{border}╮")
-    print(f"│  TOKEN LEDGER — sessione corrente              │")
-    print(f"│  Modelli: {model_str[:40]:<40}│")
-    print(f"├{border}┤")
-    print(f"│  Input:       {fmt_k(totals['input']):>10}  tokens                  │")
-    print(f"│  Output:      {fmt_k(totals['output']):>10}  tokens                  │")
+    lines = [
+        f"\n╭{border}╮",
+        f"│  TOKEN LEDGER — sessione corrente              │",
+        f"│  Modelli: {model_str[:40]:<40}│",
+        f"├{border}┤",
+        f"│  Input:       {fmt_k(totals['input']):>10}  tokens                  │",
+        f"│  Output:      {fmt_k(totals['output']):>10}  tokens                  │",
+    ]
     if totals["cache_read"] > 0:
-        print(f"│  Cache read:  {fmt_k(totals['cache_read']):>10}  tokens                  │")
-        print(f"│  Risparmio:   ${savings:>10.4f}                         │")
+        lines.append(f"│  Cache read:  {fmt_k(totals['cache_read']):>10}  tokens                  │")
+        lines.append(f"│  Risparmio:   ${savings:>10.4f}                         │")
     if totals["cache_write"] > 0:
-        print(f"│  Cache write: {fmt_k(totals['cache_write']):>10}  tokens                  │")
-    print(f"├{border}┤")
-    print(f"│  Costo sessione:  ~${cost:>8.4f}                    │")
-    print(f"╰{border}╯")
+        lines.append(f"│  Cache write: {fmt_k(totals['cache_write']):>10}  tokens                  │")
+    lines += [
+        f"├{border}┤",
+        f"│  Costo sessione:  ~${cost:>8.4f}                    │",
+        f"╰{border}╯",
+    ]
+    if as_json:
+        print(json.dumps({"systemMessage": "\n".join(lines)}))
+    else:
+        print("\n".join(lines))
 
 
 # ---------------------------------------------------------------------------
@@ -254,10 +266,11 @@ def main() -> int:
     cost = calc_cost(totals, models_seen, pricing)
     savings = cache_savings(totals, models_seen, pricing)
 
+    as_json = args.from_hook
     if args.full:
-        display_full(totals, cost, savings, models_seen)
+        display_full(totals, cost, savings, models_seen, as_json=as_json)
     else:
-        display_compact(totals, cost, savings)
+        display_compact(totals, cost, savings, as_json=as_json)
 
     return 0
 

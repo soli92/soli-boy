@@ -1,0 +1,41 @@
+{
+  "tsk": "TSK-105",
+  "epic": "EP-015",
+  "story": "US-055",
+  "iter": 1,
+  "date": "2026-06-15",
+  "protocol": "visual-oracle-protocol v2.17",
+  "verdict": "pass",
+  "visual_status": "pass",
+  "defects_count": 0,
+  "summary": ".sb-screen idle non collassa: aspect-ratio CSS 3:2 invariante applicato su tutti i viewport e schemi colore. Altezza misurata 213.3px >> threshold 100px. Nessuna regressione TSK-103.",
+  "viewports": [
+    { "name": "mobile-375", "width": 375, "height": 812 },
+    { "name": "desktop-1280", "width": 1280, "height": 800 }
+  ],
+  "color_schemes": ["light", "dark"],
+  "screenshots": [
+    "code_quality/reports/TSK-105-visual-iter-1/mobile-375-light.png",
+    "code_quality/reports/TSK-105-visual-iter-1/mobile-375-dark.png",
+    "code_quality/reports/TSK-105-visual-iter-1/desktop-1280-light.png",
+    "code_quality/reports/TSK-105-visual-iter-1/desktop-1280-dark.png"
+  ],
+  "measurements": {
+    "mobile-375-light": { "width": 320.0, "height": 213.328125, "aspect_ratio_computed": "3 / 2", "position": "relative", "state": "idle" },
+    "mobile-375-dark":  { "width": 320.0, "height": 213.328125, "aspect_ratio_computed": "3 / 2", "position": "relative", "state": "idle" },
+    "desktop-1280-light": { "width": 320.0, "height": 213.328125, "aspect_ratio_computed": "3 / 2", "position": "relative", "state": "idle" },
+    "desktop-1280-dark":  { "width": 320.0, "height": 213.328125, "aspect_ratio_computed": "3 / 2", "position": "relative", "state": "idle" }
+  },
+  "criteria": {
+    "primary_height_not_collapsed": { "expected": "> 100px", "measured_min_px": 213.328125, "status": "pass" },
+    "secondary_aspect_ratio": { "expected": "~3:2 (1.5)", "measured_ratio": 1.5001, "status": "pass" },
+    "tertiary_no_tsk103_regression": { "expected": "HUD/testi visibili", "observed": "HUD desktop ok, 'Premi Avvia' centrato, layout intatto", "status": "pass" }
+  },
+  "critic_findings": [],
+  "observations_non_blocking": [
+    "Player applica inline 'width: 320px' su .sb-screen: su desktop 1280px questo lascia whitespace ai lati. Comportamento esistente, non introdotto da TSK-105.",
+    "Color-scheme system preference ignorata: l'app forza data-theme='90s-party' indipendentemente da prefers-color-scheme. Comportamento esistente del theme system, fuori scope TSK-105."
+  ],
+  "console_errors": [],
+  "loop": { "max_iterations": 3, "current_iter": 1, "result": "pass" }
+}

@@ -1,0 +1,70 @@
+# Acceptance-spec soli-boy — flusso: player controls (pausa / riprendi / arresta)
+# Schema: .claude/schemas/acceptance-spec.schema.yaml (EP-018, ADR-065).
+# Flusso: carica ROM → avvia → pausa → riprendi → arresta
+# Selector source: packages/app/src/components/Player/Player.tsx
+#   - "Avvia"   → button.sb-btn.sb-btn-primary (idle)
+#   - "Pausa"   → button.sb-btn (running)
+#   - "Riprendi"→ button.sb-btn.sb-btn-primary (paused)
+#   - "Arresta" → button.sb-btn.sb-danger (running | paused)
+#   - data-state su .sb-screen riflette idle/running/paused
+
+app: soliboy
+target: http://127.0.0.1:4173/
+
+fixtures:
+  - id: test-rom
+    path: packages/app/public/test-roms/gba-tests-thumb.gba
+    load_via:
+      selector: 'input[aria-label="Carica ROM"]'
+      action: set_input_files
+
+scenario:
+  # Step 0 — dismetti il banner privacy se presente (optional)
+  - { action: click, selector: 'button:has-text("Ho capito")', optional: true }
+  # Step 1 — carica ROM tramite FileLoader
+  - { action: set_input_files, selector: 'input[aria-label="Carica ROM"]', fixture: test-rom }
+  # Step 2 — seleziona ROM dalla Libreria (auto-switch a tab Play)
+  - { action: click, selector: 'button:has-text("gba-tests-thumb")' }
+  # Step 3 — avvia il gioco
+  - { action: click, selector: 'button:has-text("Avvia")' }
+  # Step 4 — attendi canvas visibile (engine avviato)
+  - { action: wait_for, selector: '[data-testid="sb-canvas-host"] canvas', state: visible, timeout_ms: 15000 }
+  - { action: wait_ms, value: 1000 }
+  # Step 5 — pausa
+  - { action: click, selector: 'button:has-text("Pausa")' }
+  - { action: wait_ms, value: 500 }
+  # Step 6 — riprendi
+  - { action: click, selector: 'button:has-text("Riprendi")' }
+  - { action: wait_ms, value: 500 }
+  # Step 7 — arresta
+  - { action: click, selector: 'button:has-text("Arresta")' }
+  - { action: wait_ms, value: 500 }
+
+assertions:
+  # BLOCKING — dopo "Pausa": Riprendi visibile, Pausa assente
+  # NB: il test asserisce lo stato DOPO "Arresta" (stato idle finale).
+  # Le transizioni intermedie pausa/riprendi vengono verificate con selector_absent/visible
+  # nello stato finale: dopo Arresta il Player è idle → "Avvia" visibile.
+  - id: player-idle-after-stop
+    severity: blocking
+    kind: selector_visible
+    selector: 'button:has-text("Avvia")'
+  - id: pausa-absent-after-stop
+    severity: blocking
+    kind: selector_absent
+    selector: 'button:has-text("Pausa")'
+  - id: riprendi-absent-after-stop
+    severity: blocking
+    kind: selector_absent
+    selector: 'button:has-text("Riprendi")'
+  - id: arresta-absent-after-stop
+    severity: blocking
+    kind: selector_absent
+    selector: 'button:has-text("Arresta")'
+  # ADVISORY — nessun errore in console
+  - id: no-console-error
+    severity: advisory
+    kind: console_no_error
+
+thresholds:
+  advisory_max: 1

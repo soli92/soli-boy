@@ -1,0 +1,29 @@
+{
+  "tsk_id": "TSK-105",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "css_strategy": "css-in-js-template-literal",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "iter": 2,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "2.21",
+  "findings": [],
+  "verdict": "pass",
+  "summary": {
+    "total_findings": 0,
+    "by_severity": { "high": 0, "medium": 0, "low": 0 },
+    "by_pass": { "idiomaticity": 0, "design": 0, "robustness": 0 },
+    "blocking_findings": 0,
+    "new_vs_previous": "iter-1 had 3 low findings (F-105-01, F-105-02, F-105-03); all closed in iter-2",
+    "regression_detected": false,
+    "no_progress_detected": false,
+    "loop_status": "2/3 — closed"
+  },
+  "verdict_rationale": "Tutti e tre i finding low dell'iter-1 sono stati chiusi correttamente con modifiche minimali al commento TSK-105 in Player.tsx (righe 352-360). F-105-01: la custom property --sb-canvas-aspect ora riporta esplicitamente 'Token locale soli-boy (non @soli92/solids DS)'. F-105-02: il commento ora include il riferimento 'valore allineato a DEFAULT_SCREEN_ASPECT_RATIO in useVideoSettings.ts — modificare in sincronia'. F-105-03: il commento fullscreen ora descrive correttamente il behavior UA ('la UA applica width:100%/height:100% sul container — aspect-ratio resta attivo ma il container si espande a tutto schermo, verificato, visual oracle pass TSK-105'). Nessuna regressione introdotta. Nessun nuovo finding rilevato nelle tre passate (idiomaticità, design, robustezza). Diff stimato: ~8 righe, entro max_diff_lines 20 del task_package iter-2. La fix funzionale principale (aspect-ratio invariante, rimozione else-stretch) confermata invariata dal confronto con iter-1.",
+  "task_package": null
+}

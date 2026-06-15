@@ -2,11 +2,15 @@
 // TSK-032 — verifica integrazione del pannello "Save state" (US-016) quando
 // `saveService` è iniettato dalla composizione.
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EmulatorEngine } from "../../core/core-wrapper";
-import type { LoadStateResult } from "../../domain/save-service";
+import type {
+  AutosaveSramResult,
+  LoadStateResult,
+  RestoreSramResult,
+} from "../../domain/save-service";
 import type { SaveStateRecord } from "../../storage/types";
-import { Player } from "./Player";
+import { Player, type SramPort } from "./Player";
 import type { SaveServicePort } from "./SaveStatePanel";
 
 function fakeEngine() {
@@ -29,6 +33,8 @@ function fakeEngine() {
 }
 
 describe("Player", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("monta il viewport e all'Avvia carica+avvia il core", async () => {
     const engine = fakeEngine();
     render(<Player engine={engine} rom={{ rom: new Blob(["x"]), core: "mgba" }} title="World 1-1" />);
@@ -58,6 +64,55 @@ describe("Player", () => {
     fireEvent.click(screen.getByRole("button", { name: /arresta/i }));
     expect(engine.stop).toHaveBeenCalledOnce();
     await screen.findByText("Premi Avvia");
+  });
+
+  it("TSK-103: HUD mostra `title` + stato italiano e annuncia via aria-live (UX-018)", async () => {
+    const engine = fakeEngine();
+    render(
+      <Player
+        engine={engine}
+        rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        title="Pokemon Red"
+      />,
+    );
+    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    expect(hud).toHaveAttribute("aria-live", "polite");
+    expect(hud).toHaveAttribute("aria-atomic", "true");
+    // Idle: HUD mostra title + "Premi Avvia"
+    expect(hud).toHaveTextContent("Pokemon Red");
+    expect(hud).toHaveTextContent("Premi Avvia");
+
+    // Avvia → running → HUD: title + "In esecuzione"
+    fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+    await screen.findByRole("button", { name: /pausa/i });
+    expect(hud).toHaveTextContent("Pokemon Red");
+    expect(hud).toHaveTextContent("In esecuzione");
+
+    // Pausa → paused → HUD: title + "In pausa" + overlay icona pausa
+    fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
+    await screen.findByTestId("pause-overlay");
+    expect(hud).toHaveTextContent("In pausa");
+    const overlay = screen.getByTestId("pause-overlay");
+    expect(overlay).toHaveAttribute("aria-hidden", "true");
+    expect(overlay).toHaveTextContent("⏸");
+
+    // Riprendi → overlay sparisce
+    fireEvent.click(screen.getByRole("button", { name: /riprendi/i }));
+    await waitFor(() => {
+      expect(screen.queryByTestId("pause-overlay")).not.toBeInTheDocument();
+    });
+  });
+
+  it("TSK-103: senza title prop l'HUD mostra 'Nessun gioco selezionato' (UX-018 AC1)", () => {
+    render(
+      <Player
+        engine={fakeEngine()}
+        rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+      />,
+    );
+    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    expect(hud).toHaveTextContent("Nessun gioco selezionato");
+    expect(hud).toHaveTextContent("Premi Avvia");
   });
 
   it("TSK-032: senza saveService il pannello save state NON è reso (backward compat)", () => {
@@ -114,4 +169,71 @@ describe("Player", () => {
     });
     expect(saveService.saveState).toHaveBeenCalledWith(engine, "rom-1", 0);
   });
+
+  it(
+    "TSK-092: restoreSram best-effort — un reject NON imposta `error` né interrompe l'avvio (US-050)",
+    async () => {
+      // Scenario "ROM caricata, SRAM assente": restoreSram rigetta (es. IDB
+      // transitorio o SRAM non trovata). Il Player deve comunque arrivare a
+      // `state === "running"`, senza mostrare l'area errore "ROM non trovata"
+      // (messaggio che appartiene SOLO a wrapper.load()). Verificato anche il
+      // log via console.warn (non console.error, vedi AC2 del TSK).
+      const saveService: SaveServicePort & Partial<SramPort> = {
+        saveState: vi.fn(async () => "id"),
+        loadState: vi.fn(async (): Promise<LoadStateResult> => ({ ok: true })),
+        listSaveStates: vi.fn(async (): Promise<SaveStateRecord[]> => []),
+        deleteSaveState: vi.fn(async () => {}),
+        // restoreSram rigetta con errore "SRAM assente / IDB transitorio".
+        restoreSram: vi.fn(
+          async (): Promise<RestoreSramResult> => {
+            throw new Error("SRAM non disponibile (rom-not-found)");
+          },
+        ),
+        autosaveSram: vi.fn(
+          async (): Promise<AutosaveSramResult> => ({
+            ok: true,
+            persisted: false,
+          }),
+        ),
+      };
+      const engine = fakeEngine();
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+          title="Tetris"
+          saveService={saveService}
+          romId="rom-missing-sram"
+          currentCore="gambatte"
+        />,
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+      });
+
+      // AC4: arriva a state === "running" — il pulsante "Pausa" è reso solo
+      // in `running`, quindi la sua presenza prova lo stato.
+      await screen.findByRole("button", { name: /pausa/i });
+      expect(engine.start).toHaveBeenCalledOnce();
+
+      // AC3: NESSUN messaggio di errore user-visible (alert role) — il
+      // reject di restoreSram NON deve far comparire l'area `.sb-note[role=alert]`.
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+      // AC2: il reject è loggato come `console.warn` (non console.error).
+      expect(warnSpy).toHaveBeenCalled();
+      expect(
+        warnSpy.mock.calls.some((args) => String(args[0]).match(/restoreSram/i)),
+      ).toBe(true);
+
+      // restoreSram è stato comunque tentato (best-effort, ma invocato).
+      expect(saveService.restoreSram).toHaveBeenCalledWith(
+        engine,
+        "rom-missing-sram",
+      );
+    },
+  );
 });

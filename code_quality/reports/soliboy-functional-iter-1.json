@@ -1,0 +1,48 @@
+{
+  "verdict": "pass",
+  "iterations": 1,
+  "assertions_results": [
+    {
+      "id": "engine-running",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text(\"Pausa\") is visible — engine confirmed in running state"
+    },
+    {
+      "id": "avvia-consumed",
+      "kind": "selector_absent",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text(\"Avvia\") absent — consumed by state transition to running"
+    },
+    {
+      "id": "canvas-advancing",
+      "kind": "canvas_pixel_variance",
+      "severity": "advisory",
+      "outcome": "fail",
+      "detail": "canvas pixel read failed: no-2d-ctx — COEP (Cross-Origin-Embedder-Policy: require-corp) blocks canvas getImageData in headless Chromium. Advisory: spec note confirms test-ROM statica -> variance~0 expected even with running engine. Fail within advisory_max threshold."
+    },
+    {
+      "id": "no-console-error",
+      "kind": "console_no_error",
+      "severity": "advisory",
+      "outcome": "pass",
+      "detail": "no console errors. 5 console warnings observed (WebGL ReadPixels GPU stall x4, ScriptProcessorNode deprecated x1) — all advisory, none blocking."
+    }
+  ],
+  "critic_findings": [
+    {
+      "observation": "WebGL canvas getImageData fails under COEP require-corp in headless Chromium. The canvas_pixel_variance assertion is structurally unable to read pixel data in this environment. This is a known limitation documented in the spec note. The advisory failure is within threshold (1 <= advisory_max:2).",
+      "evidence_ref": "soliboy-functional-iter-1/console.log.json — 4x GL Driver Message GPU stall warnings confirm WebGL canvas is active but pixel read is blocked at context level",
+      "severity": "advisory"
+    },
+    {
+      "observation": "ScriptProcessorNode deprecated warning (Web Audio API). The engine uses ScriptProcessorNode for audio; migration to AudioWorkletNode is recommended but does not affect functional correctness.",
+      "evidence_ref": "soliboy-functional-iter-1/console.log.json — 'The ScriptProcessorNode is deprecated. Use AudioWorkletNode instead.'",
+      "severity": "advisory"
+    }
+  ],
+  "trace_path": "code_quality/reports/soliboy-functional-iter-1/",
+  "timestamp": "2026-06-15T00:00:00Z"
+}

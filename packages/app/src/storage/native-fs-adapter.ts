@@ -489,6 +489,8 @@ export class NativeFsAdapter
    * Mitigazione: l'app esegue ingest da UI seriale; rivedere se l'uso
    * concorrente diventa pattern (es. drag&drop batch).
    */
+  // known-gap (TSK-094): writeFile → manifest non è atomico (blob orfano in caso di crash).
+  // Stessa vulnerabilità risolta su putSaveState; fix da pianificare su TSK separato.
   async addRom(input: RomInput): Promise<string> {
     const id = await hashBlob(input.fileBlob);
     const filePath = `${id}.bin`;
@@ -595,6 +597,7 @@ export class NativeFsAdapter
    * Associa/aggiorna la copertina di una ROM esistente. Errore se la ROM non
    * esiste (no record orfani — parità con IDB.setCover).
    */
+  // known-gap (TSK-094): writeFile → manifest non è atomico (blob orfano in caso di crash).
   async setCover(romId: string, cover: Blob): Promise<void> {
     const manifest = await this.readRomsManifest();
     const idx = manifest.entries.findIndex((e) => e.id === romId);
@@ -618,21 +621,49 @@ export class NativeFsAdapter
     const id = saveStateId(input.romId, input.slot, createdAt);
     const snapshotPath = `${id}.bin`;
     await this.ensureDir(await this.saveStatesDirPath());
-    await this.bridge.writeFile(await this.saveStateBlobPath(id), await blobToBytes(input.snapshotBlob));
-    const manifest = await this.readSaveStatesManifest();
-    const entry: SaveStateManifestEntry = {
-      id,
-      romId: input.romId,
-      slot: input.slot,
-      core: input.core,
-      createdAt,
-      snapshotPath,
-    };
-    await this.writeSaveStatesManifest({
-      ...manifest,
-      entries: [...manifest.entries, entry],
-    });
-    return id;
+    const blobPath = await this.saveStateBlobPath(id);
+    // TSK-094 (US-050): atomicità write-then-manifest. Se il manifest update
+    // fallisce dopo che il blob è già stato scritto, il blob resta orfano (non
+    // referenziato da alcun entry, non eliminabile dalla UI). Wrap in try/catch
+    // con cleanup best-effort nel ramo di fallimento: si tenta `tryUnlink` sul
+    // blob appena scritto, ignorando un eventuale errore dell'unlink (loggato
+    // ma NON aggiunto all'errore propagato — non vogliamo mascherare l'errore
+    // originale del manifest write). Il fallimento dell'unlink è degradazione
+    // accettabile (resta un orfano), mentre fallire silenziosamente sul manifest
+    // sarebbe corruzione invisibile dello store.
+    await this.bridge.writeFile(blobPath, await blobToBytes(input.snapshotBlob));
+    try {
+      const manifest = await this.readSaveStatesManifest();
+      const entry: SaveStateManifestEntry = {
+        id,
+        romId: input.romId,
+        slot: input.slot,
+        core: input.core,
+        createdAt,
+        snapshotPath,
+      };
+      await this.writeSaveStatesManifest({
+        ...manifest,
+        entries: [...manifest.entries, entry],
+      });
+      return id;
+    } catch (err) {
+      // Cleanup best-effort: rimuovi il blob orfano. Un fallimento qui è solo
+      // loggato (non aggiunto all'errore propagato). NB: usiamo un try/catch
+      // interno esplicito invece di affidarci al solo `tryUnlink` perché
+      // `tryUnlink` rilancia errori non-ENOENT (permessi/IO) e qui non
+      // vogliamo che un fallimento di cleanup oscuri l'errore originale.
+      try {
+        await this.tryUnlink(blobPath);
+      } catch (unlinkErr) {
+        // eslint-disable-next-line no-console -- log diagnostico best-effort
+        console.warn(
+          `[native-fs-adapter] putSaveState: cleanup tryUnlink fallito su ${blobPath} (blob orfano)`,
+          unlinkErr,
+        );
+      }
+      throw err;
+    }
   }
 
   async listSaveStates(romId: string): Promise<SaveStateRecord[]> {
@@ -661,6 +692,7 @@ export class NativeFsAdapter
   }
 
   // ── SRAM (SramPort) ────────────────────────────────────────────────────────
+  // known-gap (TSK-094): writeFile → manifest non è atomico (blob orfano in caso di crash).
   async putSram(romId: string, data: Blob): Promise<void> {
     const dataPath = `${romId}.sram`;
     await this.ensureDir(await this.sramDirPath());

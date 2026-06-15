@@ -1,0 +1,126 @@
+{
+  "tsk_id": "TSK-103",
+  "iter": 1,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.21 (claude-sonnet-4-6)",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "stack_mode": "guided",
+    "confidence": 0.97,
+    "degraded": false
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Player/Player.tsx",
+    "packages/app/src/components/Player/Player.test.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-103-01",
+      "rule_id": "REACT-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/REACT-IDIOM-001.md",
+      "pass": "design",
+      "severity": "high",
+      "title": "Testo di stato orfano rimasto dentro .sb-screen dopo introduzione HUD",
+      "description": "La riga Player.tsx:455 contiene l'espressione `{running ? (title ?? HUD_STATE_LABELS.running) : paused ? HUD_STATE_LABELS.paused : HUD_STATE_LABELS.idle}` come bare text node direttamente dentro `.sb-screen`. TSK-103 ha correttamente creato il blocco `.sb-hud` (righe 519-525) come display ufficiale degli stati, ma ha lasciato intatta questa espressione pre-TSK-103 aggiornando solo le stringhe hardcoded con le costanti HUD_STATE_LABELS. Il risultato è una duplicazione strutturale: il testo appare in due punti del DOM — dentro il viewport di gioco (.sb-screen) e nell'HUD separato (.sb-hud). In stato `running`, il bare text node mostra `title` (es. 'Pokemon Red') direttamente sovrapposto al canvas di gioco, senza wrapping semantico, senza aria attributi, senza stile assegnato. Questa logica dovrebbe essere rimossa da .sb-screen: lo stato è già annunciato dal .sb-hud con aria-live='polite' e aria-atomic='true'. I test aggiornati rispecchiano la duplicazione (findAllByText invece di findByText, con commento esplicito 'sia nel canvas-host placeholder sia nell'HUD') — confermando che il problema era noto ma non risolto.",
+      "location": {
+        "file": "packages/app/src/components/Player/Player.tsx",
+        "line": 455
+      },
+      "evidence": "git diff HEAD~1: la riga `{running ? (title ?? HUD_STATE_LABELS.running) : paused ? HUD_STATE_LABELS.paused : HUD_STATE_LABELS.idle}` esisteva come `{running ? (title ?? \"In esecuzione\") : paused ? \"In pausa\" : \"Premi Avvia\"}` nella versione precedente. TSK-103 ha aggiornato le stringhe alle costanti ma non ha rimosso il nodo.",
+      "fix_hint": "Rimuovere la riga 455 da .sb-screen interamente. La visualizzazione del titolo e dello stato è già coperta dal .sb-hud (righe 519-525). Aggiornare i test che usano findAllByText per tornare a findByText (o queryAllByText con assertion .length===1). Il comportamento utente-facing rimane invariato.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-103-02",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "pass": "idiomaticity",
+      "severity": "medium",
+      "title": "Non-null assertion `hud!` nei test senza commento di giustificazione",
+      "description": "In Player.test.tsx alle righe 86, 87, 93, 98, 119, 120 (e altre) il test usa `hud!.toHaveTextContent(...)` dove `hud` è il risultato di `document.querySelector('.sb-hud')` — un tipo `Element | null`. L'assertion precedente `expect(hud).not.toBeNull()` non restringe il tipo TypeScript a `Element`, perciò l'operatore `!` è necessario. Tuttavia la regola TS-IDIOM-002 richiede un commento che ne giustifichi la sicurezza quando si usa `!`. Il pattern ripetuto sarebbe idealmente risolto con un helper tipizzato, ma almeno un commento inline è richiesto per conformità.",
+      "location": {
+        "file": "packages/app/src/components/Player/Player.test.tsx",
+        "line": 86
+      },
+      "evidence": "Player.test.tsx:82 `const hud = document.querySelector('.sb-hud');` → tipo `Element | null`. Righe 86/87/93/98/119/120 usano `hud!` senza commento che giustifica la sicurezza.",
+      "fix_hint": "Aggiungere `// hud è garantito non-null: expect(hud).not.toBeNull() precede questo uso` oppure tipizzare con `const hud = document.querySelector('.sb-hud') as HTMLElement; if (!hud) throw new Error('sb-hud not found');`. Alternativa più idiomatica: usare `screen.getByRole` o `screen.getByText` con una query a11y per non bypassare l'accessibility tree (vedi F-103-03).",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-103-03",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "title": "Test HUD usa document.querySelector invece di query Testing Library",
+      "description": "I test TSK-103 (Player.test.tsx:82 e :117) accedono all'HUD tramite `document.querySelector('.sb-hud')` — un selettore CSS imperativo che bypassa l'accessibility tree. La best practice con @testing-library/react è usare `getByRole`, `getByLabelText` o attributi ARIA per fare query. In questo caso l'HUD ha aria-live='polite' e aria-atomic='true', ma non un ruolo esplicito né un aria-label, quindi una query a11y diretta richiederebbe un aria-label aggiuntivo sull'elemento. La via più robusta è aggiungere un aria-label al .sb-hud (es. 'Stato giocatore') e usare `screen.getByRole('status', { name: /stato giocatore/i })` o equivalente. Il finding è low perché il test funziona e verifica il comportamento corretto, ma il pattern non segue la Testing Library guideline e introduce dipendenza dalla struttura CSS.",
+      "location": {
+        "file": "packages/app/src/components/Player/Player.test.tsx",
+        "line": 82
+      },
+      "evidence": "Player.test.tsx:82 `const hud = document.querySelector('.sb-hud');` e :117 idem. La @testing-library/react best practice sconsiglia querySelector e preferisce query semantiche.",
+      "fix_hint": "Aggiungere `aria-label='Stato giocatore'` al .sb-hud in Player.tsx, poi nei test sostituire `document.querySelector('.sb-hud')` con `screen.getByRole('status', { name: /stato giocatore/i })` — oppure usare `getByText` direttamente sulle stringhe di stato. Segnalare al qa-dev per allineamento della suite.",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "conditional",
+  "summary": {
+    "total_findings": 3,
+    "by_severity": {
+      "high": 1,
+      "medium": 1,
+      "low": 1
+    },
+    "blocking": true,
+    "rationale": "F-103-01 (high) è il finding principale: il bare text node orfano dentro .sb-screen è un residuo del codice pre-TSK-103 che TSK-103 avrebbe dovuto rimuovere. La duplicazione del testo di stato (dentro .sb-screen e dentro .sb-hud) produce output DOM ambiguo, testo non wrappato sopra il canvas in stato running, e test adattati alla duplicazione piuttosto che al comportamento corretto. F-103-02 (medium) e F-103-03 (low) sono minori ma richiesti dal ruleset. Verdict: conditional — il dev-agent risolve F-103-01 come priorità massima (rimozione riga 455 + aggiornamento test), poi F-103-02 e F-103-03 in follow-on. Max diff lines: 80 (router severity-tiered).",
+    "positive_notes": [
+      "HUD_STATE_LABELS come Record tipizzato è idiomatico e previene drift.",
+      "HUD_TITLE_IDLE come costante nominata è più manutenibile di un literal ripetuto.",
+      "aria-live='polite' + aria-atomic='true' sull'HUD è corretto per React 18.",
+      "CSS overlay pausa scoped all'id univoco del componente (data-video-scope) evita inquinamento globale.",
+      "Fallback CSS var(--sd-color-text-primary, #f0e9ff) soddisfa CSS-DESIGN-001.",
+      "restoreSram best-effort isolato in try/catch separato con console.warn: robusto e coerente con persistSram.",
+      "afterEach vi.restoreAllMocks() aggiunto correttamente alla suite."
+    ]
+  },
+  "loop_status": {
+    "current_iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false
+  },
+  "task_package": {
+    "tsk_id": "TSK-103",
+    "iter": 2,
+    "target_agent": "fe-dev",
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 80,
+      "priority_order": ["F-103-01", "F-103-02", "F-103-03"]
+    },
+    "findings_to_fix": [
+      {
+        "id": "F-103-01",
+        "severity": "high",
+        "action": "Rimuovere Player.tsx:455 (bare text node dentro .sb-screen). Aggiornare Player.test.tsx: sostituire findAllByText con findByText per le stringhe di stato (le occorrenze aggiunte dal commento 'sia nel canvas-host sia nell'HUD'); rimuovere il commento TSK-103 inline che giustificava la duplicazione."
+      },
+      {
+        "id": "F-103-02",
+        "severity": "medium",
+        "action": "In Player.test.tsx aggiungere commento inline alle righe con `hud!` che giustifichi la non-null assertion (es. 'hud is guaranteed non-null: expect(hud).not.toBeNull() precedes this use')."
+      },
+      {
+        "id": "F-103-03",
+        "severity": "low",
+        "action": "Aggiungere aria-label='Stato giocatore' al .sb-hud in Player.tsx. In Player.test.tsx sostituire document.querySelector('.sb-hud') con screen.getByRole('status', { name: /stato giocatore/i }) o equivalente. Segnalare al qa-dev per allineamento."
+      }
+    ]
+  }
+}

@@ -407,6 +407,81 @@ describe("NativeFsAdapter — save states (TSK-054)", () => {
     );
     expect(mkdirCalls.some((c) => c.path === `${BASE}/save-states` && c.recursive)).toBe(true);
   });
+
+  // TSK-094 (US-050) — atomicità write-then-manifest.
+  // Scenario: blob write OK, manifest write fallisce → l'adapter deve invocare
+  // `unlink` sul blob orfano (cleanup best-effort) E rigettare con l'errore
+  // originale del manifest write (non ingoiato, non sostituito).
+  it("putSaveState: se la scrittura del manifest fallisce, il blob orfano viene rimosso (best-effort) e l'errore originale è propagato", async () => {
+    const { adapter, bridge } = makeAdapter();
+    // Patch chirurgico al writeFile del bridge: la PRIMA scrittura (blob) passa,
+    // la SECONDA (manifest, path che termina con `save-states.json`) lancia.
+    const originalWriteFile = bridge.writeFile.bind(bridge);
+    const manifestErr = new Error("ENOSPC: no space left on device");
+    let writeCount = 0;
+    bridge.writeFile = vi.fn(async (filePath: string, data: Uint8Array) => {
+      writeCount += 1;
+      if (writeCount === 1) {
+        // blob write — passa normalmente
+        return originalWriteFile(filePath, data);
+      }
+      // manifest write — fallisce
+      throw manifestErr;
+    });
+    const unlinkSpy = vi.spyOn(bridge, "unlink");
+
+    await expect(adapter.putSaveState(saveInput("rom-A", 0, "snap-payload"))).rejects.toBe(
+      manifestErr,
+    );
+
+    // Cleanup best-effort: unlink invocato sul path del blob scritto.
+    expect(unlinkSpy).toHaveBeenCalledTimes(1);
+    const blobUnlinkedPath = unlinkSpy.mock.calls[0]?.[0];
+    expect(blobUnlinkedPath).toBeDefined();
+    expect(blobUnlinkedPath).toMatch(/^\/tmp\/soli-boy-test\/save-states\/.+\.bin$/);
+    // Verifica end-state: il blob non resta come file orfano nello store.
+    expect(bridge.files.has(blobUnlinkedPath as string)).toBe(false);
+  });
+
+  // TSK-094 (US-050) — degradazione graceful del cleanup.
+  // Se anche il `tryUnlink` del cleanup fallisce (es. permessi), l'errore
+  // ORIGINALE del manifest write resta quello propagato (l'errore del cleanup
+  // è loggato ma non aggiunto al reject).
+  it("putSaveState: fallimento del cleanup unlink non maschera l'errore originale del manifest write", async () => {
+    const { adapter, bridge } = makeAdapter();
+    const originalWriteFile = bridge.writeFile.bind(bridge);
+    const manifestErr = new Error("ENOSPC: no space left on device");
+    let writeCount = 0;
+    bridge.writeFile = vi.fn(async (filePath: string, data: Uint8Array) => {
+      writeCount += 1;
+      if (writeCount === 1) return originalWriteFile(filePath, data);
+      throw manifestErr;
+    });
+    // unlink lancia un errore NON-ENOENT (permessi): `tryUnlink` lo rilancia,
+    // ma il catch interno di `putSaveState` lo logga senza farlo bubbling.
+    const unlinkErr = new Error("EACCES: permission denied") as Error & { code: string };
+    unlinkErr.code = "EACCES";
+    bridge.unlink = vi.fn(async () => {
+      throw unlinkErr;
+    });
+    // Silenzia il warning best-effort per non sporcare l'output dei test.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(adapter.putSaveState(saveInput("rom-A", 0))).rejects.toBe(manifestErr);
+    expect(bridge.unlink).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  // TSK-094 (US-050) — regressione nominale: con entrambe le operazioni
+  // riuscite, il comportamento è identico (nessun unlink "fantasma").
+  it("putSaveState: in condizione nominale non invoca unlink (no cleanup spurio)", async () => {
+    const { adapter, bridge } = makeAdapter();
+    const unlinkSpy = vi.spyOn(bridge, "unlink");
+    const id = await adapter.putSaveState(saveInput("rom-A", 0));
+    expect(id).toBeTruthy();
+    expect(unlinkSpy).not.toHaveBeenCalled();
+  });
 });
 
 // ── Config ───────────────────────────────────────────────────────────────────

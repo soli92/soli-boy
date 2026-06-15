@@ -1,0 +1,50 @@
+{
+  "verdict": "pass",
+  "iterations": 1,
+  "assertions_results": [
+    {
+      "id": "player-idle-after-stop",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text('Avvia') visibile dopo Arresta — stato idle confermato"
+    },
+    {
+      "id": "pausa-absent-after-stop",
+      "kind": "selector_absent",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text('Pausa') assente dopo Arresta"
+    },
+    {
+      "id": "riprendi-absent-after-stop",
+      "kind": "selector_absent",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text('Riprendi') assente dopo Arresta"
+    },
+    {
+      "id": "arresta-absent-after-stop",
+      "kind": "selector_absent",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text('Arresta') assente dopo Arresta — controllo scomparso correttamente"
+    },
+    {
+      "id": "no-console-error",
+      "kind": "console_no_error",
+      "severity": "advisory",
+      "outcome": "pass",
+      "detail": "0 errori console. 5 warning (WebGL ReadPixels GPU stall + ScriptProcessorNode deprecated) — non fatali"
+    }
+  ],
+  "critic_findings": [],
+  "trace_path": "code_quality/reports/soliboy-player-controls-functional-iter-1/",
+  "timestamp": "2026-06-15T00:00:00Z",
+  "intermediate_checks": {
+    "riprendi_visible_after_pause": true,
+    "pausa_absent_after_pause": true,
+    "pausa_visible_after_resume": true,
+    "riprendi_absent_after_resume": true
+  }
+}

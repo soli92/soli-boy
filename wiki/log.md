@@ -576,3 +576,50 @@ Implementazione completata. Nessun TSK BE bloccante.
 [2026-06-15 10:00] fe-dev | develop | TSK-085 | EP-019 art-director statement prodotto: design_&_architecture/ux-design-rationale-ep019.md (INTENT/PROBLEM/RATIONALE/CONSTRAINTS + DESIGN SPEC DSL 3 layout + CRITIC PASS verdict conditional)
 2026-06-15 15:30 | docs-dev | develop | TSK-090 | EP-019 critic report globale: 2 finding non previsti (backlog sincronizzato), 1 capability iterata (scale test), debito EP-018 saldato
 2026-06-15 15:35 | qa-dev | develop | TSK-091 | EP-018 re-check: functional oracle stabile, falso-negativo iter-1 risolto, debito v2.20 saldato
+
+## TSK-103 — 2026-06-15 — HUD Player user-facing: romTitle + stati italiani + overlay pausa
+fe-dev | develop | EP-015 / US-054. Player.tsx: HUD ora mostra `title` prop (fallback "Nessun gioco selezionato") al posto di `rom.core`; etichette stato centralizzate in `HUD_STATE_LABELS` (idle/loaded→"Premi Avvia", running→"In esecuzione", paused→"In pausa"); aggiunto `aria-live="polite"` + `aria-atomic="true"` sull'HUD; overlay icona pausa (`⏸`, opacity 0.6, 96px, token `--sd-color-text-primary`, `aria-hidden`) centrato sopra il canvas quando `state==="paused"`. Player.test.tsx esteso con 2 test TSK-103 (HUD title+state+aria-live transitions, fallback idle). 44/44 test Player passano; tsc clean. AC5/AC6 (visual/functional oracle) downstream — TSK lasciato `in-progress` per gate oracle.
+
+
+## TSK-095 — 2026-06-15 — Fix stale closure handleCapacitorUri FileLoader
+fe-dev | develop | EP-014 / US-051. FileLoader.tsx: sostituito pattern `async function handleCapacitorUri` + `useEffect([])` con pattern "latest-ref" (`useRef` + `handlerRef.current` aggiornato ogni render + `useEffect([registerUriHandler])` con wrapper stabile). Eliminato `eslint-disable react-hooks/exhaustive-deps`. FileLoader.test.tsx: aggiunto test di regressione "no stale closure" (rerender con storage/onImported nuovi → handler usa valori freschi, registerCalls===1). 10/10 test FileLoader pass; tsc clean.
+
+## TSK-096 — 2026-06-15 — Fix useMemo deps stale + selectAdapter Error Boundary
+fe-dev | develop | EP-014 / US-051. App.tsx: `selectAdapter()` wrappato in try/catch a module-load con fallback UI `StorageInitErrorFallback` (role=alert, data-testid=sb-storage-init-error); deps `useMemo` allineate a `[config]`; export `STORAGE_INIT_ERROR_MESSAGE`. App.test.tsx: nuovo file con test "selectAdapter throw → fallback UI". 429/431 test pass (2 pre-existing failure Settings non correlati); tsc clean.
+
+## TSK-097 — 2026-06-15 — Fix handleFile async try/catch FileLoader
+fe-dev | develop | EP-014 / US-051. FileLoader.tsx: wrap try/catch attorno a `readHeader + importRom` in `handleFile`; messaggio canonico "Errore inatteso durante l'importazione — riprovare"; `console.error` gated su `import.meta.env.DEV`. FileLoader.test.tsx: aggiunto test "errore runtime inatteso da importRom mostra messaggio canonico" (mock addRom con TypeError("IDB closed")). 10/10 test FileLoader pass; tsc clean.
+
+## TSK-105 — 2026-06-15 — Aspect-ratio CSS invariante su .sb-screen (idle no-jump)
+fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 / 2` + `aspect-ratio: var(--sb-canvas-aspect)` nel blocco CSS scoped `.sb-screen` (dopo `position: relative`). useVideoSettings.ts: rimosso `style.aspectRatio = "auto"` per `aspect=stretch` (la CSS fallback garantisce altezza visibile); aggiornato jsdoc. 44/44 test Player pass; tsc clean. AC visual-oracle downstream — TSK in-progress per gate oracle.
+
+[2026-06-15] visual-oracle TSK-103 iter-1 → pass
+[2026-06-15] visual-oracle TSK-105 iter-1 → pass
+[2026-06-15] review TSK-097 iter-1 → conditional
+[2026-06-15] review TSK-095 iter-1 → passed
+  - Reviewer: code-reviewer@2.21.0 · Stack: typescript/react 18.x/vite (conf 0.97)
+  - Finding: {high:0, medium:0, low:1}, dedup:0 · Report: code_quality/reports/TSK-095-iter-1.json
+  - F-095-1-D1 (low, advisory): invariante stabilita' registerUriHandler non documentata in JSDoc del prop (TS-DESIGN-001). Non bloccante.
+[2026-06-15] review TSK-105 iter-1 → conditional
+  - Reviewer: code-reviewer@2.21.0 · Stack: typescript/react 18.x/css-in-js (conf 0.97)
+  - Finding: {high:0, medium:0, low:3}, dedup:0 · Report: code_quality/reports/TSK-105-iter-1.json
+  - F-105-01 (low): CSS-DESIGN-001 — --sb-canvas-aspect senza marcatura "token locale" (vs token DS --sd-*).
+  - F-105-02 (low): CSS-DESIGN-001 — DEFAULT_SCREEN_ASPECT_RATIO (JS) e --sb-canvas-aspect (CSS) senza cross-reference.
+  - F-105-03 (low): CSS-DESIGN-001 — commento UA :fullscreen impreciso (comportamento runtime corretto, visual oracle pass).
+
+[2026-06-15] review TSK-103 iter-1 → conditional
+  - Reviewer: code-reviewer@2.21.0 · Stack: typescript/react 18.x (conf 0.97)
+  - Findings: {high:1, medium:1, low:1} · Report: code_quality/reports/TSK-103-iter-1.json
+  - F-103-01 (high): REACT-IDIOM-001 — bare text node orfano Player.tsx:455 non rimosso dopo introduzione .sb-hud; duplicazione testo di stato in .sb-screen e .sb-hud; test adattati alla duplicazione (findAllByText).
+  - F-103-02 (medium): TS-IDIOM-002 — non-null assertion `hud!` in Player.test.tsx senza commento di giustificazione (6 occorrenze).
+  - F-103-03 (low): QA-TEST-001 — document.querySelector('.sb-hud') bypassa accessibility tree; raccomandato getByRole con aria-label.
+
+2026-06-15 | code-reviewer | review TSK-096 iter-1 → conditional | packages/app/src/App.tsx + App.test.tsx | 5 findings (medium:2, low:3): F-02 early-return-before-hooks fragile (REACT-IDIOM-001), F-03 non-null cast non giustificato (TS-IDIOM-002), F-04 errore storage non loggato (TS-ROBUST-001), F-01 export comment ambiguo (TS-DESIGN-001), F-05 manca test smoke path nominale (QA-TEST-001). Report: code_quality/reports/TSK-096-iter-1.json
+
+2026-06-15 | code-reviewer | review TSK-097 iter-2 → passed | packages/app/src/components/FileLoader/FileLoader.test.tsx | F-097-01 risolto: asserzione expect(errSpy).toHaveBeenCalledWith aggiunta a riga 205; branch DEV console.error ora esplicitamente verificato. 0 finding aperti. Report: code_quality/reports/TSK-097-iter-2.json
+
+2026-06-15 | code-reviewer | review TSK-105 iter-2 → passed | packages/app/src/components/Player/Player.tsx | Tutti i finding low iter-1 chiusi (F-105-01: token locale --sb-canvas-aspect marcato; F-105-02: cross-reference DEFAULT_SCREEN_ASPECT_RATIO aggiunto; F-105-03: commento fullscreen UA corretto). 0 finding aperti. Report: code_quality/reports/TSK-105-iter-2.json
+
+2026-06-15 | code-reviewer | review TSK-103 iter-2 → passed | packages/app/src/components/Player/Player.tsx + Player.test.tsx | Tutti i finding iter-1 risolti: F-103-01 (high, REACT-IDIOM-001): bare text node orfano rimosso da .sb-screen, test aggiornati a findByText singola occorrenza; F-103-02 (medium, TS-IDIOM-002): risolto per via transitiva, nessun `!` rimasto; F-103-03 (low, QA-TEST-001): aria-label + role=status aggiunti al .sb-hud, test usano screen.getByRole semantico. 0 finding aperti. Report: code_quality/reports/TSK-103-iter-2.json
+
+2026-06-15 | code-reviewer | review TSK-096 iter-2 → passed | packages/app/src/App.tsx + App.test.tsx | 4 finding chiusi (F-02 REACT-IDIOM-001: AppContent/App thin shell refactoring completo; F-03 TS-IDIOM-002: cast eliminato via props typed; F-04 TS-ROBUST-001: console.error aggiunto; F-01 TS-DESIGN-001: commento riformulato). 1 finding low residuo informativo (F-05 QA-TEST-001: test smoke path nominale — delegato qa-dev, non blocca merge). Report: code_quality/reports/TSK-096-iter-2.json

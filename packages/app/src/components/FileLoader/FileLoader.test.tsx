@@ -184,6 +184,32 @@ describe("FileLoader", () => {
     expect(storage.addRom).not.toHaveBeenCalled();
   });
 
+  it("TSK-097: errore runtime inatteso da importRom mostra messaggio canonico", async () => {
+    const storage = fakeStorage();
+    (storage.addRom as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new TypeError("IDB closed"),
+    );
+    const onImported = vi.fn();
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<FileLoader storage={storage} onImported={onImported} />);
+    const input = screen.getByLabelText("Carica ROM") as HTMLInputElement;
+    const file = new File(["rom"], "zelda.gbc");
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "Errore inatteso durante l'importazione — riprovare",
+    );
+    expect(onImported).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalledWith(
+      "FileLoader.handleFile:",
+      expect.any(TypeError),
+    );
+
+    errSpy.mockRestore();
+  });
+
   it("TSK-063: path <input type=file> web funziona invariato con Capacitor nativo", async () => {
     // Verifica che il path web standard non sia rotto dall'aggiunta del Capacitor path.
     mockNativePlatform(true);
@@ -199,5 +225,57 @@ describe("FileLoader", () => {
 
     await waitFor(() => expect(onImported).toHaveBeenCalledWith("id-1"));
     expect(storage.addRom).toHaveBeenCalledOnce();
+  });
+
+  // ── TSK-095: regressione stale closure ──────────────────────────────────────
+
+  it("TSK-095: dopo rerender con storage/onImported nuovi il handler usa i valori freschi (no stale closure)", async () => {
+    mockNativePlatform(true);
+    const ROM_BYTES = new Uint8Array(new Array(0x100).fill(0));
+    const api = fakeFilesystemApi(ROM_BYTES);
+
+    const storageA = fakeStorage();
+    const onImportedA = vi.fn();
+    const storageB = fakeStorage();
+    const onImportedB = vi.fn();
+
+    let registered: ((uri: string) => Promise<void>) | null = null;
+    let registerCalls = 0;
+    const registerUriHandler = (fn: (uri: string) => Promise<void>) => {
+      registerCalls += 1;
+      registered = fn;
+    };
+
+    const { rerender } = render(
+      <FileLoader
+        storage={storageA}
+        onImported={onImportedA}
+        registerUriHandler={registerUriHandler}
+        _filesystemApi={api}
+      />,
+    );
+
+    expect(registered).not.toBeNull();
+    expect(registerCalls).toBe(1);
+
+    rerender(
+      <FileLoader
+        storage={storageB}
+        onImported={onImportedB}
+        registerUriHandler={registerUriHandler}
+        _filesystemApi={api}
+      />,
+    );
+
+    expect(registerCalls).toBe(1);
+
+    await act(async () => {
+      await registered!("file:///storage/emulated/0/roms/zelda.gbc");
+    });
+
+    expect(storageA.addRom).not.toHaveBeenCalled();
+    expect(onImportedA).not.toHaveBeenCalled();
+    expect(storageB.addRom).toHaveBeenCalledOnce();
+    expect(onImportedB).toHaveBeenCalledWith("id-1");
   });
 });

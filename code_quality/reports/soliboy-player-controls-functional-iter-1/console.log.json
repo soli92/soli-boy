@@ -1,0 +1,27 @@
+[
+  {
+    "type": "warning",
+    "text": "[.WebGL-0x11c00572600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "timestamp_ms": 1781537806899
+  },
+  {
+    "type": "warning",
+    "text": "[.WebGL-0x11c00572600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "timestamp_ms": 1781537806899
+  },
+  {
+    "type": "warning",
+    "text": "The ScriptProcessorNode is deprecated. Use AudioWorkletNode instead. (https://bit.ly/audio-worklet)",
+    "timestamp_ms": 1781537806911
+  },
+  {
+    "type": "warning",
+    "text": "[.WebGL-0x11c00572600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "timestamp_ms": 1781537806915
+  },
+  {
+    "type": "warning",
+    "text": "[.WebGL-0x11c00572600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)",
+    "timestamp_ms": 1781537806915
+  }
+]

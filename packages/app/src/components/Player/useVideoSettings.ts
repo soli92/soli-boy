@@ -204,8 +204,10 @@ export const DEFAULT_SCREEN_ASPECT_RATIO = "3 / 2";
  * - `aspect = "original"`: aspect-ratio: 3/2 (GBA nativo, emulator-first).
  *   Il canvas interno usa `object-fit: contain` → nessuna deformazione per GB.
  * - `aspect = "4:3"`: aspect-ratio: 4 / 3.
- * - `aspect = "stretch"`: aspect-ratio non vincolato; l'inner canvas verrà
- *   steso via `object-fit: fill`.
+ * - `aspect = "stretch"`: nessun `aspectRatio` inline; la regola scoped in
+ *   Player.tsx applica `aspect-ratio: var(--sb-canvas-aspect)` (default 3/2,
+ *   TSK-105) come fallback invariante, e l'inner canvas viene steso via
+ *   `object-fit: fill`.
  */
 export function videoSettingsToContainerStyle(
   s: VideoSettings,
@@ -226,10 +228,11 @@ export function videoSettingsToContainerStyle(
     // a zero quando il contenuto è posizionato in assoluto (canvas-host absolute).
     // Fix: canvas schiacciato (altezza ~24px con scala auto, bug finding iter-2).
     style.aspectRatio = DEFAULT_SCREEN_ASPECT_RATIO;
-  } else {
-    // stretch: nessun vincolo di aspect; l'inner canvas verrà steso via object-fit.
-    style.aspectRatio = "auto";
   }
+  // TSK-105 — per `stretch` NON scriviamo `aspectRatio` inline: lasciamo che la
+  // regola scoped in Player.tsx applichi `aspect-ratio: var(--sb-canvas-aspect)`
+  // (default 3/2) come fallback invariante. Cosi' il container resta visibile
+  // in idle anche con aspect=stretch; l'inner canvas si stende via object-fit:fill.
   return style;
 }
 

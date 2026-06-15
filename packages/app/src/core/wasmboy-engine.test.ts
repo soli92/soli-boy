@@ -60,6 +60,48 @@ async function makeRunningEngine() {
   return engine;
 }
 
+describe("WasmBoyEngine — guard ROM Blob vuoto in load() (TSK-093)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    lib.paused = true;
+  });
+
+  it("load() con Blob vuoto rigetta con messaggio canonico 'ROM vuota'", async () => {
+    // P3-10 (code-review-deep): App.tsx passa `new Blob()` come placeholder quando
+    // selected===null; una race condition (Avvia prima che selected sia settato)
+    // inoltrerebbe un Uint8Array di lunghezza 0 a WasmBoy.loadROM (comportamento
+    // imprevedibile). Il guard deve respingere PRIMA di toccare WasmBoy.
+    const engine = new WasmBoyEngine();
+    const container = document.createElement("div");
+
+    await expect(
+      engine.load({
+        rom: new Blob(),
+        core: "gambatte" as Core,
+        container,
+      }),
+    ).rejects.toThrow("WasmBoyEngine.load: ROM vuota — Blob privo di contenuto.");
+
+    // AC-1: il guard scatta PRIMA di WasmBoy.config (nessun side-effect sulla lib).
+    expect(WasmBoy.config).not.toHaveBeenCalled();
+    expect(WasmBoy.loadROM).not.toHaveBeenCalled();
+  });
+
+  it("load() con Blob non vuoto procede normalmente (regressione: il guard non blocca payload validi)", async () => {
+    const engine = new WasmBoyEngine();
+    const container = document.createElement("div");
+
+    await engine.load({
+      rom: new Blob([new Uint8Array([0x00])]),
+      core: "gambatte" as Core,
+      container,
+    });
+
+    expect(WasmBoy.config).toHaveBeenCalledTimes(1);
+    expect(WasmBoy.loadROM).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("WasmBoyEngine — guard !configured su resume() (C-01)", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -1,0 +1,37 @@
+{
+  "verdict": "pass",
+  "iterations": 1,
+  "assertions_results": [
+    {
+      "id": "library-grid-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "ul[aria-label='Risultati libreria'] visibile dopo caricamento ROM e navigazione tab Libreria"
+    },
+    {
+      "id": "player-avvia-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button:has-text('Avvia') visibile nel Player dopo click GameTile — ROM montata correttamente"
+    },
+    {
+      "id": "rom-tile-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "button.sb-game visibile in griglia. Testo tile: 'gba-tests-thumb GBA' (titolo + platform badge)"
+    },
+    {
+      "id": "no-console-error",
+      "kind": "console_no_error",
+      "severity": "advisory",
+      "outcome": "pass",
+      "detail": "0 errori console durante il flusso library management"
+    }
+  ],
+  "critic_findings": [],
+  "trace_path": "code_quality/reports/soliboy-library-management-functional-iter-1/",
+  "timestamp": "2026-06-15T00:00:00Z"
+}

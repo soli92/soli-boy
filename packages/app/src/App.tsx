@@ -57,7 +57,29 @@ const REAL_ENGINE = !STUB_ENGINE;
 // (comportamento invariato); su desktop Electron è il `NativeFsAdapter`
 // iniettato col bridge `window.soliboyDesktop` (TSK-053). Il dominio non
 // vede la differenza: consuma `SaveStoragePort`/`ConfigPort`.
-const { storage: selectedStorage, config: selectedConfig } = selectAdapter();
+//
+// TSK-096 (US-051, P3-01) — `selectAdapter()` gira a module-load fuori da
+// qualsiasi componente React: una sua eccezione (bridge desktop corrotto,
+// init `NativeFsAdapter`, ecc.) farebbe crashare l'intero bundle prima del
+// montaggio del root, producendo white screen senza Error Boundary utile.
+// La invochiamo difensivamente: se lancia, archiviamo l'errore e `App`
+// renderizza un fallback UI di emergenza in luogo dell'albero completo.
+type AdapterBundle = ReturnType<typeof selectAdapter>;
+let selectedStorage: AdapterBundle["storage"] | null = null;
+let selectedConfig: AdapterBundle["config"] | null = null;
+let storageInitError: Error | null = null;
+try {
+  const bundle = selectAdapter();
+  selectedStorage = bundle.storage;
+  selectedConfig = bundle.config;
+} catch (err) {
+  storageInitError = err instanceof Error ? err : new Error(String(err));
+  console.error("[soli-boy] Storage init failed:", storageInitError);
+}
+
+// Messaggio UI canonico del fallback storage; i test lo importano come conseguenza.
+export const STORAGE_INIT_ERROR_MESSAGE =
+  "Impossibile inizializzare lo storage — ricaricare l'app";
 
 /** Le 4 destinazioni funzionali dell'app. */
 type Tab = "play" | "library" | "settings" | "info";
@@ -69,9 +91,36 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "info", label: "Info & Privacy" },
 ];
 
+/**
+ * TSK-096 (US-051) — Fallback di emergenza quando `selectAdapter()` ha
+ * lanciato a module-load. Non monta nessun hook che dipende dallo storage:
+ * solo messaggio + invito al refresh. Compliance con WAI-ARIA via `role="alert"`.
+ */
+function StorageInitErrorFallback({ error }: { error: Error }) {
+  return (
+    <main className="sb-app" role="alert" data-testid="sb-storage-init-error">
+      <header className="sd-flex sd-items-center sd-between">
+        <h1 className="sb-title sb-title--logo">
+          <img className="sb-logo" src={logoUrl} alt="Soli-boy" />
+        </h1>
+      </header>
+      <p className="sb-note">{STORAGE_INIT_ERROR_MESSAGE}</p>
+      <p className="sb-note" data-testid="sb-storage-init-error-detail">
+        {error.message}
+      </p>
+    </main>
+  );
+}
+
 // Composizione del Core web MVP. Storage reale via `selectAdapter()`.
-export function App() {
-  const storage = selectedStorage;
+// TSK-096 — separata da App (thin shell) per rispettare react-hooks/rules-of-hooks.
+function AppContent({
+  storage,
+  config,
+}: {
+  storage: AdapterBundle["storage"];
+  config: AdapterBundle["config"];
+}) {
   const stub = useMemo(() => new StubEngine(), []);
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
@@ -99,9 +148,13 @@ export function App() {
   // ne sono consumatori controllati, condividendo la stessa istanza e così
   // restando sincronizzati in sessione. La porta concreta (IndexedDB `config`,
   // chiave `video-settings`) idrata al mount e persiste su `setValue`.
+  // TSK-096 (US-051, P1-01): deps includono `config` per soddisfare
+  // `react-hooks/exhaustive-deps`. `config` è un singleton di modulo stabile
+  // per l'intera vita dell'app (single allocation in `selectAdapter()`),
+  // quindi la memoizzazione resta de facto idempotente.
   const videoPort = useMemo(
-    () => makeVideoSettingsPort(selectedConfig),
-    [],
+    () => makeVideoSettingsPort(config),
+    [config],
   );
   const { value: videoSettings, setValue: setVideoSettings } =
     useVideoSettings(videoPort);
@@ -111,14 +164,15 @@ export function App() {
   // chiave canonica `"ui-theme"`) memoizzata, hook che idrata al mount e
   // applica `data-theme` al `<html>`. La preferenza è passata a Settings via
   // prop opzionali — sezione "Aspetto" attiva solo qui (test legacy intatti).
-  const themePort = useMemo(() => makeThemePort(selectedConfig), []);
+  // TSK-096 (US-051, P1-02): deps idem a `videoPort`.
+  const themePort = useMemo(() => makeThemePort(config), [config]);
   const { theme, setTheme } = useTheme(themePort);
 
-  // TSK-066 (US-032) — stato feedback aptico. ConfigPort riusa `selectedConfig`
+  // TSK-066 (US-032) — stato feedback aptico. ConfigPort riusa `config`
   // (store `config`, chiave `haptics-enabled`). Persistenza on `setHapticsEnabled`
   // seguita da `saveHapticsEnabled` (chiamata dal toggle in Settings).
   const { hapticsEnabled, setHapticsEnabled, saveHapticsEnabled } =
-    useHapticsConfig(selectedConfig);
+    useHapticsConfig(config);
 
   // TSK-069 (US-033) — Stato presa visione informativa privacy on-device.
   // Stesso pattern di `useTheme`: porta concreta (IndexedDB `config`, chiave
@@ -126,7 +180,8 @@ export function App() {
   // è renderizzato SOLO se l'utente non ha ancora cliccato "Ho capito" in una
   // sessione precedente; la sezione "Privacy" di Settings resta sempre
   // disponibile (vedi `PrivacyNotice variant="section"`).
-  const privacyPort = useMemo(() => makePrivacyAckPort(selectedConfig), []);
+  // TSK-096 (US-051): deps allineate a `videoPort`/`themePort`.
+  const privacyPort = useMemo(() => makePrivacyAckPort(config), [config]);
   const { acknowledged: privacyAck, acknowledge: ackPrivacy } =
     usePrivacyAck(privacyPort);
 
@@ -344,7 +399,7 @@ export function App() {
           currentCore={selected?.core}
           hapticsEnabled={hapticsEnabled}
           inputMapping={input}
-          touchConfigStorage={selectedConfig}
+          touchConfigStorage={config}
         />
         {/* CTA FileLoader in stato idle (nessuna ROM selezionata) */}
         {!selected && (
@@ -438,4 +493,13 @@ export function App() {
       </footer>
     </main>
   );
+}
+
+// TSK-096 — Thin shell: zero hook → nessuna violazione rules-of-hooks.
+// Il gate d'errore è stabile per l'intera vita del modulo (module-load singleton).
+export function App() {
+  if (storageInitError !== null) {
+    return <StorageInitErrorFallback error={storageInitError} />;
+  }
+  return <AppContent storage={selectedStorage!} config={selectedConfig!} />;
 }

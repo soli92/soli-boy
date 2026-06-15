@@ -1,0 +1,59 @@
+# Acceptance-spec soli-boy — flusso: Settings
+# Schema: .claude/schemas/acceptance-spec.schema.yaml (EP-018, ADR-065).
+# Flusso: apri tab Impostazioni → verifica sezioni input mapping e profili presenti
+# Selector source:
+#   - App.tsx: button[data-tab-id="settings"] (tab navigation)
+#   - Settings.tsx:
+#     - section[aria-label="Impostazioni controlli"] — root del componente
+#     - details[open] > summary.sb-lbl con testo "Controlli — rimappatura" (primo accordion, aperto di default)
+#     - ul.sb-keymap — lista rimappatura tasti
+#     - button.sb-btn.sb-full con testo "Salva profilo"
+#     - details > summary.sb-lbl con testo "Dati — salvataggi (export/import)"
+# NB: non serve caricare una ROM per aprire Settings.
+
+app: soliboy
+target: http://127.0.0.1:4173/
+
+fixtures: []
+
+scenario:
+  # Step 0 — dismetti banner privacy se presente
+  - { action: click, selector: 'button:has-text("Ho capito")', optional: true }
+  # Step 1 — naviga alla tab Impostazioni
+  - { action: click, selector: 'button[data-tab-id="settings"]' }
+  # Step 2 — attendi il pannello Impostazioni visibile
+  - { action: wait_for, selector: 'section[aria-label="Impostazioni controlli"]', state: visible, timeout_ms: 5000 }
+  - { action: wait_ms, value: 300 }
+
+assertions:
+  # BLOCKING — sezione Settings principale visibile
+  - id: settings-section-visible
+    severity: blocking
+    kind: selector_visible
+    selector: 'section[aria-label="Impostazioni controlli"]'
+  # BLOCKING — accordion "Controlli — rimappatura" visibile (aperto di default in Settings.tsx)
+  - id: controls-accordion-visible
+    severity: blocking
+    kind: selector_visible
+    selector: 'details[open] summary.sb-lbl'
+  # BLOCKING — lista rimappatura tasti visibile (ul.sb-keymap dentro il primo accordion aperto)
+  - id: keymap-list-visible
+    severity: blocking
+    kind: selector_visible
+    selector: 'ul.sb-keymap'
+  # BLOCKING — button "Salva profilo" visibile (verifica sezione profili presente)
+  - id: save-profile-button-visible
+    severity: blocking
+    kind: selector_visible
+    selector: 'button:has-text("Salva profilo")'
+  # ADVISORY — nessun errore console
+  - id: no-console-error
+    severity: advisory
+    kind: console_no_error
+  # ADVISORY — nessun 5xx nel network log
+  - id: no-5xx
+    severity: advisory
+    kind: network_no_5xx
+
+thresholds:
+  advisory_max: 2

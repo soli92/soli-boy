@@ -1,0 +1,65 @@
+{
+  "tsk_id": "TSK-103",
+  "iter": 1,
+  "date": "2026-06-15",
+  "verdict": "pass",
+  "state_under_test": "idle",
+  "viewport_matrix": ["mobile-375", "desktop-1280"],
+  "theme_matrix": ["light", "dark"],
+  "screenshots": [
+    "code_quality/reports/TSK-103-visual-iter-1/mobile-375-light.png",
+    "code_quality/reports/TSK-103-visual-iter-1/mobile-375-dark.png",
+    "code_quality/reports/TSK-103-visual-iter-1/desktop-1280-light.png",
+    "code_quality/reports/TSK-103-visual-iter-1/desktop-1280-dark.png"
+  ],
+  "ac_checks": [
+    {
+      "ac": "AC#1 — HUD mostra title prop o 'Nessun gioco selezionato' in idle",
+      "result": "pass",
+      "evidence": "desktop-1280: HUD inferiore mostra 'Nessun gioco selezionato' (left span). Title prop è undefined in idle, fallback HUD_TITLE_IDLE corretto."
+    },
+    {
+      "ac": "AC#2 — Stato in italiano centralizzato (idle → 'Premi Avvia')",
+      "result": "pass",
+      "evidence": "desktop-1280: HUD inferiore mostra 'Premi Avvia' (right span) = HUD_STATE_LABELS.idle."
+    },
+    {
+      "ac": "AC#3 — Overlay pausa ⏸ centrato (solo in state=paused)",
+      "result": "pass (not-applicable in idle)",
+      "evidence": "In stato idle nessun overlay pausa è presente — corretto: l'elemento .sb-pause-overlay è renderizzato condizionalmente solo per state==='paused'. Verifica completa dell'overlay richiede uno screenshot in stato paused (richiede ROM caricata → fuori scope per render headless senza fixture)."
+    },
+    {
+      "ac": "AC#4 — aria-live='polite' + aria-atomic='true' su HUD container",
+      "result": "pass (code review)",
+      "evidence": "Player.tsx:518-522 mostra <div className='sb-hud' aria-live='polite' aria-atomic='true'>. Non visivamente verificabile ma confermato a sorgente."
+    },
+    {
+      "ac": "Aspect-ratio .sb-screen non schiacciato",
+      "result": "pass",
+      "evidence": "desktop-1280: LCD box ~320×210 px ratio ~10:7 (vicino a GameBoy DMG 160:144=10:9). Mobile-375: box proporzionato, no skew. Bordi arrotondati e bordo viola intatti."
+    }
+  ],
+  "critic_findings": [
+    {
+      "severity": "trivial",
+      "viewport": "all",
+      "theme": "light vs dark",
+      "title": "OS color-scheme non differenziato",
+      "description": "Le 4 PNG light/dark sono pixel-identiche: l'app non implementa @media (prefers-color-scheme). Tema è app-controlled (90s-party/dark/cyberpunk via UI switcher), non OS-controlled. Out of scope per TSK-103; nessuna AC richiede sensibilità a prefers-color-scheme.",
+      "fix_hint": "Nessun fix richiesto. Eventuale issue separata se si vuole introdurre @media (prefers-color-scheme: light) come tema default."
+    },
+    {
+      "severity": "trivial",
+      "viewport": "mobile-375",
+      "theme": "both",
+      "title": "HUD sotto la fold su mobile",
+      "description": "Su viewport 375×667, l'HUD inferiore (.sb-hud) è sotto il fold perché .sb-screen + privacy banner riempiono la prima vista. Lo screenshot fullPage:false non lo cattura. AC#1/#2 verificabili invece sullo screenshot desktop (HUD visibile).",
+      "fix_hint": "Nessun fix richiesto per TSK-103 (HUD esiste nel DOM, è solo sotto fold per layout corrente). Eventuale ottimizzazione layout mobile è scope di altra US."
+    }
+  ],
+  "majors": 0,
+  "minors": 0,
+  "trivials": 2,
+  "next_action": "TSK-103 → status:done. Procedere con UX/UI review (Fase 4-ter) e/o code-review (Fase 5).",
+  "notes": "Verifica completa dell'overlay pausa (AC#3) richiede stato paused, che presuppone una ROM caricata e l'engine in running poi pause. Fuori scope per un visual oracle a stato statico senza fixture. Lasciata come 'verifica funzionale' al functional-oracle (AC#6 del TSK)."
+}

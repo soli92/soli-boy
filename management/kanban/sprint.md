@@ -5,7 +5,9 @@ View aggregata generata dal `tpm`. Scope: Core web MVP (EP-001 + EP-003) +
 emulazione reale (EP-003 ADR-004/005) + post-MVP backlog (EP-002/004/005) +
 identità di brand (EP-010) + CI/CD (EP-011) + desktop (EP-006) + mobile (EP-007) +
 conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
-**fix color-contrast WCAG AA (EP-012/US-049, Sprint 10)**.
+**fix color-contrast WCAG AA (EP-012/US-049, Sprint 10)** +
+**robustezza codice (EP-014, Sprint 12)** + **UX Player flusso principale (EP-015, Sprint 12)** +
+**UX Library/Settings/componenti (EP-016, Sprint 13)** + **a11y manual checks remediation (EP-017, Sprint 13)**.
 
 ---
 
@@ -272,7 +274,107 @@ I seguenti 6 TSK FE `done` hanno ricevuto skip motivato direttamente nel frontma
 | TSK-051 | CD Vercel cd-vercel.yml | YAML infra, no DOM | pipeline CD, no interazione utente |
 
 
-## Lookahead — Sprint 11+ (post-Sprint 10)
+## Sprint 12 — Robustezza codice (EP-014, P0) + UX Player flusso principale (EP-015, P0)
+
+> **Obiettivo:** chiudere i finding P0 del deep code review (EP-014) e del deep UX review
+> sul flusso Player (EP-015). EP-014 è prerequisito di stabilità per qualunque US successiva.
+> EP-015 introduce avvio automatico, HUD localizzato e stabilità visiva del canvas.
+>
+> **Coordinazione:** TSK-103 (HUD italiano) deve essere completato prima di TSK-116
+> (aria-live, che dipende dalle stringhe localizzate). TSK-100 (auto-avvio) dipende da
+> TSK-104 (HUD) per coerenza visiva all'avvio.
+
+### Wave 1 — Fix critici P0 (parallelo)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-092 | Fix restoreSram best-effort in handlePlay | US-050 | EP-014 | fe | agent | P0 | S | todo | — |
+| TSK-093 | Guard ROM Blob vuoto in WasmBoyEngine.load | US-050 | EP-014 | be | agent | P0 | XS | todo | — |
+| TSK-094 | Atomicità putSaveState: try-unlink su manifest fail | US-050 | EP-014 | be | agent | P0 | S | todo | — |
+
+### Wave 2 — Fix stale closure + HUD Player (parallelo)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-095 | Fix stale closure handleCapacitorUri FileLoader.tsx | US-051 | EP-014 | fe | agent | P1 | S | todo | — |
+| TSK-096 | Fix useMemo deps stale + selectAdapter Error Boundary | US-051 | EP-014 | fe | agent | P1 | M | todo | — |
+| TSK-097 | Fix handleFile async try/catch FileLoader.tsx | US-051 | EP-014 | fe | agent | P1 | XS | todo | — |
+| TSK-103 | HUD Player user-facing: romTitle + stati italiani + overlay pausa | US-054 | EP-015 | fe | agent | P1 | M | todo | — |
+| TSK-105 | Aspect-ratio CSS invariante su .sb-screen (idle no-jump) | US-055 | EP-015 | fe | agent | P1 | S | todo | — |
+
+### Wave 3 — QA + dipendenti da Wave 2 (dopo Wave 2)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-104 | Visual oracle + test funzionale HUD Player | US-054 | EP-015 | qa | agent | P1 | S | todo | TSK-103 |
+| TSK-106 | Layout slot fissi controlli Player | US-055 | EP-015 | fe | agent | P1 | M | todo | TSK-105 |
+| TSK-100 | Avvio automatico ROM da Library | US-053 | EP-015 | fe | agent | P0 | M | todo | TSK-104 |
+
+### Wave 4 — Gate conferma + toggle + refactor (dopo Wave 3)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-101 | Gate conferma cambio gioco: dialog modale | US-053 | EP-015 | fe | agent | P0 | M | todo | TSK-100 |
+| TSK-102 | Toggle Settings "Avvio automatico dalla libreria" | US-053 | EP-015 | fe | agent | P0 | S | todo | TSK-100 |
+| TSK-098 | Estrai hook useTabPause + useSaveData | US-052 | EP-014 | fe | agent | P2 | M | todo | — |
+| TSK-099 | Fix unsafe Error cast + test hook isolamento | US-052 | EP-014 | qa | agent | P2 | S | todo | TSK-098 |
+
+DAG Sprint 12:
+- Wave 1 (parallelo, P0): TSK-092 ‖ TSK-093 ‖ TSK-094
+- Wave 2 (parallelo, P1): TSK-095 ‖ TSK-096 ‖ TSK-097 ‖ TSK-103 ‖ TSK-105
+- Wave 3 (dopo Wave 2): TSK-104 → TSK-103; TSK-106 → TSK-105; TSK-100 → TSK-104
+- Wave 4 (dopo Wave 3): TSK-101 → TSK-100; TSK-102 → TSK-100; TSK-098 indipendente; TSK-099 → TSK-098
+
+
+## Sprint 13 — UX Library/Settings/componenti (EP-016, P1) + A11y manual checks (EP-017, P1)
+
+> **Obiettivo:** polish UX su Library, Settings e Player SaveState (EP-016) + remediation
+> dei 5 manual check a11y (EP-017). EP-016/US-059 (TouchOverlay aria-hidden removal) è
+> prerequisito di EP-017/US-061 (AT validation).
+>
+> **Coordinazione:** TSK-116 (aria-live Player) dipende da TSK-103 (HUD Sprint 12).
+> TSK-114 (rimozione aria-hidden TouchOverlay) deve precedere TSK-119 (manual check AT).
+> TSK-110 (Settings titolo ROM) è da coordinare con TSK-098 (hook useSaveData Sprint 12)
+> per la firma dell'hook.
+
+### Wave 1 — Fix indipendenti (parallelo)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-107 | Library GameTile: indicatore visivo ROM corrente | US-056 | EP-016 | fe | agent | P1 | S | todo | — |
+| TSK-108 | Library GameTile: azione Rimuovi con dialog conferma | US-056 | EP-016 | fe | agent | P1 | M | todo | — |
+| TSK-109 | De-duplica FileLoader: rimuovi da tab Play idle | US-056 | EP-016 | fe | agent | P1 | S | todo | — |
+| TSK-110 | Settings: titolo ROM in sezione Dati + accordion Resa video default open | US-057 | EP-016 | fe | agent | P1 | S | todo | — |
+| TSK-111 | SaveStatePanel: dialog conferma elimina save state | US-058 | EP-016 | fe | agent | P1 | M | todo | — |
+| TSK-113 | Footer cleanup: rimuovi LegalNotice da App.tsx footer | US-059 | EP-016 | fe | agent | P2 | XS | todo | — |
+| TSK-115 | Heading semantici: p.sb-lbl → h2/h3 in PrivacyNotice, StoreComplianceNotice, Settings | US-060 | EP-017 | fe | agent | P1 | S | todo | — |
+
+### Wave 2 — Dipendenti da Wave 1 (dopo Wave 1)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-112 | QA: test funzionale dialog elimina SaveStatePanel | US-058 | EP-016 | qa | agent | P1 | S | todo | TSK-111 |
+| TSK-114 | TouchOverlayConfigPanel: rimuovi aria-hidden + focus management + D-pad padding | US-059 | EP-016 | fe | agent | P2 | M | todo | — |
+| TSK-116 | aria-live stato Player + testo adiacente canvas | US-060 | EP-017 | fe | agent | P1 | S | todo | TSK-103 |
+
+### Wave 3 — QA manual checks (dopo Wave 2)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-117 | QA manual check report: heading nav + aria-live (EP-017-US-060) | US-060 | EP-017 | qa | agent | P1 | S | todo | TSK-115, TSK-116 |
+| TSK-118 | Fix type=button su "Salva profilo" in Settings.tsx (R-05) | US-061 | EP-017 | fe | agent | P2 | XS | todo | TSK-114 |
+| TSK-119 | Manual check R-04: AT validation TouchOverlayConfigPanel | US-061 | EP-017 | qa | agent | P2 | M | todo | TSK-114, TSK-118 |
+
+DAG Sprint 13:
+- Wave 1 (parallelo): TSK-107 ‖ TSK-108 ‖ TSK-109 ‖ TSK-110 ‖ TSK-111 ‖ TSK-113 ‖ TSK-115
+- Wave 2: TSK-112 → TSK-111; TSK-114 (indipendente, ma coordinate con US-059); TSK-116 → TSK-103(Sprint 12)
+- Wave 3: TSK-117 → TSK-115,TSK-116; TSK-118 → TSK-114; TSK-119 → TSK-114,TSK-118
+
+Nota blocco: TSK-119 (US-061) è blocked_by US-059 (TSK-114). La wave 3 di EP-017 non può
+chiudersi prima che TSK-114 sia done.
+
+
+## Lookahead — Sprint 14+ (post-Sprint 13)
 
 | Area | Note |
 |------|------|
@@ -298,12 +400,19 @@ I seguenti 6 TSK FE `done` hanno ricevuto skip motivato direttamente nel frontma
 - **Sprint 10 — Remediation a11y & UX/UI (EP-012):** 6/6 done (5 scan TSK-079..083 + fix TSK-084).
   Fix a11y cross-cutting: TSK-084 (P1, **done**) — token contrasto 90s-party/dark/cyberpunk corretti; gap chiuso
   `ds-color-contrast-cross-cutting-90s-party-dark`. 6 TSK skip motivato applicato (infra/asset non-DOM).
-  TSK-084 può partire subito (i 5 finding major originano dai scan EP-012 già done).
+- **Sprint 11 — Design Intelligence (EP-013):** TSK-085..091 done.
+  EP-019 UX audit chiuso. EP-018 Functional Oracle re-check PASS. EP-022 Token Ledger attivo.
+- **Sprint 12 — Robustezza codice (EP-014) + UX Player (EP-015):** 13 TSK todo (TSK-092..106).
+  EP-014 P0: TSK-092..097 (fix runtime critical + stale closure). EP-014 P2: TSK-098..099 (refactor).
+  EP-015 P0/P1: TSK-100..106 (auto-avvio, HUD, stabilità visiva).
+- **Sprint 13 — UX Library/Settings (EP-016) + A11y (EP-017):** 13 TSK todo (TSK-107..119).
+  EP-016 P1/P2: TSK-107..114. EP-017 P1/P2: TSK-115..119.
+  Blocco: TSK-119 (US-061) dipende da TSK-114 (US-059 rimozione aria-hidden TouchOverlay).
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).
 - **Visual oracle v2.17**: campo `visual_status` attivo su TSK-069.
-- **Consumer distribution (Sprint 7-10):** agent=25, human=6 (Sprint 10 tutto agent, incluso TSK-084).
+- **Consumer distribution (Sprint 7-13):** agent=38, human=6.
 - Gap da chiudere con lead-architect prima dello Sprint 7 Wave B:
   `electron-packaging-toolchain`, `electron-autoupdate-mechanism` (vedi `wiki/gaps.md`).
 - TSK-058 (e2e Electron) ora sbloccato: TSK-054 e TSK-055 sono done.

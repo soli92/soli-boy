@@ -1,0 +1,72 @@
+{
+  "tsk_id": "TSK-092",
+  "iter": 1,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "test_runner": "vitest",
+    "confidence": "EXTRACTED",
+    "detection_note": "Stack rilevato da raw/tech_stack.md (vincoli confermati) + package.json non letto direttamente; confidence EXTRACTED per reviewer (R.Q5 soddisfatto)."
+  },
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "2.12",
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "id": "F-092-01",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "low",
+      "confidence": 0.75,
+      "file": "packages/app/src/components/Player/Player.test.tsx",
+      "lines": "176-179",
+      "pass": "robustness",
+      "title": "Asserzione console.warn debolmente ancorata: controlla solo calls[0] e solo il primo argomento",
+      "description": "Il test verifica `warnSpy.mock.calls[0]?.[0]` — il primo warn emesso e solo il suo primo argomento. Se in futuro un altro path del componente emettesse un console.warn prima della SRAM path (es. da useEffect al mount), l'asserzione convaliderebbe il warn sbagliato e passerebbe comunque. La coertura intesa (AC2) è che il warn contenga 'restoreSram': il test la verifica ma solo per calls[0], senza selezionare la call specifica. Una strategia più robusta sarebbe filtrare calls per contenuto, oppure asserire che almeno una call contenga la stringa attesa.",
+      "suggestion": "Usare `expect(warnSpy.mock.calls.some(args => String(args[0]).match(/restoreSram/i))).toBe(true)` per rendere l'asserzione indipendente dall'ordine delle warn calls. In alternativa, azzerare il mock prima del click e verificare subito dopo.",
+      "ac_coverage": "AC2 — copertura parziale; il contratto funzionale è verificato ma la robustezza dell'asserzione è fragile a cambiamenti di ordine."
+    },
+    {
+      "id": "F-092-02",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "low",
+      "confidence": 0.70,
+      "file": "packages/app/src/components/Player/Player.test.tsx",
+      "lines": "149",
+      "pass": "robustness",
+      "title": "Spy console.warn non ripristinato via afterEach — affidarsi solo a try/finally",
+      "description": "Il cleanup del warnSpy è correttamente eseguito in un blocco `finally`. Tuttavia la strategia è locale al singolo test: se un test successivo nello stesso file emette console.warn (o console.error per regressione), l'assenza di un `afterEach(() => vi.restoreAllMocks())` non garantisce isolamento globale tra suite. Basso rischio nel file corrente (solo 4 test, nessun altro spy), ma il pattern non è idiomatico in Vitest dove `vi.restoreAllMocks()` in `afterEach` è la convenzione canonica.",
+      "suggestion": "Aggiungere `afterEach(() => vi.restoreAllMocks())` a livello del describe block oppure attivare `restoreMocks: true` nella config Vitest. Non rimuovere il try/finally corrente (doppia protezione).",
+      "ac_coverage": "Non coperto da AC — nota di miglioramento del setup test."
+    }
+  ],
+  "ac_verification": {
+    "AC1": {
+      "status": "pass",
+      "evidence": "Player.tsx:242-251 — il blocco `if (saveService?.restoreSram && romId)` contiene un try/catch autonomo. Il catch di `restoreSram` (riga 245) non propaga verso il catch esterno di `handlePlay` (riga 255). I due try/catch sono strutturalmente separati e annidati correttamente: il try esterno copre wrapper.load() + wrapper.start(); il try interno copre solo restoreSram."
+    },
+    "AC2": {
+      "status": "pass",
+      "evidence": "Player.tsx:246-249 — il catch del blocco SRAM loga via `console.warn` (non console.error). Il messaggio '[Player] restoreSram best-effort failed; continuing without SRAM restore' è semanticamente coerente con il contratto best-effort. Il finding F-092-01 segnala la robustezza parziale del test che verifica AC2, ma non inficia la correttezza del codice di produzione."
+    },
+    "AC3": {
+      "status": "pass",
+      "evidence": "Il catch di restoreSram (Player.tsx:245-249) non chiama setError() in nessun percorso. Il setError() è presente solo nel catch esterno (riga 256), che viene raggiunto esclusivamente in caso di fallimento di wrapper.load() o wrapper.start(). Il test verifica `expect(screen.queryByRole('alert')).not.toBeInTheDocument()` dopo un reject di restoreSram."
+    },
+    "AC4": {
+      "status": "pass",
+      "evidence": "Test Player.test.tsx:122-190 — scenario 'ROM caricata, SRAM assente': restoreSram è stub che rigetta. Il test verifica: (a) `await screen.findByRole('button', { name: /pausa/i })` — presenza del pulsante Pausa prova state === 'running'; (b) `expect(engine.start).toHaveBeenCalledOnce()` — lo start è avvenuto; (c) alert non presente; (d) console.warn loggato con 'restoreSram' nel messaggio; (e) restoreSram invocato con parametri corretti."
+    }
+  },
+  "verdict": "pass",
+  "summary": "TSK-092 chiude correttamente il finding P3-06 (critical, conf. 0.90) della deep review. Il try/catch separato per restoreSram è strutturalmente corretto, il log è console.warn (non error), il flusso di gioco non viene interrotto, e il test di regressione copre tutti e 4 gli AC. Due finding di bassa severità riguardano la robustezza delle asserzioni nel test (ordine delle warn calls, pattern spy cleanup): non bloccanti.",
+  "loop_status": {
+    "current_iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_detected": false
+  },
+  "next_step": "Aggiornare review_status: passed nel frontmatter TSK-092. Nessuna azione bloccante richiesta. I finding F-092-01 e F-092-02 possono essere indirizzati come miglioramento opzionale del test suite in un futuro TSK di housekeeping."
+}

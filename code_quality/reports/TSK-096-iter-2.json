@@ -1,0 +1,105 @@
+{
+  "tsk_id": "TSK-096",
+  "iter": 2,
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "build_tool": "vite",
+    "test_runner": "vitest",
+    "confidence": "EXTRACTED",
+    "mode": "stack-aware"
+  },
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.21 (PATTERN §19)",
+  "files_reviewed": [
+    "packages/app/src/App.tsx",
+    "packages/app/src/App.test.tsx"
+  ],
+  "passes": {
+    "idiomaticity": true,
+    "design": true,
+    "robustness": true
+  },
+  "findings": [
+    {
+      "id": "F-05",
+      "pass": "robustness",
+      "rule_id": "QA-TEST-001",
+      "rule_ref": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "low",
+      "confidence": 0.70,
+      "file": "packages/app/src/App.test.tsx",
+      "line_start": 1,
+      "line_end": 53,
+      "title": "Test coverage: manca il path nominale (selectAdapter OK) in App.test.tsx — AC-3 non coperto da test dedicato",
+      "description": "Il file App.test.tsx contiene ancora un solo test che copre il path di fallback (selectAdapter lancia). Il path nominale — selectAdapter OK → AppContent monta senza fallback — non è coperto da un test automatizzato specifico per questo TSK. Con il refactoring iter-2 il contratto del componente è cambiato (AppContent riceve props, App è thin shell), rendendo il test smoke nominale ancora più rilevante come regression guard. L'acceptance criterion AC-3 del TSK ('L'app si avvia normalmente quando selectAdapter non lancia') resta dichiarato ma non verificato automaticamente. Finding rimasto aperto dalla iter-1; confermato come scope qa-dev (non dev-agent).",
+      "suggestion": "QA-DEV: aggiungere un secondo describe/it in App.test.tsx con mock di selectAdapter che restituisce un bundle valido (storage/config mock), verificando che: (1) il componente App si monta senza errori, (2) il fallback data-testid='sb-storage-init-error' è assente, (3) il componente principale è presente nel DOM. Questo copre AC-3 del TSK-096.",
+      "auto_fixable": false
+    }
+  ],
+  "findings_resolved_from_iter1": [
+    {
+      "id": "F-02",
+      "resolution": "RESOLVED — AppContent({ storage, config }) è ora una funzione separata con tutti gli hook, nessun early return prima degli hook. App() è una thin shell senza hook che fa il branch storageInitError. react-hooks/rules-of-hooks non può più segnalare violazioni su App(). Commento esplicito a linea 498-499.",
+      "lines_changed": "App.tsx:117-496 (AppContent) + 500-505 (App thin shell)"
+    },
+    {
+      "id": "F-03",
+      "resolution": "RESOLVED via F-02 refactoring — AppContent riceve storage e config come props typed AdapterBundle[\"storage\"] e AdapterBundle[\"config\"] (non-null per costruzione nel JSX del wrapper). Il cast selectedStorage! / selectedConfig! in App() linea 504 è minimo e strutturalmente giustificato dall'if-guard a linea 501 (storageInitError !== null implica che il try/catch ha assegnato i valori).",
+      "lines_changed": "App.tsx:504 (operatore ! in luogo del cast as NonNullable verbose)"
+    },
+    {
+      "id": "F-04",
+      "resolution": "RESOLVED — console.error('[soli-boy] Storage init failed:', storageInitError) aggiunto a linea 77 nel catch block.",
+      "lines_changed": "App.tsx:77"
+    },
+    {
+      "id": "F-01",
+      "resolution": "RESOLVED — Commento riformulato a linea 80: 'Messaggio UI canonico del fallback storage; i test lo importano come conseguenza.' L'enfasi è sull'uso UI canonico (DRY, evita magic string); il riferimento ai test è come corollario, non motivazione primaria.",
+      "lines_changed": "App.tsx:80"
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "total_findings": 1,
+    "by_severity": {
+      "critical": 0,
+      "major": 0,
+      "medium": 0,
+      "low": 1
+    },
+    "pass_blocking": false,
+    "conditional_findings": [],
+    "informational_findings": ["F-05"],
+    "notes": "Tutti i finding medium dell'iter-1 (F-02, F-03) sono risolti: il refactoring AppContent/App thin shell è idiomatico, audit-safe per react-hooks/rules-of-hooks, e rimuove la tensione con il type system (props typed). I finding low F-01 e F-04 sono risolti puntualmente (commento corretto, console.error aggiunto). Resta aperto F-05 (informativo, scope qa-dev): mancanza del test smoke del path nominale. Il finding non blocca il merge. Il codice di produzione App.tsx è ora design-corretto, robusto e idiomatico. Verdict: pass."
+  },
+  "loop_status": {
+    "current_iter": 2,
+    "max_iterations": 3,
+    "no_progress": false,
+    "regression_detected": false,
+    "previous_report": "code_quality/reports/TSK-096-iter-1.json",
+    "delta": {
+      "findings_closed": ["F-01", "F-02", "F-03", "F-04"],
+      "findings_new": [],
+      "findings_carried": ["F-05"],
+      "medium_delta": -2,
+      "low_delta": -2
+    }
+  },
+  "task_package": {
+    "tsk_id": "TSK-096",
+    "iter": 2,
+    "verdict": "pass",
+    "constraint": null,
+    "findings_for_devagent": [],
+    "findings_for_qadev": [
+      {
+        "id": "F-05",
+        "priority": 1,
+        "action": "QA-DEV: aggiungere test smoke path nominale in App.test.tsx — mock selectAdapter che restituisce bundle valido, verifica che App monta senza fallback (AC-3 TSK-096). Non bloccante per il merge."
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "verdict": "pass",
+  "iterations": 1,
+  "assertions_results": [
+    {
+      "id": "data-theme-dark",
+      "kind": "attr_equals",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "html[data-theme]='dark' dopo selezione 'dark' nel ThemeSelector. Valore verificato: 'dark'"
+    },
+    {
+      "id": "theme-select-visible",
+      "kind": "selector_visible",
+      "severity": "blocking",
+      "outcome": "pass",
+      "detail": "select[data-testid='sb-theme-select'] visibile dopo apertura accordion 'Aspetto — tema UI'"
+    },
+    {
+      "id": "no-console-error",
+      "kind": "console_no_error",
+      "severity": "advisory",
+      "outcome": "pass",
+      "detail": "0 errori console durante il flusso theme-switching"
+    }
+  ],
+  "critic_findings": [],
+  "trace_path": "code_quality/reports/soliboy-theme-switching-functional-iter-1/",
+  "timestamp": "2026-06-15T00:00:00Z",
+  "intermediate_checks": {
+    "initial_data_theme": "90s-party",
+    "data_theme_after_90s_party_selection": "90s-party",
+    "data_theme_after_dark_selection": "dark"
+  }
+}

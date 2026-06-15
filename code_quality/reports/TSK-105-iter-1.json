@@ -1,0 +1,101 @@
+{
+  "tsk_id": "TSK-105",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "css_strategy": "css-in-js-template-literal",
+    "build_tool": "vite",
+    "confidence": 0.97,
+    "detection_mode": "guided"
+  },
+  "iter": 1,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "2.21",
+  "findings": [
+    {
+      "id": "F-105-01",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/CSS-DESIGN-001.md",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "title": "CSS custom property --sb-canvas-aspect senza fallback documentato né contratto versione DS",
+      "description": "La custom property --sb-canvas-aspect: 3 / 2 è definita nel CSS scoped inline di Player.tsx. Il commento descrive il razionale TSK-105 ma non documenta esplicitamente che il valore non dipende da token SoliDS esterni (a differenza di --sd-color-text-primary usato in .sb-pause-overlay). Non c'è violazione critica perché la property è definita localmente nello stesso blocco, ma la regola CSS-DESIGN-001 richiede che il contratto dei token custom property sia esplicito: in questo caso si tratta di un token locale (non DS), il che è positivo, ma non è commentato come tale. Una nota '/* token locale, non SoliDS */' eviterebbe ambiguità per chi manutiene in futuro.",
+      "file": "packages/app/src/components/Player/Player.tsx",
+      "line_range": [351, 361],
+      "snippet_ref": "[^src5: packages/app/src/components/Player/Player.tsx:359]",
+      "rule_ref": "[^rule: code_quality/rules/canonical/CSS-DESIGN-001.md §Rationale]",
+      "suggestion": "Aggiungere '/* token locale soli-boy, non proveniente da @soli92/solids */' accanto a --sb-canvas-aspect: 3 / 2 per distinguerlo esplicitamente dai token DS (--sd-*) usati altrove nello stesso blocco CSS.",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-105-02",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/CSS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "title": "DEFAULT_SCREEN_ASPECT_RATIO (JS) e --sb-canvas-aspect (CSS) codificano lo stesso valore '3 / 2' senza riferimento reciproco",
+      "description": "useVideoSettings.ts esporta DEFAULT_SCREEN_ASPECT_RATIO = '3 / 2' e la usa in videoSettingsToContainerStyle per aspect='original'. Player.tsx definisce --sb-canvas-aspect: 3 / 2 come fallback CSS per aspect='stretch'. I due valori devono rimanere allineati (rappresentano entrambi l'aspect ratio GBA nativo 3:2) ma non hanno alcun collegamento esplicito nel codice: se una delle due costanti venisse modificata (es. per supportare un default 10:9 Game Boy), l'altra divergerebbe silenziosamente. Il commento JSDoc di videoSettingsToContainerStyle (riga 208-210 di useVideoSettings.ts) menziona TSK-105 ma non cita DEFAULT_SCREEN_ASPECT_RATIO come fonte di verità comune. Nessuna regola canonical copre esattamente questo pattern di duplicazione cross-file CSS/TS; il finding è classificato sotto CSS-DESIGN-001 come estensione del contratto token.",
+      "file": "packages/app/src/components/Player/useVideoSettings.ts",
+      "line_range": [194, 235],
+      "snippet_ref": "[^src5: packages/app/src/components/Player/useVideoSettings.ts:194]",
+      "rule_ref": "[^rule: code_quality/rules/canonical/CSS-DESIGN-001.md §Rationale]",
+      "suggestion": "Aggiungere al commento TSK-105 in Player.tsx un riferimento esplicito: '/* valore allineato a DEFAULT_SCREEN_ASPECT_RATIO in useVideoSettings.ts — modificare in sincronia */' oppure, soluzione strutturale, leggere il valore dalla CSS custom property anche per 'original' rimuovendo il set inline in videoSettingsToContainerStyle. Questa seconda opzione è uno scope change (impatta visual oracle) e va valutata in un TSK separato.",
+      "auto_fixable": false,
+      "blocking": false
+    },
+    {
+      "id": "F-105-03",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/CSS-DESIGN-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "title": "Claim sul comportamento UA in :fullscreen nel commento TSK-105 è impreciso",
+      "description": "Il commento CSS in Player.tsx (righe 352-358) afferma: 'in :fullscreen la UA forza width/height espliciti con priorità su aspect-ratio'. La specifica CSS Fullscreen (W3C) non garantisce che lo UA stylesheet sovrascriva l'author stylesheet per aspect-ratio: le UA applicano width:100% e height:100% all'elemento in fullscreen, ma aspect-ratio dell'autore rimane attivo e partecipa al sizing algorithm. Il comportamento pratico (fullscreen non rotto) è corretto e confermato dal visual oracle pass, ma il commento potrebbe indurre un futuro maintainer a rimuovere la custom property ritenendola ininfluente in fullscreen. Il finding è a severity low perché non impatta il comportamento runtime.",
+      "file": "packages/app/src/components/Player/Player.tsx",
+      "line_range": [352, 358],
+      "snippet_ref": "[^src5: packages/app/src/components/Player/Player.tsx:357]",
+      "rule_ref": "[^rule: code_quality/rules/canonical/CSS-DESIGN-001.md §Rationale]",
+      "suggestion": "Correggere il commento in: 'Fullscreen non impattato: in :fullscreen la UA applica width:100%/height:100% — aspect-ratio resta attivo ma il container si espande comunque a tutto schermo (behavior verificato, visual oracle pass TSK-105).'",
+      "auto_fixable": false,
+      "blocking": false
+    }
+  ],
+  "verdict": "conditional",
+  "summary": {
+    "total_findings": 3,
+    "by_severity": { "high": 0, "medium": 0, "low": 3 },
+    "by_pass": { "idiomaticity": 1, "design": 1, "robustness": 1 },
+    "blocking_findings": 0,
+    "new_vs_previous": "n/a (iter 1)",
+    "regression_detected": false,
+    "no_progress_detected": false,
+    "loop_status": "1/3"
+  },
+  "verdict_rationale": "Zero finding high/medium. Tre finding low non bloccanti: (1) token CSS locale senza marcatura esplicita, (2) duplicazione valore aspect-ratio tra JS e CSS senza riferimento reciproco, (3) commento impreciso sul behavior UA in fullscreen. La fix principale (aspect-ratio invariante + rimozione else-stretch) è corretta, robusta e verificata dal visual oracle (pass iter-1, 213px vs 24px baseline). Il TSK transita conditional per consentire al dev-agent di applicare le correzioni minimali di documentazione/commento (max_diff_lines stimato: ~6 righe).",
+  "task_package": {
+    "tsk_id": "TSK-105",
+    "iter": 2,
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 20,
+      "blast_radius_warning": [],
+      "blast_radius_note": "Nessun blast radius rilevato (Graphify non invocato per questo diff di bassa entità)."
+    },
+    "findings_to_fix": [
+      {
+        "finding_id": "F-105-01",
+        "action": "Aggiungere commento '/* token locale soli-boy, non @soli92/solids */' accanto a --sb-canvas-aspect in Player.tsx"
+      },
+      {
+        "finding_id": "F-105-02",
+        "action": "Aggiungere nel commento TSK-105 di Player.tsx il riferimento a DEFAULT_SCREEN_ASPECT_RATIO di useVideoSettings.ts"
+      },
+      {
+        "finding_id": "F-105-03",
+        "action": "Correggere la frase sul behavior UA in :fullscreen nel commento TSK-105 (Player.tsx righe 352-358)"
+      }
+    ]
+  }
+}

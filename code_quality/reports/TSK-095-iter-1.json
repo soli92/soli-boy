@@ -1,0 +1,55 @@
+{
+  "tsk_id": "TSK-095",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18.x",
+    "runtime": "vite",
+    "test_runner": "vitest",
+    "confidence": 0.97,
+    "detection_mode": "full"
+  },
+  "iter": 1,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.21.0",
+  "findings": [
+    {
+      "id": "F-095-1-D1",
+      "pass": "design",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "severity": "low",
+      "blocking": false,
+      "confidence": 0.82,
+      "file": "packages/app/src/components/FileLoader/FileLoader.tsx",
+      "line_hint": 101,
+      "title": "Invariante stabilità registerUriHandler non documentata nella JSDoc del prop",
+      "description": "Il pattern 'latest-ref' adottato in TSK-095 dipende da una precondizione implicita: `registerUriHandler` deve avere identità stabile tra i render (funzione memoizzata o a livello di modulo nel parent). Se il parent passa una funzione inline (nuova identità a ogni render), `useEffect([registerUriHandler])` si ri-esegue a ogni render, ri-registrando il trampoline con il Capacitor listener. Poiché il componente non può de-registrare il trampoline precedente (il lifecycle del listener Capacitor è controllato dal parent), si potrebbe incorrere in listener duplicati. La JSDoc del prop `registerUriHandler` non documenta questo requisito di stabilità.",
+      "citation": "[^rule: code_quality/rules/canonical/TS-DESIGN-001.md §Rationale] [^src5: packages/app/src/components/FileLoader/FileLoader.tsx:101]",
+      "suggestion": "Aggiungere alla JSDoc del prop `registerUriHandler` in `FileLoaderProps` un avviso esplicito: 'Il callback deve avere identità stabile tra i render (es. definito a livello di modulo, memoizzato con useCallback, o come ref-setter). Passare una funzione inline causa ri-registrazioni non necessarie.'"
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "high": 0,
+    "medium": 0,
+    "low": 1,
+    "total": 1,
+    "blocking": 0,
+    "advisory": 1,
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false
+  },
+  "positive_checks": [
+    "Pattern 'latest-ref' (useRef + handlerRef.current aggiornato ogni render + trampoline stabile in useEffect) è il pattern React canonico per listener esterni — corretto e idiomatico (REACT-IDIOM-001 soddisfatta).",
+    "Rimosso eslint-disable react-hooks/exhaustive-deps: deps array [registerUriHandler] è completo e corretto.",
+    "handleFile wrapped in try/catch (TSK-097 co-landed): TS-ROBUST-001 soddisfatta per il path di importazione ROM.",
+    "handlerRef.current riflette sempre l'ultima closure (storage/onImported/_filesystemApi freschi): stale closure eliminata, AC1+AC2 del TSK soddisfatti.",
+    "Test di regressione TSK-095 (riga 228): correttamente strutturato — rerender con storageB/onImportedB diversi, assert registerCalls===1 (no re-registrazione), assert storageA.addRom NOT called + storageB.addRom called. QA-TEST-001 soddisfatta.",
+    "Nessun `any` non giustificato né non-null assertion nel codice modificato (TS-IDIOM-002 soddisfatta).",
+    "import type usato correttamente per StoragePort (TS-IDIOM-001 soddisfatta).",
+    "Nessun test-only helper esportato dal modulo di produzione (TS-DESIGN-001 non violata dal cambiamento).",
+    "handlerRef initial value `async () => {}` è un no-op sicuro prima del mount: race window accettabile (prima del mount nessuna UI disponibile per feedback)."
+  ]
+}
