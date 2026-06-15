@@ -27,6 +27,11 @@ import {
   type KeyProfile,
 } from "./domain/input-mapping";
 import { SaveService } from "./domain/save-service";
+// TSK-098 (EP-014 / US-052) — Hook estratto per la pausa/ripresa engine al
+// cambio tab. Pre-estrazione la logica (~25 LOC: useEffect + prevTabRef +
+// engineRef) viveva inline in AppContent; ora App.tsx è ridotto e l'hook è
+// testabile in isolamento (cfr. packages/app/src/domain/useTabPause.ts).
+import { useTabPause } from "./domain/useTabPause";
 import type { RomRecord } from "./storage/types";
 import type { GameButton } from "./core/core-wrapper";
 import { useVideoSettings } from "./components/Player/useVideoSettings";
@@ -236,58 +241,20 @@ function AppContent({
     setProfile((p) => ({ ...p, [key]: button }));
   }
 
-  // INCREMENT 2 — Pausa automatica quando si lascia la tab Play,
-  // ripresa automatica al ritorno. Il guard C-01 (resume() no-op su engine
-  // non configurato) è già in WasmBoyEngine.resume() → sicuro sempre-montato.
-  // Usiamo una ref al wrapper del Player (lifecycleTarget) tramite un
-  // ref callback esposto dalla prop `onLifecycleReady`.
-  // Approccio alternativo più semplice: teniamo un ref all'engine wrapper
-  // direttamente qui in App, dato che CoreWrapper è costruito in Player.
-  // Per non accoppiare App a CoreWrapper, usiamo invece un ref a un oggetto
-  // { pause, resume, currentState } iniettato dal Player via callback.
+  // INCREMENT 2 — Pausa automatica quando si lascia la tab Play, ripresa
+  // automatica al ritorno. Il guard C-01 (resume() no-op su engine non
+  // configurato) è già in WasmBoyEngine.resume() → sicuro sempre-montato.
   //
-  // Tuttavia, il Player non espone attualmente questo callback.
-  // Soluzione pragmatica e non invasiva: usiamo l'engine direttamente qui,
-  // poiché App è l'owner di `engine` e sa già se il gioco è in corso
-  // tramite il campo `selected`. Per "pausa on leave" chiamiamo
-  // engine.pause() se `selected` è presente e l'utente lascia Play.
-  // CoreWrapper non è accesso diretto: usiamo l'engine puro per la pausa.
-  // Il guard in WasmBoyEngine.resume() protegge anche dal resume su idle.
+  // TSK-098 (EP-014 / US-052) — Logica estratta in `useTabPause` (domain/),
+  // che incapsula `useEffect` + `prevTabRef` + `engineRef` con semantica
+  // identica. Stima complessità cognitiva: AppContent < 15 dopo l'estrazione
+  // (era ~22 includendo il blocco rimosso).
   //
-  // Nota: non abbiamo accesso al `state` di CoreWrapper da App.tsx senza
-  // aggiungere una callback. Usiamo quindi un ref locale `isPlayingRef`
-  // che traccia se il gioco è in corso (impostato a true quando si avvia
-  // dal Player). Questo è sufficiente: pause su engine già in pausa
-  // è un no-op sicuro (WasmBoyEngine.pause() chiama WasmBoy.pause() che
-  // è idempotente); idem resume su idle (guard configured).
-  const prevTabRef = useRef<Tab>(activeTab);
-
-  // Ref all'engine per la pausa tab-leave. L'engine cambia quando cambia
-  // `selected` (useMemo), quindi aggiorniamo la ref ad ogni render.
-  const engineRef = useRef(engine);
-  useEffect(() => {
-    engineRef.current = engine;
-  }, [engine]);
-
-  // Pausa/ripresa sincronizzata al cambio tab.
-  // Solo se c'è una ROM selezionata (il Player è in gioco).
-  useEffect(() => {
-    const prev = prevTabRef.current;
-    if (prev === activeTab) return;
-
-    if (selected) {
-      // Lascio Play → pausa
-      if (prev === "play" && activeTab !== "play") {
-        engineRef.current.pause();
-      }
-      // Torno a Play → riprendo (guard configured in engine protegge da idle)
-      if (prev !== "play" && activeTab === "play") {
-        engineRef.current.resume();
-      }
-    }
-
-    prevTabRef.current = activeTab;
-  }, [activeTab, selected]);
+  // Razionale dell'extraction: pause su engine già in pausa è un no-op
+  // sicuro (WasmBoyEngine.pause() chiama WasmBoy.pause() idempotente); idem
+  // resume su idle (guard `configured`). Non serve l'accesso al `state` di
+  // CoreWrapper — basta `selected` come prova "il gioco è in sessione".
+  useTabPause(engine, activeTab, selected, "play");
 
   // Gestione keyboard navigation sulla tablist (WAI-ARIA pattern:
   // ArrowLeft/ArrowRight per spostarsi, Home/End per i bordi).
