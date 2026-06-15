@@ -530,11 +530,11 @@ function AppContent({
   // TSK-101 (US-053) — Conferma del dialog "Cambia gioco?" (AC4).
   // Pipeline: stop dell'engine corrente (forza `idle` lato Player → l'effect
   // di autoStart riarmato ripartirà con la nuova ROM) → swap `selected` →
-  // chiude dialog e porta su Play. `engineRef.current.stop()` è idempotente
+  // chiude dialog e porta su Play. `engine.stop()` è idempotente
   // (vedi WasmBoyEngine stop, anche su engine non configurato).
   function confirmGameChange() {
     if (!pendingRom) return;
-    engineRef.current.stop();
+    engine.stop();
     setSelected(pendingRom);
     // TSK-102 (US-053) — la conferma del gate eredita la preferenza utente
     // sullo stesso asse di `handleLibrarySelect`: con preferenza ON la nuova
