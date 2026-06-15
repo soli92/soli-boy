@@ -1,0 +1,67 @@
+{
+  "tsk_id": "TSK-106",
+  "iter": 1,
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "code-reviewer@2.21.0",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18.x",
+    "runtime": "node 24 LTS",
+    "test_runner": "vitest",
+    "confidence": 0.97
+  },
+  "files_reviewed": [
+    "packages/app/src/components/Player/Player.tsx",
+    "packages/app/src/components/Player/Player.test.tsx"
+  ],
+  "verdict": "conditional",
+  "summary": "2 finding low aperti. Nessun blocco high/medium. Il layout CSS Grid TSK-106 è corretto, idiomatico e robusto. Il pattern placeholder (visibility:hidden + aria-hidden + tabIndex=-1 + disabled) è conforme a WCAG e alle regole canoniche. I 6 test coprono tutti gli AC in modo deterministico. I finding low riguardano: (1) il commento CSS TSK-106 è eccessivamente lungo — spiega il WHY ma sovrasta il codice circostante superando il pattern 'commento proporzionato' già stabilito in iter-2 di TSK-105; (2) il token --sd-space-sm usato in gap non ha fallback né marcatura contratto (CSS-DESIGN-001, già applicata a TSK-105 per --sb-canvas-aspect). Entrambi risolvibili in un'unica patch minimale (<10 righe). Il test AC3 non verifica visibility:hidden a livello CSS (jsdom non computa stili): comportamento accettabile per questa classe di test — registrato come nota informativa, non finding.",
+  "findings": [
+    {
+      "id": "F-106-01",
+      "severity": "low",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_ref": "code_quality/rules/canonical/CSS-DESIGN-001.md",
+      "file": "packages/app/src/components/Player/Player.tsx",
+      "line": 439,
+      "title": "Token --sd-space-sm usato in gap senza fallback né marcatura contratto",
+      "description": "La regola `.sb-player-controls` usa `gap: var(--sd-space-sm)` (Player.tsx:439). Il token --sd-space-sm è un token DS esterno (@soli92/solids). Non è presente né un fallback esplicito (`var(--sd-space-sm, 8px)`) né un commento contratto che documenti la versione minima del DS che espone questo token. Se il DS non è installato o la versione non esporta il token, `gap` degrada silenziosamente a `gap: initial` (0) — bottoni sovrapposti senza errore visibile in CI. Stesso pattern già segnalato e risolto in TSK-105 iter-1 per --sb-canvas-aspect.",
+      "suggestion": "Aggiungere fallback: `gap: var(--sd-space-sm, 0.5rem)` oppure aggiungere commento contratto `/* Token @soli92/solids >= x.y.z: --sd-space-sm */` sopra la regola.",
+      "status": "open"
+    },
+    {
+      "id": "F-106-02",
+      "severity": "low",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_ref": "code_quality/rules/canonical/CSS-DESIGN-001.md",
+      "file": "packages/app/src/components/Player/Player.tsx",
+      "line": 417,
+      "title": "Commento CSS TSK-106 eccessivamente lungo rispetto al pattern del file",
+      "description": "Il blocco commento che introduce le regole TSK-106 (Player.tsx:417-437, 21 righe) è sproporzionato rispetto agli altri blocchi commento del file (TSK-103 overlay: 6 righe, TSK-041 canvas-host: 5 righe, TSK-037 scanline: 4 righe). Il TSK-106 riduplica informazioni già tracciate nel TSK frontmatter e nel commit message: il WHY (UX-020, slot fissi, AC1-AC3) è catturato nei commenti inline sul markup JSX (Player.tsx:568-577) e nel commento precedente sopra ogni slot. Il commento CSS descrive correttamente il reasoning (visibility:hidden vs display:none, jsdom, gap token) ma a una verbosità che difficoltà la scansione rapida delle regole CSS effettive. CSS-DESIGN-001 §Rationale richiama la leggibilità del foglio di stile come contratto documentato: un commento che sovrasta le regole che documenta riduce la leggibilità del contratto.",
+      "suggestion": "Ridurre a 6-8 righe mantenendo solo: (a) riferimento US-055/UX-020, (b) spiegazione visibility:hidden vs display:none, (c) nota jsdom. Spostare il dettaglio su gap e grid-template in commento inline accanto alle property. Eliminare le righe che replicano informazioni già nei commenti JSX (slot primary/secondary/fullscreen).",
+      "status": "open"
+    }
+  ],
+  "notes": [
+    {
+      "id": "N-106-01",
+      "type": "informative",
+      "title": "Test AC3: visibility:hidden non verificato a livello CSS (jsdom limit) — accettabile",
+      "description": "Il test AC3 (Player.test.tsx:295) verifica correttamente che il placeholder non abbia `style` inline con `display:none`, che abbia `aria-hidden='true'`, `tabindex='-1'` e `disabled`. Non verifica che `visibility:hidden` sia computato (jsdom non esegue il CSSOM su fogli di stile iniettati via <style>). Questo è un limite noto di jsdom documentato nel commento CSS dello stesso Player.tsx (linea 434-436). Il comportamento reale è coperto dall'absence del placeholder dall'accessibility tree (aria-hidden) — che jsdom verifica correttamente. Il visual oracle o uno snapshot e2e possono verificare la resa CSS effettiva. Non è un finding: la scelta di coprire il contratto comportamentale (a11y tree) piuttosto che il CSS computato è corretta per test unitari."
+    },
+    {
+      "id": "N-106-02",
+      "type": "informative",
+      "title": "data-action='fullscreen' aggiunto a slot-3 — OK, coerente con il pattern",
+      "description": "Il bottone fullscreen ha ricevuto data-action='fullscreen' (Player.tsx:661) — era assente nella versione precedente a TSK-106 (altri bottoni avevano già data-action). L'aggiunta è coerente con il naming pattern del file e usata correttamente nel test AC2(a11y) (Player.test.tsx:363). Non è un finding."
+    }
+  ],
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "previous_finding_ids": [],
+    "no_progress": false,
+    "regression_detected": false
+  }
+}

@@ -236,4 +236,168 @@ describe("Player", () => {
       );
     },
   );
+
+  describe("TSK-106 — layout slot fissi controlli Player (US-055 UX-020)", () => {
+    it("AC1: container controlli usa CSS Grid con 3 slot fissi (primary | secondary | fullscreen)", () => {
+      render(
+        <Player
+          engine={fakeEngine()}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        />,
+      );
+      const controls = screen.getByTestId("player-controls");
+      expect(controls).toBeInTheDocument();
+      expect(controls).toHaveClass("sb-player-controls");
+      const slots = controls.querySelectorAll<HTMLElement>(":scope > [data-slot]");
+      expect(slots).toHaveLength(3);
+      expect(slots[0]?.dataset.slot).toBe("primary");
+      expect(slots[1]?.dataset.slot).toBe("secondary");
+      expect(slots[2]?.dataset.slot).toBe("fullscreen");
+    });
+
+    it("AC2: il bottone primario (data-slot=primary) è SEMPRE nello stesso slot in tutti i 3 stati (idle/running/paused)", async () => {
+      const engine = fakeEngine();
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        />,
+      );
+      const controls = screen.getByTestId("player-controls");
+      const primarySlot = controls.querySelector<HTMLElement>(
+        '[data-slot="primary"]',
+      );
+      expect(primarySlot).not.toBeNull();
+
+      const playBtn = primarySlot!.querySelector<HTMLButtonElement>(
+        'button[data-action="play"]',
+      );
+      expect(playBtn).not.toBeNull();
+      expect(playBtn).toHaveTextContent(/avvia/i);
+
+      fireEvent.click(playBtn!);
+      await screen.findByRole("button", { name: /pausa/i });
+      const pauseBtn = primarySlot!.querySelector<HTMLButtonElement>(
+        'button[data-action="pause"]',
+      );
+      expect(pauseBtn).not.toBeNull();
+      expect(pauseBtn).toHaveTextContent(/pausa/i);
+
+      fireEvent.click(pauseBtn!);
+      await screen.findByRole("button", { name: /riprendi/i });
+      const resumeBtn = primarySlot!.querySelector<HTMLButtonElement>(
+        'button[data-action="resume"]',
+      );
+      expect(resumeBtn).not.toBeNull();
+      expect(resumeBtn).toHaveTextContent(/riprendi/i);
+    });
+
+    it("AC3: in idle lo slot secondary contiene un placeholder con visibility:hidden + aria-hidden (NON display:none)", () => {
+      render(
+        <Player
+          engine={fakeEngine()}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        />,
+      );
+      const controls = screen.getByTestId("player-controls");
+      const secondarySlot = controls.querySelector<HTMLElement>(
+        '[data-slot="secondary"]',
+      );
+      expect(secondarySlot).not.toBeNull();
+
+      const placeholder = secondarySlot!.querySelector<HTMLButtonElement>(
+        "button[data-slot-placeholder]",
+      );
+      expect(placeholder).not.toBeNull();
+      expect(placeholder).toHaveAttribute("aria-hidden", "true");
+      expect(placeholder).toHaveAttribute("tabindex", "-1");
+      expect(placeholder).toBeDisabled();
+      expect(placeholder).toHaveAttribute("data-slot-placeholder", "true");
+      expect(placeholder?.getAttribute("style") ?? "").not.toMatch(/display\s*:\s*none/);
+    });
+
+    it("AC3 bis: in running/paused lo slot secondary contiene il bottone Arresta REALE (no placeholder)", async () => {
+      const engine = fakeEngine();
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        />,
+      );
+      const controls = screen.getByTestId("player-controls");
+      const secondarySlot = controls.querySelector<HTMLElement>(
+        '[data-slot="secondary"]',
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+      await screen.findByRole("button", { name: /pausa/i });
+      let stopBtn = secondarySlot!.querySelector<HTMLButtonElement>(
+        'button[data-action="stop"]',
+      );
+      expect(stopBtn).not.toBeNull();
+      expect(stopBtn).not.toHaveAttribute("data-slot-placeholder");
+      expect(stopBtn).not.toBeDisabled();
+
+      fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
+      await screen.findByRole("button", { name: /riprendi/i });
+      stopBtn = secondarySlot!.querySelector<HTMLButtonElement>(
+        'button[data-action="stop"]',
+      );
+      expect(stopBtn).not.toBeNull();
+      expect(stopBtn).not.toHaveAttribute("data-slot-placeholder");
+    });
+
+    it("AC2 (a11y): lo slot fullscreen è SEMPRE presente come terzo slot in tutti i 3 stati", async () => {
+      const engine = fakeEngine();
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        />,
+      );
+      const controls = screen.getByTestId("player-controls");
+
+      const fsInState = () =>
+        controls.querySelector<HTMLElement>(
+          '[data-slot="fullscreen"] button[data-action="fullscreen"]',
+        );
+
+      expect(fsInState()).not.toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+      await screen.findByRole("button", { name: /pausa/i });
+      expect(fsInState()).not.toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
+      await screen.findByRole("button", { name: /riprendi/i });
+      expect(fsInState()).not.toBeNull();
+    });
+
+    it("AC4 (regressione visiva DOM): l'ordine dei direct-children di .sb-player-controls è invariato tra idle/running/paused", async () => {
+      const engine = fakeEngine();
+      render(
+        <Player
+          engine={engine}
+          rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        />,
+      );
+      const controls = screen.getByTestId("player-controls");
+      const slotOrder = () =>
+        Array.from(controls.querySelectorAll<HTMLElement>(":scope > [data-slot]")).map(
+          (s) => s.dataset.slot,
+        );
+
+      const expected = ["primary", "secondary", "fullscreen"];
+
+      expect(slotOrder()).toEqual(expected);
+
+      fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+      await screen.findByRole("button", { name: /pausa/i });
+      expect(slotOrder()).toEqual(expected);
+
+      fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
+      await screen.findByRole("button", { name: /riprendi/i });
+      expect(slotOrder()).toEqual(expected);
+    });
+  });
 });

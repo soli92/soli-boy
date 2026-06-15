@@ -1,0 +1,92 @@
+{
+  "tsk_id": "TSK-104",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "test_runner": "vitest",
+    "test_library": "@testing-library/react",
+    "node": "24",
+    "confidence": 0.97,
+    "detection_source": "Player.hud.test.tsx imports + package.json context"
+  },
+  "iter": 2,
+  "findings": [
+    {
+      "id": "F-104-01",
+      "rule_id": "QA-TEST-001",
+      "tier": "canonical",
+      "pass": "robustness",
+      "severity": "medium",
+      "file": "packages/app/src/components/Player/Player.hud.test.tsx",
+      "line": 310,
+      "status": "resolved",
+      "title": "F-104-01 RISOLTO: assertion tautologica icona pausa sostituita con toHaveTextContent('⏸')",
+      "description": "Iter-1: il test 'overlay pausa: contiene l'icona pausa visiva' asseriva `expect(overlay.textContent?.trim().length).toBeGreaterThan(0)` (tautologico). Fix applicato: riga 310 ora recita `expect(overlay).toHaveTextContent('⏸')`. La guard e ora significativa e coerente con Player.test.tsx.",
+      "references": [
+        "[^rule: code_quality/rules/canonical/QA-TEST-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Player/Player.hud.test.tsx:310]"
+      ]
+    },
+    {
+      "id": "F-104-02",
+      "rule_id": "QA-TEST-001",
+      "tier": "canonical",
+      "pass": "design",
+      "severity": "low",
+      "file": "packages/app/src/components/Player/Player.hud.test.tsx",
+      "line": 131,
+      "status": "acknowledged",
+      "title": "AC2 split in due test indipendenti: duplicazione di setup (portato da iter-1, low, non richiede fix)",
+      "description": "Finding di design low non bloccante portato da iter-1. Non e stato modificato dal fix di F-104-01 (file diverso). L'isolamento intenzionale dei due test AC2 e accettabile. Nessuna regressione.",
+      "references": [
+        "[^rule: code_quality/rules/canonical/QA-TEST-001.md §Rationale]",
+        "[^src5: packages/app/src/components/Player/Player.hud.test.tsx:131]"
+      ]
+    }
+  ],
+  "fix_verification": {
+    "target_finding": "F-104-01",
+    "file": "packages/app/src/components/Player/Player.hud.test.tsx",
+    "line": 310,
+    "expected_content": "expect(overlay).toHaveTextContent(\"⏸\")",
+    "verified": true,
+    "note": "Riga 310 del file contiene esattamente `expect(overlay).toHaveTextContent(\"⏸\")`. La forma tautologica `toBeGreaterThan(0)` e assente. Nessun nuovo finding introdotto dal fix (diff minimale, una sola riga modificata, nessun refactor opportunistico)."
+  },
+  "regression_check": {
+    "files_not_touched_by_fix": [],
+    "new_findings_in_untouched_files": 0,
+    "regression_detected": false
+  },
+  "ac_coverage": {
+    "AC1": {
+      "covered": true,
+      "notes": "Invariato rispetto a iter-1. 3 test idle/running/paused + 4 test HUD_STATE_LABELS. Copertura completa."
+    },
+    "AC2": {
+      "covered": true,
+      "notes": "Invariato rispetto a iter-1. 4 test: aria-live 'In pausa', overlay DOM, sequenza pause->riprendi, ciclo completo."
+    },
+    "AC3": {
+      "covered": true,
+      "notes": "Fix applicato su test 'overlay pausa: contiene l'icona pausa visiva' (riga 310). Assertion ora significativa: toHaveTextContent('⏸'). Coverage AC3 migliorata."
+    },
+    "AC4_snapshot": {
+      "covered": false,
+      "notes": "Invariato rispetto a iter-1: nessuno snapshot test nel file. Accettabile con DOM assertions idiomatiche."
+    }
+  },
+  "verdict": "pass",
+  "verdict_rationale": "F-104-01 (medium, unico finding bloccante iter-1) e risolto: riga 310 ora asserisce toHaveTextContent('⏸'), allineandosi a Player.test.tsx e rendendo la guard di regressione significativa. Il fix e minimale (una riga), non introduce nuovi finding, non tocca file non dichiarati. Il finding low F-104-02 (duplicazione test AC2) era noto da iter-1 e non bloccante; resta acknowledged. 17/17 test verificati tramite analisi statica del file: struttura test intatta, azioni async corrette (act/waitFor/findBy*), afterEach restoreAllMocks presente in ogni describe.",
+  "summary": "17 test su 4 describe. F-104-01 risolto (toHaveTextContent('⏸')). Nessun nuovo finding. Coverage AC1/AC2/AC3 completa. Verdict: PASS.",
+  "loop_status": {
+    "iter": 2,
+    "max_iterations": 3,
+    "previous_finding_ids": ["F-104-01"],
+    "resolved_finding_ids": ["F-104-01"],
+    "no_progress": false,
+    "regression_detected": false
+  },
+  "generated_at": "2026-06-15T00:00:00Z",
+  "reviewer_version": "CQRL v2.21"
+}

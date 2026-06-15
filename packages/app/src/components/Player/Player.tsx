@@ -414,6 +414,30 @@ export function Player({
         }`
             : ""
         }
+        /* TSK-106 — Layout slot fissi controlli Player (US-055 / UX-020).
+           3 slot grid nominali (primary|secondary|fullscreen), sempre presenti
+           nel DOM. Bottoni non applicabili: visibility:hidden (NON display:none)
+           per preservare spazio + aria-hidden/tabIndex=-1 per l'a11y tree
+           (jsdom non computa visibility da <style> iniettato — i test usano
+           aria-hidden come contratto). Token @soli92/solids: --sd-space-sm. */
+        .sb-player-controls {
+          display: grid;
+          grid-template-columns: auto auto auto;
+          grid-template-areas: "primary secondary fullscreen";
+          gap: var(--sd-space-sm, 0.5rem);
+          justify-content: start;
+          align-items: center;
+        }
+        .sb-player-controls > .sb-slot {
+          display: flex;
+          align-items: center;
+        }
+        .sb-player-controls > .sb-slot-primary { grid-area: primary; }
+        .sb-player-controls > .sb-slot-secondary { grid-area: secondary; }
+        .sb-player-controls > .sb-slot-fullscreen { grid-area: fullscreen; }
+        .sb-player-controls .sb-btn[data-slot-placeholder="true"] {
+          visibility: hidden;
+        }
       `}</style>
       {/*
         Variante B — .sb-player-layout: wrapper che gestisce i tre layout:
@@ -526,45 +550,103 @@ export function Player({
         <span>{title ?? HUD_TITLE_IDLE}</span>
         <span>{HUD_STATE_LABELS[state]}</span>
       </div>
-      <div className="sd-flex sd-gap-sm">
-        {idle && (
-          <button className="sb-btn sb-btn-primary" onClick={handlePlay}>
-            Avvia
+      {/* TSK-106 — Container dei controlli con layout a slot fissi (US-055 AC1).
+          3 slot grid stabili: primary (Avvia/Pausa/Riprendi), secondary
+          (Arresta, vuoto in idle), fullscreen (sempre presente). Lo slot
+          primario contiene SEMPRE un bottone (mai placeholder), così la
+          posizione fisica del primario non cambia tra gli stati (AC2).
+          Lo slot secondary contiene un placeholder (visibility:hidden) in
+          idle, dove "Arresta" non è applicabile (AC3). Lo slot fullscreen è
+          invariato (sempre presente).
+          data-testid="player-controls" + data-slot per le asserzioni DOM dei
+          test (vedi Player.test.tsx — TSK-106). */}
+      <div
+        className="sb-player-controls"
+        data-testid="player-controls"
+        role="group"
+        aria-label="Controlli Player"
+      >
+        {/* Slot 1 — primary: Avvia (idle) | Pausa (running) | Riprendi (paused).
+            SEMPRE renderizzato come un singolo <button> reale (mai placeholder),
+            così la sua posizione fisica nel grid è invariante tra gli stati. */}
+        <div className="sb-slot sb-slot-primary" data-slot="primary">
+          {idle && (
+            <button
+              className="sb-btn sb-btn-primary"
+              onClick={handlePlay}
+              data-action="play"
+            >
+              Avvia
+            </button>
+          )}
+          {running && (
+            <button
+              className="sb-btn"
+              onClick={handlePause}
+              data-action="pause"
+            >
+              Pausa
+            </button>
+          )}
+          {paused && (
+            <button
+              className="sb-btn sb-btn-primary"
+              onClick={handleResume}
+              data-action="resume"
+            >
+              Riprendi
+            </button>
+          )}
+        </div>
+        {/* Slot 2 — secondary: Arresta (running/paused) | placeholder (idle).
+            In idle "Arresta" non è applicabile: rendo un placeholder con
+            visibility:hidden (preserva spazio del grid, NON display:none),
+            aria-hidden + tabIndex=-1 per escluderlo dall'a11y tree e dal tab
+            order. I test legacy che cercano "arresta" via getByRole restano
+            OK perché in idle il placeholder ha aria-hidden=true (e in
+            running/paused il bottone reale è renderizzato normalmente). */}
+        <div className="sb-slot sb-slot-secondary" data-slot="secondary">
+          {!idle ? (
+            <button
+              className="sb-btn sb-danger"
+              onClick={handleStop}
+              data-action="stop"
+            >
+              Arresta
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="sb-btn sb-danger"
+              data-slot-placeholder="true"
+              aria-hidden="true"
+              tabIndex={-1}
+              disabled
+            >
+              Arresta
+            </button>
+          )}
+        </div>
+        {/* Slot 3 — fullscreen: TSK-035 (US-020) sempre visibile come controllo
+            essenziale; disabilitato se l'API non è supportata. */}
+        <div className="sb-slot sb-slot-fullscreen" data-slot="fullscreen">
+          <button
+            type="button"
+            className="sb-btn"
+            onClick={handleFullscreenToggle}
+            disabled={!fullscreen.supported}
+            aria-label={fsLabel}
+            aria-pressed={fullscreen.isFullscreen}
+            title={
+              fullscreen.supported
+                ? fsLabel
+                : "Schermo intero non supportato dal browser"
+            }
+            data-action="fullscreen"
+          >
+            {fsLabel}
           </button>
-        )}
-        {running && (
-          <button className="sb-btn" onClick={handlePause}>
-            Pausa
-          </button>
-        )}
-        {paused && (
-          <button className="sb-btn sb-btn-primary" onClick={handleResume}>
-            Riprendi
-          </button>
-        )}
-        {!idle && (
-          <button className="sb-btn sb-danger" onClick={handleStop}>
-            Arresta
-          </button>
-        )}
-        {/* TSK-035 — bottone schermo intero (US-020): sempre visibile come
-            controllo essenziale; disabilitato se l'API non è disponibile
-            (fallback onesto, niente fallback custom). */}
-        <button
-          type="button"
-          className="sb-btn"
-          onClick={handleFullscreenToggle}
-          disabled={!fullscreen.supported}
-          aria-label={fsLabel}
-          aria-pressed={fullscreen.isFullscreen}
-          title={
-            fullscreen.supported
-              ? fsLabel
-              : "Schermo intero non supportato dal browser"
-          }
-        >
-          {fsLabel}
-        </button>
+        </div>
       </div>
       {error && (
         <p className="sb-note" role="alert">
