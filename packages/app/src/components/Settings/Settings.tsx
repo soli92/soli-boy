@@ -22,6 +22,12 @@ import type {
   ImportSaveResult,
 } from "../../domain/save-service";
 import type { SaveStateRecord } from "../../storage/types";
+// TSK-098 (EP-014 / US-052) — Hook estratto per la sezione "Dati" (US-019):
+// listing/export/import salvataggi. La selezione UI (`selectedSaveStateId`),
+// il <input type=file> e l'invocazione export restano qui per chiarezza
+// (concerni di rendering); l'I/O e i messaggi user-facing sono dentro
+// `useSaveData`. Stessa interfaccia `SaveDataPort` (vedi sotto) consumata.
+import { useSaveData } from "../../domain/useSaveData";
 import {
   ASPECT_RATIOS,
   SCALE_FACTORS,
@@ -229,55 +235,41 @@ export function Settings({
 
   // === TSK-033 — sezione "Dati" (US-019): export/import salvataggi ===========
   //
-  // Stato locale:
-  // - `saveStates`: lista save state della ROM corrente (`currentRom`).
-  //   Aggiornata via `saveService.listSaveStates` ad ogni cambio di
-  //   `currentRom.id` (e dopo import OK, vedi `handleImportFile`). Feedback
-  //   sincrona evita entry stantie commutando ROM.
-  // - `selectedSaveStateId`: scelta dell'utente sull'entry da esportare (la
-  //   prima entry è preselezionata per UX).
-  // - `dataMessage`: feedback user-facing. L'avviso US-019 AC3 ("avviso
-  //   comprensibile") è veicolato con `role="alert"` per gli esiti KO; per
-  //   i success `role="status"` (assistive tech non interrompono l'utente).
+  // TSK-098 (EP-014 / US-052) — La logica I/O (listing, export con
+  // `triggerDownload`, import con mapping reason → messaggio user-facing) è
+  // estratta in `useSaveData` (domain/). Qui restano i concerni UI puri:
+  // - `selectedSaveStateId`: scelta dell'utente sull'entry da esportare; non
+  //   sta nel hook perché è stato di rendering della select, non I/O.
+  // - `importInputRef`: ref al `<input type=file>` per resettare il valore
+  //   dopo un import (idem).
+  // - Effect di preselezione: sincronizza `selectedSaveStateId` con la prima
+  //   entry di `saveStates` ad ogni cambio della lista (preserva la UX
+  //   "prima entry preselezionata" del codice originale).
+  //
+  // `dataMessage` (kind: info | error) è veicolato con `role="alert"` per i
+  // KO e `role="status"` per i success — assistive tech non interrompono
+  // l'utente sui success (US-019 AC3 "avviso comprensibile").
   const currentRomId = currentRom?.id ?? "";
-  const [saveStates, setSaveStates] = useState<ReadonlyArray<SaveStateRecord>>([]);
+  // `refresh` non è consumato qui (l'invalidazione su import OK è incapsulata
+  // nel hook), perciò non lo destrutturiamo. Esposto comunque dall'API del
+  // hook per consumer futuri (es. wiring a un global "refresh" event).
+  const {
+    list: saveStates,
+    busy: dataBusy,
+    message: dataMessage,
+    handleExport: exportSaveState,
+    handleImportFile,
+  } = useSaveData(saveService, currentRomId);
   const [selectedSaveStateId, setSelectedSaveStateId] = useState<string>("");
-  const [dataMessage, setDataMessage] = useState<
-    | { kind: "info"; text: string }
-    | { kind: "error"; text: string }
-    | null
-  >(null);
-  const [dataBusy, setDataBusy] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Carica i save state della ROM corrente. Si invalida ad ogni cambio di
-  // `currentRomId` o di `saveService` (es. test con fake diversi).
-  const refreshSaveStates = useCallback(async () => {
-    if (!saveService || !currentRomId) {
-      setSaveStates([]);
-      setSelectedSaveStateId("");
-      return;
-    }
-    try {
-      const list = await saveService.listSaveStates(currentRomId);
-      // Difesa: filtro per romId (US-018 AC2 — niente fantasmi cross-rom).
-      const filtered = list.filter((r) => r.romId === currentRomId);
-      setSaveStates(filtered);
-      // Preselezione: prima entry (UX), oppure reset se vuota.
-      setSelectedSaveStateId(filtered[0]?.id ?? "");
-    } catch (e) {
-      setSaveStates([]);
-      setSelectedSaveStateId("");
-      setDataMessage({
-        kind: "error",
-        text: `Impossibile leggere i salvataggi: ${(e as Error).message}`,
-      });
-    }
-  }, [saveService, currentRomId]);
-
+  // Preselezione: prima entry (UX), oppure reset se vuota. Sincronizzato sul
+  // `saveStates` esposto dal hook: cambia (refresh / cambio ROM / import OK
+  // sulla ROM corrente) ⇒ riallineiamo la select. Equivalente al
+  // `setSelectedSaveStateId(filtered[0]?.id ?? "")` pre-estrazione, ora qui.
   useEffect(() => {
-    void refreshSaveStates();
-  }, [refreshSaveStates]);
+    setSelectedSaveStateId(saveStates[0]?.id ?? "");
+  }, [saveStates]);
 
   // Etichetta umana per una entry: "Slot N — DD/MM/YYYY HH:MM".
   // Localizziamo con `toLocaleString` (lo userà jsdom in test ma non è il
@@ -286,111 +278,23 @@ export function Settings({
     return `Slot ${rec.slot + 1} — ${new Date(rec.createdAt).toLocaleString()}`;
   }
 
-  // Triggera il download nel browser. Usato anche dai test: i test mockano
-  // `URL.createObjectURL`/`anchor.click` per verificare l'invocazione senza
-  // toccare il filesystem (idem Library.test.tsx).
-  function triggerDownload(blob: Blob, filename: string) {
-    // Guard difensivo per ambienti privi di URL.createObjectURL (jsdom legacy).
-    if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
-      throw new Error("URL.createObjectURL non disponibile in questo ambiente.");
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    // L'anchor non viene aggiunto al DOM (no side-effect visivo); .click()
-    // lavora ugualmente in jsdom/Chromium.
-    a.click();
-    // revoke immediato: il browser ha già avviato il download al click,
-    // tenere l'URL allocato non serve (no leak).
-    if (typeof URL.revokeObjectURL === "function") {
-      URL.revokeObjectURL(url);
-    }
-  }
-
-  // F-033-01: memoizzazione per coerenza con `refreshSaveStates` (già
-  // memoizzato). Le deps coprono i valori effettivamente catturati;
-  // i setter di `useState` sono garantiti stabili da React e non vanno
-  // dichiarati. Comportamento invariato.
-  const handleExport = useCallback(async () => {
-    if (!saveService || !selectedSaveStateId) return;
-    setDataBusy(true);
-    setDataMessage(null);
-    try {
-      const res = await saveService.exportSaveState(selectedSaveStateId);
-      if (!res.ok) {
-        // Esito esplicito (entry/ROM non più presenti tra refresh e click).
-        const text =
-          res.reason === "not-found"
-            ? "Il salvataggio selezionato non è più presente."
-            : "La ROM associata al salvataggio non è più presente.";
-        setDataMessage({ kind: "error", text });
-        return;
-      }
-      triggerDownload(res.blob, res.filename);
-      setDataMessage({
-        kind: "info",
-        text: `Esportato "${res.filename}".`,
-      });
-    } catch (e) {
-      setDataMessage({
-        kind: "error",
-        text: `Esportazione fallita: ${(e as Error).message}`,
-      });
-    } finally {
-      setDataBusy(false);
-    }
-  }, [saveService, selectedSaveStateId]);
-
-  const handleImportFile = useCallback(
-    async (file: File) => {
-      if (!saveService) return;
-      setDataBusy(true);
-      setDataMessage(null);
-      try {
-        const res = await saveService.importSave(file);
-        if (res.ok) {
-          setDataMessage({
-            kind: "info",
-            text: `Salvataggio importato (${res.kind === "saveState" ? "save state" : "SRAM"}).`,
-          });
-          // Se l'import riguarda la ROM corrente, aggiorna l'elenco.
-          if (res.romId === currentRomId) {
-            await refreshSaveStates();
-          }
-        } else {
-          // US-019 AC3: avviso comprensibile per file non valido o non corrispondente.
-          // Mappa reason → testo user-facing (no leakage di campi tecnici).
-          const text =
-            res.reason === "invalid-file"
-              ? "File non valido o danneggiato."
-              : res.reason === "format-mismatch"
-                ? "Il file non è un salvataggio Soli-boy."
-                : res.reason === "unsupported-version"
-                  ? "Versione del file non supportata da questa versione dell'app."
-                  : "La ROM associata al salvataggio non è presente nella libreria.";
-          setDataMessage({ kind: "error", text });
-        }
-      } catch (e) {
-        // Difensivo: importSave non dovrebbe lanciare, ma l'I/O del File può.
-        setDataMessage({
-          kind: "error",
-          text: `Importazione fallita: ${(e as Error).message}`,
-        });
-      } finally {
-        setDataBusy(false);
-        // Permette di reimportare lo stesso file (gli `input[type=file]` non
-        // sparano `change` se il valore non cambia).
-        if (importInputRef.current) importInputRef.current.value = "";
-      }
-    },
-    [saveService, currentRomId, refreshSaveStates],
+  // Wrapper UI che inoltra `selectedSaveStateId` corrente al hook. Memoizzato
+  // come l'originale per coerenza (consumato da `onClick` del bottone Esporta).
+  const handleExport = useCallback(
+    () => exportSaveState(selectedSaveStateId),
+    [exportSaveState, selectedSaveStateId],
   );
 
   const handleImportChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) void handleImportFile(file);
+      if (file) {
+        void handleImportFile(file).finally(() => {
+          // Permette di reimportare lo stesso file (gli `input[type=file]` non
+          // sparano `change` se il valore non cambia).
+          if (importInputRef.current) importInputRef.current.value = "";
+        });
+      }
     },
     [handleImportFile],
   );

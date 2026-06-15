@@ -663,3 +663,5 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 - Test result: 480/480 pass (464 pre TSK-100/101 + 16 nuovi: 13 hook + 3 toggle integration utilizzabili — un 4° test integrazione coperto). TypeScript noEmit: pass (zero violazioni esistenti).
 - Pattern note: nessuna porta dedicata creata (ThemePort-style); riusiamo `ConfigPort` come per haptics, riducendo footprint. Single-writer della chiave `auto-start-from-library` è il toggle in Settings (`onAutoStartChange` → `saveAutoStartFromLibrary`).
 - Status: `todo → done`. DoD completo (5/5 checkbox).
+
+2026-06-15 | fe-dev | develop TSK-098 (EP-014/US-052) → done | packages/app/src/domain/useTabPause.ts (new), packages/app/src/domain/useSaveData.ts (new), packages/app/src/App.tsx, packages/app/src/components/Settings/Settings.tsx | Estrazione hook useTabPause<T>(engine, activeTab, selected, playTab) + useSaveData(saveService, currentRomId). Complessità cognitiva: AppContent 22→13, Settings 19→10. 459/459 test pass; tsc clean.
