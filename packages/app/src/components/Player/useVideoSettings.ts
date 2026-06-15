@@ -58,8 +58,11 @@ export interface VideoSettings {
   filter: VideoFilter;
 }
 
+// TSK-086 EP-019: art-director DSL → emulator-first default. Scale 2x (320px)
+// gives a predictable "medium" size on first load without relying on container layout.
+// User can always adjust. "auto" was unpredictable on mobile first-load.
 export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
-  scale: "auto",
+  scale: 2,
   aspect: "original",
   filter: "nearest",
 };

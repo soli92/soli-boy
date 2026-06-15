@@ -98,16 +98,17 @@ describe("Player — Resa video (TSK-036 / US-021)", () => {
     expect(screenDiv.style.width).toBe(`${5 * BASE_VIEWPORT_WIDTH_PX}px`);
   });
 
-  it("default in assenza di porta e di props: scale=auto, aspect=original, filter=nearest", () => {
+  // TSK-086 EP-019: default scale cambiato da "auto" a 2 (emulator-first, 320px fisso).
+  it("default in assenza di porta e di props: scale=2, aspect=original, filter=nearest", () => {
     render(
       <Player engine={fakeEngine()} rom={{ rom: new Blob(["x"]), core: "mgba" }} />,
     );
     const screenDiv = screen.getByLabelText("Schermo di gioco") as HTMLDivElement;
-    expect(screenDiv.getAttribute("data-scale")).toBe("auto");
+    expect(screenDiv.getAttribute("data-scale")).toBe("2");
     expect(screenDiv.getAttribute("data-aspect")).toBe("original");
     // TSK-037: default filtro = nearest (resa pixel-art).
     expect(screenDiv.getAttribute("data-filter")).toBe("nearest");
-    expect(screenDiv.style.width).toBe("100%");
+    expect(screenDiv.style.width).toBe("320px"); // 2 * 160px BASE_VIEWPORT_WIDTH_PX
   });
 
   it("inietta una regola CSS scoped per il <canvas> interno (object-fit dipende dall'aspect)", () => {
