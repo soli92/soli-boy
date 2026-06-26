@@ -108,6 +108,13 @@ export function PrivacyNotice({
   // App.tsx dopo l'ack, ma garantiamo unicità by design).
   const headingId = `sb-privacy-heading-${variant}`;
 
+  // TSK-115 (US-060, EP-017) — heading semantici: <p className="sb-lbl"> → <h2>.
+  // Il componente può vivere a diversi livelli nell'outline (banner in App.tsx
+  // a livello top; section in Settings sotto un <details> h2). Usiamo h2
+  // per entrambe le varianti: nel banner è il titolo principale della region;
+  // nella section l'accordion <summary> del genitore funge da h2 visivo ma
+  // non semantico, quindi h2 qui è corretto per screen reader.
+
   if (variant === "section") {
     return (
       <section
@@ -116,9 +123,9 @@ export function PrivacyNotice({
         data-testid="sb-privacy-section"
       >
         {!headingHidden && (
-          <p id={headingId} className="sb-lbl">
+          <h2 id={headingId} className="sb-lbl">
             {HEADING}
-          </p>
+          </h2>
         )}
         <PointList />
         <p className="sb-note" role="note">
@@ -140,9 +147,9 @@ export function PrivacyNotice({
       data-testid="sb-privacy-banner"
     >
       {!headingHidden && (
-        <p id={headingId} className="sb-lbl">
+        <h2 id={headingId} className="sb-lbl">
           {HEADING}
-        </p>
+        </h2>
       )}
       <PointList />
       <button

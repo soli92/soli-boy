@@ -33,6 +33,12 @@ const LOGO_STYLE: CSSProperties = {
   display: "block",
 };
 
+// TSK-108 — azione Rimuovi con dialog conferma (US-056, EP-016).
+// La rimozione è distruttiva (cancella la ROM da IndexedDB): un dialog modale
+// chiede conferma prima di procedere. Il dialog è implementato inline con
+// `role="dialog"` + `aria-modal` + focus trap minimale (due bottoni).
+// `onRemove` opzionale per backward compat con i test legacy.
+
 export interface LibraryProps {
   /**
    * Porta combinata: lettura ROM (StoragePort) + aggiornamento copertina
@@ -52,6 +58,20 @@ export interface LibraryProps {
    * gestione di `coverError`).
    */
   onSelect?: (rom: RomRecord) => void;
+  /**
+   * TSK-107 — ID della ROM correntemente in sessione nel Player (prop
+   * opzionale per backward compat). Se presente, la GameTile corrispondente
+   * mostra il badge "In esecuzione" e `aria-current="true"`.
+   */
+  currentRomId?: string;
+  /**
+   * TSK-108 — callback invocata dopo la conferma di rimozione di una ROM.
+   * Riceve l'id della ROM da rimuovere. Il gestore (App.tsx) si occupa di
+   * chiamare `storage.removeRom(id)` e di aggiornare il refresh counter.
+   * Prop opzionale: se assente, il bottone Rimuovi non viene renderizzato
+   * (backward compat con test legacy senza questa feature).
+   */
+  onRemove?: (romId: string) => void;
 }
 
 /** Valore "tutte le piattaforme" del filtro. */
@@ -70,7 +90,7 @@ const PLATFORM_LABELS: Record<PlatformFilter, string> = {
 /** Ordine canonico dei chip (GB e GBC condividono il chip GB-GBC della spec). */
 const PLATFORM_ORDER: Platform[] = ["GB", "GBC", "GBA", "ARCADE"];
 
-export function Library({ storage, onSelect }: LibraryProps) {
+export function Library({ storage, onSelect, currentRomId, onRemove }: LibraryProps) {
   // TSK-075 — la Library lista i **metadati** (senza fileBlob). Sul NativeFsAdapter
   // elimina N round-trip IPC `readFile` sui binari ROM al caricamento (F-2 CQRL
   // TSK-054). Il `fileBlob` viene caricato lazy via `storage.getRom(id)` al click
@@ -264,6 +284,8 @@ export function Library({ storage, onSelect }: LibraryProps) {
                 rom={rom}
                 onSelect={() => void handleSelect(rom)}
                 onCoverChange={(file) => void handleCoverChange(rom.id, file)}
+                isCurrent={currentRomId !== undefined && rom.id === currentRomId}
+                onRemove={onRemove}
               />
             </li>
           ))}
@@ -296,6 +318,8 @@ function PlatformChip({ value, current, onSelect, label }: PlatformChipProps) {
 }
 
 // TSK-039 — tile gioco con copertina (US-009).
+// TSK-107 — indicatore visivo ROM corrente (US-056, EP-016).
+//
 // Struttura: `<article>.sb-tile` contiene
 //   1. uno `<span>.sb-art` con <img> (coverBlob presente) o segnaposto
 //      (iniziale del titolo, .sb-art a-1: design system),
@@ -308,6 +332,9 @@ function PlatformChip({ value, current, onSelect, label }: PlatformChipProps) {
 // - Il placeholder ha `aria-hidden="true"`: l'iniziale è puramente decorativa,
 //   il titolo è già esposto come testo nel button.
 // - L'input file è etichettato con "Cambia copertina di <titolo>".
+// - TSK-107: `aria-current="true"` sul bottone di selezione quando la ROM è
+//   quella corrente in sessione; il badge ".sb-current-badge" ha aria-hidden
+//   (testo decorativo — l'informazione è già in aria-current).
 
 interface GameTileProps {
   /**
@@ -318,10 +345,24 @@ interface GameTileProps {
   rom: RomMeta;
   onSelect: () => void;
   onCoverChange: (file: File) => void;
+  /**
+   * TSK-107 — true se questa tile è la ROM correntemente in sessione nel
+   * Player. Aggiunge un badge visivo "In esecuzione" + `aria-current="true"`
+   * sul bottone di selezione per l'accessibilità.
+   */
+  isCurrent?: boolean;
+  /**
+   * TSK-108 — callback invocata dopo la conferma di rimozione (passata dalla
+   * Library). Riceve l'id della ROM. Se assente, il bottone Rimuovi non viene
+   * renderizzato (backward compat con test legacy).
+   */
+  onRemove?: (romId: string) => void;
 }
 
-function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
+function GameTile({ rom, onSelect, onCoverChange, isCurrent = false, onRemove }: GameTileProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  // TSK-108 — stato del dialog di conferma rimozione.
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
   useEffect(() => {
     if (!rom.coverBlob) {
@@ -350,7 +391,7 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
   const initial = (rom.title.trim()[0] ?? "?").toUpperCase();
 
   return (
-    <article className="sd-card sb-tile">
+    <article className={"sd-card sb-tile" + (isCurrent ? " sb-tile--current" : "")}>
       <span className="sb-art a-1">
         {rom.coverBlob && coverUrl ? (
           <img
@@ -369,7 +410,26 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
         )}
       </span>
 
-      <button type="button" className="sb-game" onClick={onSelect}>
+      {/* TSK-107 — badge "In esecuzione" visivo + aria-current sul bottone.
+          aria-current="true" comunica ad AT che questa ROM è attiva in sessione.
+          Il badge testuale ha aria-hidden: l'informazione è già in aria-current. */}
+      {isCurrent && (
+        <span
+          className="sb-current-badge sd-badge"
+          aria-hidden="true"
+          data-testid="sb-tile-current-badge"
+          style={{ fontSize: "0.7rem", opacity: 0.9 }}
+        >
+          In esecuzione
+        </span>
+      )}
+
+      <button
+        type="button"
+        className="sb-game"
+        onClick={onSelect}
+        aria-current={isCurrent ? "true" : undefined}
+      >
         {/* Spazio esplicito fra titolo e badge: l'accessible name deve restare
             "titolo platform" (es. "tetris GB"). Senza il nodo whitespace, il
             calcolo accname di dom-accessibility-api concatena senza spazio
@@ -402,6 +462,95 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
           Copertina
         </span>
       </label>
+
+      {/* TSK-108 — bottone Rimuovi: visibile solo se il gestore è fornito.
+          Apre un dialog di conferma prima di procedere (azione distruttiva).
+          L'accessible name cita il titolo della ROM ("Rimuovi <titolo>")
+          per disambiguare se più tile sono visibili. */}
+      {onRemove && (
+        <>
+          <button
+            type="button"
+            className="sb-btn sb-danger"
+            aria-label={`Rimuovi ${rom.title}`}
+            data-testid={`sb-tile-remove-${rom.id}`}
+            onClick={() => setShowRemoveDialog(true)}
+          >
+            Rimuovi
+          </button>
+
+          {showRemoveDialog && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={`sb-remove-dialog-title-${rom.id}`}
+              aria-describedby={`sb-remove-dialog-desc-${rom.id}`}
+              data-testid={`sb-remove-dialog-${rom.id}`}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.55)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1000,
+              }}
+              onClick={() => setShowRemoveDialog(false)}
+            >
+              <div
+                className="sd-card"
+                style={{
+                  background: "var(--sd-color-bg-elevated, #1a1430)",
+                  color: "var(--sd-color-text-primary, #f0e9ff)",
+                  padding: "1.5rem",
+                  borderRadius: "0.5rem",
+                  maxWidth: "28rem",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2
+                  id={`sb-remove-dialog-title-${rom.id}`}
+                  style={{ marginTop: 0, marginBottom: "0.75rem" }}
+                >
+                  Rimuovi gioco?
+                </h2>
+                <p
+                  id={`sb-remove-dialog-desc-${rom.id}`}
+                  style={{ marginBottom: "1.25rem" }}
+                >
+                  Stai per rimuovere{" "}
+                  <strong>
+                    {rom.title} ({rom.platform})
+                  </strong>{" "}
+                  dalla libreria. L&apos;operazione non può essere annullata.
+                </p>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    className="sb-btn"
+                    onClick={() => setShowRemoveDialog(false)}
+                    data-testid={`sb-remove-dialog-cancel-${rom.id}`}
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-btn sb-btn-primary sb-danger"
+                    onClick={() => {
+                      setShowRemoveDialog(false);
+                      onRemove(rom.id);
+                    }}
+                    data-testid={`sb-remove-dialog-confirm-${rom.id}`}
+                  >
+                    Rimuovi
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </article>
   );
 }

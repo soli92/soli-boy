@@ -681,3 +681,85 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 2026-06-15 | fe-dev | develop TSK-098 (EP-014/US-052) → done | packages/app/src/domain/useTabPause.ts (new), packages/app/src/domain/useSaveData.ts (new), packages/app/src/App.tsx, packages/app/src/components/Settings/Settings.tsx | Estrazione hook useTabPause<T>(engine, activeTab, selected, playTab) + useSaveData(saveService, currentRomId). Complessità cognitiva: AppContent 22→13, Settings 19→10. 459/459 test pass; tsc clean.
 
 [2026-06-26] factory-upgrade | v2.21 → v2.24 — delta EP-031 (semantic-drift) + EP-033 (runtime-suggestions): lint-checks Check 4ag/4af, semantic-drift-scan-protocol, suggest-next.py, Fase 6 orchestrator, dev-handoff post-exec, hook Stop
+
+## 2026-06-26 16:10 — develop TSK-107 (EP-016/US-056)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-056-library-tile-indicator-rimuovi-fileloader/TSK-107]]
+**Layer:** fe
+**Code path:** packages/app/src/
+**Files touched:** 2 (Library/Library.tsx, App.tsx)
+**Commit:** wave1-sprint13
+**DoD:** pass
+**Note:** Aggiunto badge "In esecuzione" + prop `isCurrent`/`currentRomId` + `aria-current="true"`. 511/511 test pass.
+
+## Suggerimento post-esecuzione (EP-033, v2.24)
+Layer fe completato. Se la factory ha `a11y.enabled: true`, considera `/a11y TSK-107` per verifica WCAG 2.2 AA sul badge aggiunto.
+
+## 2026-06-26 16:15 — develop TSK-108 (EP-016/US-056)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-056-library-tile-indicator-rimuovi-fileloader/TSK-108]]
+**Layer:** fe
+**Code path:** packages/app/src/
+**Files touched:** 3 (Library/Library.tsx, App.tsx, App.gameChangeDialog.test.tsx, App.autoStartToggle.test.tsx)
+**Commit:** wave1-sprint13
+**DoD:** pass
+**Note:** Aggiunto dialog conferma rimozione ROM in GameTile. Aggiornati test esistenti con query più specifiche (exact name match "Tetris GB"/"Pokemon Red GB"). 511/511 test pass.
+
+## Suggerimento post-esecuzione (EP-033, v2.24)
+Layer fe completato. Considera `/review TSK-108` se CQRL attivo (dialog modale: a11y focus trap da validare).
+
+## 2026-06-26 16:20 — develop TSK-109 (EP-016/US-056)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-056-library-tile-indicator-rimuovi-fileloader/TSK-109]]
+**Layer:** fe
+**Code path:** packages/app/src/App.tsx
+**Files touched:** 1 (App.tsx)
+**Commit:** wave1-sprint13
+**DoD:** pass
+**Note:** Rimosso FileLoader dalla CTA idle tab Play. Punto canonico di caricamento ROM rimane la Libreria. 511/511 test pass.
+
+## 2026-06-26 16:25 — develop TSK-110 (EP-016/US-057)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-057-settings-titolo-rom-accordion-default/TSK-110]]
+**Layer:** fe
+**Code path:** packages/app/src/components/Settings/Settings.tsx
+**Files touched:** 1 (Settings/Settings.tsx)
+**Commit:** wave1-sprint13
+**DoD:** pass
+**Note:** Accordion "Resa video" → `open` di default. Context ROM mostra titolo invece di id troncato. 511/511 test pass.
+
+## 2026-06-26 16:30 — develop TSK-111 (EP-016/US-058)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-058-savestate-conferma-eliminazione/TSK-111]]
+**Layer:** fe
+**Code path:** packages/app/src/components/Player/SaveStatePanel.tsx
+**Files touched:** 2 (Player/SaveStatePanel.tsx, Player/SaveStatePanel.test.tsx)
+**Commit:** wave1-sprint13
+**DoD:** pass
+**Note:** Aggiunto dialog conferma prima di deleteSaveState. Aggiornato test Elimina per passare per dialog. 511/511 test pass.
+
+## Suggerimento post-esecuzione (EP-033, v2.24)
+Layer fe + dialog modale. TSK-112 (QA test dialog) è la dipendenza naturale successiva → considera eseguire TSK-112 come prossimo step.
+
+## 2026-06-26 16:35 — develop TSK-113 (EP-016/US-059)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-059-footer-cleanup-touchoverlay-fixes/TSK-113]]
+**Layer:** fe
+**Code path:** packages/app/src/App.tsx
+**Files touched:** 1 (App.tsx)
+**Commit:** wave1-sprint13
+**DoD:** pass
+**Note:** Rimossa LegalNotice da footer App.tsx. Coverage legale mantenuta in tab Info & Privacy + Settings → Legale. 511/511 test pass.
+
+## 2026-06-26 16:40 — develop TSK-115 (EP-017/US-060)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-017-a11y-manual-checks-remediation/US-060-heading-semantici-aria-live-canvas-text/TSK-115]]
+**Layer:** fe
+**Code path:** packages/app/src/components/
+**Files touched:** 2 (PrivacyNotice/PrivacyNotice.tsx, StoreComplianceNotice/StoreComplianceNotice.tsx)
+**Commit:** wave1-sprint13
+**DoD:** pass
+**Note:** p.sb-lbl → h2 in PrivacyNotice (banner + section) e StoreComplianceNotice. Settings già usa <summary> semantico. 511/511 test pass.
+
+## Suggerimento post-esecuzione (EP-033, v2.24)
+TSK a11y (EP-017). Considera TSK-117 (manual check heading nav) come step successivo naturale dopo TSK-116.

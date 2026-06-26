@@ -118,7 +118,8 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     render(<App />);
 
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tile = await screen.findByRole("button", { name: /Tetris/i });
+    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
+    const tile = await screen.findByRole("button", { name: "Tetris GB" });
     await act(async () => {
       fireEvent.click(tile);
     });
@@ -136,7 +137,8 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     render(<App />);
 
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tile = await screen.findByRole("button", { name: /Tetris/i });
+    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
+    const tile = await screen.findByRole("button", { name: "Tetris GB" });
     await act(async () => {
       fireEvent.click(tile);
     });
@@ -201,7 +203,8 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
 
     // Vai in Library e tap'a una ROM.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tile = await screen.findByRole("button", { name: /Tetris/i });
+    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
+    const tile = await screen.findByRole("button", { name: "Tetris GB" });
     await act(async () => {
       fireEvent.click(tile);
     });

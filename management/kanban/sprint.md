@@ -341,13 +341,13 @@ DAG Sprint 12:
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-107 | Library GameTile: indicatore visivo ROM corrente | US-056 | EP-016 | fe | agent | P1 | S | todo | — |
-| TSK-108 | Library GameTile: azione Rimuovi con dialog conferma | US-056 | EP-016 | fe | agent | P1 | M | todo | — |
-| TSK-109 | De-duplica FileLoader: rimuovi da tab Play idle | US-056 | EP-016 | fe | agent | P1 | S | todo | — |
-| TSK-110 | Settings: titolo ROM in sezione Dati + accordion Resa video default open | US-057 | EP-016 | fe | agent | P1 | S | todo | — |
-| TSK-111 | SaveStatePanel: dialog conferma elimina save state | US-058 | EP-016 | fe | agent | P1 | M | todo | — |
-| TSK-113 | Footer cleanup: rimuovi LegalNotice da App.tsx footer | US-059 | EP-016 | fe | agent | P2 | XS | todo | — |
-| TSK-115 | Heading semantici: p.sb-lbl → h2/h3 in PrivacyNotice, StoreComplianceNotice, Settings | US-060 | EP-017 | fe | agent | P1 | S | todo | — |
+| TSK-107 | Library GameTile: indicatore visivo ROM corrente | US-056 | EP-016 | fe | agent | P1 | S | done | — |
+| TSK-108 | Library GameTile: azione Rimuovi con dialog conferma | US-056 | EP-016 | fe | agent | P1 | M | done | — |
+| TSK-109 | De-duplica FileLoader: rimuovi da tab Play idle | US-056 | EP-016 | fe | agent | P1 | S | done | — |
+| TSK-110 | Settings: titolo ROM in sezione Dati + accordion Resa video default open | US-057 | EP-016 | fe | agent | P1 | S | done | — |
+| TSK-111 | SaveStatePanel: dialog conferma elimina save state | US-058 | EP-016 | fe | agent | P1 | M | done | — |
+| TSK-113 | Footer cleanup: rimuovi LegalNotice da App.tsx footer | US-059 | EP-016 | fe | agent | P2 | XS | done | — |
+| TSK-115 | Heading semantici: p.sb-lbl → h2/h3 in PrivacyNotice, StoreComplianceNotice, Settings | US-060 | EP-017 | fe | agent | P1 | S | done | — |
 
 ### Wave 2 — Dipendenti da Wave 1 (dopo Wave 1)
 

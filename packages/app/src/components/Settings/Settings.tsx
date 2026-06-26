@@ -352,10 +352,12 @@ export function Settings({
         )}
       </details>
 
-      {/* === Accordion 2: Resa video — scala e proporzioni (chiuso) ========= */}
+      {/* === Accordion 2: Resa video — scala e proporzioni (aperto di default) === */}
       {/* TSK-036 — Resa video (US-021): scala + aspect ratio. Persistenza via
-          `videoConfigPort` (opzionale); stessa porta consumata da Player. */}
-      <details>
+          `videoConfigPort` (opzionale); stessa porta consumata da Player.
+          TSK-110 (US-057, EP-016) — accordion aperto di default (`open`) per
+          migliorare la discoverability delle impostazioni video più usate. */}
+      <details open>
         <summary className="sb-lbl">
           Resa video — scala e proporzioni
         </summary>
@@ -514,13 +516,15 @@ export function Settings({
               Library, poi torna in Settings (workflow esistente).
               Per la stessa ragione, indichiamo la ROM tramite id corto (non il
               titolo): il titolo resta univoco nella DOM (Library tile + Player). */}
+          {/* TSK-110 (US-057, EP-016) — mostra il titolo della ROM corrente
+              invece dell'id troncato. Il titolo è già esposto nella tile della
+              Library; qui la coerenza visiva "vedi titolo ovunque" migliora
+              la UX. Wording ancora distinto da "Nessun gioco" (Library) per
+              non collidere con gli e2e in modalità strict (vedi sopra). */}
           <span className="sb-key" data-testid="sb-data-rom-context">
             {currentRom
-              ? `Gioco corrente: [${currentRom.id.slice(0, 6)}]`
-              : /* Wording deliberatamente distinto da "Nessun gioco" usato da
-                   Library (vedi Library.tsx) per non collidere con l'e2e
-                   `getByText(/nessun gioco/i)` in modalità strict. */
-                "— seleziona una ROM dalla libreria —"}
+              ? `Gioco corrente: ${currentRom.title}`
+              : "— seleziona una ROM dalla libreria —"}
           </span>
         </div>
         <div className="sd-flex sd-items-center sd-gap-sm">

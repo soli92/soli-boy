@@ -642,16 +642,15 @@ function AppContent({
           autoStart={autoStartFromLibrary}
           onStateChange={setPlayerState}
         />
-        {/* CTA FileLoader in stato idle (nessuna ROM selezionata) */}
+        {/* TSK-109 — CTA idle (nessuna ROM selezionata): il FileLoader è stato
+            rimosso dalla tab Play per de-duplicazione. Il punto canonico di
+            caricamento ROM è la tab Libreria (FileLoader lì è mantenuto).
+            L'utente è guidato con il bottone "Vai alla Libreria". */}
         {!selected && (
           <div className="sb-play-idle-cta">
             <p className="sb-note">
-              Seleziona un gioco dalla Libreria per iniziare, oppure carica una ROM:
+              Seleziona un gioco dalla Libreria per iniziare.
             </p>
-            <FileLoader
-              storage={storage}
-              onImported={() => setRefresh((n) => n + 1)}
-            />
             <button
               type="button"
               className="sb-btn"
@@ -671,10 +670,29 @@ function AppContent({
           aria-labelledby="tab-library"
           className="sb-tab-panel"
         >
+          {/* TSK-107 — currentRomId iniettato per il badge "In esecuzione".
+              TSK-108 — onRemove: rimuove la ROM dallo storage e aggiorna la
+              libreria (refresh counter). Se la ROM rimossa è quella selezionata
+              in sessione, deseleziona il Player (reset a idle). */}
           <Library
             key={refresh}
             storage={storage}
             onSelect={handleLibrarySelect}
+            currentRomId={selected?.id}
+            onRemove={async (romId) => {
+              try {
+                await storage.removeRom(romId);
+                // Se la ROM rimossa è quella in sessione, reset Player a idle.
+                if (selected?.id === romId) {
+                  engine.stop();
+                  setSelected(null);
+                  setAutoStartFromLibrary(false);
+                }
+              } catch (err) {
+                console.warn("Library: removeRom fallito:", err);
+              }
+              setRefresh((n) => n + 1);
+            }}
           />
           {/* FileLoader canonico in Libreria per importare nuove ROM. */}
           <FileLoader
@@ -752,9 +770,12 @@ function AppContent({
         />
       )}
 
-      <footer>
-        <LegalNotice />
-      </footer>
+      {/* TSK-113 (US-059, EP-016) — footer cleanup: LegalNotice rimossa dal
+          footer di App.tsx. L'avviso legale è consultabile nella tab
+          "Info & Privacy" (PrivacyNotice + StoreComplianceNotice + LegalNotice
+          già presenti nel panel-info) e nella sezione "Legale" di Settings.
+          Rimuovere il duplicato riduce il rumore visivo senza perdere coverage
+          legale (invariante US-006/US-034 soddisfatta dai punti canonici). */}
     </main>
   );
 }

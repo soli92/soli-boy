@@ -253,8 +253,14 @@ describe("SaveStatePanel — US-016 / US-018", () => {
       );
     });
 
+    // TSK-111: click Elimina apre il dialog di conferma (non elimina direttamente).
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
+    });
+
+    // Confirma il dialog — il bottone "Elimina" nel dialog ha data-testid specifico.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("sb-savestate-delete-dialog-confirm"));
     });
 
     expect(svc.deleteSaveState).toHaveBeenCalledWith("ss-del");

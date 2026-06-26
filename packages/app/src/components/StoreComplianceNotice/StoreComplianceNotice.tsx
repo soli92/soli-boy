@@ -87,10 +87,11 @@ export function StoreComplianceNotice({
       aria-labelledby={headingHidden ? undefined : headingId}
       data-testid="sb-store-compliance-section"
     >
+      {/* TSK-115 (US-060, EP-017) — heading semantico: p.sb-lbl → h2. */}
       {!headingHidden && (
-        <p id={headingId} className="sb-lbl">
+        <h2 id={headingId} className="sb-lbl">
           {HEADING}
-        </p>
+        </h2>
       )}
       {/* aria-label deliberatamente distinto da "Avviso legale" (LegalNotice
           TSK-006) per non collidere con l'e2e `getByRole('note', {name: /avviso
