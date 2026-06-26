@@ -1,6 +1,6 @@
 # CLAUDE.md — soli-boy
 
-Questo repo è una **Agentic Factory llm-wiki++ v2.21** scaffoldata da `factory-bootstrap`.
+Questo repo è una **Agentic Factory llm-wiki++ v2.24** scaffoldata da `factory-bootstrap`.
 Segue il contratto universale definito in [`PATTERN.md`](PATTERN.md) (agent-agnostic,
 multi-adapter, compression layer a due assi).
 

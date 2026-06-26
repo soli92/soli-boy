@@ -371,6 +371,30 @@ o il TSK potrebbe non avere acceptance-spec): WARNING-only, nessun heal-eligible
 **Numerazione**: «4z» segue «4p» (UX/UI v2.18, EP-008 US-032) nella serie alfabetica;
 non collide con alcun check esistente in questo file.
 
+### Check 4ag — Staleness wiki pages (always-on, EP-031)
+
+Controlla `updated_at` frontmatter di ogni pagina wiki.
+- `age > 365gg` → WARNING: `STALE_PAGE: <path> (last updated: <date>)`
+- `age > 180gg` → INFO: `AGING_PAGE: <path>`
+- `MISSING-DATE` (assente o non parsabile) → WARNING: `MISSING-DATE: <path>`
+Zero API, deterministico. Nessun gate config richiesto.
+
+Trigger: **always-on** — eseguito sempre come parte di `/lint`, indipendentemente
+da `wiki_lint.semantic_check.enabled`. Non è un gate bloccante.
+
+### Check 4af — Semantic drift via embedding (opt-in, EP-031, research)
+
+**Gated**: eseguito SOLO se `wiki_lint.semantic_check.enabled: true`.
+A flag spento (default) → no-op totale, nessuna chiamata API.
+**Severita': INFO only** — mai WARNING, mai ERROR.
+
+Algoritmo: scopre pagine con `pattern_section:` nel frontmatter,
+calcola embedding (Voyage-3 o LLM-judge fallback), compara coseno similarity
+vs soglia `similarity_threshold`. Score < soglia → emette INFO per review umana.
+
+Invocazione: non automatico, trigger manuale via `/semantic-drift-scan`. Non blocca
+alcun flusso CI/CD, release o wave dispatch. Vedi skill `semantic-drift-scan-protocol`.
+
 ## Citation audit (periodico)
 
 Per ogni `[^src: <path> §<sez>]` in `wiki/**`:

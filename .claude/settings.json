@@ -28,6 +28,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "/(dev|lint|run|review)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/tools/suggest-next.py\" --command=\"$CLAUDE_COMMAND\" 2>/dev/null || true",
+            "timeout": 5,
+            "statusMessage": "Runtime suggestions check"
+          }
+        ]
       }
     ],
     "SessionEnd": [

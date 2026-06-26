@@ -39,6 +39,7 @@ Dashboard + episodic memory + operazioni `/promote` e `/run` + **parallel schedu
   - `factory.config.yaml.scheduler.enabled: true` (default)
   - ci sono ≥ 2 TSK con `status: todo`, `consumer: agent`, dipendenze risolte
 - Log entry: vedi `wiki-log-entry`
+- **Fase 6 — Capability Relevance Check (EP-033, v2.24)**: vedi sezione omonima in fondo
 
 ## Regole
 
@@ -207,3 +208,80 @@ direttamente.
 Cross-link: [ADR-020](../../design_&_architecture/decisions/ADR-020.md),
 [ADR-019](../../design_&_architecture/decisions/ADR-019.md),
 [US-030](../../management/kanban/EP-008-ux-ui-review-design-capability/US-030-agenti-distinti-ux-ui-reviewer-ui-designer/US-030.md).
+
+## Fase 6 — Capability Relevance Check (EP-033, v2.24)
+
+### Trigger e no-op
+
+La Fase 6 si attiva **al termine del wave dispatch** di `/run`. Se `sprint.md` non
+contiene TSK con `status: todo`, la Fase 6 è **no-op silenzioso**: nessun output,
+nessuna riga di log. La fase è puramente informativa — non modifica stati, non lancia
+agenti, non blocca il flusso.
+
+### Dati letti
+
+Tutti già accessibili all'orchestrator durante `/run` — nessun ulteriore giro di
+tool call necessario:
+
+- `sprint.md` — layer (`fe`, `be`, `docs`, …) e status dei TSK in coda
+- `factory.config.yaml` — flag capability opt-in (es. `a11y.enabled`,
+  `fe_correctness.visual_oracle.enabled`, `code_quality.enabled`,
+  `analytics.measurement.enabled`)
+- `wiki/log.md` — entry recenti: ultima entry per calcolo staleness (>30 giorni),
+  entry per-epic per verificare presenza/assenza premortem
+
+### Regole di suggerimento
+
+Sei regole, tutte condizionali e indipendenti. Ogni regola scatta solo se la
+condizione è interamente vera; condizioni parzialmente vere non producono
+suggerimento:
+
+| Condizione rilevata | Suggerimento emesso |
+|---|---|
+| Sprint ha TSK `layer=fe` + `fe_correctness.visual_oracle.enabled: false` | Considera `/visual-oracle` |
+| Sprint ha TSK `layer=fe` + `a11y.enabled: false` | Considera `/a11y` |
+| ≥3 TSK `status: done` nella settimana corrente + `analytics.measurement.enabled: true` | Considera `/analytics` |
+| ≥1 epic con `status: open` + nessuna entry premortem in `wiki/log.md` per quella epic | Considera `/premortem <epic-id>` |
+| `wiki/log.md` ultima entry > 30 giorni fa | Considera `/semantic-drift-scan` o `/lint` |
+| Sprint ha TSK `layer=fe` o `layer=be` + `code_quality.enabled: false` | Considera `/review` |
+
+### Verifica installazione (gate per-suggerimento)
+
+Prima di emettere **ogni singolo suggerimento**, verificare che il file
+`.claude/commands/<comando>.md` esista nel repo corrente. Se il file non esiste →
+suggerimento **soppresso silenziosamente** (nessun warning, nessuna riga di output).
+Questo garantisce che non vengano mai suggerite capability non presenti nella factory
+derivata.
+
+Esempio: se la regola `/a11y` scatta ma `.claude/commands/a11y.md` non è scaffoldato
+→ il suggerimento `/a11y` non appare nell'output.
+
+### Formato output
+
+**Solo se ≥1 suggerimento rilevante (e non soppresso dal gate installazione)**,
+appendere in coda all'output di `/run` la sezione seguente:
+
+```
+## Suggerimenti contestuali
+
+Basato sul contesto dello sprint corrente:
+- Considera `/a11y`: hai TSK FE in coda e `a11y.enabled` e' spento.
+- Considera `/analytics`: 4 TSK completati questa settimana — un report costi potrebbe essere utile.
+- Considera `/premortem EP-033`: epic EP-033 aperta senza premortem in wiki/log.md.
+```
+
+Se 0 suggerimenti rilevanti (o tutti soppressi dal gate installazione) → la sezione
+**non compare** nell'output (output condizionale, mai placeholder vuoto).
+
+### Tono
+
+I suggerimenti usano sempre formule non imperative: "Considera", "Potresti valutare".
+Mai "Devi", mai forme imperative. I suggerimenti sono informativi e opzionali,
+mai prescrittivi.
+
+### Backward compat
+
+Su factory derivate che non hanno installato le capability suggerite
+(`.claude/commands/<comando>.md` assente), tutte le verifiche di installazione
+risultano negative → nessun suggerimento sopravvive al gate → nessun output Fase 6.
+Il comportamento di `/run` è identico a v2.23. La sezione è puramente additiva (R.P3).

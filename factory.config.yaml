@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.21"   # bump 2.19→2.21 (2026-06-15): upgrade a v2.20 (FE Functional Oracle EP-018) + v2.21 (Design Intelligence Layer EP-019 + Token Ledger EP-022). Tutte le capabilities abilitate.
+pattern_version: "2.24"   # bump 2.21→2.24 (2026-06-26): upgrade a v2.23 (Semantic Drift Detection EP-031) + v2.24 (Runtime Contextual Suggestions EP-033).
 
 owner: soli92
 language: it
@@ -366,3 +366,18 @@ analytics:
     show_cache_savings: true      # mostra risparmio cache nel one-liner
     auto_call_on_wave_close: false # opt-in: orchestrator chiama --full a wave_close
     pricing_fallback: prefix-based # fallback se pricing.yaml assente
+
+# === Semantic Drift Detection (v2.23, EP-031, PATTERN §25) — opt-in ================
+# Monitora la deriva semantica tra pagine wiki e le sezioni PATTERN.md referenziate
+# tramite il campo frontmatter `pattern_section: "§N"`.
+# Architettura a tre livelli: L1 staleness (always-on, Check 4ag), L2 LLM-judge
+# (manuale via /semantic-drift-scan), L3 embedding coseno (opt-in, questo blocco).
+# Check 4ag (staleness) è SEMPRE attivo indipendentemente da enabled.
+wiki_lint:
+  semantic_check:
+    enabled: false              # opt-in R.P3 — EP-031 research sprint
+    similarity_threshold: 0.75
+    embedding_model: voyage-3
+    cost_warn_usd: 1.0
+    output_report: true
+    output_report_path: "code_quality/reports/"

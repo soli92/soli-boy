@@ -1,4 +1,4 @@
-# PATTERN — Agentic Factory `llm-wiki++` v2.21
+# PATTERN — Agentic Factory `llm-wiki++` v2.24
 
 > Contratto universale agent-agnostic. Qualsiasi runtime (Claude Code, OpenAI Assistants,
 > Cursor, Aider, Gemini, ChatGPT, …) che rispetti questo file può operare sul repo. Gli
