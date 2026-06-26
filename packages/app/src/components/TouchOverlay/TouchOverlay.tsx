@@ -325,6 +325,10 @@ function TouchOverlayInner({
         data-testid="sb-touch-dpad"
       >
         {DPAD_DIRECTIONS.map(({ button, label }) => (
+          // TSK-114 (UX-035) — padding 8px trasparente su tutti i lati per
+          // touch target ≥44px (WCAG 2.5.5 Target Size; le aree toccabili
+          // erano borderline su dispositivi entry-level). Il padding è
+          // invisibile (sfondo trasparente, overflow:visible sul parent).
           <button
             key={button}
             type="button"
@@ -332,6 +336,7 @@ function TouchOverlayInner({
             aria-hidden="true"
             tabIndex={-1}
             data-testid={`sb-touch-dpad-${button}`}
+            style={{ padding: "8px" }}
             onTouchStart={handleTouchStart(button)}
             onTouchEnd={handleTouchEnd(button)}
             onTouchCancel={handleTouchCancel(button)}
@@ -371,7 +376,13 @@ function TouchOverlayInner({
 }
 
 // --------------------------------------------------------------------------
-// Config panel (TSK-061)
+// Config panel (TSK-061 + TSK-114)
+// TSK-114 (US-059, EP-016):
+//   1. Rimosso aria-hidden="true" dal wrapper — il pannello deve essere
+//      accessibile a screen reader e navigazione tastiera.
+//   2. Aggiunto aria-labelledby sull'heading interno (h3, già nel DOM).
+//   3. Focus iniziale sull'heading al mount: screen reader annuncia il contesto.
+//   4. I range input hanno già aria-label (verificato: "Opacità overlay" etc.).
 // --------------------------------------------------------------------------
 
 interface TouchOverlayConfigPanelProps {
@@ -390,6 +401,15 @@ function TouchOverlayConfigPanel({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  // TSK-114 — heading ref per il focus iniziale (annuncia contesto al mount).
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // TSK-114 — focus iniziale sull'heading quando il pannello viene montato.
+  // Consente a screen reader (VoiceOver/NVDA) di annunciare il contesto del
+  // pannello senza che l'utente debba esplorare manualmente.
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -417,17 +437,32 @@ function TouchOverlayConfigPanel({
     gap: "var(--sd-space-sm, 8px)",
   };
 
+  // TSK-114 — id stabile per aria-labelledby del wrapper.
+  const panelHeadingId = "sb-touch-config-panel-heading";
+
   return (
     <div
       ref={panelRef}
       className="sd-card"
       style={panelStyle}
       data-testid="sb-touch-config-panel"
-      aria-hidden="true"
+      role="region"
+      aria-labelledby={panelHeadingId}
+      // TSK-114: aria-hidden RIMOSSO (era "true") — il pannello deve essere
+      // accessibile via screen reader e tastiera (WCAG 4.1.2 Name Role Value).
     >
-      <p className="sb-lbl" style={{ margin: 0 }}>
+      {/* TSK-114 — heading semantico h3 + tabIndex=-1 per focus programmatico.
+          tabIndex=-1 permette focus() via script senza aggiungere lo heading
+          alla sequenza Tab dell'utente. */}
+      <h3
+        id={panelHeadingId}
+        ref={headingRef}
+        className="sb-lbl"
+        tabIndex={-1}
+        style={{ margin: 0, outline: "none" }}
+      >
         Configura overlay
-      </p>
+      </h3>
 
       {/* Opacità */}
       <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>

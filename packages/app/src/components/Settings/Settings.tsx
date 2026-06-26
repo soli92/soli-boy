@@ -336,7 +336,11 @@ export function Settings({
             </li>
           ))}
         </ul>
+        {/* TSK-118 (US-061, EP-017 R-05) — aggiunto type="button" esplicito.
+            Senza type, il bottone dentro <details> potrebbe triggherare submit
+            in un contesto form implicito (WCAG 4.1.2, regola R-05 a11y). */}
         <button
+          type="button"
           className="sb-btn sb-full"
           onClick={() => {
             onSaveProfile?.();

@@ -309,6 +309,141 @@ describe("SaveStatePanel — US-016 / US-018", () => {
     await waitFor(() => expect(svc.listSaveStates).toHaveBeenCalledWith("rom-1"));
   });
 
+  // TSK-112 (US-058, EP-016) — test funzionale dialog conferma elimina save state.
+  // Coprono: apertura dialog, Annulla non elimina, conferma elimina, keyboard Esc.
+
+  it("TSK-112: click Elimina apre dialog di conferma (US-058 AC1)", async () => {
+    const existing = makeSave("rom-1", 0, "ss-dlg-open");
+    const svc = makeService([existing]);
+    render(
+      <SaveStatePanel
+        engine={fakeEngine()}
+        saveService={svc}
+        romId="rom-1"
+        currentCore="gambatte"
+        isRunning
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("sb-savestate-meta-0").textContent).not.toMatch(/vuoto/i);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
+    });
+
+    // Dialog deve apparire nel DOM.
+    const dialog = screen.getByTestId("sb-savestate-delete-dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute("role", "dialog");
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    // Il dialog cita il numero di slot.
+    expect(dialog).toHaveTextContent(/slot 1/i);
+    // deleteSaveState NON deve essere stato ancora chiamato.
+    expect(svc.deleteSaveState).not.toHaveBeenCalled();
+  });
+
+  it("TSK-112: Annulla nel dialog NON elimina e chiude il dialog (US-058 AC2)", async () => {
+    const existing = makeSave("rom-1", 0, "ss-dlg-cancel");
+    const svc = makeService([existing]);
+    render(
+      <SaveStatePanel
+        engine={fakeEngine()}
+        saveService={svc}
+        romId="rom-1"
+        currentCore="gambatte"
+        isRunning
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("sb-savestate-meta-0").textContent).not.toMatch(/vuoto/i);
+    });
+
+    // Apre il dialog.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
+    });
+    expect(screen.getByTestId("sb-savestate-delete-dialog")).toBeInTheDocument();
+
+    // Click Annulla.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("sb-savestate-delete-dialog-cancel"));
+    });
+
+    // Dialog chiuso, nessuna eliminazione.
+    expect(screen.queryByTestId("sb-savestate-delete-dialog")).not.toBeInTheDocument();
+    expect(svc.deleteSaveState).not.toHaveBeenCalled();
+    // Lo slot è ancora occupato.
+    expect(screen.getByTestId("sb-savestate-meta-0").textContent).not.toMatch(/vuoto/i);
+  });
+
+  it("TSK-112: conferma nel dialog elimina lo slot e aggiorna la lista (US-058 AC3)", async () => {
+    const existing = makeSave("rom-1", 0, "ss-dlg-confirm");
+    const svc = makeService([existing]);
+    render(
+      <SaveStatePanel
+        engine={fakeEngine()}
+        saveService={svc}
+        romId="rom-1"
+        currentCore="gambatte"
+        isRunning
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("sb-savestate-meta-0").textContent).not.toMatch(/vuoto/i);
+    });
+
+    // Apre dialog e conferma.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("sb-savestate-delete-dialog-confirm"));
+    });
+
+    // deleteSaveState invocato con l'id corretto.
+    expect(svc.deleteSaveState).toHaveBeenCalledWith("ss-dlg-confirm");
+    // Dialog chiuso.
+    expect(screen.queryByTestId("sb-savestate-delete-dialog")).not.toBeInTheDocument();
+    // Lo slot ora mostra "vuoto".
+    await waitFor(() => {
+      expect(screen.getByTestId("sb-savestate-meta-0").textContent).toMatch(/vuoto/i);
+    });
+  });
+
+  it("TSK-112: click backdrop chiude il dialog senza eliminare (US-058 AC2 — click outside)", async () => {
+    const existing = makeSave("rom-1", 0, "ss-dlg-backdrop");
+    const svc = makeService([existing]);
+    render(
+      <SaveStatePanel
+        engine={fakeEngine()}
+        saveService={svc}
+        romId="rom-1"
+        currentCore="gambatte"
+        isRunning
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("sb-savestate-meta-0").textContent).not.toMatch(/vuoto/i);
+    });
+
+    // Apre dialog.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
+    });
+    const dialog = screen.getByTestId("sb-savestate-delete-dialog");
+    expect(dialog).toBeInTheDocument();
+
+    // Click sul backdrop (parent del dialog — ha il click handler che chiude).
+    await act(async () => {
+      fireEvent.click(dialog);
+    });
+
+    // Dialog chiuso, nessuna eliminazione.
+    expect(screen.queryByTestId("sb-savestate-delete-dialog")).not.toBeInTheDocument();
+    expect(svc.deleteSaveState).not.toHaveBeenCalled();
+  });
+
   it("capabilities.saveStates=false → pannello disabilitato con nota onesta (no claim falsi)", async () => {
     const svc = makeService();
     render(

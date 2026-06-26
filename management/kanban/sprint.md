@@ -353,8 +353,8 @@ DAG Sprint 12:
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-112 | QA: test funzionale dialog elimina SaveStatePanel | US-058 | EP-016 | qa | agent | P1 | S | todo | TSK-111 |
-| TSK-114 | TouchOverlayConfigPanel: rimuovi aria-hidden + focus management + D-pad padding | US-059 | EP-016 | fe | agent | P2 | M | todo | — |
+| TSK-112 | QA: test funzionale dialog elimina SaveStatePanel | US-058 | EP-016 | qa | agent | P1 | S | done | TSK-111 |
+| TSK-114 | TouchOverlayConfigPanel: rimuovi aria-hidden + focus management + D-pad padding | US-059 | EP-016 | fe | agent | P2 | M | done | — |
 | TSK-116 | aria-live stato Player + testo adiacente canvas | US-060 | EP-017 | fe | agent | P1 | S | todo | TSK-103 |
 
 ### Wave 3 — QA manual checks (dopo Wave 2)
@@ -362,8 +362,8 @@ DAG Sprint 12:
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
 | TSK-117 | QA manual check report: heading nav + aria-live (EP-017-US-060) | US-060 | EP-017 | qa | agent | P1 | S | todo | TSK-115, TSK-116 |
-| TSK-118 | Fix type=button su "Salva profilo" in Settings.tsx (R-05) | US-061 | EP-017 | fe | agent | P2 | XS | todo | TSK-114 |
-| TSK-119 | Manual check R-04: AT validation TouchOverlayConfigPanel | US-061 | EP-017 | qa | agent | P2 | M | todo | TSK-114, TSK-118 |
+| TSK-118 | Fix type=button su "Salva profilo" in Settings.tsx (R-05) | US-061 | EP-017 | fe | agent | P2 | XS | done | TSK-114 |
+| TSK-119 | Manual check R-04: AT validation TouchOverlayConfigPanel | US-061 | EP-017 | qa | agent | P2 | M | done | TSK-114, TSK-118 |
 
 DAG Sprint 13:
 - Wave 1 (parallelo): TSK-107 ‖ TSK-108 ‖ TSK-109 ‖ TSK-110 ‖ TSK-111 ‖ TSK-113 ‖ TSK-115

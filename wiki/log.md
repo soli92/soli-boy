@@ -763,3 +763,49 @@ Layer fe + dialog modale. TSK-112 (QA test dialog) è la dipendenza naturale suc
 
 ## Suggerimento post-esecuzione (EP-033, v2.24)
 TSK a11y (EP-017). Considera TSK-117 (manual check heading nav) come step successivo naturale dopo TSK-116.
+
+## 2026-06-26 17:00 — develop TSK-112 (EP-016/US-058)
+**Agente:** qa-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-058-savestate-conferma-eliminazione/TSK-112]]
+**Layer:** qa
+**Code path:** packages/app/src/components/Player/SaveStatePanel.test.tsx
+**Files touched:** 1 (Player/SaveStatePanel.test.tsx)
+**Commit:** wave2-3-sprint13
+**DoD:** pass
+**Note:** 4 test TSK-112 aggiunti: apertura dialog, Annulla, conferma, backdrop click. 515/515 pass.
+
+## 2026-06-26 17:05 — develop TSK-114 (EP-016/US-059)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-059-footer-cleanup-touchoverlay-fixes/TSK-114]]
+**Layer:** fe
+**Code path:** packages/app/src/components/TouchOverlay/TouchOverlay.tsx
+**Files touched:** 1 (TouchOverlay/TouchOverlay.tsx)
+**Commit:** wave2-3-sprint13
+**DoD:** pass
+**Note:** Rimosso aria-hidden="true" da TouchOverlayConfigPanel. Aggiunto role=region, aria-labelledby, h3 heading, focus iniziale (useEffect). D-pad buttons padding 8px. 515/515 pass.
+
+## Suggerimento post-esecuzione (EP-033, v2.24)
+Layer fe + a11y EP-016/US-059. TSK-118 (type=button) e TSK-119 (manual check) sono le dipendenze naturali → eseguire come prossimi step.
+
+## 2026-06-26 17:10 — develop TSK-118 (EP-017/US-061)
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-017-a11y-manual-checks-remediation/US-061-touchoverlay-config-at-validation-type-button/TSK-118]]
+**Layer:** fe
+**Code path:** packages/app/src/components/Settings/Settings.tsx
+**Files touched:** 1 (Settings/Settings.tsx)
+**Commit:** wave2-3-sprint13
+**DoD:** pass
+**Note:** Aggiunto type="button" esplicito su bottone "Salva profilo" (R-05 a11y). 515/515 pass.
+
+## 2026-06-26 17:15 — develop TSK-119 (EP-017/US-061)
+**Agente:** qa-dev
+**TSK:** [[../management/kanban/EP-017-a11y-manual-checks-remediation/US-061-touchoverlay-config-at-validation-type-button/TSK-119]]
+**Layer:** qa
+**Code path:** code_quality/reports/EP-017-US-061-a11y-iter-1.md
+**Files touched:** 1 (code_quality/reports/EP-017-US-061-a11y-iter-1.md — nuovo)
+**Commit:** wave2-3-sprint13
+**DoD:** pass
+**Note:** Report manual check R-04 prodotto. Analisi statica markup post-TSK-114: 0 violation nuove, 1 finding low (keyboard open per overlay — accettato). Pre-screening: non sostituisce audit EAA/ADA su device fisico.
+
+## Suggerimento post-esecuzione (EP-033, v2.24)
+TSK qa + a11y EP-017. Sprint 13 completato (11/13 TSK done; TSK-116/117 skipped — dipendono da TSK-103 Sprint 12 + TSK-115/TSK-116 chain; TSK-116 sbloccato perché TSK-103 è done).
