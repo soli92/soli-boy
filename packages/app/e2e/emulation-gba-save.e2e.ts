@@ -10,7 +10,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { gotoApp, uploadRom } from "./helpers/app-nav";
+import { gotoApp, selectLibraryTileAndAutoStart, uploadRom } from "./helpers/app-nav";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const GBA_ROM = process.env.SOLIBOY_E2E_GBA_ROM ?? "gba-tests-thumb.gba";
@@ -19,6 +19,20 @@ const romTitle = GBA_ROM.replace(/\.[^.]+$/, "");
 
 const SLOT = 0;
 const SLOT_LABEL = SLOT + 1;
+
+/** Accessible name tile Libreria: "titolo GBA" (vedi Library.tsx GameTile). */
+const libraryTileName = `${romTitle} GBA`;
+
+async function startGbaReal(page: import("@playwright/test").Page) {
+  await gotoApp(page, "/?engine=real");
+  await uploadRom(page, romPath);
+  await selectLibraryTileAndAutoStart(page, libraryTileName, {
+    runningTimeout: 30_000,
+  });
+  await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible();
+  await expect(page.locator('.sb-app .sb-note[role="alert"]')).not.toBeVisible();
+}
 
 test.describe("save/load state reale (MgbaEngine, GBA)", () => {
   test.describe.configure({ mode: "serial" });
@@ -30,16 +44,7 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
 
   test("salva stato nello slot 1 → slot occupato, nessun errore", async ({ page }) => {
     test.slow();
-    await gotoApp(page, "/?engine=real");
-    await uploadRom(page, romPath);
-    await expect(page.getByText(romTitle)).toBeVisible();
-    await page.getByText(romTitle).click();
-    await page.getByRole("button", { name: /avvia/i }).click();
-    await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
-    // Gate WASM init: save/load prima di data-state=running causa flake mGBA in CI.
-    await expect(page.locator(".sb-screen")).toHaveAttribute("data-state", "running", {
-      timeout: 15_000,
-    });
+    await startGbaReal(page);
 
     const saveBtn = page.getByRole("button", { name: `Salva nello slot ${SLOT_LABEL}` });
     await expect(saveBtn).toBeEnabled({ timeout: 5_000 });
@@ -57,16 +62,7 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
 
   test("salva stato → carica stato: nessun errore, canvas resta visibile", async ({ page }) => {
     test.slow();
-    await gotoApp(page, "/?engine=real");
-    await uploadRom(page, romPath);
-    await expect(page.getByText(romTitle)).toBeVisible();
-    await page.getByText(romTitle).click();
-    await page.getByRole("button", { name: /avvia/i }).click();
-    await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
-    // Gate WASM init: save/load prima di data-state=running causa flake mGBA in CI.
-    await expect(page.locator(".sb-screen")).toHaveAttribute("data-state", "running", {
-      timeout: 15_000,
-    });
+    await startGbaReal(page);
 
     const saveBtn = page.getByRole("button", { name: `Salva nello slot ${SLOT_LABEL}` });
     await expect(saveBtn).toBeEnabled({ timeout: 5_000 });

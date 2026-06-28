@@ -87,3 +87,28 @@ export async function openControlsRemapAccordion(page: Page): Promise<void> {
   }
   await expect(page.getByLabel("Pulsante per ArrowUp")).toBeVisible();
 }
+
+/**
+ * Seleziona una ROM in Libreria (auto-start TSK-100) e attende `data-state=running`.
+ * Gestisce il gate "Cambia gioco?" (TSK-101).
+ *
+ * Non clicca "Avvia": un secondo avvio su engine reali (mGBA/WasmBoy) può far
+ * fallire `loadGame` con alert `MgbaEngine.load: loadGame fallito` (flake CI).
+ */
+export async function selectLibraryTileAndAutoStart(
+  page: Page,
+  tileName: string | RegExp,
+  options?: { screenSelector?: string; runningTimeout?: number },
+): Promise<void> {
+  const tile = page.getByRole("button", { name: tileName });
+  await expect(tile).toBeVisible();
+  await tile.click();
+  const changeDialog = page.getByRole("dialog", { name: /cambia gioco/i });
+  if (await changeDialog.isVisible()) {
+    await page.getByRole("button", { name: /cambia gioco/i }).click();
+  }
+  const screen = page.locator(options?.screenSelector ?? ".sb-screen");
+  await expect(screen).toHaveAttribute("data-state", "running", {
+    timeout: options?.runningTimeout ?? 30_000,
+  });
+}

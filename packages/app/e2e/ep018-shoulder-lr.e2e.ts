@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { gotoApp, gotoStubApp, uploadRom } from "./helpers/app-nav";
+import { gotoApp, gotoStubApp, selectLibraryTileAndAutoStart, uploadRom } from "./helpers/app-nav";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const GBA_ROM = process.env.SOLIBOY_E2E_GBA_ROM ?? "gba-tests-thumb.gba";
@@ -28,7 +28,7 @@ async function readJsErrors(page: import("@playwright/test").Page): Promise<stri
   );
 }
 
-/** Carica ROM GB stub e avvia (auto-start libreria). */
+/** Carica ROM GB stub e avvia (auto-start libreria, TSK-100). */
 async function startStubGb(page: import("@playwright/test").Page) {
   await page.addInitScript(() => indexedDB.deleteDatabase("soli-boy"));
   await gotoStubApp(page);
@@ -37,15 +37,8 @@ async function startStubGb(page: import("@playwright/test").Page) {
     mimeType: "application/octet-stream",
     buffer: Buffer.from("ROMDATA-EP018-GB"),
   });
-  const tile = page.getByRole("button", { name: "ep018-test GB" });
-  await expect(tile).toBeVisible();
-  await tile.click();
-  const changeDialog = page.getByRole("dialog", { name: /cambia gioco/i });
-  if (await changeDialog.isVisible()) {
-    await page.getByRole("button", { name: /cambia gioco/i }).click();
-  }
+  await selectLibraryTileAndAutoStart(page, "ep018-test GB");
   await expect(page.getByLabel("Schermo di gioco")).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByLabel("Schermo di gioco")).toHaveAttribute("data-state", "running");
 }
 
 test.describe("EP-018 shoulder L/R — tastiera (TSK-124)", () => {
@@ -77,9 +70,9 @@ test.describe("EP-018 shoulder L/R — tastiera (TSK-124)", () => {
     await installJsErrorCollector(page);
     await gotoApp(page, "/?engine=real");
     await uploadRom(page, gbaRomPath);
-    await expect(page.getByText(gbaRomTitle)).toBeVisible();
-    await page.getByText(gbaRomTitle).click();
-    await page.getByRole("button", { name: /avvia/i }).click();
+    await selectLibraryTileAndAutoStart(page, `${gbaRomTitle} GBA`, {
+      runningTimeout: 30_000,
+    });
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
 
     await page.keyboard.press("q");
