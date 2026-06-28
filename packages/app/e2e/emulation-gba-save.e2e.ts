@@ -10,7 +10,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { uploadRom } from "./helpers/app-nav";
+import { gotoApp, uploadRom } from "./helpers/app-nav";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const GBA_ROM = process.env.SOLIBOY_E2E_GBA_ROM ?? "gba-tests-thumb.gba";
@@ -30,7 +30,7 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
 
   test("salva stato nello slot 1 → slot occupato, nessun errore", async ({ page }) => {
     test.slow();
-    await page.goto("/?engine=real");
+    await gotoApp(page, "/?engine=real");
     await uploadRom(page, romPath);
     await expect(page.getByText(romTitle)).toBeVisible();
     await page.getByText(romTitle).click();
@@ -57,7 +57,7 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
 
   test("salva stato → carica stato: nessun errore, canvas resta visibile", async ({ page }) => {
     test.slow();
-    await page.goto("/?engine=real");
+    await gotoApp(page, "/?engine=real");
     await uploadRom(page, romPath);
     await expect(page.getByText(romTitle)).toBeVisible();
     await page.getByText(romTitle).click();

@@ -46,15 +46,22 @@ export async function expectStoreComplianceNotice(page: Page): Promise<void> {
   ).toContainText(/non include, distribuisce né supporta/i);
 }
 
-/** Naviga con StubEngine e attende il boot UI. */
-export async function gotoStubApp(page: Page, path = "/?engine=stub"): Promise<void> {
+/** Naviga e attende il boot UI (tab bar visibile). */
+export async function gotoApp(page: Page, path = "/"): Promise<void> {
   await page.goto(path);
   await waitForAppBoot(page);
 }
 
+/** Naviga con StubEngine e attende il boot UI. */
+export async function gotoStubApp(page: Page, path = "/?engine=stub"): Promise<void> {
+  await gotoApp(page, path);
+}
+
 /** Apre il panel Libreria (FileLoader montato solo con `activeTab === "library"`). */
 export async function openLibraryTab(page: Page): Promise<void> {
+  await waitForAppBoot(page);
   await page.getByRole("tab", { name: "Libreria" }).click();
+  await expect(page.locator("#panel-library")).toBeVisible();
   await expect(page.getByLabel("Carica ROM")).toBeAttached();
 }
 

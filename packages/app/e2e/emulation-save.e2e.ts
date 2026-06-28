@@ -13,7 +13,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { uploadRom } from "./helpers/app-nav";
+import { gotoApp, uploadRom } from "./helpers/app-nav";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const FREE_ROM = process.env.SOLIBOY_E2E_ROM ?? "dmg-acid2.gb";
@@ -40,7 +40,7 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
   }) => {
     test.slow(); // WasmBoy richiede tempo per caricare il WASM e avviare l'emulazione.
 
-    await page.goto("/?engine=real");
+    await gotoApp(page, "/?engine=real");
 
     // Carica la ROM libera tramite file input.
     await uploadRom(page, romPath);
@@ -91,7 +91,7 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
     // di screenRef. Il selettore `.sb-screen canvas` continua a matchare.
     test.slow();
 
-    await page.goto("/?engine=real");
+    await gotoApp(page, "/?engine=real");
 
     await uploadRom(page, romPath);
     await expect(page.getByText(romTitle)).toBeVisible();
@@ -131,7 +131,7 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
   }) => {
     test.slow();
 
-    await page.goto("/?engine=real");
+    await gotoApp(page, "/?engine=real");
 
     await uploadRom(page, romPath);
     await expect(page.getByText(romTitle)).toBeVisible();
