@@ -120,4 +120,43 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
     // re-render React conseguenti a `handleLoad`.
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 5_000 });
   });
+
+  test("elimina save state: dialog Annulla mantiene slot, conferma svuota slot", async ({
+    page,
+  }) => {
+    test.slow();
+
+    await page.goto("/?engine=real");
+
+    await page.getByLabel("Carica ROM").setInputFiles(romPath);
+    await page.getByRole("tab", { name: "Libreria" }).click();
+    await expect(page.getByText(romTitle)).toBeVisible();
+    await page.getByText(romTitle).click();
+    await page.getByRole("button", { name: /avvia/i }).click();
+    await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
+
+    const saveBtn = page.getByRole("button", { name: `Salva nello slot ${SLOT_LABEL}` });
+    await expect(saveBtn).toBeEnabled({ timeout: 5_000 });
+    await saveBtn.click();
+
+    const slotMeta = page.getByTestId(`sb-savestate-meta-${SLOT}`);
+    await expect(slotMeta).not.toHaveText("vuoto", { timeout: 5_000 });
+
+    const deleteBtn = page.getByRole("button", { name: `Elimina slot ${SLOT_LABEL}` });
+    await deleteBtn.click();
+
+    const dialog = page.getByTestId("delete-savestate-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: /eliminare save state/i })).toBeVisible();
+
+    await dialog.getByRole("button", { name: "Annulla" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(slotMeta).not.toHaveText("vuoto");
+
+    await deleteBtn.click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Elimina" }).click();
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
+    await expect(slotMeta).toHaveText("vuoto", { timeout: 5_000 });
+  });
 });

@@ -209,9 +209,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     fireEvent.click(screen.getByRole("tab", { name: /play/i }));
 
     // HUD del Player mostra ancora "Tetris" (ROM A) e "In esecuzione".
-    const hud = await screen.findByRole("status", {
-      name: /stato giocatore/i,
-    });
+    const hud = await screen.findByLabelText("Stato giocatore");
     expect(hud).toHaveTextContent("Tetris");
     expect(hud).toHaveTextContent("In esecuzione");
   });
@@ -228,7 +226,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     });
     await screen.findByRole("button", { name: /pausa/i });
     expect(
-      screen.getByRole("status", { name: /stato giocatore/i }),
+      screen.getByLabelText("Stato giocatore"),
     ).toHaveTextContent("Tetris");
 
     // Tap'a ROM_B → dialog.
@@ -253,9 +251,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     });
 
     // Il Player ora mostra "Pokemon Red" e ri-parte (autoStart è ON).
-    const hud = await screen.findByRole("status", {
-      name: /stato giocatore/i,
-    });
+    const hud = await screen.findByLabelText("Stato giocatore");
     await waitFor(() => {
       expect(hud).toHaveTextContent("Pokemon Red");
     });
@@ -298,9 +294,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     fireEvent.click(screen.getByRole("tab", { name: /play/i }));
 
     // ROM A ancora attiva.
-    const hud = await screen.findByRole("status", {
-      name: /stato giocatore/i,
-    });
+    const hud = await screen.findByLabelText("Stato giocatore");
     expect(hud).toHaveTextContent("Tetris");
     expect(hud).toHaveTextContent("In esecuzione");
   });

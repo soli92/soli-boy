@@ -1,5 +1,7 @@
 # Acceptance-spec soli-boy — flusso core: carica ROM → avvia → emulazione gira
 # Schema: .claude/schemas/acceptance-spec.schema.yaml (EP-018, ADR-065).
+# Scenario correlato delete-savestate-confirm (TSK-112):
+#   code_quality/acceptance/soliboy-savestate-delete.acceptance.yaml
 # Il FRAMEWORK possiede lo schema; QUESTO file (contenuto, dominio soli-boy) lo possiede il progetto.
 # Fixture: gba-tests-thumb.gba — test ROM mGBA, freely distributable (NO ROM commerciali, ADR-066/TSK-155).
 

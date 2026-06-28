@@ -5,13 +5,21 @@
 // siano corretti in tutti e 3 gli stati (idle, running, paused).
 // Visual oracle DOM (AC1 proxy): verifica presenza/assenza overlay per stato.
 
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EmulatorEngine } from "../../core/core-wrapper";
 import { Player } from "./Player";
 
 // ---------------------------------------------------------------------------
-// Shared factory: fakeEngine per test isolati dal runtime reale.
+// Helper — HUD container + live region stato (TSK-116: live sul solo span stato)
+// ---------------------------------------------------------------------------
+function getHudContainer(): HTMLElement {
+  return screen.getByLabelText("Stato giocatore");
+}
+
+function getHudLiveState(): HTMLElement {
+  return within(getHudContainer()).getByRole("status");
+}
 // Replica la firma di Player.test.tsx per coerenza interna al test suite.
 // ---------------------------------------------------------------------------
 function fakeEngine(): EmulatorEngine {
@@ -49,7 +57,7 @@ describe("TSK-104 AC1 — HUD Player: stato idle / running / paused (DOM proxy v
         title="Super Mario Land"
       />,
     );
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
     expect(hud).toHaveTextContent("Super Mario Land");
     expect(hud).toHaveTextContent("Premi Avvia");
     expect(screen.getByRole("button", { name: /avvia/i })).toBeInTheDocument();
@@ -69,7 +77,7 @@ describe("TSK-104 AC1 — HUD Player: stato idle / running / paused (DOM proxy v
     });
     await screen.findByRole("button", { name: /pausa/i });
 
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
     expect(hud).toHaveTextContent("Tetris");
     expect(hud).toHaveTextContent("In esecuzione");
     expect(screen.queryByTestId("pause-overlay")).not.toBeInTheDocument();
@@ -91,7 +99,7 @@ describe("TSK-104 AC1 — HUD Player: stato idle / running / paused (DOM proxy v
 
     await screen.findByTestId("pause-overlay");
 
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
     expect(hud).toHaveTextContent("Pokemon Yellow");
     expect(hud).toHaveTextContent("In pausa");
     expect(screen.getByRole("button", { name: /riprendi/i })).toBeInTheDocument();
@@ -121,7 +129,7 @@ describe("TSK-104 AC2 — Functional oracle: play -> pause -> aria-live + overla
     fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
 
     // AC2 primary assertion: [aria-live] container contiene "In pausa"
-    const ariaLiveContainer = screen.getByRole("status", { name: /stato giocatore/i });
+    const ariaLiveContainer = getHudLiveState();
     await waitFor(() => {
       expect(ariaLiveContainer).toHaveTextContent("In pausa");
     });
@@ -167,7 +175,7 @@ describe("TSK-104 AC2 — Functional oracle: play -> pause -> aria-live + overla
     await waitFor(() => {
       expect(screen.queryByTestId("pause-overlay")).not.toBeInTheDocument();
     });
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
     expect(hud).toHaveTextContent("In esecuzione");
     expect(hud).not.toHaveTextContent("In pausa");
   });
@@ -180,7 +188,7 @@ describe("TSK-104 AC2 — Functional oracle: play -> pause -> aria-live + overla
         title="Zelda"
       />,
     );
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
 
     // idle
     expect(hud).toHaveTextContent("Premi Avvia");
@@ -229,11 +237,10 @@ describe("TSK-104 AC3 — A11y attributi ARIA: struttura post-TSK-103 (proxy DOM
         title="Test"
       />,
     );
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
-    expect(hud).toHaveAttribute("role", "status");
-    expect(hud).toHaveAttribute("aria-live", "polite");
-    expect(hud).toHaveAttribute("aria-atomic", "true");
-    expect(hud).toHaveAttribute("aria-label", "Stato giocatore");
+    const hudState = getHudLiveState();
+    expect(hudState).toHaveAttribute("role", "status");
+    expect(hudState).toHaveAttribute("aria-live", "polite");
+    expect(hudState).toHaveAttribute("aria-atomic", "true");
   });
 
   it("schermo di gioco: aria-label='Schermo di gioco', data-state='idle' all'avvio", () => {
@@ -327,7 +334,7 @@ describe("TSK-104 AC1 proxy — HUD_STATE_LABELS: copertura stati idle/loaded/ru
         title="Test"
       />,
     );
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
     expect(hud).toHaveTextContent("Premi Avvia");
   });
 
@@ -343,7 +350,7 @@ describe("TSK-104 AC1 proxy — HUD_STATE_LABELS: copertura stati idle/loaded/ru
       fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
     });
     await screen.findByRole("button", { name: /pausa/i });
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
     expect(hud).toHaveTextContent("In esecuzione");
   });
 
@@ -361,7 +368,7 @@ describe("TSK-104 AC1 proxy — HUD_STATE_LABELS: copertura stati idle/loaded/ru
     await screen.findByRole("button", { name: /pausa/i });
     fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
     await waitFor(() => {
-      const hud = screen.getByRole("status", { name: /stato giocatore/i });
+      const hud = getHudContainer();
       expect(hud).toHaveTextContent("In pausa");
     });
   });
@@ -373,7 +380,63 @@ describe("TSK-104 AC1 proxy — HUD_STATE_LABELS: copertura stati idle/loaded/ru
         rom={{ rom: new Blob(["x"]), core: "gambatte" }}
       />,
     );
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = getHudContainer();
     expect(hud).toHaveTextContent("Nessun gioco selezionato");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TSK-116 — Canvas status adiacente: contesto "Gioco corrente" + aria-live
+// ---------------------------------------------------------------------------
+describe("TSK-116 — Canvas status adiacente al viewport", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("mostra 'Gioco corrente: [title] — [stato]' in idle", () => {
+    render(
+      <Player
+        engine={fakeEngine()}
+        rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        title="Metroid"
+      />,
+    );
+    const canvasStatus = screen.getByTestId("sb-canvas-status");
+    expect(canvasStatus).toHaveTextContent("Gioco corrente: Metroid — Premi Avvia");
+    expect(canvasStatus).toHaveAttribute("role", "status");
+    expect(canvasStatus).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("canvas-host referenzia il testo adiacente via aria-describedby", () => {
+    render(
+      <Player
+        engine={fakeEngine()}
+        rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        title="Metroid"
+      />,
+    );
+    expect(screen.getByTestId("sb-canvas-host")).toHaveAttribute(
+      "aria-describedby",
+      "sb-canvas-status",
+    );
+  });
+
+  it("dopo play → pause: canvas status contiene 'In pausa'", async () => {
+    render(
+      <Player
+        engine={fakeEngine()}
+        rom={{ rom: new Blob(["x"]), core: "gambatte" }}
+        title="Kirby"
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /avvia/i }));
+    });
+    await screen.findByRole("button", { name: /pausa/i });
+    fireEvent.click(screen.getByRole("button", { name: /pausa/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sb-canvas-status")).toHaveTextContent(
+        "Gioco corrente: Kirby — In pausa",
+      );
+    });
   });
 });

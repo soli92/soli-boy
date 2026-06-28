@@ -695,3 +695,16 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 2026-06-28 | fe-dev | develop TSK-111 → done | SaveStatePanel.tsx | Dialog conferma eliminazione save state (focus trap Esc/Tab).
 2026-06-28 | fe-dev | develop TSK-113 → done | App.tsx | LegalNotice rimosso dal footer (resta in tab Info).
 2026-06-28 | fe-dev | develop TSK-115 → done | PrivacyNotice, StoreComplianceNotice, Settings.tsx, app-extra.css | Heading semantici h2/h3 (sb-lbl preservata).
+
+## 2026-06-28 — wave sprint-13 (Wave 2, EP-016 + EP-017)
+**Levels:** 2 (3 parallel: TSK-112 qa + TSK-114/116 fe)
+**Dispatched:** 3 TSK (3 ok, 0 failed)
+**Failed:** —
+**Note:** Wave dispatch Sprint 13 Wave 2 — SaveState delete oracle, TouchOverlay a11y, Player canvas status.
+
+2026-06-28 | orchestrator | wave | sprint-13-wave-2 | TSK-112,114,116 done · 521/521 test · tsc OK
+
+2026-06-28 | qa-dev | develop TSK-112 → done | soliboy-savestate-delete.acceptance.yaml, emulation-save.e2e.ts | Scenario delete-savestate-confirm + functional oracle report.
+2026-06-28 | fe-dev | develop TSK-114 → done | TouchOverlay.tsx, app-extra.css | Config panel senza aria-hidden + heading h3; D-pad padding 8px.
+2026-06-28 | fe-dev | develop TSK-116 → done | Player.tsx, Player.hud.test.tsx, app-extra.css, EP-017-US-060-a11y-iter-1.md | aria-live HUD + canvas status adiacente.
+
