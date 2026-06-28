@@ -10,7 +10,10 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/?engine=stub");
 });
 
-test("avviso legale visibile all'avvio", async ({ page }) => {
+test("avviso legale in tab Info & Privacy (TSK-006 / IA 4 tab)", async ({ page }) => {
+  // Al primo avvio: banner privacy (TSK-069); LegalNotice vive nel panel Info.
+  await expect(page.getByTestId("sb-privacy-banner")).toBeVisible();
+  await page.getByRole("tab", { name: "Info & Privacy" }).click();
   await expect(page.getByRole("note", { name: /avviso legale/i })).toContainText(
     /non distribuisce/i,
   );

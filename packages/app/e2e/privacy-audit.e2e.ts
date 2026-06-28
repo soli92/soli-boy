@@ -97,8 +97,8 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
     page,
   }) => {
     await page.goto("/");
-    // Attendi che l'app sia caricata (avviso legale visibile).
-    await expect(page.getByRole("note", { name: /avviso legale/i })).toBeVisible({
+    // Attendi che l'app sia caricata (banner privacy primo avvio, TSK-069).
+    await expect(page.getByTestId("sb-privacy-banner")).toBeVisible({
       timeout: 10_000,
     });
 
@@ -204,7 +204,7 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
     // StubEngine non usa WASM, ma verifichiamo che il framework non emetta
     // richieste CDN per risorse engine durante la navigazione base.
     await page.goto("/?engine=stub");
-    await expect(page.getByRole("note", { name: /avviso legale/i })).toBeVisible({
+    await expect(page.getByTestId("sb-privacy-banner")).toBeVisible({
       timeout: 10_000,
     });
 
@@ -249,7 +249,7 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
     page,
   }) => {
     await page.goto("/?engine=stub");
-    await expect(page.getByRole("note", { name: /avviso legale/i })).toBeVisible({
+    await expect(page.getByTestId("sb-privacy-banner")).toBeVisible({
       timeout: 10_000,
     });
 
