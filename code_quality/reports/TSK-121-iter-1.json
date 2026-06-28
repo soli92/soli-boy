@@ -1,0 +1,53 @@
+{
+  "tsk_id": "TSK-121",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "19.2.7",
+    "secondary_libs": [
+      "vite@8.0.16",
+      "vitest@4.1.8",
+      "@testing-library/react",
+      "typescript@6.0.3"
+    ],
+    "patterns_expected": [
+      "hooks",
+      "concurrent_mode_compatible",
+      "strict_mode",
+      "functional_components"
+    ],
+    "ruleset_id": "typescript.react.v19",
+    "confidence": 0.95,
+    "evidence": [
+      { "type": "manifest", "file": "packages/app/package.json", "weight": 0.5 },
+      { "type": "config",   "file": "packages/app/tsconfig.json", "weight": 0.15 },
+      { "type": "config",   "file": "packages/app/vite.config.ts", "weight": 0.05 },
+      { "type": "import",   "file": "packages/app/src/components/Settings/Settings.tsx", "weight": 0.25, "snippet": "import { useCallback, useEffect, useRef, useState } from 'react'" }
+    ]
+  },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [],
+  "verdict": "pass",
+  "verdict_rationale": "Zero findings across all three passes. The change is a minimal, correct data-driven addition of two string literals ('l', 'r') to the BUTTONS: GameButton[] constant. TypeScript compile-time enforcement (GameButton union type) validates correctness statically; 530/530 Vitest tests pass; tsc --noEmit clean. No idiomaticity violations, no design or SRP concerns, no robustness/boundary issues introduced.",
+  "summary": "TSK-121 adds 'l' and 'r' to the BUTTONS array in Settings.tsx following the data-driven pattern already established by the component. The change is surgically minimal: only the constant definition is touched, the rendering pipeline is unaffected, and the GameButton type annotation provides compile-time exhaustiveness gating. All canonical rules applicable to the typescript.react.v19 stack (TS-IDIOM-001/002, REACT-IDIOM-001, REACT-A11Y-001, TS-DESIGN-001/002, TS-ROBUST-001, QA-TEST-001) were evaluated against the files in scope; none are triggered. The implementation is consistent with the pattern used for all other BUTTONS entries and aligns with the companion changes in TSK-120 (DEFAULT_KEY_PROFILE q→l, w→r).",
+  "markers": {
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false,
+    "degraded": false,
+    "scope_inferred": false
+  },
+  "files_modified_by_fix": [
+    "packages/app/src/components/Settings/Settings.tsx"
+  ],
+  "linter_output": {
+    "tool": "tsc --noEmit",
+    "exit_code": 0,
+    "errors": 0,
+    "warnings": 0,
+    "note": "ESLint v10 requires eslint.config.js (flat config); project uses legacy .eslintrc not yet migrated. tsc clean is the authoritative static check for this run."
+  },
+  "generated_at": "2026-06-28T16:09:00Z",
+  "reviewer_version": "code-reviewer@2.12.0"
+}
