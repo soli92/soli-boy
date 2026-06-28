@@ -49,7 +49,10 @@ commands are already documented in `packages/app/README.md` and `packages/app/pa
 ### Token Ledger (EP-022)
 - Capability **ON** in `factory.config.yaml` (`analytics.token_ledger.enabled: true`).
 - **Cursor Cloud Agent**: regola always-on `.cursor/rules/token-ledger-display.mdc` — ogni agente
-  appende l'one-liner `◉ TOKENS ...` a fine attività completata (comando `/token-ledger [--full]`).
-- Script: `python3 .claude/tools/analytics/show-session-tokens.py` — cerca transcript in
-  `~/.claude/projects/...` (Claude Code) o `$AGENT_TRANSCRIPTS` (Cursor). Fail-open se assente.
+  appende l'one-liner `◉ TOKENS ...` a fine attività via `.cursor/tools/token-ledger-display.sh`.
+- **Token reali in Cloud Agent**: aggiungi il secret `CURSOR_API_KEY` (Cursor Dashboard → API Keys)
+  alla configurazione del Cloud Agent. Lo script chiama `GET /v1/agents/{CURSOR_CONVERSATION_ID}/usage`.
+- **Desktop Cursor**: `.cursor/hooks.json` registra usage via hook `afterAgentResponse`/`stop` in
+  `.cursor/.token-ledger-state.json` (nota: questi hook non sono ancora wired su Cloud Agent).
+- Script: `python3 .claude/tools/analytics/show-session-tokens.py --always-print`
 - Fine wave: `auto_call_on_wave_close: true` → box `--full` nel riepilogo orchestrator.

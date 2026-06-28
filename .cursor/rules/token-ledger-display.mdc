@@ -23,21 +23,23 @@ Alla **chiusura di ogni attività** che consegni all'utente, **prima dell'ultima
 1. Esegui (fail-open):
 
 ```bash
-python3 .claude/tools/analytics/show-session-tokens.py 2>/dev/null || true
+.cursor/tools/token-ledger-display.sh
+```
+
+Oppure:
+
+```bash
+python3 .claude/tools/analytics/show-session-tokens.py --always-print
 ```
 
 2. Se lo script stampa output → **appendi verbatim** l'one-liner `◉ TOKENS ...` come **ultima riga** del messaggio (dopo il riepilogo attività).
 
-3. Se stdout è vuoto (Cloud Agent senza transcript JSONL) → appendi:
-
-```
-◉ TOKENS  sessione: n/d (transcript non disponibile)
-```
+3. **Cloud Agent — token reali**: aggiungi `CURSOR_API_KEY` (Dashboard → API Keys) ai **secrets** del Cloud Agent. Lo script interroga `GET /v1/agents/{CURSOR_CONVERSATION_ID}/usage`. Senza API key, lo script stampa comunque un messaggio esplicito (mai silenzio).
 
 4. **Fine wave** (`auto_call_on_wave_close: true`): usa invece `--full` e includi il box nel riepilogo wave:
 
 ```bash
-python3 .claude/tools/analytics/show-session-tokens.py --full 2>/dev/null || true
+.cursor/tools/token-ledger-display.sh --full
 ```
 
 ## Formato

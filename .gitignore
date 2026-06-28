@@ -3,6 +3,9 @@
 # (filesystem = single source of truth, R.G1). Rebuildable da <code_path>.
 .graphify-state/
 
+# Token Ledger side-channel (EP-022) — usage cumulativo da hook Cursor desktop
+.cursor/.token-ledger-state.json
+
 # Node / build (L5 packages/app)
 node_modules/
 dist/
