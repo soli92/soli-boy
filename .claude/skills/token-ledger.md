@@ -110,7 +110,7 @@ La capability è **adapter-agnostic** ma il meccanismo di display varia per adap
 | Adapter | Meccanismo | Note |
 |---|---|---|
 | `.claude/` Claude Code | Claude chiama script esplicitamente + hook Stop (backup) | Chat VS Code non mostra stdout hook; Claude include output inline |
-| `.cursor/` Cursor | Rule in `adapters/cursor/` che invoca lo script equivalente | Richiede script adapter-specifico |
+| Cursor Cloud Agent | `$AGENT_TRANSCRIPTS/**/*.jsonl` + rule `token-ledger-display.mdc` (alwaysApply) | Hook Stop non disponibile; agente invoca script a fine attività |
 | `.aider/` Aider | Hook `after-send` in aider config | Richiede port dello script |
 | Altri | Hook stop/session-end del tool | Adattare path transcript per il tool specifico |
 

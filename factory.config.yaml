@@ -364,5 +364,5 @@ analytics:
     enabled: true                 # master switch — hook Stop attivo in settings.json
     display_mode: compact         # compact (one-liner) | full (box con breakdown)
     show_cache_savings: true      # mostra risparmio cache nel one-liner
-    auto_call_on_wave_close: false # opt-in: orchestrator chiama --full a wave_close
+    auto_call_on_wave_close: true  # orchestrator: --full a fine wave (parallel-scheduling Fase 6)
     pricing_fallback: prefix-based # fallback se pricing.yaml assente

@@ -708,3 +708,5 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 2026-06-28 | fe-dev | develop TSK-114 → done | TouchOverlay.tsx, app-extra.css | Config panel senza aria-hidden + heading h3; D-pad padding 8px.
 2026-06-28 | fe-dev | develop TSK-116 → done | Player.tsx, Player.hud.test.tsx, app-extra.css, EP-017-US-060-a11y-iter-1.md | aria-live HUD + canvas status adiacente.
 
+2026-06-28 | orchestrator | config | token-ledger-cursor-adapter | factory.config.yaml, .cursor/rules/token-ledger-display.mdc | EP-022: auto_call_on_wave_close ON + display a fine attività (Cursor adapter).
+
