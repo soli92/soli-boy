@@ -1,0 +1,55 @@
+---
+description: Token Ledger (EP-022) — append conteggio token a fine ogni attività completata. Capability factory attiva (analytics.token_ledger.enabled).
+globs:
+alwaysApply: true
+---
+
+# Token Ledger — display a fine attività (EP-022)
+
+`factory.config.yaml` → `analytics.token_ledger.enabled: true`.
+
+## Quando
+
+Alla **chiusura di ogni attività** che consegni all'utente, **prima dell'ultima riga** della risposta:
+
+- TSK develop/review completato
+- Wave dispatch chiusa
+- Sprint / task batch terminato
+- Operazione orchestrator (`/run`, `/promote`, heal, publish) con esito finale
+- Qualsiasi task multi-step con riepilogo finale
+
+## Cosa fare
+
+1. Esegui (fail-open):
+
+```bash
+python3 .claude/tools/analytics/show-session-tokens.py 2>/dev/null || true
+```
+
+2. Se lo script stampa output → **appendi verbatim** l'one-liner `◉ TOKENS ...` come **ultima riga** del messaggio (dopo il riepilogo attività).
+
+3. Se stdout è vuoto (Cloud Agent senza transcript JSONL) → appendi:
+
+```
+◉ TOKENS  sessione: n/d (transcript non disponibile)
+```
+
+4. **Fine wave** (`auto_call_on_wave_close: true`): usa invece `--full` e includi il box nel riepilogo wave:
+
+```bash
+python3 .claude/tools/analytics/show-session-tokens.py --full 2>/dev/null || true
+```
+
+## Formato
+
+- Una sola riga compatta in chiusura attività normali.
+- Box `--full` solo a chiusura wave o su richiesta `/token-ledger --full`.
+- Non sostituire il riepilogo tecnico dell'attività; il token ledger è **in coda**.
+
+## Divieti
+
+- Non omettere il display se l'attività è stata completata con esito dichiarato.
+- Non scrivere nell'event store analytics (display-only).
+- Non comprimere o parafrasare l'output dello script.
+
+Skill completa: [token-ledger](mdc:.cursor/rules/skills/token-ledger.mdc).

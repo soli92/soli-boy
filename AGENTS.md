@@ -45,3 +45,11 @@ commands are already documented in `packages/app/README.md` and `packages/app/pa
   "Error parsing the cartridge header" on the first attempt. CI sets `retries: 1`
   (`process.env.CI`) and they pass on retry. Locally, run flaky specs with `CI=1` (or
   `--retries=1`) to mirror CI rather than treating a first-attempt failure as a regression.
+
+### Token Ledger (EP-022)
+- Capability **ON** in `factory.config.yaml` (`analytics.token_ledger.enabled: true`).
+- **Cursor Cloud Agent**: regola always-on `.cursor/rules/token-ledger-display.mdc` — ogni agente
+  appende l'one-liner `◉ TOKENS ...` a fine attività completata (comando `/token-ledger [--full]`).
+- Script: `python3 .claude/tools/analytics/show-session-tokens.py` — cerca transcript in
+  `~/.claude/projects/...` (Claude Code) o `$AGENT_TRANSCRIPTS` (Cursor). Fail-open se assente.
+- Fine wave: `auto_call_on_wave_close: true` → box `--full` nel riepilogo orchestrator.

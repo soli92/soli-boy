@@ -37,6 +37,27 @@ def find_transcript(cwd: str | None = None) -> str | None:
             key=lambda p: p.stat().st_mtime,
             reverse=True,
         )
+        if cand:
+            return str(cand[0])
+    except OSError:
+        pass
+    return find_cursor_transcript()
+
+
+def find_cursor_transcript() -> str | None:
+    """Cursor Cloud Agent / adapter Cursor — AGENT_TRANSCRIPTS (formato JSONL Claude-compatible)."""
+    base = os.environ.get("AGENT_TRANSCRIPTS")
+    if not base:
+        return None
+    root = pathlib.Path(base)
+    if not root.is_dir():
+        return None
+    try:
+        cand = sorted(
+            root.rglob("*.jsonl"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         return str(cand[0]) if cand else None
     except OSError:
         return None
