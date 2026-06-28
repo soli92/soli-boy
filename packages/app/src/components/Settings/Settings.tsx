@@ -312,10 +312,10 @@ export function Settings({
 
   return (
     <section className="sd-card sb-sec" aria-label="Impostazioni controlli">
-      {/* === Accordion 1: Controlli — rimappatura (aperto di default) ======== */}
-      <details open>
-        <summary className="sb-lbl">
-          Controlli — rimappatura
+      {/* === Accordion 1: Controlli — rimappatura (chiuso di default) ====== */}
+      <details>
+        <summary>
+          <h3 className="sb-lbl">Controlli — rimappatura</h3>
         </summary>
         <ul className="sb-keymap">
           {Object.entries(profile).map(([key, button]) => (
@@ -352,12 +352,13 @@ export function Settings({
         )}
       </details>
 
-      {/* === Accordion 2: Resa video — scala e proporzioni (chiuso) ========= */}
+      {/* === Accordion 2: Resa video — scala e proporzioni (aperto) ========== */}
       {/* TSK-036 — Resa video (US-021): scala + aspect ratio. Persistenza via
-          `videoConfigPort` (opzionale); stessa porta consumata da Player. */}
-      <details>
-        <summary className="sb-lbl">
-          Resa video — scala e proporzioni
+          `videoConfigPort` (opzionale); stessa porta consumata da Player.
+          TSK-110 — `open` di default al mount (UX-028). */}
+      <details open>
+        <summary>
+          <h3 className="sb-lbl">Resa video — scala e proporzioni</h3>
         </summary>
         <ul className="sb-keymap" aria-label="Impostazioni resa video">
           <li className="sb-row">
@@ -420,8 +421,8 @@ export function Settings({
           lo stesso markup di prima — niente regressioni. */}
       {theme !== undefined && onThemeChange !== undefined && (
         <details>
-          <summary className="sb-lbl">
-            Aspetto — tema UI
+          <summary>
+            <h3 className="sb-lbl">Aspetto — tema UI</h3>
           </summary>
           <ul className="sb-keymap" aria-label="Impostazioni aspetto">
             <ThemeSelector theme={theme} onThemeChange={onThemeChange} />
@@ -436,8 +437,8 @@ export function Settings({
           queste prop non vedono la sezione. */}
       {hapticsEnabled !== undefined && onHapticsChange !== undefined && (
         <details>
-          <summary className="sb-lbl">
-            Mobile — feedback aptico
+          <summary>
+            <h3 className="sb-lbl">Mobile — feedback aptico</h3>
           </summary>
           <ul className="sb-keymap" aria-label="Impostazioni mobile">
             <li className="sb-row">
@@ -469,8 +470,8 @@ export function Settings({
           non passano queste prop non vedono la sezione (parità haptics/theme). */}
       {autoStartFromLibrary !== undefined && onAutoStartChange !== undefined && (
         <details>
-          <summary className="sb-lbl">
-            Avvio — automatico dalla libreria
+          <summary>
+            <h3 className="sb-lbl">Avvio — automatico dalla libreria</h3>
           </summary>
           <ul className="sb-keymap" aria-label="Impostazioni avvio">
             <li className="sb-row">
@@ -497,8 +498,8 @@ export function Settings({
           se manca `saveService` (es. test legacy senza wiring) o non ci sono
           save state per la ROM selezionata. */}
       <details>
-        <summary className="sb-lbl">
-          Dati — salvataggi (export/import)
+        <summary>
+          <h3 className="sb-lbl">Dati — salvataggi (export/import)</h3>
         </summary>
         <div
           className="sd-flex sd-items-center sd-gap-sm"
@@ -516,11 +517,8 @@ export function Settings({
               titolo): il titolo resta univoco nella DOM (Library tile + Player). */}
           <span className="sb-key" data-testid="sb-data-rom-context">
             {currentRom
-              ? `Gioco corrente: [${currentRom.id.slice(0, 6)}]`
-              : /* Wording deliberatamente distinto da "Nessun gioco" usato da
-                   Library (vedi Library.tsx) per non collidere con l'e2e
-                   `getByText(/nessun gioco/i)` in modalità strict. */
-                "— seleziona una ROM dalla libreria —"}
+              ? `Gioco corrente: ${currentRom.title}`
+              : "Nessun gioco corrente"}
           </span>
         </div>
         <div className="sd-flex sd-items-center sd-gap-sm">
@@ -590,8 +588,8 @@ export function Settings({
           è coerente (vedi StoreComplianceNotice.tsx). Avviso esplicito
           no-ROM protette per conformità store. */}
       <details>
-        <summary className="sb-lbl">
-          Legale
+        <summary>
+          <h3 className="sb-lbl">Legale</h3>
         </summary>
         {/* headingHidden=true: il <summary> sopra funge già da titolo —
             sopprimiamo l'intestazione interna di StoreComplianceNotice
@@ -605,8 +603,8 @@ export function Settings({
           riflette il modello on-device dell'app (ADR-002 §Conseguenze).
           Variante `section`: layout coerente, non dismissibile. */}
       <details>
-        <summary className="sb-lbl">
-          Privacy
+        <summary>
+          <h3 className="sb-lbl">Privacy</h3>
         </summary>
         {/* headingHidden=true: il <summary> sopra funge già da titolo —
             sopprimiamo l'intestazione interna di PrivacyNotice

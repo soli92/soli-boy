@@ -19,7 +19,7 @@
 //   bottone ha un aria-label esplicito che cita lo slot ("Salva nello slot N",
 //   "Carica slot N", "Elimina slot N") perché il label visibile è breve.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { EmulatorEngine } from "../../core/core-wrapper";
 import type { LoadStateResult } from "../../domain/save-service";
 import type { Core } from "../../domain/types";
@@ -102,6 +102,7 @@ export function SaveStatePanel({
   const [message, setMessage] = useState<{ kind: "info" | "error"; text: string } | null>(
     null,
   );
+  const [pendingDelete, setPendingDelete] = useState<SaveStateRecord | null>(null);
 
   const refresh = useCallback(async () => {
     if (!romId) {
@@ -189,8 +190,19 @@ export function SaveStatePanel({
     }
   }
 
-  async function handleDelete(rec: SaveStateRecord) {
-    if (disabled) return;
+  function requestDelete(rec: SaveStateRecord) {
+    if (disabled || !rec) return;
+    setPendingDelete(rec);
+  }
+
+  function cancelDelete() {
+    setPendingDelete(null);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete || disabled) return;
+    const rec = pendingDelete;
+    setPendingDelete(null);
     setBusy(true);
     setMessage(null);
     try {
@@ -254,7 +266,7 @@ export function SaveStatePanel({
               <button
                 type="button"
                 className="sb-btn sb-danger"
-                onClick={() => (rec ? handleDelete(rec) : undefined)}
+                onClick={() => (rec ? requestDelete(rec) : undefined)}
                 disabled={disabled || busy || !occupied}
                 aria-label={`Elimina slot ${slot + 1}`}
                 data-testid={`sb-savestate-delete-${slot}`}
@@ -279,6 +291,122 @@ export function SaveStatePanel({
           {message.text}
         </p>
       )}
+      {pendingDelete && (
+        <DeleteSaveStateDialog
+          slotLabel={`Slot ${pendingDelete.slot + 1}`}
+          createdAtLabel={new Date(pendingDelete.createdAt).toLocaleString()}
+          onConfirm={() => void confirmDelete()}
+          onCancel={cancelDelete}
+        />
+      )}
     </section>
+  );
+}
+
+interface DeleteSaveStateDialogProps {
+  slotLabel: string;
+  createdAtLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+/** TSK-111 — Dialog di conferma eliminazione save state. */
+function DeleteSaveStateDialog({
+  slotLabel,
+  createdAtLabel,
+  onConfirm,
+  onCancel,
+}: DeleteSaveStateDialogProps) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onCancel]);
+
+  function onDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Tab") return;
+    const focusables = [cancelRef.current, confirmRef.current].filter(
+      (el): el is HTMLButtonElement => el !== null,
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  return (
+    <div
+      className="sb-dialog-backdrop"
+      onClick={onCancel}
+      data-testid="delete-savestate-backdrop"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0, 0, 0, 0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-savestate-title"
+        aria-describedby="delete-savestate-desc"
+        className="sb-dialog"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={onDialogKeyDown}
+        data-testid="delete-savestate-dialog"
+        style={{
+          background: "var(--sd-color-bg-elevated, #1a1430)",
+          color: "var(--sd-color-text-primary, #f0e9ff)",
+          borderRadius: "var(--sd-radius-md, 8px)",
+          padding: "1.25rem",
+          maxWidth: "24rem",
+          width: "calc(100% - 2rem)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
+        }}
+      >
+        <h2 id="delete-savestate-title" className="sb-lbl" style={{ marginTop: 0 }}>
+          Eliminare save state?
+        </h2>
+        <p id="delete-savestate-desc" className="sb-note" style={{ marginBottom: "1.25rem" }}>
+          {slotLabel} — salvato il {createdAtLabel}
+        </p>
+        <div className="sd-flex sd-gap-sm" style={{ justifyContent: "flex-end" }}>
+          <button ref={cancelRef} type="button" className="sb-btn" onClick={onCancel}>
+            Annulla
+          </button>
+          <button
+            ref={confirmRef}
+            type="button"
+            className="sb-btn sb-danger"
+            onClick={onConfirm}
+          >
+            Elimina
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

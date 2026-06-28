@@ -550,6 +550,16 @@ function AppContent({
     setPendingRom(null);
   }
 
+  // TSK-108 (US-056) — Prima di rimuovere la ROM in esecuzione, ferma il Player.
+  function handleBeforeRemoveRom(romId: string) {
+    if (selected?.id !== romId) return;
+    engine.stop();
+    setSelected(null);
+    setAutoStartFromLibrary(false);
+    setPlayerState("idle");
+    setPendingRom(null);
+  }
+
   return (
     <main className="sb-app">
       <header className="sd-flex sd-items-center sd-between">
@@ -645,13 +655,7 @@ function AppContent({
         {/* CTA FileLoader in stato idle (nessuna ROM selezionata) */}
         {!selected && (
           <div className="sb-play-idle-cta">
-            <p className="sb-note">
-              Seleziona un gioco dalla Libreria per iniziare, oppure carica una ROM:
-            </p>
-            <FileLoader
-              storage={storage}
-              onImported={() => setRefresh((n) => n + 1)}
-            />
+            <p className="sb-note">Nessun gioco selezionato</p>
             <button
               type="button"
               className="sb-btn"
@@ -674,7 +678,9 @@ function AppContent({
           <Library
             key={refresh}
             storage={storage}
+            activeRomId={selected?.id}
             onSelect={handleLibrarySelect}
+            onBeforeRemove={handleBeforeRemoveRom}
           />
           {/* FileLoader canonico in Libreria per importare nuove ROM. */}
           <FileLoader
@@ -752,9 +758,7 @@ function AppContent({
         />
       )}
 
-      <footer>
-        <LegalNotice />
-      </footer>
+      <footer className="sb-app-footer" aria-label="Informazioni app" />
     </main>
   );
 }

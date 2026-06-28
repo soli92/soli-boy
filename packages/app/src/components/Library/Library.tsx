@@ -16,7 +16,7 @@
 // zero-dep — niente nuove dipendenze npm). Vedi gap svg-react-import-strategy.
 
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import logoUrl from "../../assets/soliboy-logo-horizontal.svg";
 import type { Platform } from "../../domain/types";
 import type { CoverPort, StoragePort } from "../../storage/port";
@@ -52,6 +52,16 @@ export interface LibraryProps {
    * gestione di `coverError`).
    */
   onSelect?: (rom: RomRecord) => void;
+  /**
+   * TSK-107 (US-056) — ID della ROM attualmente in esecuzione (da App `selected?.id`).
+   * Se assente, nessuna tile mostra il badge "In gioco".
+   */
+  activeRomId?: string;
+  /**
+   * TSK-108 (US-056) — Invocato prima di `storage.removeRom` quando la ROM
+   * rimossa è quella in esecuzione (App ferma il Player e azzera `selected`).
+   */
+  onBeforeRemove?: (romId: string) => void | Promise<void>;
 }
 
 /** Valore "tutte le piattaforme" del filtro. */
@@ -70,7 +80,7 @@ const PLATFORM_LABELS: Record<PlatformFilter, string> = {
 /** Ordine canonico dei chip (GB e GBC condividono il chip GB-GBC della spec). */
 const PLATFORM_ORDER: Platform[] = ["GB", "GBC", "GBA", "ARCADE"];
 
-export function Library({ storage, onSelect }: LibraryProps) {
+export function Library({ storage, onSelect, activeRomId, onBeforeRemove }: LibraryProps) {
   // TSK-075 — la Library lista i **metadati** (senza fileBlob). Sul NativeFsAdapter
   // elimina N round-trip IPC `readFile` sui binari ROM al caricamento (F-2 CQRL
   // TSK-054). Il `fileBlob` viene caricato lazy via `storage.getRom(id)` al click
@@ -82,6 +92,7 @@ export function Library({ storage, onSelect }: LibraryProps) {
   // (l'utente non perde lista/filtri/scroll).
   const [error, setError] = useState<string | null>(null);
   const [coverError, setCoverError] = useState<string | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<RomMeta | null>(null);
   const [query, setQuery] = useState("");
   const [platform, setPlatform] = useState<PlatformFilter>(ALL);
 
@@ -174,6 +185,31 @@ export function Library({ storage, onSelect }: LibraryProps) {
     [storage],
   );
 
+  const handleRemoveRequest = useCallback((meta: RomMeta) => {
+    setPendingRemove(meta);
+  }, []);
+
+  const handleRemoveCancel = useCallback(() => {
+    setPendingRemove(null);
+  }, []);
+
+  const handleRemoveConfirm = useCallback(async () => {
+    if (!pendingRemove) return;
+    const { id, title } = pendingRemove;
+    const snapshot = roms;
+    setPendingRemove(null);
+    setRoms((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+    setCoverError(null);
+    try {
+      await onBeforeRemove?.(id);
+      await storage.removeRom(id);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (snapshot) setRoms(snapshot);
+      setCoverError(`Impossibile rimuovere "${title}" dalla libreria: ${msg}`);
+    }
+  }, [pendingRemove, roms, onBeforeRemove, storage]);
+
   // TSK-046 — Header della Library con logo brand. Renderizzato in tutti gli
   // stati (error/loading/empty/populated) per coerenza branding. L'alt="Soli-boy"
   // fornisce l'accessible name all'<img> (role=img); l'alt NON è testo nodale
@@ -262,12 +298,22 @@ export function Library({ storage, onSelect }: LibraryProps) {
             <li key={rom.id}>
               <GameTile
                 rom={rom}
+                isActive={activeRomId !== undefined && rom.id === activeRomId}
                 onSelect={() => void handleSelect(rom)}
                 onCoverChange={(file) => void handleCoverChange(rom.id, file)}
+                onRemove={() => handleRemoveRequest(rom)}
               />
             </li>
           ))}
         </ul>
+      )}
+      {pendingRemove && (
+        <RemoveRomConfirmDialog
+          title={pendingRemove.title}
+          isActiveRom={activeRomId !== undefined && pendingRemove.id === activeRomId}
+          onConfirm={() => void handleRemoveConfirm()}
+          onCancel={handleRemoveCancel}
+        />
       )}
     </section>
   );
@@ -310,17 +356,16 @@ function PlatformChip({ value, current, onSelect, label }: PlatformChipProps) {
 // - L'input file è etichettato con "Cambia copertina di <titolo>".
 
 interface GameTileProps {
-  /**
-   * TSK-075 — la tile riceve `RomMeta` (no `fileBlob`): per renderizzare basta
-   * titolo/piattaforma + coverBlob. Il `fileBlob` viene caricato dalla
-   * Library al click via `getRom(id)`.
-   */
   rom: RomMeta;
+  /** TSK-107 — tile della ROM attualmente in esecuzione. */
+  isActive?: boolean;
   onSelect: () => void;
   onCoverChange: (file: File) => void;
+  /** TSK-108 — apre il dialog di conferma rimozione. */
+  onRemove: () => void;
 }
 
-function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
+function GameTile({ rom, isActive = false, onSelect, onCoverChange, onRemove }: GameTileProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -350,7 +395,10 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
   const initial = (rom.title.trim()[0] ?? "?").toUpperCase();
 
   return (
-    <article className="sd-card sb-tile">
+    <article
+      className={"sd-card sb-tile" + (isActive ? " sb-tile-active" : "")}
+      data-active={isActive ? "true" : "false"}
+    >
       <span className="sb-art a-1">
         {rom.coverBlob && coverUrl ? (
           <img
@@ -369,7 +417,12 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
         )}
       </span>
 
-      <button type="button" className="sb-game" onClick={onSelect}>
+      <button
+        type="button"
+        className="sb-game"
+        onClick={onSelect}
+        data-testid={`sb-select-rom-${rom.id}`}
+      >
         {/* Spazio esplicito fra titolo e badge: l'accessible name deve restare
             "titolo platform" (es. "tetris GB"). Senza il nodo whitespace, il
             calcolo accname di dom-accessibility-api concatena senza spazio
@@ -377,6 +430,22 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
             (app.e2e.ts → getByRole button name "tetris GB"). */}
         <span className="sb-game-title">{rom.title}</span>{" "}
         <span className="sd-badge">{rom.platform}</span>
+      </button>
+
+      {isActive && (
+        <span className="sb-tile-active-badge" data-testid="sb-tile-in-game-badge">
+          In gioco
+        </span>
+      )}
+
+      <button
+        type="button"
+        className="sb-btn sb-danger sb-tile-remove"
+        onClick={onRemove}
+        aria-label={`Rimuovi ${rom.title} dalla libreria`}
+        data-testid={`sb-remove-rom-${rom.id}`}
+      >
+        Rimuovi
       </button>
 
       {/*
@@ -403,5 +472,115 @@ function GameTile({ rom, onSelect, onCoverChange }: GameTileProps) {
         </span>
       </label>
     </article>
+  );
+}
+
+interface RemoveRomConfirmDialogProps {
+  title: string;
+  isActiveRom: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+/** TSK-108 — Dialog modale di conferma rimozione ROM (pattern TSK-101). */
+function RemoveRomConfirmDialog({
+  title,
+  isActiveRom,
+  onConfirm,
+  onCancel,
+}: RemoveRomConfirmDialogProps) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onCancel]);
+
+  function onDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Tab") return;
+    const focusables = [cancelRef.current, confirmRef.current].filter(
+      (el): el is HTMLButtonElement => el !== null,
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  return (
+    <div
+      className="sb-dialog-backdrop"
+      onClick={onCancel}
+      data-testid="remove-rom-backdrop"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0, 0, 0, 0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="remove-rom-title"
+        aria-describedby="remove-rom-desc"
+        className="sb-dialog"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={onDialogKeyDown}
+        data-testid="remove-rom-dialog"
+        style={{
+          background: "var(--sd-color-bg-elevated, #1a1430)",
+          color: "var(--sd-color-text-primary, #f0e9ff)",
+          borderRadius: "var(--sd-radius-md, 8px)",
+          padding: "1.25rem",
+          maxWidth: "24rem",
+          width: "calc(100% - 2rem)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
+        }}
+      >
+        <h2 id="remove-rom-title" className="sb-lbl" style={{ marginTop: 0 }}>
+          Rimuovere {title} dalla libreria?
+        </h2>
+        <p id="remove-rom-desc" className="sb-note" style={{ marginBottom: "1.25rem" }}>
+          {isActiveRom
+            ? "Stai rimuovendo il gioco attualmente in esecuzione. Verrà fermato."
+            : "La ROM verrà eliminata dal dispositivo. I save state associati potrebbero restare orfani."}
+        </p>
+        <div className="sd-flex sd-gap-sm" style={{ justifyContent: "flex-end" }}>
+          <button ref={cancelRef} type="button" className="sb-btn" onClick={onCancel}>
+            Annulla
+          </button>
+          <button
+            ref={confirmRef}
+            type="button"
+            className="sb-btn sb-danger"
+            onClick={onConfirm}
+          >
+            Rimuovi
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

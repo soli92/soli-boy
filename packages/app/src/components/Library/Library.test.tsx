@@ -350,4 +350,68 @@ describe("Library", () => {
       expect(screen.getByText("Tetris")).toBeInTheDocument();
     });
   });
+
+  describe("TSK-107 — indicatore ROM in esecuzione", () => {
+    it("mostra badge 'In gioco' sulla tile attiva", async () => {
+      const rows = [rec("1", "Tetris", "GB")];
+      const storage = fakeStorage(rows);
+      render(<Library storage={storage} activeRomId="1" />);
+      await screen.findByText("Tetris");
+      expect(screen.getByTestId("sb-tile-in-game-badge")).toHaveTextContent(
+        /in gioco/i,
+      );
+      expect(screen.getByText("Tetris").closest(".sb-tile")).toHaveAttribute(
+        "data-active",
+        "true",
+      );
+    });
+
+    it("senza activeRomId nessun badge attivo", async () => {
+      const rows = [rec("1", "Tetris", "GB")];
+      const storage = fakeStorage(rows);
+      render(<Library storage={storage} />);
+      await screen.findByText("Tetris");
+      expect(screen.queryByTestId("sb-tile-in-game-badge")).toBeNull();
+    });
+  });
+
+  describe("TSK-108 — rimozione ROM con conferma", () => {
+    it("Rimuovi → Annulla mantiene la ROM", async () => {
+      const rows = [rec("1", "Tetris", "GB")];
+      const storage = fakeStorage(rows);
+      render(<Library storage={storage} />);
+      await screen.findByText("Tetris");
+
+      fireEvent.click(screen.getByRole("button", { name: /rimuovi tetris/i }));
+      await screen.findByRole("dialog", { name: /rimuovere tetris/i });
+      fireEvent.click(screen.getByRole("button", { name: /annulla/i }));
+
+      expect(storage.removeRom).not.toHaveBeenCalled();
+      expect(screen.getByText("Tetris")).toBeInTheDocument();
+    });
+
+    it("Rimuovi → Conferma invoca removeRom", async () => {
+      const rows = [rec("1", "Tetris", "GB")];
+      const storage = fakeStorage(rows);
+      const onBeforeRemove = vi.fn();
+      render(
+        <Library storage={storage} onBeforeRemove={onBeforeRemove} activeRomId="1" />,
+      );
+      await screen.findByText("Tetris");
+
+      fireEvent.click(screen.getByRole("button", { name: /rimuovi tetris/i }));
+      await screen.findByRole("dialog", { name: /rimuovere tetris/i });
+      expect(
+        screen.getByText(/gioco attualmente in esecuzione/i),
+      ).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /^rimuovi$/i }));
+
+      await waitFor(() => expect(onBeforeRemove).toHaveBeenCalledWith("1"));
+      await waitFor(() => expect(storage.removeRom).toHaveBeenCalledWith("1"));
+      await waitFor(() =>
+        expect(screen.queryByText("Tetris")).not.toBeInTheDocument(),
+      );
+    });
+  });
 });

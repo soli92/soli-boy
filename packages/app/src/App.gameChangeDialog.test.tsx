@@ -135,7 +135,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     // Naviga in Libreria e avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
     const tileA = await screen.findByRole("button", {
-      name: /Tetris/i,
+      name: /^tetris gb$/i,
     });
     await act(async () => {
       fireEvent.click(tileA);
@@ -146,7 +146,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Torna in Libreria e ri-tap'a la stessa ROM.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileAagain = await screen.findByRole("button", { name: /Tetris/i });
+    const tileAagain = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileAagain);
     });
@@ -171,7 +171,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileA = await screen.findByRole("button", { name: /Tetris/i });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
@@ -179,7 +179,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Tap'a ROM_B (diversa) → deve apparire il dialog.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileB = await screen.findByRole("button", { name: /Pokemon Red/i });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });
@@ -222,7 +222,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileA = await screen.findByRole("button", { name: /Tetris/i });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
@@ -233,7 +233,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Tap'a ROM_B → dialog.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileB = await screen.findByRole("button", { name: /Pokemon Red/i });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });
@@ -269,7 +269,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileA = await screen.findByRole("button", { name: /Tetris/i });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
@@ -277,7 +277,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Tap'a ROM_B → dialog.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileB = await screen.findByRole("button", { name: /Pokemon Red/i });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });
@@ -311,14 +311,14 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A e apri dialog su ROM_B.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileA = await screen.findByRole("button", { name: /Tetris/i });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
     await screen.findByRole("button", { name: /pausa/i });
 
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileB = await screen.findByRole("button", { name: /Pokemon Red/i });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });

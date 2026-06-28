@@ -679,3 +679,19 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 - Status: `todo → done`. DoD completo (4/4 checkbox).
 
 2026-06-15 | fe-dev | develop TSK-098 (EP-014/US-052) → done | packages/app/src/domain/useTabPause.ts (new), packages/app/src/domain/useSaveData.ts (new), packages/app/src/App.tsx, packages/app/src/components/Settings/Settings.tsx | Estrazione hook useTabPause<T>(engine, activeTab, selected, playTab) + useSaveData(saveService, currentRomId). Complessità cognitiva: AppContent 22→13, Settings 19→10. 459/459 test pass; tsc clean.
+
+## 2026-06-28 — wave sprint-13 (Wave 1, EP-016 + EP-017)
+**Levels:** 1 (7 parallel FE)
+**Dispatched:** 7 TSK (7 ok, 0 failed)
+**Failed:** —
+**Note:** Wave dispatch Sprint 13 Wave 1 — UX Library/Settings + heading semantici a11y.
+
+2026-06-28 | orchestrator | wave | sprint-13-wave-1 | TSK-107,108,109,110,111,113,115 done · 516/516 test · tsc OK
+
+2026-06-28 | fe-dev | develop TSK-107 → done | Library.tsx, App.tsx, app-extra.css | Badge "In gioco" + bordo accent su tile attiva (`activeRomId`).
+2026-06-28 | fe-dev | develop TSK-108 → done | Library.tsx, App.tsx | Dialog rimozione ROM + `onBeforeRemove` ferma Player se ROM in esecuzione.
+2026-06-28 | fe-dev | develop TSK-109 → done | App.tsx | FileLoader rimosso da Play idle; CTA "Vai alla Libreria" mantenuta.
+2026-06-28 | fe-dev | develop TSK-110 → done | Settings.tsx | `currentRom.title` in sezione Dati; accordion "Resa video" open di default.
+2026-06-28 | fe-dev | develop TSK-111 → done | SaveStatePanel.tsx | Dialog conferma eliminazione save state (focus trap Esc/Tab).
+2026-06-28 | fe-dev | develop TSK-113 → done | App.tsx | LegalNotice rimosso dal footer (resta in tab Info).
+2026-06-28 | fe-dev | develop TSK-115 → done | PrivacyNotice, StoreComplianceNotice, Settings.tsx, app-extra.css | Heading semantici h2/h3 (sb-lbl preservata).

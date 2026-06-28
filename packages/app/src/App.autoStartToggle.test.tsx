@@ -118,7 +118,7 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     render(<App />);
 
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tile = await screen.findByRole("button", { name: /Tetris/i });
+    const tile = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tile);
     });
@@ -136,7 +136,7 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     render(<App />);
 
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tile = await screen.findByRole("button", { name: /Tetris/i });
+    const tile = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tile);
     });
@@ -201,7 +201,7 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
 
     // Vai in Library e tap'a una ROM.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tile = await screen.findByRole("button", { name: /Tetris/i });
+    const tile = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tile);
     });
