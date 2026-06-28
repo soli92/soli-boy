@@ -758,7 +758,7 @@ function AppContent({
         />
       )}
 
-      <footer className="sb-app-footer" aria-label="Informazioni app" />
+      <footer className="sb-app-footer" role="contentinfo" aria-label="Informazioni app" />
     </main>
   );
 }

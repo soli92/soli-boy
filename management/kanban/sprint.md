@@ -326,7 +326,7 @@ DAG Sprint 12:
 - Wave 4 (dopo Wave 3): TSK-101 → TSK-100; TSK-102 → TSK-100; TSK-098 indipendente; TSK-099 → TSK-098
 
 
-## Sprint 13 — UX Library/Settings/componenti (EP-016, P1) + A11y manual checks (EP-017, P1)
+## Sprint 13 — UX Library/Settings/componenti (EP-016, P1) + A11y manual checks (EP-017, P1) — 12/13 done · 1 todo
 
 > **Obiettivo:** polish UX su Library, Settings e Player SaveState (EP-016) + remediation
 > dei 5 manual check a11y (EP-017). EP-016/US-059 (TouchOverlay aria-hidden removal) è
@@ -361,17 +361,16 @@ DAG Sprint 12:
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-117 | QA manual check report: heading nav + aria-live (EP-017-US-060) | US-060 | EP-017 | qa | agent | P1 | S | todo | TSK-115, TSK-116 |
-| TSK-118 | Fix type=button su "Salva profilo" in Settings.tsx (R-05) | US-061 | EP-017 | fe | agent | P2 | XS | todo | TSK-114 |
+| TSK-117 | QA manual check report: heading nav + aria-live (EP-017-US-060) | US-060 | EP-017 | qa | agent | P1 | S | done | TSK-115, TSK-116 |
+| TSK-118 | Fix type=button su "Salva profilo" in Settings.tsx (R-05) | US-061 | EP-017 | fe | agent | P2 | XS | done | TSK-114 |
 | TSK-119 | Manual check R-04: AT validation TouchOverlayConfigPanel | US-061 | EP-017 | qa | agent | P2 | M | todo | TSK-114, TSK-118 |
 
 DAG Sprint 13:
-- Wave 1 (parallelo): TSK-107 ‖ TSK-108 ‖ TSK-109 ‖ TSK-110 ‖ TSK-111 ‖ TSK-113 ‖ TSK-115
-- Wave 2: TSK-112 → TSK-111; TSK-114 (indipendente, ma coordinate con US-059); TSK-116 → TSK-103(Sprint 12)
-- Wave 3: TSK-117 → TSK-115,TSK-116; TSK-118 → TSK-114; TSK-119 → TSK-114,TSK-118
+- Wave 1 (parallelo): TSK-107 ‖ TSK-108 ‖ TSK-109 ‖ TSK-110 ‖ TSK-111 ‖ TSK-113 ‖ TSK-115 (**done**)
+- Wave 2: TSK-112 → TSK-111 (**done**); TSK-114 (**done**); TSK-116 → TSK-103 (**done**)
+- Wave 3: TSK-117, TSK-118 (**done**); TSK-119 (todo — pronto per dispatch)
 
-Nota blocco: TSK-119 (US-061) è blocked_by US-059 (TSK-114). La wave 3 di EP-017 non può
-chiudersi prima che TSK-114 sia done.
+Nota: TSK-119 sbloccato — prerequisiti TSK-114 e TSK-118 soddisfatti.
 
 
 ## Lookahead — Sprint 14+ (post-Sprint 13)
@@ -406,9 +405,8 @@ chiudersi prima che TSK-114 sia done.
   EP-014 P0: TSK-092..097 done. EP-014 P2: TSK-098..099 done (refactor hook + test isolamento).
   EP-015 P0/P1: TSK-100..106 done (auto-avvio, HUD, gate cambio gioco, toggle, stabilità visiva).
   480/480 test pass. Complessità cognitiva App.tsx + Settings.tsx sotto soglia 15.
-- **Sprint 13 — UX Library/Settings (EP-016) + A11y (EP-017):** 13 TSK todo (TSK-107..119).
-  EP-016 P1/P2: TSK-107..114. EP-017 P1/P2: TSK-115..119.
-  Blocco: TSK-119 (US-061) dipende da TSK-114 (US-059 rimozione aria-hidden TouchOverlay).
+- **Sprint 13 — UX Library/Settings (EP-016) + A11y (EP-017):** **12/13 done**, 1 todo (TSK-119).
+  EP-016: TSK-107..114 done. EP-017: TSK-115..118 done; residuo TSK-119 (manual check AT TouchOverlay).
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).
