@@ -8,7 +8,20 @@ jobs:
   update-parent:
     runs-on: ubuntu-latest
     steps:
+      - name: Check PAT configured
+        id: pat
+        env:
+          PAT: ${{ secrets.PARENT_REPO_PAT }}
+        run: |
+          if [ -z "$PAT" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PARENT_REPO_PAT not set — skipping soli-projects pointer update"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout soli-projects
+        if: steps.pat.outputs.configured == 'true'
         uses: actions/checkout@v4
         with:
           repository: soli92/soli-projects
@@ -16,11 +29,13 @@ jobs:
           submodules: recursive
 
       - name: Configure git
+        if: steps.pat.outputs.configured == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump submodule pointer
+        if: steps.pat.outputs.configured == 'true'
         run: |
           git submodule update --remote projects-repos/soli-boy
           git add projects-repos/soli-boy
