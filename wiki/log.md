@@ -743,3 +743,11 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
   - Finding: {high: 0, medium: 0, low: 0}, dedup: 0
   - Markers: nessuno
   - Report: [code_quality/reports/TSK-121-iter-1.md](../code_quality/reports/TSK-121-iter-1.md)
+
+- 2026-06-28 16:10 — `review TSK-122 iter-1 → conditional`
+  - Reviewer: code-reviewer@2.12.0
+  - Stack: typescript/react 19.2.7 (conf 0.95)
+  - Finding: {high: 0, medium: 1, low: 0}, dedup: 0
+  - Markers: linter_skipped (no flat-config ESLint), complexity_tool_skipped (lizard absent)
+  - Emergent candidates: TS-DESIGN-003 (shoulder-identity-coupling), TS-IDIOM-003 (mutable-readonly-consistency)
+  - Report: [code_quality/reports/TSK-122-iter-1.md](../code_quality/reports/TSK-122-iter-1.md)

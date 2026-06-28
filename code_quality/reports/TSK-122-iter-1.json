@@ -1,0 +1,69 @@
+{
+  "tsk_id": "TSK-122",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "19.2.7",
+    "secondary_libs": [
+      "vitest@^3",
+      "vite@^6",
+      "@testing-library/react@^16",
+      "playwright@^1"
+    ],
+    "patterns_expected": ["hooks", "concurrent_mode_compatible", "strict_mode"],
+    "ruleset_id": "typescript.react.v19",
+    "confidence": 0.95,
+    "evidence": [
+      { "type": "manifest", "file": "packages/app/package.json", "weight": 0.5 },
+      { "type": "config",   "file": "packages/app/vite.config.ts",   "weight": 0.2 },
+      { "type": "config",   "file": "packages/app/tsconfig.json",     "weight": 0.1 },
+      { "type": "import",   "file": "packages/app/src/components/TouchOverlay/TouchOverlay.tsx", "weight": 0.15, "snippet": "import { useCallback, useEffect, useRef, useState } from 'react'" }
+    ]
+  },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "scope_note": "Files in scope (TSK-122 diff): button-map.ts, TouchOverlay.tsx, TouchOverlay.test.tsx. Linter: ESLint v10.6.0 skipped (no eslint.config.js in package root — v9 flat-config format not configured). Complexity tool: lizard unavailable; cyclomatic estimated by hand-count (±1 margin). Typecheck: tsc --noEmit → 0 errors. Tests: 545/545 pass.",
+  "findings": [
+    {
+      "id": "F1",
+      "pass": "design",
+      "rule_id": "*.design.complexity.cyclomatic_violation",
+      "rule_ref": "code_quality/rules/canonical/design-complexity.md",
+      "file": "packages/app/src/components/TouchOverlay/TouchOverlay.tsx",
+      "lines": [177, 408],
+      "function": "TouchOverlayInner",
+      "severity": "medium",
+      "detected_by": ["design"],
+      "cyclomatic_estimated": 18,
+      "cyclomatic_threshold_medium": 10,
+      "rationale": "TouchOverlayInner ha ciclomatica stimata ~18 (>10): 6 nuovi rami aggiunti da TSK-122 (isShoulder check + 5 ternari di styling shoulder) si sommano agli 12 pre-esistenti (ternari isAbsoluteOverlay, landscape, fullscreen). Estrarre la logica shoulder in un sotto-componente o helper riduce la complessità.",
+      "fix_complexity": "low",
+      "auto_fixable": false,
+      "expected_fix": "Estrarre il corpo del map callback (lines 359-404) in un componente `ActionButton` o una funzione `renderActionButton(button, label, isShoulder, handlers)`. In alternativa, estrarre `shoulderStyleFor(button: GameButton): React.CSSProperties | undefined` da button-map.ts e chiamarlo in TouchOverlayInner."
+    }
+  ],
+  "emergent_candidates_written": [
+    "code_quality/rules/emergent/TS-DESIGN-003-shoulder-identity-coupling.md",
+    "code_quality/rules/emergent/TS-IDIOM-003-mutable-readonly-consistency.md"
+  ],
+  "verdict": "conditional",
+  "verdict_rationale": "1 finding medium (cyclomatic complexity di TouchOverlayInner ~18 > soglia 10). Nessun finding high; nessun marker rosso. Il codebase è in ottima forma per il resto: tsc pulito, 545 test verdi, helper coreHasShoulderButtons ben documentato e testato, invariante US-063 rispettata, import type corretti.",
+  "summary": "TSK-122 introduce `coreHasShoulderButtons` come single-source-of-truth per la regola US-063 e aggiunge il layout shoulder (data-has-shoulder, data-shoulder, .ab-shoulder) a TouchOverlay. Il design è solido: ReadonlySet tipizzato, invariante documentata, copertura test esaustiva (7 nuovi casi layout + 3 invariante helper). L'unica criticità rilevata è la crescita della complessità ciclomatica di TouchOverlayInner (~18, soglia medium >10), causata dall'inline del blocco di logica shoulder nel map callback. La correzione attesa è l'estrazione di un sotto-componente ActionButton o di un helper shoulderStyleFor(). Due pattern emergenti annotati come candidati per revisione umana (accoppiamento identità shoulder; inconsistenza readonly array export).",
+  "markers": {
+    "no_progress":    false,
+    "regression":     false,
+    "loop_exhausted": false,
+    "degraded":       false,
+    "scope_inferred": false,
+    "linter_skipped": true,
+    "complexity_tool_skipped": true
+  },
+  "files_in_scope": [
+    "packages/app/src/components/TouchOverlay/button-map.ts",
+    "packages/app/src/components/TouchOverlay/TouchOverlay.tsx",
+    "packages/app/src/components/TouchOverlay/TouchOverlay.test.tsx"
+  ],
+  "files_modified_by_fix": [],
+  "generated_at": "2026-06-28T16:10:00Z",
+  "reviewer_version": "code-reviewer@2.12.0"
+}
