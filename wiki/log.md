@@ -710,3 +710,13 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 
 2026-06-28 | orchestrator | config | token-ledger-cursor-adapter | factory.config.yaml, .cursor/rules/token-ledger-display.mdc | EP-022: auto_call_on_wave_close ON + display a fine attività (Cursor adapter).
 
+## 2026-06-28 15:40 — develop TSK-120
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-062-tastiera-gamepad-l-r/TSK-120]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 3 (src/domain/input-mapping.ts, src/domain/input-mapping.test.ts, TSK-120 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — DEFAULT_KEY_PROFILE q/w→l/r, DEFAULT_GAMEPAD_MAP 4/5→l/r, 528/528 test Vitest
+**Note:** Convenzione SNES-like Q=L, W=R. Test "tasto non mappato" aggiornato (p invece di q).
+
