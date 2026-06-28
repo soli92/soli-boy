@@ -1,0 +1,63 @@
+{
+  "tsk_id": "TSK-123",
+  "stack_descriptor": {
+    "language": "typescript",
+    "language_version": "5.x",
+    "framework": "vitest",
+    "framework_version": "3.x",
+    "context": "be — engine adapter layer (mgba/wasmboy/stub) + unit tests",
+    "confidence": 0.93,
+    "degraded": false
+  },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "rule_id": "QA-TEST-001",
+      "rule_ref": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "file": "packages/app/src/core/mgba-engine.ts",
+      "lines": [122, 126],
+      "severity": "low",
+      "severity_note": "Downgraded from medium (rule default): (1) gap pre-existing, not introduced by TSK-123 (documentation-only task for mgba); (2) in-repo mGBA WASM testing acknowledged as infeasible in file header; (3) L/R forwarding structurally verified by BTN map inspection.",
+      "rationale": "No mgba-engine.test.ts exists; sendInput has non-trivial branching (guard !this.module + press/unpress branch). Pre-existing gap. File header documents WASM testing limitation and defers to e2e.",
+      "fix_complexity": "medium",
+      "auto_fixable": false,
+      "detected_by": ["robustness"]
+    }
+  ],
+  "findings_per_pass": {
+    "idiomaticity": 0,
+    "design": 0,
+    "robustness": 1
+  },
+  "emergent_patterns": [
+    {
+      "pattern": "Spatial comment reference ('vedi commento TSK-123 sopra') in wasmboy-engine.ts BTN map inline comment is fragile under code reorganization. Candidate for emergent rule TS-COMMENT-001.",
+      "candidate_rule": "code_quality/rules/emergent/TS-COMMENT-001.md",
+      "note": "Not counted as finding (rule status: candidate, not active). Created as emergent bozza only."
+    }
+  ],
+  "verdict": "pass",
+  "verdict_rationale": "0 high/medium findings. 1 low finding (pre-existing mgba test gap, out of TSK-123 scope). TSK-123 is a documentation-and-testing task that fully delivers: mgba BTN map verification by inspection + comment, wasmboy no-op documented at both BTN map and sendInput guard, 5 new tests across stub-engine and wasmboy-engine covering all required invariants (no-throw, no setJoypadState call, regression isolation). Code quality is high throughout the diff.",
+  "summary": "TSK-123 delivers targeted documentation and test coverage for the L/R shoulder-button pipeline across three engine adapters. For mgba-engine, the BTN map already contained l/r entries from TSK-060; TSK-123 adds an explanatory block comment and cross-reference. For wasmboy-engine, the no-op semantics (guard `if (!key) return`) are now explicitly documented in both the BTN map header and sendInput guard, aligning with US-062 BR §4. Two new describe blocks (stub-engine.test.ts: 2 tests; wasmboy-engine.test.ts: 3 tests) provide direct evidence of the invariants: StubEngine accepts l/r without exception, WasmBoyEngine does not forward l/r to setJoypadState, and mapped buttons (a, b, …) continue to work correctly after a no-op l/r sequence. One pre-existing issue is noted: mgba-engine.ts has no test file; sendInput contains non-trivial branching but in-repo WASM testing is acknowledged as infeasible in the file header. This gap is outside TSK-123's scope and does not affect correctness of this delivery.",
+  "markers": {
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false,
+    "degraded": false,
+    "scope_inferred": false,
+    "truncated": false
+  },
+  "linter_output": "ESLint: no config found (eslint.config.js absent from packages/app); linter output unavailable. TypeScript: tsc --noEmit clean (exit 0, no diagnostics).",
+  "files_in_scope": [
+    "packages/app/src/core/mgba-engine.ts",
+    "packages/app/src/core/wasmboy-engine.ts",
+    "packages/app/src/core/stub-engine.test.ts",
+    "packages/app/src/core/wasmboy-engine.test.ts"
+  ],
+  "files_modified_by_fix": [],
+  "conflict_resolution": [],
+  "generated_at": "2026-06-28T16:15:00Z",
+  "reviewer_version": "code-reviewer@2.12.0"
+}
