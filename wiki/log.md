@@ -758,3 +758,13 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
   - Finding: {high: 0, medium: 0, low: 1}, dedup: 1
   - Markers: nessuno
   - Report: [code_quality/reports/TSK-123-iter-1.md](../code_quality/reports/TSK-123-iter-1.md)
+
+## 2026-06-28 17:06 — develop TSK-124
+**Agente:** qa-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-063-touch-l-r-tutte-piattaforme/TSK-124]]
+**Layer:** qa
+**Code path:** packages/app
+**Files touched:** 2 (e2e/ep018-us062-us063-shoulder-lr.e2e.ts, TSK-124 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — spec e2e US-062/US-063 (3/3 mobile), unit mirati input-mapping+TouchOverlay 54/54; full suite CI non eseguita (scope ridotto su richiesta)
+**Note:** Suite chiusa con test mirati: vitest 2 file + playwright `--project=mobile ep018-us062-us063-shoulder-lr`. Sprint 14 EP-018 wave completa (TSK-120..124).
