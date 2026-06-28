@@ -342,6 +342,28 @@ describe("TouchOverlay config panel", () => {
     expect(screen.getByTestId("sb-touch-config-panel")).toBeInTheDocument();
   });
 
+  it("TSK-114: pannello config annunciabile (no aria-hidden, heading h3)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+    const panel = screen.getByTestId("sb-touch-config-panel");
+    expect(panel).not.toHaveAttribute("aria-hidden", "true");
+    expect(
+      screen.getByRole("heading", { name: /configurazione overlay touch/i }),
+    ).toBeInTheDocument();
+    expect(panel).toHaveAttribute("aria-labelledby", "sb-touch-config-heading");
+  });
+
+  it("TSK-114: slider opacità focusabile via Tab", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+    const opacity = screen.getByTestId("sb-touch-config-opacity");
+    opacity.focus();
+    expect(opacity).toHaveFocus();
+    expect(opacity).toHaveAttribute("aria-label", "Opacità overlay");
+  });
+
   it("cambio opacità aggiorna stato in real-time (CSS custom property)", async () => {
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);

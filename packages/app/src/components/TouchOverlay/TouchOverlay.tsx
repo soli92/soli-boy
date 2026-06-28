@@ -289,7 +289,7 @@ function TouchOverlayInner({
   return (
     <div
       className={overlayClassName}
-      aria-hidden="true"
+      aria-hidden={showConfig ? undefined : true}
       data-testid="sb-touch-overlay"
       data-landscape={landscape ? "true" : "false"}
       data-fullscreen={isFullscreen ? "true" : "false"}
@@ -423,11 +423,11 @@ function TouchOverlayConfigPanel({
       className="sd-card"
       style={panelStyle}
       data-testid="sb-touch-config-panel"
-      aria-hidden="true"
+      aria-labelledby="sb-touch-config-heading"
     >
-      <p className="sb-lbl" style={{ margin: 0 }}>
-        Configura overlay
-      </p>
+      <h3 id="sb-touch-config-heading" className="sb-lbl" style={{ margin: 0 }}>
+        Configurazione overlay touch
+      </h3>
 
       {/* Opacità */}
       <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>

@@ -567,7 +567,22 @@ export function Player({
             ref={canvasHostRef}
             className="sb-canvas-host"
             data-testid="sb-canvas-host"
+            aria-describedby="sb-canvas-status"
           />
+          {/* TSK-116 — Testo adiacente al canvas (R-03): contesto minimo per AT
+              e utenti sighted. Annuncia titolo + stato con prefisso "Gioco corrente".
+              Complementare all'HUD (stato breve): qui il focus è il contesto di gioco
+              vicino al viewport WASM. */}
+          <div
+            id="sb-canvas-status"
+            className="sb-canvas-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-testid="sb-canvas-status"
+          >
+            Gioco corrente: {title ?? HUD_TITLE_IDLE} — {HUD_STATE_LABELS[state]}
+          </div>
           {/* TSK-103 — Overlay icona pausa (UX-019): elemento puramente visivo
               centrato sopra il canvas quando `state === "paused"`. aria-hidden
               perché il cambio di stato è già annunciato dall'HUD aria-live. */}
@@ -627,18 +642,14 @@ export function Player({
           />
         )}
       </div>
-      {/* TSK-103 — HUD user-facing (UX-018): mostra `title` (ROM corrente) e
-          stato in italiano. aria-live="polite" annuncia i cambi di stato senza
-          interrompere lo screen reader. */}
-      <div
-        className="sb-hud"
-        role="status"
-        aria-label="Stato giocatore"
-        aria-live="polite"
-        aria-atomic="true"
-      >
+      {/* TSK-103 / TSK-116 — HUD user-facing (UX-018): titolo ROM + stato in
+          italiano. aria-live sul solo span stato (complementare al canvas status
+          che annuncia il contesto completo "Gioco corrente: …"). */}
+      <div className="sb-hud" aria-label="Stato giocatore">
         <span>{title ?? HUD_TITLE_IDLE}</span>
-        <span>{HUD_STATE_LABELS[state]}</span>
+        <span role="status" aria-live="polite" aria-atomic="true">
+          {HUD_STATE_LABELS[state]}
+        </span>
       </div>
       {/* TSK-106 — Container dei controlli con layout a slot fissi (US-055 AC1).
           3 slot grid stabili: primary (Avvia/Pausa/Riprendi), secondary
