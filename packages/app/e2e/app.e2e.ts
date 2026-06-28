@@ -8,7 +8,9 @@ import {
   expectLegalNotice,
   expectStoreComplianceNotice,
   gotoStubApp,
+  openControlsRemapAccordion,
   openInfoPrivacyTab,
+  openSettingsTab,
   uploadRom,
 } from "./helpers/app-nav";
 
@@ -79,8 +81,8 @@ test("file non supportato mostra errore e non entra in libreria", async ({ page 
 });
 
 test("Settings: rimappatura comando (US-013)", async ({ page }) => {
-  // IA a 4 tab (increment 2): la rimappatura controlli è nella tab Impostazioni.
-  await page.getByRole("tab", { name: "Impostazioni" }).click();
+  await openSettingsTab(page);
+  await openControlsRemapAccordion(page);
   const sel = page.getByLabel("Pulsante per ArrowUp");
   await expect(sel).toHaveValue("up");
   await sel.selectOption("a");

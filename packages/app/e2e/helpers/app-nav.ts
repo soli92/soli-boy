@@ -63,3 +63,20 @@ export async function uploadRom(page: Page, files: RomUpload): Promise<void> {
   await openLibraryTab(page);
   await page.getByLabel("Carica ROM").setInputFiles(files);
 }
+
+export async function openSettingsTab(page: Page): Promise<void> {
+  await page.getByRole("tab", { name: "Impostazioni" }).click();
+  await expect(page.locator("#panel-settings")).toBeVisible();
+}
+
+/** Apre l'accordion "Controlli — rimappatura" (chiuso di default in Settings). */
+export async function openControlsRemapAccordion(page: Page): Promise<void> {
+  const controls = page.locator("details", {
+    has: page.getByText("Controlli — rimappatura"),
+  });
+  const isOpen = await controls.evaluate((d) => (d as HTMLDetailsElement).open);
+  if (!isOpen) {
+    await controls.locator("summary").click();
+  }
+  await expect(page.getByLabel("Pulsante per ArrowUp")).toBeVisible();
+}
