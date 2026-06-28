@@ -726,3 +726,13 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
   - Finding: {high: 0, medium: 0, low: 0}, dedup: 0
   - Markers: nessuno
   - Report: [code_quality/reports/TSK-120-iter-1.md](../code_quality/reports/TSK-120-iter-1.md)
+
+## 2026-06-28 15:48 — develop TSK-123
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-062-tastiera-gamepad-l-r/TSK-123]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 4 (src/core/wasmboy-engine.ts, src/core/mgba-engine.ts, src/core/wasmboy-engine.test.ts, src/core/stub-engine.test.ts)
+**Commit:** (pending push)
+**DoD:** pass — mgba pipeline L/R verificata (BTN già completo + cross-ref TSK-123), wasmboy no-op L/R esplicitato (commenti BTN + sendInput), stub-engine accetta L/R (test +2), wasmboy L/R no-op test +3, 533/533 Vitest
+**Note:** Zero modifiche funzionali (TSK pure verify+document). Test wasmboy verificano che setJoypadState NON sia chiamato per l/r e che pulsanti mappati (a/b/...) continuino a funzionare dopo un L/R no-op (regressione).

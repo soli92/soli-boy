@@ -135,6 +135,52 @@ describe("WasmBoyEngine — guard !configured su resume() (C-01)", () => {
   });
 });
 
+describe("WasmBoyEngine.sendInput L/R no-op su GB/GBC (TSK-123 / US-062)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    lib.paused = true;
+  });
+
+  it("sendInput('l', true) NON chiama setJoypadState (no-op: GB non ha shoulder)", async () => {
+    // US-062 BR §4: su piattaforme che non espongono L/R, l'input è accettato
+    // dall'input layer ma non produce effetti di gioco (nessun throw, nessun
+    // warning). Per WasmBoy (GB/GBC) significa: il guard scarta l'action
+    // prima di toccare setJoypadState — la lib WasmBoy non riceve mai
+    // ingressi che non sa interpretare.
+    const engine = await makeLoadedEngine();
+    vi.clearAllMocks();
+
+    expect(() => engine.sendInput("l", true)).not.toThrow();
+    expect(() => engine.sendInput("l", false)).not.toThrow();
+    expect(WasmBoy.setJoypadState).not.toHaveBeenCalled();
+  });
+
+  it("sendInput('r', true) NON chiama setJoypadState (no-op: GB non ha shoulder)", async () => {
+    const engine = await makeLoadedEngine();
+    vi.clearAllMocks();
+
+    expect(() => engine.sendInput("r", true)).not.toThrow();
+    expect(() => engine.sendInput("r", false)).not.toThrow();
+    expect(WasmBoy.setJoypadState).not.toHaveBeenCalled();
+  });
+
+  it("L/R no-op NON interferisce con i pulsanti mappati (a, b, ecc. funzionano normalmente)", async () => {
+    // Regressione: il guard sui pulsanti non mappati non deve "corrompere"
+    // lo stato joypad per i pulsanti validi. Sequenza realistica: utente preme
+    // L (no-op), poi A (deve raggiungere WasmBoy normalmente).
+    const engine = await makeLoadedEngine();
+    vi.clearAllMocks();
+
+    engine.sendInput("l", true);
+    engine.sendInput("a", true);
+
+    expect(WasmBoy.setJoypadState).toHaveBeenCalledTimes(1);
+    expect(WasmBoy.setJoypadState).toHaveBeenCalledWith(
+      expect.objectContaining({ A: true }),
+    );
+  });
+});
+
 describe("WasmBoyEngine — ripresa dopo operazioni che pausano (US-016/017)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
