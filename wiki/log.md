@@ -707,3 +707,4 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 2026-06-28 | qa-dev | develop TSK-112 → done | soliboy-savestate-delete.acceptance.yaml, emulation-save.e2e.ts | Scenario delete-savestate-confirm + functional oracle report.
 2026-06-28 | fe-dev | develop TSK-114 → done | TouchOverlay.tsx, app-extra.css | Config panel senza aria-hidden + heading h3; D-pad padding 8px.
 2026-06-28 | fe-dev | develop TSK-116 → done | Player.tsx, Player.hud.test.tsx, app-extra.css, EP-017-US-060-a11y-iter-1.md | aria-live HUD + canvas status adiacente.
+
