@@ -720,3 +720,9 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 **DoD:** pass — DEFAULT_KEY_PROFILE q/w→l/r, DEFAULT_GAMEPAD_MAP 4/5→l/r, 528/528 test Vitest
 **Note:** Convenzione SNES-like Q=L, W=R. Test "tasto non mappato" aggiornato (p invece di q).
 
+- 2026-06-28 15:44 — `review TSK-120 iter-1 → pass`
+  - Reviewer: code-reviewer@2.12.0
+  - Stack: typescript/react 19 (conf 0.93)
+  - Finding: {high: 0, medium: 0, low: 0}, dedup: 0
+  - Markers: nessuno
+  - Report: [code_quality/reports/TSK-120-iter-1.md](../code_quality/reports/TSK-120-iter-1.md)

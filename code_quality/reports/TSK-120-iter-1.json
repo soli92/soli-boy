@@ -1,0 +1,53 @@
+{
+  "tsk_id": "TSK-120",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "19",
+    "secondary_libs": [
+      "vitest@4.1.8",
+      "vite@8.0.16",
+      "@capacitor/core@8.4.0",
+      "wasmboy@0.7.1"
+    ],
+    "patterns_expected": ["hooks", "concurrent_mode_compatible", "strict_mode"],
+    "ruleset_id": "typescript.react.v19",
+    "confidence": 0.93,
+    "evidence": [
+      { "type": "manifest", "file": "packages/app/package.json", "weight": 0.5 },
+      { "type": "config",   "file": "packages/app/tsconfig.json",  "weight": 0.2 },
+      { "type": "import",   "file": "packages/app/src/domain/input-mapping.ts", "weight": 0.23, "snippet": "import type { GameButton } from \"../core/core-wrapper\"" }
+    ]
+  },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [],
+  "verdict": "pass",
+  "verdict_rationale": "Zero finding su tutte e tre le passate. Il codice è idiomatico TypeScript (import type, nessun any/!, type-safe), il design rispetta il contratto esistente (DEFAULT_KEY_PROFILE e DEFAULT_GAMEPAD_MAP come lookup costanti, approccio coerente con il modulo pre-TSK), e la robustezza è garantita dai guard if(!button) per indici non mappati. I 4 nuovi test coprono tutte le path introdotte (assert struttura + integrazione sink). Nessuna regressione rilevata.",
+  "summary": "TSK-120 aggiunge 2 entry a DEFAULT_KEY_PROFILE (q→l, w→r) e 2 a DEFAULT_GAMEPAD_MAP (4→l, 5→r) con 4 test di copertura dedicati. Tutte e 3 le passate (idiomaticità, design, robustezza) non rilevano finding contro le regole canoniche applicabili (TS-IDIOM-001/002, TS-DESIGN-001/002, TS-ROBUST-001, QA-TEST-001). Il codice è minimale, focalizzato e privo di side effect. Tutti gli 8 test Vitest passano (0 failure, 0 regressioni).",
+  "markers": {
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false,
+    "degraded": false,
+    "truncated": false,
+    "scope_inferred": false
+  },
+  "files_modified_by_fix": [
+    "packages/app/src/domain/input-mapping.ts",
+    "packages/app/src/domain/input-mapping.test.ts"
+  ],
+  "linter_output": {
+    "tool": "eslint",
+    "status": "unavailable",
+    "note": "ESLint non configurato nel progetto; nessun output iniettato nella passata 1."
+  },
+  "rules_evaluated": [
+    "TS-IDIOM-001", "TS-IDIOM-002",
+    "TS-DESIGN-001", "TS-DESIGN-002",
+    "TS-ROBUST-001", "QA-TEST-001"
+  ],
+  "conflict_resolution": [],
+  "generated_at": "2026-06-28T15:43:00Z",
+  "reviewer_version": "code-reviewer@2.12.0"
+}
