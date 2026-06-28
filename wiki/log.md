@@ -726,3 +726,13 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
   - Finding: {high: 0, medium: 0, low: 0}, dedup: 0
   - Markers: nessuno
   - Report: [code_quality/reports/TSK-120-iter-1.md](../code_quality/reports/TSK-120-iter-1.md)
+
+## 2026-06-28 15:47 — develop TSK-121
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-064-rimappatura-l-r-settings/TSK-121]]
+**Layer:** fe
+**Code path:** packages/app
+**Files touched:** 2 (src/components/Settings/Settings.tsx, TSK-121 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — BUTTONS = [up,down,left,right,l,b,a,r,start,select] (ordine logico GBA), 530/530 Vitest, tsc OK, visual oracle pass (4/4 celle mobile/desktop × light/dark)
+**Note:** Build on top di TSK-120 (q→l, w→r preassegnati via DEFAULT_KEY_PROFILE). Visual oracle iter-1 → pass: nessun finding, righe q/w riusano template .sb-row delle 8 righe pre-esistenti. Runner one-shot in e2e/ rimosso post-run; screenshot in code_quality/reports/TSK-121-visual-iter-1/ (gitignored).

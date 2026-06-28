@@ -1,0 +1,42 @@
+{
+  "tsk_id": "TSK-121",
+  "iter": 1,
+  "verdict": "pass",
+  "visual_status": "pass",
+  "next_action": "done",
+  "executor": "fe-dev (visual-oracle-protocol)",
+  "config": {
+    "fe_correctness_enabled": true,
+    "max_iterations": 3,
+    "viewports": [
+      { "name": "mobile", "width": 375 },
+      { "name": "desktop", "width": 1280 }
+    ],
+    "themes": ["light=90s-party", "dark"],
+    "checks": []
+  },
+  "runner": ".factory-runners/tsk-121-visual-oracle (eseguito tramite packages/app/e2e/tsk-121-visual-oracle.e2e.ts, file rimosso post-run)",
+  "structured_assertions": [
+    {
+      "name": "BUTTONS order",
+      "expected": ["up", "down", "left", "right", "l", "b", "a", "r", "start", "select"],
+      "result": "pass"
+    },
+    {
+      "name": "DEFAULT_KEY_PROFILE.q == 'l'",
+      "result": "pass"
+    },
+    {
+      "name": "DEFAULT_KEY_PROFILE.w == 'r'",
+      "result": "pass"
+    }
+  ],
+  "cells": [
+    { "viewport": "mobile",  "theme": "light", "screenshot": "TSK-121-visual-iter-1/mobile-light.png",  "status": "pass" },
+    { "viewport": "mobile",  "theme": "dark",  "screenshot": "TSK-121-visual-iter-1/mobile-dark.png",   "status": "pass" },
+    { "viewport": "desktop", "theme": "light", "screenshot": "TSK-121-visual-iter-1/desktop-light.png", "status": "pass" },
+    { "viewport": "desktop", "theme": "dark",  "screenshot": "TSK-121-visual-iter-1/desktop-dark.png",  "status": "pass" }
+  ],
+  "critic_findings": [],
+  "summary": "Aggiunta 'l' e 'r' a BUTTONS in Settings.tsx con ordine GBA-logico [up,down,left,right,l,b,a,r,start,select]. Le nuove righe q->l e w->r (default da TSK-120) sono visibili e correttamente stilizzate in tutte e 4 le celle viewport x tema. Nessuna regressione visiva sulle 8 righe pre-esistenti."
+}

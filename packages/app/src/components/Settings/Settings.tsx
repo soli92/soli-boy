@@ -57,7 +57,16 @@ import { PrivacyNotice } from "../PrivacyNotice/PrivacyNotice";
 // ("Avviso legale no-ROM protette visibile in Settings → Legale").
 import { StoreComplianceNotice } from "../StoreComplianceNotice/StoreComplianceNotice";
 
-const BUTTONS: GameButton[] = ["up", "down", "left", "right", "a", "b", "start", "select"];
+// TSK-121 (US-064) — Lista pulsanti GameButton rimappabili nella UI Settings.
+// Aggiunti "l" e "r" dopo "right" (face button cluster: a/b) seguendo l'ordine
+// logico GBA: direzionali → shoulder L → face B/A → shoulder R → menu (start/select).
+// Allinea con i default introdotti da TSK-120 (DEFAULT_KEY_PROFILE q=l, w=r;
+// DEFAULT_GAMEPAD_MAP 4=l, 5=r).
+const BUTTONS: GameButton[] = [
+  "up", "down", "left", "right",
+  "l", "b", "a", "r",
+  "start", "select",
+];
 
 /**
  * TSK-033 — Interfaccia segregata consumata dalla sezione "Dati".
