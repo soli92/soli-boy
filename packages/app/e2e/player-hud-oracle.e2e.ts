@@ -27,7 +27,7 @@ import {
   setThemeViaDB,
   type UiTheme,
 } from "./helpers/set-theme";
-import { gotoStubApp, uploadRom } from "./helpers/app-nav";
+import { gotoStubApp, uploadRom, waitForAppBoot } from "./helpers/app-nav";
 
 // ---------------------------------------------------------------------------
 // Costanti
@@ -58,6 +58,22 @@ const FAKE_ROM = {
  * page.reload() di setThemeViaDB cancellando il tema appena scritto. */
 async function gotoApp(page: import("@playwright/test").Page): Promise<void> {
   await gotoStubApp(page);
+}
+
+/** Container HUD (TSK-103): aria-label sul wrapper `.sb-hud`, non sul live region. */
+function hudContainer(page: import("@playwright/test").Page) {
+  return page.getByLabel("Stato giocatore");
+}
+
+/** Live region stato (TSK-116): span role="status" dentro `.sb-hud`. */
+function hudLiveState(page: import("@playwright/test").Page) {
+  return hudContainer(page).getByRole("status");
+}
+
+async function applyTheme(page: import("@playwright/test").Page, theme: UiTheme): Promise<void> {
+  await clearThemeInDB(page);
+  await setThemeViaDB(page, theme);
+  await waitForAppBoot(page);
 }
 
 /**
@@ -94,12 +110,11 @@ test.describe("TSK-104 AC1 — Visual oracle: HUD multi-tema x multi-stato x mul
     test(`[${CANONICAL_THEME}] [${vp.name}] stato idle: HUD leggibile, nessun overlay pausa`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await gotoApp(page);
-      await clearThemeInDB(page);
-      await setThemeViaDB(page, CANONICAL_THEME);
+      await applyTheme(page, CANONICAL_THEME);
 
-      const hud = page.getByRole("status", { name: /stato giocatore/i });
+      const hud = hudContainer(page);
       await expect(hud).toBeVisible();
-      await expect(hud).toContainText("Premi Avvia");
+      await expect(hudLiveState(page)).toContainText("Premi Avvia");
       await expect(page.getByTestId("pause-overlay")).not.toBeVisible();
       await expect(page.getByRole("button", { name: /avvia/i })).toBeVisible();
     });
@@ -109,12 +124,11 @@ test.describe("TSK-104 AC1 — Visual oracle: HUD multi-tema x multi-stato x mul
     test(`[${theme}] [desktop] stato idle: HUD leggibile (spot-check tema)`, async ({ page }) => {
       await page.setViewportSize({ width: VIEWPORTS[1].width, height: VIEWPORTS[1].height });
       await gotoApp(page);
-      await clearThemeInDB(page);
-      await setThemeViaDB(page, theme);
+      await applyTheme(page, theme);
 
-      const hud = page.getByRole("status", { name: /stato giocatore/i });
+      const hud = hudContainer(page);
       await expect(hud).toBeVisible();
-      await expect(hud).toContainText("Premi Avvia");
+      await expect(hudLiveState(page)).toContainText("Premi Avvia");
     });
   }
 
@@ -123,14 +137,12 @@ test.describe("TSK-104 AC1 — Visual oracle: HUD multi-tema x multi-stato x mul
     test(`[${CANONICAL_THEME}] [${vp.name}] stato running: HUD 'In esecuzione', nessun overlay pausa`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await gotoApp(page);
-      await clearThemeInDB(page);
-      await setThemeViaDB(page, CANONICAL_THEME);
+      await applyTheme(page, CANONICAL_THEME);
 
       await bringToRunning(page);
 
-      const hud = page.getByRole("status", { name: /stato giocatore/i });
-      await expect(hud).toBeVisible();
-      await expect(hud).toContainText("In esecuzione");
+      await expect(hudContainer(page)).toBeVisible();
+      await expect(hudLiveState(page)).toContainText("In esecuzione");
       await expect(page.getByTestId("pause-overlay")).not.toBeVisible();
     });
   }
@@ -140,15 +152,13 @@ test.describe("TSK-104 AC1 — Visual oracle: HUD multi-tema x multi-stato x mul
     test(`[${CANONICAL_THEME}] [${vp.name}] stato paused: HUD 'In pausa', overlay pausa visibile`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await gotoApp(page);
-      await clearThemeInDB(page);
-      await setThemeViaDB(page, CANONICAL_THEME);
+      await applyTheme(page, CANONICAL_THEME);
 
       await bringToRunning(page);
       await bringToPaused(page);
 
-      const hud = page.getByRole("status", { name: /stato giocatore/i });
-      await expect(hud).toBeVisible();
-      await expect(hud).toContainText("In pausa");
+      await expect(hudContainer(page)).toBeVisible();
+      await expect(hudLiveState(page)).toContainText("In pausa");
 
       const overlay = page.getByTestId("pause-overlay");
       await expect(overlay).toBeVisible();
@@ -171,7 +181,7 @@ test.describe("TSK-104 AC2 — Functional oracle: play -> pause (browser reale)"
     await bringToRunning(page);
     await bringToPaused(page);
 
-    const ariaLive = page.getByRole("status", { name: /stato giocatore/i });
+    const ariaLive = hudLiveState(page);
     await expect(ariaLive).toContainText("In pausa");
     await expect(ariaLive).toHaveAttribute("aria-live", "polite");
   });
@@ -192,7 +202,7 @@ test.describe("TSK-104 AC2 — Functional oracle: play -> pause (browser reale)"
     await page.getByRole("button", { name: /riprendi/i }).click();
     await expect(page.getByTestId("pause-overlay")).not.toBeVisible();
 
-    const ariaLive = page.getByRole("status", { name: /stato giocatore/i });
+    const ariaLive = hudLiveState(page);
     await expect(ariaLive).toContainText("In esecuzione");
     await expect(ariaLive).not.toContainText("In pausa");
   });
