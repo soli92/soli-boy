@@ -337,6 +337,7 @@ export function Settings({
           ))}
         </ul>
         <button
+          type="button"
           className="sb-btn sb-full"
           onClick={() => {
             onSaveProfile?.();

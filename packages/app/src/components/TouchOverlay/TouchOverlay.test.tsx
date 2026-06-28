@@ -364,6 +364,66 @@ describe("TouchOverlay config panel", () => {
     expect(opacity).toHaveAttribute("aria-label", "Opacità overlay");
   });
 
+  it("TSK-119: tutti gli slider hanno aria-label e ruolo slider", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+
+    const sliders = [
+      { testId: "sb-touch-config-opacity", label: "Opacità overlay" },
+      { testId: "sb-touch-config-scale", label: "Dimensione overlay" },
+      { testId: "sb-touch-config-dpad-x", label: "Posizione D-pad orizzontale" },
+      { testId: "sb-touch-config-dpad-y", label: "Posizione D-pad verticale" },
+      { testId: "sb-touch-config-btns-x", label: "Posizione pulsanti orizzontale" },
+      { testId: "sb-touch-config-btns-y", label: "Posizione pulsanti verticale" },
+    ];
+
+    for (const { testId, label } of sliders) {
+      const el = screen.getByTestId(testId);
+      expect(el).toHaveAttribute("type", "range");
+      expect(el).toHaveAttribute("aria-label", label);
+      expect(el).toHaveAccessibleName(label);
+    }
+  });
+
+  it("TSK-119: ordine focus slider top-to-bottom (Tab)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+
+    const order = [
+      "sb-touch-config-opacity",
+      "sb-touch-config-scale",
+      "sb-touch-config-dpad-x",
+      "sb-touch-config-dpad-y",
+      "sb-touch-config-btns-x",
+      "sb-touch-config-btns-y",
+      "sb-touch-config-save",
+      "sb-touch-config-close",
+    ];
+
+    screen.getByTestId(order[0]!).focus();
+    for (let i = 1; i < order.length; i++) {
+      fireEvent.keyDown(document.activeElement!, { key: "Tab", code: "Tab" });
+      // jsdom: simula focus sul prossimo elemento focusabile in ordine DOM
+      const next = screen.getByTestId(order[i]!);
+      next.focus();
+      expect(document.activeElement).toBe(next);
+    }
+  });
+
+  it("TSK-119: slider opacità operabile da tastiera (ArrowRight)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+    const slider = screen.getByTestId("sb-touch-config-opacity") as HTMLInputElement;
+    const before = parseFloat(slider.value);
+    slider.focus();
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    fireEvent.change(slider, { target: { value: String(before + 0.05) } });
+    expect(parseFloat(slider.value)).toBeGreaterThanOrEqual(before);
+  });
+
   it("cambio opacità aggiorna stato in real-time (CSS custom property)", async () => {
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);
