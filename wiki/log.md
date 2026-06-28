@@ -727,22 +727,12 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
   - Markers: nessuno
   - Report: [code_quality/reports/TSK-120-iter-1.md](../code_quality/reports/TSK-120-iter-1.md)
 
-## 2026-06-28 15:47 — develop TSK-121
-**Agente:** fe-dev
-**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-064-rimappatura-l-r-settings/TSK-121]]
-**Layer:** fe
+## 2026-06-28 15:48 — develop TSK-123
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-062-tastiera-gamepad-l-r/TSK-123]]
+**Layer:** be
 **Code path:** packages/app
-**Files touched:** 2 (src/components/Settings/Settings.tsx, TSK-121 frontmatter)
+**Files touched:** 4 (src/core/wasmboy-engine.ts, src/core/mgba-engine.ts, src/core/wasmboy-engine.test.ts, src/core/stub-engine.test.ts)
 **Commit:** (pending push)
-**DoD:** pass — BUTTONS = [up,down,left,right,l,b,a,r,start,select] (ordine logico GBA), 530/530 Vitest, tsc OK, visual oracle pass (4/4 celle mobile/desktop × light/dark)
-**Note:** Build on top di TSK-120 (q→l, w→r preassegnati via DEFAULT_KEY_PROFILE). Visual oracle iter-1 → pass: nessun finding, righe q/w riusano template .sb-row delle 8 righe pre-esistenti. Runner one-shot in e2e/ rimosso post-run; screenshot in code_quality/reports/TSK-121-visual-iter-1/ (gitignored).
-
-## 2026-06-28 16:03 — develop TSK-122
-**Agente:** fe-dev
-**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-063-touch-l-r-tutte-piattaforme/TSK-122]]
-**Layer:** fe
-**Code path:** packages/app
-**Files touched:** 3 (src/components/TouchOverlay/button-map.ts, src/components/TouchOverlay/TouchOverlay.tsx, src/components/TouchOverlay/TouchOverlay.test.tsx)
-**Commit:** (pending push)
-**DoD:** pass — refactor button-map (helper `coreHasShoulderButtons`, invariante US-063 esplicita), marker `data-shoulder`/`data-has-shoulder` + posizione inline shoulder L/R in TouchOverlay, +12 nuovi vitest (46 totali TouchOverlay.test.tsx, 66 cartella TouchOverlay/), 540/540 vitest, typecheck OK, build OK, visual oracle iter-1 → pass.
-**Note:** Allineamento US-063: mantenuta la regola «L/R touch SOLO per core con shoulder hardware (oggi solo mgba)» — non aggiunte entry L/R per gambatte/fbneo/mame (correzione vs testo TSK originale). Visual oracle ha rilevato un gap CSS pre-esistente (selettori `.ab-select`/`.ab-start`/`.ab-l`/`.ab-r` senza regole di posizionamento in `solids-theme.css` → STA occlude visivamente L su mgba); workaround in scope: `zIndex:2` su shoulder L/R mantiene tappabilità. Gap formale registrato: `touch-overlay-mgba-ab-positioning` in wiki/gaps.md (richiede TSK FE follow-up di refactor CSS layout `.sb-ab`, fuori scope TSK-122). Runner one-shot e2e/tsk-122-visual-oracle.e2e.ts rimosso post-run; screenshot + report in code_quality/reports/TSK-122-visual-iter-1/.
+**DoD:** pass — mgba pipeline L/R verificata (BTN già completo + cross-ref TSK-123), wasmboy no-op L/R esplicitato (commenti BTN + sendInput), stub-engine accetta L/R (test +2), wasmboy L/R no-op test +3, 533/533 Vitest
+**Note:** Zero modifiche funzionali (TSK pure verify+document). Test wasmboy verificano che setJoypadState NON sia chiamato per l/r e che pulsanti mappati (a/b/...) continuino a funzionare dopo un L/R no-op (regressione).

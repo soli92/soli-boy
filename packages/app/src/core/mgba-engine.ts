@@ -52,10 +52,14 @@ interface MgbaModule {
   FS: MgbaFS;
 }
 
+// TSK-123 (US-062): pipeline L/R verificata end-to-end su mGBA. Il GBA espone
+// shoulder L/R nativamente: l'action emessa dall'InputMapping (TSK-120) è
+// inoltrata direttamente all'API mGBA via buttonPress/buttonUnpress in
+// sendInput, senza casi speciali. Mappa completa per GameButton.
 const BTN: Record<GameButton, string> = {
   up: "Up", down: "Down", left: "Left", right: "Right",
   a: "A", b: "B", start: "Start", select: "Select",
-  // TSK-060: shoulder button GBA (US-026).
+  // TSK-060: shoulder button GBA (US-026). TSK-123: verificato in pipeline.
   l: "L", r: "R",
 };
 

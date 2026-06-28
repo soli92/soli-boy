@@ -73,6 +73,30 @@ describe("StubEngine snapshot/restore round-trip (US-016)", () => {
   });
 });
 
+describe("StubEngine.sendInput L/R (TSK-123 / US-062)", () => {
+  // Lo StubEngine è usato in test (e2e/unit) come engine deterministico per
+  // piattaforme arbitrarie. Deve accettare ogni GameButton — inclusi i nuovi
+  // "l" e "r" introdotti da TSK-060 — senza throw, anche su piattaforme che
+  // non espongono shoulder. Invariante US-062 BR §4: "accettato dall'input
+  // layer ma nessun effetto" → qui significa: nessuna eccezione + lastInput
+  // registrato (così SaveService/Player possono ispezionarlo nei test).
+  it("sendInput('l', true|false) non lancia e registra lastInput", () => {
+    const e = new StubEngine();
+    expect(() => e.sendInput("l", true)).not.toThrow();
+    expect(e.lastInput).toEqual({ button: "l", pressed: true });
+    expect(() => e.sendInput("l", false)).not.toThrow();
+    expect(e.lastInput).toEqual({ button: "l", pressed: false });
+  });
+
+  it("sendInput('r', true|false) non lancia e registra lastInput", () => {
+    const e = new StubEngine();
+    expect(() => e.sendInput("r", true)).not.toThrow();
+    expect(e.lastInput).toEqual({ button: "r", pressed: true });
+    expect(() => e.sendInput("r", false)).not.toThrow();
+    expect(e.lastInput).toEqual({ button: "r", pressed: false });
+  });
+});
+
 describe("StubEngine SRAM (US-017)", () => {
   it("getSram ritorna null finché loadSram non è stato chiamato", async () => {
     const e = new StubEngine();
