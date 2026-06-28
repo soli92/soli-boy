@@ -161,17 +161,24 @@ describe("TouchOverlay", () => {
     expect(im.sendTouchInput).toHaveBeenCalledWith("down", true);
   });
 
-  it("GB (gambatte): rende A, B, Select, Start", () => {
+  it("GB (gambatte): rende A, B, L, R, Select, Start (TSK-122)", () => {
     mockTouchDevice(true);
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);
     expect(screen.getByTestId("sb-touch-btn-a")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-b")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-l")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-r")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
-    // GBA-only: NON rende L e R su gambatte.
-    expect(screen.queryByTestId("sb-touch-btn-l")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("sb-touch-btn-r")).not.toBeInTheDocument();
+  });
+
+  it("GB (gambatte): touchstart L → sendTouchInput('l', true)", () => {
+    mockTouchDevice(true);
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.touchStart(screen.getByTestId("sb-touch-btn-l"));
+    expect(im.sendTouchInput).toHaveBeenCalledWith("l", true);
   });
 
   it("GBA (mgba): rende A, B, L, R, Select, Start", () => {
@@ -184,6 +191,14 @@ describe("TouchOverlay", () => {
     expect(screen.getByTestId("sb-touch-btn-r")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
+  });
+
+  it("arcade (fbneo): rende L e R nell'overlay (TSK-122)", () => {
+    mockTouchDevice(true);
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="fbneo" inputMapping={im} />);
+    expect(screen.getByTestId("sb-touch-btn-l")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-r")).toBeInTheDocument();
   });
 
   it("touchstart pulsante A → sendTouchInput('a', true)", () => {

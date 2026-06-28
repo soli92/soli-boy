@@ -115,6 +115,7 @@ export class MgbaEngine implements EmulatorEngine {
     this.module?.setVolume(settings.mute ? 0 : Math.round(Math.min(1, Math.max(0, settings.volume)) * 100));
   }
 
+  // TSK-123 / EP-018: L/R forwarded via BTN → mGBA WASM API (GBA hardware shoulder).
   sendInput(button: GameButton, pressed: boolean): void {
     if (!this.module) return;
     if (pressed) this.module.buttonPress(BTN[button]);

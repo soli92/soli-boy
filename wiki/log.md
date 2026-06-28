@@ -720,3 +720,43 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 **DoD:** pass — DEFAULT_KEY_PROFILE q/w→l/r, DEFAULT_GAMEPAD_MAP 4/5→l/r, 528/528 test Vitest
 **Note:** Convenzione SNES-like Q=L, W=R. Test "tasto non mappato" aggiornato (p invece di q).
 
+## 2026-06-28 20:39 — develop TSK-121
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-064-rimappatura-l-r-settings/TSK-121]]
+**Layer:** fe
+**Code path:** packages/app
+**Files touched:** 3 (src/components/Settings/Settings.tsx, src/components/Settings/Settings.test.tsx, TSK-121 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — BUTTONS include l/r, buttonOptionLabel() aggiunta, test Settings espone q→l e w→r come voci rimappabili
+**Note:** Pattern data-driven: solo il dato BUTTONS esteso, nessuna modifica al componente di rendering. Label user-facing: L, R, Select, Start gestite da buttonOptionLabel().
+
+## 2026-06-28 20:44 — develop TSK-122
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-063-touch-l-r-tutte-piattaforme/TSK-122]]
+**Layer:** fe
+**Code path:** packages/app
+**Files touched:** 5 (button-map.ts, TouchOverlay.test.tsx, solids-theme.css, TSK-122 frontmatter, sprint.md)
+**Commit:** (pending push)
+**DoD:** pass — L/R su tutti i core (gambatte, mgba, fbneo, mame); CSS shoulder layout; 36/36 test TouchOverlay
+**Note:** `ACTION_BUTTONS_WITH_SHOULDERS` condiviso. GB engine WasmBoy: L/R no-op (hardware senza shoulder), overlay uniforme EP-018.
+
+## 2026-06-28 20:48 — develop TSK-123
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-062-tastiera-gamepad-l-r/TSK-123]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 7 (mgba/wasmboy/stub engines + 4 test files)
+**Commit:** (pending push)
+**DoD:** pass — pipeline L/R verificata/documentata per mgba (forward), wasmboy (no-op), stub (accept)
+**Note:** Test `mgba-engine.test.ts` nuovo con mock WASM; wasmboy/stub/core-wrapper test estesi.
+
+## 2026-06-28 20:48 — develop TSK-124
+**Agente:** qa-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-063-touch-l-r-tutte-piattaforme/TSK-124]]
+**Layer:** qa
+**Code path:** packages/app
+**Files touched:** 2 (e2e/ep018-shoulder-lr.e2e.ts, TSK-124 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — e2e tastiera GB stub + GBA reale (locale); touch skip desktop; unit da TSK-120/122/123
+**Note:** Sprint 14 EP-018 chiuso (5/5 TSK).
+

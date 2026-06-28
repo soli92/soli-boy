@@ -57,7 +57,19 @@ import { PrivacyNotice } from "../PrivacyNotice/PrivacyNotice";
 // ("Avviso legale no-ROM protette visibile in Settings → Legale").
 import { StoreComplianceNotice } from "../StoreComplianceNotice/StoreComplianceNotice";
 
-const BUTTONS: GameButton[] = ["up", "down", "left", "right", "a", "b", "start", "select"];
+// TSK-121 / US-064 — L e R rimappabili come gli altri comandi (EP-018).
+const BUTTONS: GameButton[] = [
+  "up",
+  "down",
+  "left",
+  "right",
+  "a",
+  "b",
+  "l",
+  "r",
+  "start",
+  "select",
+];
 
 /**
  * TSK-033 — Interfaccia segregata consumata dalla sezione "Dati".
@@ -147,6 +159,13 @@ export interface SettingsProps {
   autoStartFromLibrary?: boolean;
   /** Callback invocata al cambio del toggle "Avvio automatico" (US-053 AC2). */
   onAutoStartChange?: (enabled: boolean) => void;
+}
+
+/** Etichetta user-facing per un `GameButton` nel selettore rimappatura. */
+function buttonOptionLabel(button: GameButton): string {
+  if (button === "select") return "Select";
+  if (button === "start") return "Start";
+  return button.toUpperCase();
 }
 
 /** Etichette user-facing per i valori di scala. */
@@ -329,7 +348,7 @@ export function Settings({
               >
                 {BUTTONS.map((b) => (
                   <option key={b} value={b}>
-                    {b}
+                    {buttonOptionLabel(b)}
                   </option>
                 ))}
               </select>

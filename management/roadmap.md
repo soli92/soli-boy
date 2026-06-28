@@ -53,7 +53,7 @@ Refinement dei requisiti già stabiliti (RF-12/RF-13/RFM-01) sui pulsanti should
 
 | EP | Titolo | Priorità | Confidence | Dipende da |
 |----|--------|----------|-----------|-----------|
-| EP-018 | Controlli shoulder L e R in tutte le modalità e versioni | high | 90% | EP-003 |
+| EP-018 | Controlli shoulder L e R in tutte le modalità e versioni | high | done | EP-003 |
 
 - **EP-018** espone L e R su tastiera/gamepad (US-062), overlay touch per le piattaforme che li prevedono (US-063) e rimappatura/profili (US-064). Refinement chirurgico sul dominio input esistente, scope contenuto e a basso rischio; gap di documentazione sui singoli pulsanti hardware per piattaforma tracciato come non-bloccante in [[gaps]] (`controlli-l-r-shoulder-per-piattaforma`).
 

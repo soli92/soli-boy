@@ -5,6 +5,17 @@
 import { describe, expect, it } from "vitest";
 import { StubEngine } from "./stub-engine";
 
+describe("StubEngine input (TSK-123)", () => {
+  it("accetta L e R senza errore", () => {
+    const e = new StubEngine();
+    expect(() => {
+      e.sendInput("l", true);
+      e.sendInput("r", false);
+    }).not.toThrow();
+    expect(e.lastInput).toEqual({ button: "r", pressed: false });
+  });
+});
+
 describe("StubEngine.capabilities (TSK-030)", () => {
   it("dichiara saveStates + sram supportati (rewind no)", () => {
     const e = new StubEngine();
