@@ -7,13 +7,11 @@ import { expect, type Page } from "@playwright/test";
 
 export const INFO_PRIVACY_TAB = "Info & Privacy";
 
-/** App idratata: banner privacy (primo avvio) o tab bar (privacy già ack). */
+/** App idratata: la tab bar è sempre visibile (con o senza banner privacy). */
 export async function waitForAppBoot(page: Page): Promise<void> {
-  await expect(
-    page
-      .getByTestId("sb-privacy-banner")
-      .or(page.getByRole("tablist", { name: "Sezioni app" })),
-  ).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("tablist", { name: "Sezioni app" })).toBeVisible({
+    timeout: 10_000,
+  });
 }
 
 export async function openInfoPrivacyTab(page: Page): Promise<void> {
