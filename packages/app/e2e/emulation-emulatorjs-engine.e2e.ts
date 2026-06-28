@@ -26,6 +26,7 @@ const romTitle = FREE_ROM.replace(/\.[^.]+$/, "");
 const romPresent = existsSync(romPath);
 
 test.describe("TSK-024 — e2e engine reale (WasmBoyEngine/GB) ciclo completo @slow", () => {
+  test.describe.configure({ mode: "serial" });
   test.skip(!romPresent, `ROM homebrew libera assente: ${romPath}`);
 
   test.beforeEach(async ({ page }) => {

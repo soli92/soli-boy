@@ -101,20 +101,18 @@ test.describe("TSK-073 — tema dark ≠ light (anti-regressione blind-spot visu
   // Test di correttezza helper: temi validi impostati correttamente via DB
   // ---------------------------------------------------------------------------
   test.describe("setThemeViaDB imposta data-theme correttamente", () => {
-    const themes: UiTheme[] = ["dark", "cyberpunk", "90s-party"];
-
-    for (const theme of themes) {
-      test(`tema "${theme}" → data-theme="${theme}" su <html>`, async ({ page }) => {
-        // setThemeViaDB già chiama assertThemeApplied internamente (fail-loud);
-        // la verifica esplicita qui è ridondante ma rende il test auto-documentante.
+    test("tutti i temi validi → data-theme su <html>", async ({ page }) => {
+      const themes: UiTheme[] = ["dark", "cyberpunk", "90s-party"];
+      for (const theme of themes) {
+        await clearThemeInDB(page);
         await setThemeViaDB(page, theme);
         const actual = await page.evaluate(
           (attr) => document.documentElement.getAttribute(attr),
           "data-theme",
         );
-        expect(actual).toBe(theme);
-      });
-    }
+        expect(actual, `tema "${theme}"`).toBe(theme);
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------

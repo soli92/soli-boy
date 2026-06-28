@@ -12,7 +12,14 @@ const romPath = path.resolve(dir, "../public/test-roms", FREE_ROM);
 const romTitle = FREE_ROM.replace(/\.[^.]+$/, "");
 
 test.describe("emulazione reale (WasmBoyEngine, GB)", () => {
-  test.skip(!existsSync(romPath), `ROM libera assente (${FREE_ROM}).`);
+  test.skip(
+    !existsSync(romPath) || !!process.env.CI,
+    !existsSync(romPath)
+      ? `ROM libera assente (${FREE_ROM}).`
+      : "CI: coperto da emulation-emulatorjs-engine.e2e.ts",
+  );
+
+  test.describe.configure({ mode: "serial" });
 
   test("carica ROM GB libera → WasmBoy rende il canvas", async ({ page }) => {
     test.slow();

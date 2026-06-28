@@ -24,6 +24,7 @@ const SLOT = 0;
 const SLOT_LABEL = SLOT + 1;
 
 test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
+  test.describe.configure({ mode: "serial" });
   test.skip(!existsSync(romPath), `ROM libera assente (${FREE_ROM}).`);
 
   test.beforeEach(async ({ page }) => {

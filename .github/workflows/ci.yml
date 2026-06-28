@@ -16,7 +16,7 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: packages/app
@@ -55,7 +55,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: E2e tests (Playwright / Chromium)
-        run: npm run e2e
+        run: npm run e2e:ci
 
       - name: Upload Playwright report (solo su failure)
         uses: actions/upload-artifact@v7

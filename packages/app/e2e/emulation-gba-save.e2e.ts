@@ -20,6 +20,7 @@ const SLOT = 0;
 const SLOT_LABEL = SLOT + 1;
 
 test.describe("save/load state reale (MgbaEngine, GBA)", () => {
+  test.describe.configure({ mode: "serial" });
   test.skip(!existsSync(romPath), `ROM GBA libera assente (${GBA_ROM}).`);
 
   test.beforeEach(async ({ page }) => {
