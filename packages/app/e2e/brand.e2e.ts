@@ -3,15 +3,18 @@
 // siano presenti e raggiungibili a runtime in Chromium.
 // Engine: StubEngine (default, nessun parametro ?engine=real necessario).
 import { expect, test } from "@playwright/test";
+import { waitForAppBoot } from "./helpers/app-nav";
 
 test("favicon dichiarata in head", async ({ page }) => {
   await page.goto("/");
+  await waitForAppBoot(page);
   const faviconHref = await page.locator('link[rel="icon"]').first().getAttribute("href");
   expect(faviconHref).toBeTruthy();
 });
 
 test("manifest.webmanifest raggiungibile", async ({ page }) => {
   await page.goto("/");
+  await waitForAppBoot(page);
   const manifestHref = await page.locator('link[rel="manifest"]').getAttribute("href");
   expect(manifestHref).toBeTruthy();
   // Verifica HTTP 200 e contenuto JSON del manifest.
@@ -24,6 +27,7 @@ test("manifest.webmanifest raggiungibile", async ({ page }) => {
 
 test("logo Soli-boy visibile nella Library", async ({ page }) => {
   await page.goto("/");
+  await waitForAppBoot(page);
   // IA a 4 tab (increment 2): l'header con logo è dentro la tab Libreria.
   await page.getByRole("tab", { name: "Libreria" }).click();
   // TSK-046 rende il logo come <img alt="Soli-boy"> (non un form control):

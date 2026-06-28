@@ -23,6 +23,7 @@ import {
   setThemeViaDB,
   setThemeViaSelector,
 } from "./helpers/set-theme";
+import { waitForAppBoot } from "./helpers/app-nav";
 
 // Selettore usato per verificare che il render sia completato prima dello screenshot.
 const ROOT_SELECTOR = "body";
@@ -33,6 +34,7 @@ test.describe("TSK-073 — tema dark ≠ light (anti-regressione blind-spot visu
     // qualsiasi preferenza tema residua per garantire isolamento tra i test.
     await page.goto("/");
     await page.waitForSelector(ROOT_SELECTOR);
+    await waitForAppBoot(page);
     await clearThemeInDB(page);
   });
 

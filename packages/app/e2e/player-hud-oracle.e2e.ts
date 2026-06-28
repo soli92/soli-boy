@@ -27,6 +27,7 @@ import {
   setThemeViaDB,
   type UiTheme,
 } from "./helpers/set-theme";
+import { gotoStubApp } from "./helpers/app-nav";
 
 // ---------------------------------------------------------------------------
 // Costanti
@@ -56,7 +57,7 @@ const FAKE_ROM = {
  * Playwright (context-per-test): addInitScript persisterebbe attraverso i
  * page.reload() di setThemeViaDB cancellando il tema appena scritto. */
 async function gotoApp(page: import("@playwright/test").Page): Promise<void> {
-  await page.goto("/?engine=stub");
+  await gotoStubApp(page);
 }
 
 /**

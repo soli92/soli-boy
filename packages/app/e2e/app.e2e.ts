@@ -4,19 +4,25 @@
 // modo deterministico con ROM fittizie, non l'emulazione vera (vedi
 // emulation-real.e2e.ts per il motore reale WasmBoy con ?engine=real).
 import { expect, test } from "@playwright/test";
+import {
+  expectLegalNotice,
+  expectStoreComplianceNotice,
+  gotoStubApp,
+  openInfoPrivacyTab,
+} from "./helpers/app-nav";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => indexedDB.deleteDatabase("soli-boy"));
-  await page.goto("/?engine=stub");
+  await gotoStubApp(page);
 });
 
-test("avviso legale in tab Info & Privacy (TSK-006 / IA 4 tab)", async ({ page }) => {
-  // Al primo avvio: banner privacy (TSK-069); LegalNotice vive nel panel Info.
-  await expect(page.getByTestId("sb-privacy-banner")).toBeVisible();
-  await page.getByRole("tab", { name: "Info & Privacy" }).click();
-  await expect(page.getByRole("note", { name: /avviso legale/i })).toContainText(
-    /non distribuisce/i,
-  );
+test("contenuti legali in tab Info & Privacy (TSK-006 / TSK-070 / IA 4 tab)", async ({
+  page,
+}) => {
+  await openInfoPrivacyTab(page);
+  await expectLegalNotice(page);
+  await expectStoreComplianceNotice(page);
+  await expect(page.getByTestId("sb-privacy-section")).toBeVisible();
 });
 
 test("carica una ROM GB → compare in libreria → avvia → pausa", async ({ page }) => {

@@ -10,10 +10,10 @@
 // Differenza rispetto agli altri componenti "legali" già in repo
 // (R.2 zero invenzione, evitare duplicazioni cieche):
 //
-// - `LegalNotice` (TSK-006, US-006): nota breve nel footer di App.tsx,
-//   focalizzata sul caricamento file ("non distribuisce né include ROM o BIOS
-//   protetti da copyright. L'esecuzione avviene esclusivamente su file
-//   forniti dall'utente."). Resta in App.tsx invariato.
+// - `LegalNotice` (TSK-006, US-006): nota breve nel panel "Info & Privacy"
+//   (App.tsx tab `info`), focalizzata sul caricamento file ("non distribuisce
+//   né include ROM o BIOS protetti da copyright. L'esecuzione avviene
+//   esclusivamente su file forniti dall'utente.").
 //
 // - `PrivacyNotice` (TSK-069, US-033): informativa privacy on-device. Tema
 //   diverso (privacy, non legale-copyright). Già presente in Settings.
@@ -92,11 +92,8 @@ export function StoreComplianceNotice({
           {HEADING}
         </h2>
       )}
-      {/* aria-label deliberatamente distinto da "Avviso legale" (LegalNotice
-          TSK-006) per non collidere con l'e2e `getByRole('note', {name: /avviso
-          legale/i})` in app.e2e.ts in modalità strict: due elementi `role=note`
-          con name matchante farebbero fallire la query. Wording resta
-          semanticamente equivalente per gli assistive tech. */}
+      {/* aria-label distinto da "Avviso legale" (LegalNotice TSK-006): query e2e
+          in tab Info & Privacy via helpers/app-nav.ts (openInfoPrivacyTab). */}
       <p
         className="sb-note"
         role="note"

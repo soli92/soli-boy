@@ -3,10 +3,11 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { gotoStubApp } from "./helpers/app-nav";
 
 test.describe("EP-017 US-060 — run_a11y_scan (TSK-117)", () => {
   test("Settings tab: 0 axe violations (heading structure TSK-115)", async ({ page }) => {
-    await page.goto("/?engine=stub");
+    await gotoStubApp(page);
     await page.getByRole("tab", { name: /impostazioni/i }).click();
     await expect(page.getByRole("heading", { name: /controlli — rimappatura/i })).toBeVisible();
 
@@ -22,7 +23,7 @@ test.describe("EP-017 US-060 — run_a11y_scan (TSK-117)", () => {
   });
 
   test("Player idle: 0 axe violations (aria-live TSK-116)", async ({ page }) => {
-    await page.goto("/?engine=stub");
+    await gotoStubApp(page);
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
       .analyze();

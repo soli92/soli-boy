@@ -3,6 +3,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { gotoStubApp } from "./helpers/app-nav";
 
 async function isTouchContext(page: import("@playwright/test").Page): Promise<boolean> {
   return page.evaluate(() => window.matchMedia("(pointer: coarse)").matches);
@@ -10,7 +11,7 @@ async function isTouchContext(page: import("@playwright/test").Page): Promise<bo
 
 async function openTouchConfigPanel(page: import("@playwright/test").Page): Promise<void> {
   await page.addInitScript(() => indexedDB.deleteDatabase("soli-boy"));
-  await page.goto("/?engine=stub");
+  await gotoStubApp(page);
   await page.getByRole("tab", { name: "Libreria" }).click();
   await page.getByLabel("Carica ROM").setInputFiles({
     name: "touch-config.gb",
