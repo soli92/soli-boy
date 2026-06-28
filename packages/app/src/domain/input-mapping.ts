@@ -10,7 +10,7 @@ export type InputSink = (button: GameButton, pressed: boolean) => void;
 /** Profilo di mappatura tasto-tastiera → GameButton. */
 export type KeyProfile = Record<string, GameButton>;
 
-/** Profilo tastiera di default (frecce + Z/X + Enter/Shift). */
+/** Profilo tastiera di default (frecce + Z/X + Enter/Shift + shoulder L/R). */
 export const DEFAULT_KEY_PROFILE: KeyProfile = {
   ArrowUp: "up",
   ArrowDown: "down",
@@ -20,12 +20,17 @@ export const DEFAULT_KEY_PROFILE: KeyProfile = {
   x: "a",
   Enter: "start",
   Shift: "select",
+  // TSK-120 / US-062 — convenzione SNES-like: Q=L, W=R (non sovrapposti ad A/B/Z/X).
+  q: "l",
+  w: "r",
 };
 
 /** Mappa standard pulsante-gamepad-index → GameButton (layout stile SNES/Xbox). */
 export const DEFAULT_GAMEPAD_MAP: Record<number, GameButton> = {
   0: "a",
   1: "b",
+  4: "l",
+  5: "r",
   8: "select",
   9: "start",
   12: "up",
