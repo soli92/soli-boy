@@ -252,6 +252,8 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
     // Esporta disabilitato.
     expect((screen.getByRole("button", { name: /esporta/i }) as HTMLButtonElement).disabled).toBe(true);
     // Senza currentRom: il contesto invita a selezionare una ROM.
-    expect(screen.getByTestId("sb-data-rom-context")).toHaveTextContent(/seleziona una ROM/i);
+    expect(screen.getByTestId("sb-data-rom-context")).toHaveTextContent(
+      /nessun gioco corrente/i,
+    );
   });
 });

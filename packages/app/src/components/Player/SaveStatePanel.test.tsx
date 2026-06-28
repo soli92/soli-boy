@@ -257,10 +257,48 @@ describe("SaveStatePanel — US-016 / US-018", () => {
       fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
     });
 
+    const dialog = await screen.findByRole("dialog", { name: /eliminare save state/i });
+    expect(dialog).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /^elimina$/i }));
+    });
+
     expect(svc.deleteSaveState).toHaveBeenCalledWith("ss-del");
     await waitFor(() => {
       expect(screen.getByTestId("sb-savestate-meta-0").textContent).toMatch(/vuoto/i);
     });
+  });
+
+  it("Elimina → Annulla lascia il save state presente", async () => {
+    const existing = makeSave("rom-1", 0, "ss-keep");
+    const svc = makeService([existing]);
+    render(
+      <SaveStatePanel
+        engine={fakeEngine()}
+        saveService={svc}
+        romId="rom-1"
+        currentCore="gambatte"
+        isRunning
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("sb-savestate-meta-0").textContent).not.toMatch(
+        /vuoto/i,
+      );
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
+    });
+    await screen.findByRole("dialog", { name: /eliminare save state/i });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /annulla/i }));
+    });
+
+    expect(svc.deleteSaveState).not.toHaveBeenCalled();
+    expect(screen.getByTestId("sb-savestate-meta-0").textContent).not.toMatch(/vuoto/i);
   });
 
   it("pannello disabilitato senza romId (US-018: salvataggi associati al gioco)", async () => {

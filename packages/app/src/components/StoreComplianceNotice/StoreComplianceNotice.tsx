@@ -88,9 +88,9 @@ export function StoreComplianceNotice({
       data-testid="sb-store-compliance-section"
     >
       {!headingHidden && (
-        <p id={headingId} className="sb-lbl">
+        <h2 id={headingId} className="sb-lbl">
           {HEADING}
-        </p>
+        </h2>
       )}
       {/* aria-label deliberatamente distinto da "Avviso legale" (LegalNotice
           TSK-006) per non collidere con l'e2e `getByRole('note', {name: /avviso

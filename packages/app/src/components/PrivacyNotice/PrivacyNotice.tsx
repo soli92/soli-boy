@@ -116,9 +116,9 @@ export function PrivacyNotice({
         data-testid="sb-privacy-section"
       >
         {!headingHidden && (
-          <p id={headingId} className="sb-lbl">
+          <h2 id={headingId} className="sb-lbl">
             {HEADING}
-          </p>
+          </h2>
         )}
         <PointList />
         <p className="sb-note" role="note">
@@ -140,9 +140,9 @@ export function PrivacyNotice({
       data-testid="sb-privacy-banner"
     >
       {!headingHidden && (
-        <p id={headingId} className="sb-lbl">
+        <h2 id={headingId} className="sb-lbl">
           {HEADING}
-        </p>
+        </h2>
       )}
       <PointList />
       <button
