@@ -9,6 +9,7 @@ import {
   expectStoreComplianceNotice,
   gotoStubApp,
   openInfoPrivacyTab,
+  uploadRom,
 } from "./helpers/app-nav";
 
 test.beforeEach(async ({ page }) => {
@@ -26,15 +27,11 @@ test("contenuti legali in tab Info & Privacy (TSK-006 / TSK-070 / IA 4 tab)", as
 });
 
 test("carica una ROM GB → compare in libreria → avvia → pausa", async ({ page }) => {
-  // caricamento via file input (nascosto): Playwright lo gestisce
-  await page.getByLabel("Carica ROM").setInputFiles({
+  await uploadRom(page, {
     name: "tetris.gb",
     mimeType: "application/octet-stream",
     buffer: Buffer.from("ROMDATA-GB"),
   });
-
-  // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-  await page.getByRole("tab", { name: "Libreria" }).click();
 
   // la ROM appare in libreria con titolo e piattaforma (tile, non il chip filtro)
   const tile = page.getByRole("button", { name: "tetris GB" });
@@ -67,14 +64,12 @@ test("carica una ROM GB → compare in libreria → avvia → pausa", async ({ p
 });
 
 test("file non supportato mostra errore e non entra in libreria", async ({ page }) => {
-  await page.getByLabel("Carica ROM").setInputFiles({
+  await uploadRom(page, {
     name: "game.nes",
     mimeType: "application/octet-stream",
     buffer: Buffer.from("x"),
   });
   await expect(page.getByRole("alert")).toBeVisible();
-  // IA a 4 tab (increment 2): lo stato vuoto "Nessun gioco" è nella Libreria.
-  await page.getByRole("tab", { name: "Libreria" }).click();
   // TSK-103: getByText(/nessun gioco/i) ora matcha sia la Library ("Nessun gioco.
   // Carica una ROM per iniziare.") sia l'HUD ("Nessun gioco selezionato"). Usiamo
   // il selettore contestuale scoped alla sezione "Libreria giochi" per disambiguare.

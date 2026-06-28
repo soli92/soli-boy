@@ -16,6 +16,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+import { uploadRom } from "./helpers/app-nav";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const FREE_ROM = process.env.SOLIBOY_E2E_ROM ?? "dmg-acid2.gb";
@@ -47,9 +48,7 @@ test.describe("TSK-024 — e2e engine reale (WasmBoyEngine/GB) ciclo completo @s
       await page.goto("/?engine=real");
 
       // Carica la ROM libera tramite il file input.
-      await page.getByLabel("Carica ROM").setInputFiles(romPath);
-      // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-      await page.getByRole("tab", { name: "Libreria" }).click();
+      await uploadRom(page, romPath);
 
       // La ROM deve comparire in libreria con il titolo.
       await expect(page.getByText(romTitle)).toBeVisible();
@@ -87,9 +86,7 @@ test.describe("TSK-024 — e2e engine reale (WasmBoyEngine/GB) ciclo completo @s
       test.slow();
 
       await page.goto("/?engine=real");
-      await page.getByLabel("Carica ROM").setInputFiles(romPath);
-      // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-      await page.getByRole("tab", { name: "Libreria" }).click();
+      await uploadRom(page, romPath);
       await expect(page.getByText(romTitle)).toBeVisible();
       await page.getByText(romTitle).click();
       await page.getByRole("button", { name: /avvia/i }).click();
@@ -139,9 +136,7 @@ test.describe("TSK-024 — e2e engine reale (WasmBoyEngine/GB) ciclo completo @s
       test.slow();
 
       await page.goto("/?engine=real");
-      await page.getByLabel("Carica ROM").setInputFiles(romPath);
-      // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-      await page.getByRole("tab", { name: "Libreria" }).click();
+      await uploadRom(page, romPath);
       await expect(page.getByText(romTitle)).toBeVisible();
       await page.getByText(romTitle).click();
       await page.getByRole("button", { name: /avvia/i }).click();
@@ -216,9 +211,7 @@ test.describe("TSK-024 — e2e engine reale (WasmBoyEngine/GB) ciclo completo @s
       test.slow();
 
       await page.goto("/?engine=real");
-      await page.getByLabel("Carica ROM").setInputFiles(romPath);
-      // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-      await page.getByRole("tab", { name: "Libreria" }).click();
+      await uploadRom(page, romPath);
       await expect(page.getByText(romTitle)).toBeVisible();
       await page.getByText(romTitle).click();
       await page.getByRole("button", { name: /avvia/i }).click();

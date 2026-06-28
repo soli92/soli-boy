@@ -23,7 +23,7 @@
 //   Test 3 e 4 sono indipendenti dall'overlay e passano già ora.
 
 import { expect, test } from "@playwright/test";
-import { gotoStubApp } from "./helpers/app-nav";
+import { gotoStubApp, uploadRom } from "./helpers/app-nav";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,13 +33,11 @@ import { gotoStubApp } from "./helpers/app-nav";
 async function loadStubRom(page: import("@playwright/test").Page) {
   await page.addInitScript(() => indexedDB.deleteDatabase("soli-boy"));
   await gotoStubApp(page);
-  await page.getByLabel("Carica ROM").setInputFiles({
+  await uploadRom(page, {
     name: "test.gb",
     mimeType: "application/octet-stream",
     buffer: Buffer.from("ROMDATA-GB"),
   });
-  // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-  await page.getByRole("tab", { name: "Libreria" }).click();
   // Attende che la ROM appaia in libreria.
   const tile = page.getByRole("button", { name: "test GB" });
   await expect(tile).toBeVisible();

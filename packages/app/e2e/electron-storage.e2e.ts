@@ -30,6 +30,7 @@
 // [^src: management/kanban/EP-006-distribuzione-desktop/US-023-filesystem-nativo/TSK-058.md §Technical Specs "Fase 2"]
 
 import { test, expect } from "@playwright/test";
+import { uploadRom } from "./helpers/app-nav";
 
 const ELECTRON_READY = process.env.SOLIBOY_ELECTRON_E2E === "1";
 
@@ -56,7 +57,7 @@ test.describe("TSK-058 @slow @electron — e2e Electron: carica ROM + salva su f
   test("carica ROM → listRoms la recupera (round-trip filesystem nativo)", async ({ page }) => {
     // Fase 2: file picker → addRom → NativeFsAdapter IPC → listRoms → ROM presente.
     await page.goto("/");
-    await page.getByLabel("Carica ROM").setInputFiles({
+    await uploadRom(page, {
       name: "dmg-acid2.gb",
       mimeType: "application/octet-stream",
       buffer: Buffer.from("FAKE-ROM-BYTES-FOR-E2E"),
@@ -70,7 +71,7 @@ test.describe("TSK-058 @slow @electron — e2e Electron: carica ROM + salva su f
   test("salva stato → rilegge: save state su filesystem nativo via IPC", async ({ page }) => {
     // Fase 2: carica ROM → avvia → salva nello slot 1 → rilancia → slot occupato.
     await page.goto("/?engine=stub");
-    await page.getByLabel("Carica ROM").setInputFiles({
+    await uploadRom(page, {
       name: "dmg-acid2.gb",
       mimeType: "application/octet-stream",
       buffer: Buffer.from("FAKE-ROM-BYTES-FOR-E2E"),
@@ -106,7 +107,7 @@ test.describe("TSK-058 @slow @electron — e2e Electron: carica ROM + salva su f
     });
 
     await page.goto("/?engine=stub");
-    await page.getByLabel("Carica ROM").setInputFiles({
+    await uploadRom(page, {
       name: "dmg-acid2.gb",
       mimeType: "application/octet-stream",
       buffer: Buffer.from("FAKE-ROM"),

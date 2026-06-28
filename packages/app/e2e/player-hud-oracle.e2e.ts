@@ -27,7 +27,7 @@ import {
   setThemeViaDB,
   type UiTheme,
 } from "./helpers/set-theme";
-import { gotoStubApp } from "./helpers/app-nav";
+import { gotoStubApp, uploadRom } from "./helpers/app-nav";
 
 // ---------------------------------------------------------------------------
 // Costanti
@@ -67,8 +67,7 @@ async function gotoApp(page: import("@playwright/test").Page): Promise<void> {
  * Ritorna dopo che il pulsante "Pausa" e visibile (stato running confermato).
  */
 async function bringToRunning(page: import("@playwright/test").Page): Promise<void> {
-  await page.getByLabel("Carica ROM").setInputFiles(FAKE_ROM);
-  await page.getByRole("tab", { name: "Libreria" }).click();
+  await uploadRom(page, FAKE_ROM);
   await page.getByRole("button", { name: "tetris GB" }).click();
   // TSK-101: se è già in corso un gioco diverso compare il gate dialog;
   // in questi test partiamo sempre da idle, ma lo gestiamo per robustezza.
