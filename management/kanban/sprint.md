@@ -7,7 +7,8 @@ identità di brand (EP-010) + CI/CD (EP-011) + desktop (EP-006) + mobile (EP-007
 conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **fix color-contrast WCAG AA (EP-012/US-049, Sprint 10)** +
 **robustezza codice (EP-014, Sprint 12)** + **UX Player flusso principale (EP-015, Sprint 12)** +
-**UX Library/Settings/componenti (EP-016, Sprint 13)** + **a11y manual checks remediation (EP-017, Sprint 13)**.
+**UX Library/Settings/componenti (EP-016, Sprint 13)** + **a11y manual checks remediation (EP-017, Sprint 13)** +
+**controlli shoulder L/R (EP-018, Sprint 14)**.
 
 ---
 
@@ -372,7 +373,39 @@ DAG Sprint 13:
 Sprint 13 **completo**.
 
 
-## Lookahead — Sprint 14+ (post-Sprint 13)
+## Sprint 14 — Controlli shoulder L/R (EP-018, P0) — 0/5 done
+
+> **Obiettivo:** completare il supporto ai pulsanti shoulder L e R su tastiera, gamepad e touch, per tutti i core emulati (gambatte, mgba, fbneo, mame). WasmBoy GB mantiene no-op documentato (hardware senza shoulder). Sprint corto (5 TSK atomici), tutti P0, DAG a due livelli.
+>
+> **Coordinazione:** TSK-120 è la radice del DAG — tutti gli altri dipendono da esso. TSK-121 e TSK-122 sono parallelizzabili dopo TSK-120. TSK-123 è parallelizzabile con TSK-121/122. TSK-124 è il task di chiusura, dipende da tutti.
+
+### Wave 1 — Dominio InputMapping (prerequisito)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-120 | InputMapping: default keyboard L/R + gamepad indices 4/5 | US-062 | EP-018 | be | agent | P0 | S | todo | — |
+
+### Wave 2 — UI + Engine pipeline (parallelo, dopo TSK-120)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-121 | Settings: aggiungere "l" e "r" alla lista pulsanti rimappabili | US-064 | EP-018 | fe | agent | P0 | S | todo | TSK-120 |
+| TSK-122 | TouchOverlay button-map: L/R su tutti i core (gambatte, mgba, fbneo, mame) | US-063 | EP-018 | fe | agent | P0 | M | todo | TSK-120 |
+| TSK-123 | Engine pipeline: forward L/R verificato/documentato | US-062 | EP-018 | be | agent | P0 | S | todo | TSK-120 |
+
+### Wave 3 — QA end-to-end (dopo Wave 2)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-124 | Test integrazione/e2e: L/R tastiera, gamepad mock, touch GBA, overlay GB | US-063 | EP-018 | qa | agent | P0 | M | todo | TSK-120, TSK-121, TSK-122, TSK-123 |
+
+DAG Sprint 14:
+- Wave 1: TSK-120 (radice — InputMapping domain)
+- Wave 2 (parallelo, max 3 agent): TSK-121 ‖ TSK-122 ‖ TSK-123 → tutti dipendono da TSK-120
+- Wave 3: TSK-124 → TSK-120, TSK-121, TSK-122, TSK-123 (chiusura QA)
+
+
+## Lookahead — Sprint 15+ (post-Sprint 14)
 
 | Area | Note |
 |------|------|
@@ -404,6 +437,7 @@ Sprint 13 **completo**.
   EP-015 P0/P1: TSK-100..106 done (auto-avvio, HUD, gate cambio gioco, toggle, stabilità visiva).
   480/480 test pass. Complessità cognitiva App.tsx + Settings.tsx sotto soglia 15.
 - **Sprint 13 — UX Library/Settings (EP-016) + A11y (EP-017):** **13/13 done**. EP-016 + EP-017 chiusi.
+- **Sprint 14 — Controlli shoulder L/R (EP-018):** 5 TSK todo (TSK-120..124). DAG: Wave 1 (TSK-120) → Wave 2 (TSK-121 ‖ TSK-122 ‖ TSK-123) → Wave 3 (TSK-124). Tutti P0, consumer agent.
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).

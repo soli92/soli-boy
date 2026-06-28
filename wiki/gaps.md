@@ -185,3 +185,9 @@ Re-scan iter-2 (axe-playwright, 3 temi × 2 viewport + scope sintetico): **0 fin
 **Impatto:** sub-stati elencati hanno `a11y_status: pass` su axe ma con manual checks aperti (documentati nei report `TSK-{017,032,033,035,041}-a11y-iter-1.{json,md}`).
 **Azione richiesta:** manual audit con AT (NVDA/VoiceOver) sui 5 sub-stati elencati prima di rilascio pubblico. In alternativa, estendere la suite e2e (`packages/app/e2e/`) con scenari dedicati che coprano i sub-stati e re-eseguire `a11y-scan.sh` su URL parametrizzati.
 
+## 2026-06-28 15:30 — controlli-l-r-shoulder-per-piattaforma
+**Origine:** product-manager @ EP-018 (controlli shoulder L/R in tutte le modalità)
+**Gap:** la wiki enumera le piattaforme supportate al lancio (Nintendo Game Boy / GBC, Nintendo Game Boy Advance, arcade) in [[piattaforme-e-core-supportati]] e cita i comandi a livello generico in [[requisiti-funzionali-soli-boy]] (RF-12/RF-13) e [[controlli-touch]] (RFM-01), ma non elenca esplicitamente, per ciascuna piattaforma, l'insieme dei pulsanti hardware (in particolare la presenza/assenza dei pulsanti shoulder L e R). EP-018 procede comunque citando i requisiti generici e la presenza del core dedicato alla piattaforma che li espone (mGBA per GBA).
+**Sospetta fonte:** raw/2026-06-01-specifiche-funzionali.txt §1.3 + tabelle hardware delle piattaforme citate (eventualmente nuovo raw di riferimento hardware per piattaforma).
+**Impatto:** non-bloccante. EP-018 e le sue US-062/063/064 sono in `status: ready` e citano i requisiti esistenti più la pagina piattaforme. Una pagina futura (es. `wiki/concepts/comandi-hardware-per-piattaforma.md`) consoliderebbe la mappa pulsanti↔piattaforma e chiuderebbe il gap senza retrofit sulle US già scritte.
+

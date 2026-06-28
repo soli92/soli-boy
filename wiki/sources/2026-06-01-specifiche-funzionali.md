@@ -56,3 +56,4 @@ Il documento dichiara una roadmap indicativa in 4 fasi: proof of concept (ROM GB
 - EP-004 Salvataggi — `management/kanban/EP-004-salvataggi/`
 - EP-005 Resa video — `management/kanban/EP-005-resa-video/`
 - EP-006 Distribuzione desktop — `management/kanban/EP-006-distribuzione-desktop/`
+- EP-018 Controlli shoulder L e R in tutte le modalità e versioni — `management/kanban/EP-018-controlli-shoulder-l-r/`

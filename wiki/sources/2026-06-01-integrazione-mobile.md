@@ -40,3 +40,4 @@ Sintesi: [[requisiti-mobile-soli-boy]] · [[roadmap-mobile-soli-boy]]
 <!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
 - EP-007 Esperienza mobile — `management/kanban/EP-007-esperienza-mobile/`
 - EP-008 Conformità e pubblicazione store — `management/kanban/EP-008-conformita-e-pubblicazione-store/`
+- EP-018 Controlli shoulder L e R in tutte le modalità e versioni (US-063 touch L/R) — `management/kanban/EP-018-controlli-shoulder-l-r/`
