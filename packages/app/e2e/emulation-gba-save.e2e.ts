@@ -36,6 +36,10 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     await page.getByText(romTitle).click();
     await page.getByRole("button", { name: /avvia/i }).click();
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
+    // Gate WASM init: save/load prima di data-state=running causa flake mGBA in CI.
+    await expect(page.locator(".sb-screen")).toHaveAttribute("data-state", "running", {
+      timeout: 15_000,
+    });
 
     const saveBtn = page.getByRole("button", { name: `Salva nello slot ${SLOT_LABEL}` });
     await expect(saveBtn).toBeEnabled({ timeout: 5_000 });
@@ -61,6 +65,10 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     await page.getByText(romTitle).click();
     await page.getByRole("button", { name: /avvia/i }).click();
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
+    // Gate WASM init: save/load prima di data-state=running causa flake mGBA in CI.
+    await expect(page.locator(".sb-screen")).toHaveAttribute("data-state", "running", {
+      timeout: 15_000,
+    });
 
     const saveBtn = page.getByRole("button", { name: `Salva nello slot ${SLOT_LABEL}` });
     await expect(saveBtn).toBeEnabled({ timeout: 5_000 });

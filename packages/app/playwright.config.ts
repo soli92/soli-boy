@@ -7,7 +7,9 @@ export default defineConfig({
   testMatch: "**/*.e2e.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // WASM real-emulation specs are timing-flaky under parallel CI load; 2 retries mirror
+  // the manual rerun pattern documented in AGENTS.md (emulation-save / gba-save).
+  retries: process.env.CI ? 2 : 0,
   // In CI: "line" per i log + "html" (in packages/app/playwright-report/) così
   // l'artifact su failure di TSK-052 contiene il report navigabile. Locale: list.
   reporter: process.env.CI

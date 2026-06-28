@@ -52,6 +52,10 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
 
     // Attendi che il canvas WasmBoy sia visibile (emulazione avviata).
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
+    // Gate WASM init: save prima di data-state=running causa flake WasmBoy in CI.
+    await expect(page.locator(".sb-screen")).toHaveAttribute("data-state", "running", {
+      timeout: 15_000,
+    });
 
     // A questo punto il pannello Save state deve essere abilitato (engine running,
     // romId presente, capabilities.saveStates === true per WasmBoyEngine).
@@ -96,6 +100,9 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
     await page.getByText(romTitle).click();
     await page.getByRole("button", { name: /avvia/i }).click();
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".sb-screen")).toHaveAttribute("data-state", "running", {
+      timeout: 15_000,
+    });
 
     // Salva nello slot.
     const saveBtn = page.getByRole("button", { name: `Salva nello slot ${SLOT_LABEL}` });
@@ -134,6 +141,9 @@ test.describe("save/load state reale (WasmBoyEngine, GB)", () => {
     await page.getByText(romTitle).click();
     await page.getByRole("button", { name: /avvia/i }).click();
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".sb-screen")).toHaveAttribute("data-state", "running", {
+      timeout: 15_000,
+    });
 
     const saveBtn = page.getByRole("button", { name: `Salva nello slot ${SLOT_LABEL}` });
     await expect(saveBtn).toBeEnabled({ timeout: 5_000 });
