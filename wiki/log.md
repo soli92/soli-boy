@@ -709,4 +709,5 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 2026-06-28 | fe-dev | develop TSK-116 → done | Player.tsx, Player.hud.test.tsx, app-extra.css, EP-017-US-060-a11y-iter-1.md | aria-live HUD + canvas status adiacente.
 
 2026-06-28 | orchestrator | config | token-ledger-cursor-adapter | factory.config.yaml, .cursor/rules/token-ledger-display.mdc | EP-022: auto_call_on_wave_close ON + display a fine attività (Cursor adapter).
+2026-06-28 | orchestrator | config | token-ledger-cloud-fix | show-session-tokens.py, .cursor/hooks.json | Cloud API + always-print; CURSOR_API_KEY per token reali.
 
