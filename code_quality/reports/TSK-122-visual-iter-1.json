@@ -1,0 +1,51 @@
+{
+  "tsk_id": "TSK-122",
+  "iter": 1,
+  "max_iterations": 3,
+  "verdict": "pass",
+  "visual_status": "pass",
+  "next_action": "done",
+  "scope": "FE refactor button-map.ts: coreHasShoulderButtons helper + US-063 alignment + shoulder layout marker (data-shoulder) for L/R",
+  "viewports": [{ "name": "mobile", "width": 390, "height": 664, "touch": true }],
+  "themes": ["light"],
+  "structured_checks": [],
+  "structural_assertions": {
+    "passed": 9,
+    "failed": 0,
+    "details": [
+      "gambatte: data-has-shoulder=false on container",
+      "gambatte: no L/R in DOM",
+      "gambatte: A/B/Select/Start present",
+      "mgba: data-has-shoulder=true on container",
+      "mgba: L/R present with data-shoulder=true and .ab-shoulder class",
+      "mgba: L.x < R.x (horizontally distinct)",
+      "mgba: L/R in upper half of container (shoulder position)",
+      "mgba: A/B/Select/Start NOT marked shoulder"
+    ]
+  },
+  "screenshots": [
+    "TSK-122-visual-iter-1/gambatte-mobile.png",
+    "TSK-122-visual-iter-1/mgba-mobile.png"
+  ],
+  "critic_findings": [
+    {
+      "id": "F1",
+      "severity": "non-blocking",
+      "category": "visual-layout",
+      "summary": "mgba: L visually occluded by STA — pre-existing CSS gap (missing position rules for .ab-select/.ab-start/.ab-l/.ab-r in solids-theme.css)",
+      "pre_existing": true,
+      "mitigation_in_scope": "zIndex:2 on shoulder L/R inline style keeps L tappable under overlap",
+      "gap_ref": "wiki/gaps.md#touch-overlay-mgba-ab-positioning",
+      "action": "TPM to open FE follow-up TSK for CSS layout refactor of .sb-ab for GBA 6-button set"
+    }
+  ],
+  "unit_tests_coverage": {
+    "file": "packages/app/src/components/TouchOverlay/TouchOverlay.test.tsx",
+    "new_tests": 12,
+    "total_tests_in_file": 46,
+    "total_tests_touchoverlay_dir": 66,
+    "all_passing": true
+  },
+  "elapsed_iterations": 1,
+  "produced_at": "2026-06-28T15:58:00Z"
+}

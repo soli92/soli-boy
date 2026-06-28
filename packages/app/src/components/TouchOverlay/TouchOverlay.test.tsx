@@ -17,8 +17,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InputMapping } from "../../domain/input-mapping";
 import type { ConfigPort } from "../../storage/port";
 import { TouchOverlay } from "./TouchOverlay";
+import { BUTTON_MAP, coreHasShoulderButtons } from "./button-map";
 import { useTouchOverlayConfig } from "./useTouchOverlayConfig";
 import { renderHook } from "@testing-library/react";
+import type { Core } from "../../domain/types";
 
 // --------------------------------------------------------------------------
 // Helper: simula un touch device (matchMedia pointer:coarse → true).
@@ -161,7 +163,7 @@ describe("TouchOverlay", () => {
     expect(im.sendTouchInput).toHaveBeenCalledWith("down", true);
   });
 
-  it("GB (gambatte): rende A, B, Select, Start", () => {
+  it("GB (gambatte): rende A, B, Select, Start (no L/R, no shoulder hardware)", () => {
     mockTouchDevice(true);
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);
@@ -169,7 +171,7 @@ describe("TouchOverlay", () => {
     expect(screen.getByTestId("sb-touch-btn-b")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
-    // GBA-only: NON rende L e R su gambatte.
+    // US-063: gambatte non espone shoulder hardware → NO L/R touch.
     expect(screen.queryByTestId("sb-touch-btn-l")).not.toBeInTheDocument();
     expect(screen.queryByTestId("sb-touch-btn-r")).not.toBeInTheDocument();
   });
@@ -184,6 +186,31 @@ describe("TouchOverlay", () => {
     expect(screen.getByTestId("sb-touch-btn-r")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
+  });
+
+  // TSK-122 / US-063 — copertura esplicita NO L/R per i core senza shoulder hardware.
+  it("ARCADE (fbneo): rende A, B, Select, Start (no L/R, no shoulder hardware)", () => {
+    mockTouchDevice(true);
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="fbneo" inputMapping={im} />);
+    expect(screen.getByTestId("sb-touch-btn-a")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-b")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
+    expect(screen.queryByTestId("sb-touch-btn-l")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sb-touch-btn-r")).not.toBeInTheDocument();
+  });
+
+  it("ARCADE (mame): rende A, B, Select, Start (no L/R, no shoulder hardware)", () => {
+    mockTouchDevice(true);
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="mame" inputMapping={im} />);
+    expect(screen.getByTestId("sb-touch-btn-a")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-b")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
+    expect(screen.queryByTestId("sb-touch-btn-l")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sb-touch-btn-r")).not.toBeInTheDocument();
   });
 
   it("touchstart pulsante A → sendTouchInput('a', true)", () => {
@@ -216,6 +243,120 @@ describe("TouchOverlay", () => {
     render(<TouchOverlay core="mgba" inputMapping={im} />);
     fireEvent.touchStart(screen.getByTestId("sb-touch-btn-r"));
     expect(im.sendTouchInput).toHaveBeenCalledWith("r", true);
+  });
+});
+
+// --------------------------------------------------------------------------
+// TSK-122 — coreHasShoulderButtons helper + BUTTON_MAP invariante US-063
+// --------------------------------------------------------------------------
+
+describe("button-map / coreHasShoulderButtons (TSK-122, US-063)", () => {
+  it("ritorna true SOLO per i core che espongono shoulder hardware (oggi: mgba)", () => {
+    expect(coreHasShoulderButtons("mgba")).toBe(true);
+    expect(coreHasShoulderButtons("gambatte")).toBe(false);
+    expect(coreHasShoulderButtons("fbneo")).toBe(false);
+    expect(coreHasShoulderButtons("mame")).toBe(false);
+  });
+
+  it("BUTTON_MAP rispetta l'invariante: L/R presenti sse coreHasShoulderButtons(core)", () => {
+    // Enumerazione esplicita dei core supportati al lancio (vedi domain/types).
+    const cores: Core[] = ["gambatte", "mgba", "fbneo", "mame"];
+    for (const core of cores) {
+      const hasShoulder = coreHasShoulderButtons(core);
+      const buttons = BUTTON_MAP[core].map((b) => b.button);
+      const hasLR = buttons.includes("l") && buttons.includes("r");
+      const hasAny = buttons.includes("l") || buttons.includes("r");
+      // Sse: hasShoulder ↔ hasLR; e mai un solo lato (L senza R o viceversa).
+      expect(hasLR).toBe(hasShoulder);
+      expect(hasAny).toBe(hasShoulder);
+    }
+  });
+
+  it("mgba BUTTON_MAP contiene esattamente A, B, L, R, Select, Start (no duplicati)", () => {
+    const buttons = BUTTON_MAP["mgba"].map((b) => b.button).sort();
+    expect(buttons).toEqual(["a", "b", "l", "r", "select", "start"]);
+  });
+});
+
+// --------------------------------------------------------------------------
+// TSK-122 — Layout L/R "posizione spalle" (US-063 §Business Rules)
+// --------------------------------------------------------------------------
+
+describe("TouchOverlay layout shoulder L/R (TSK-122, US-063)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockTouchDevice(true);
+  });
+
+  it("mgba: contenitore pulsanti marcato data-has-shoulder=true", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="mgba" inputMapping={im} />);
+    expect(screen.getByTestId("sb-touch-buttons")).toHaveAttribute(
+      "data-has-shoulder",
+      "true",
+    );
+  });
+
+  it("gambatte: contenitore pulsanti marcato data-has-shoulder=false", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    expect(screen.getByTestId("sb-touch-buttons")).toHaveAttribute(
+      "data-has-shoulder",
+      "false",
+    );
+  });
+
+  it("mgba: L e R hanno data-shoulder=true e classe .ab-shoulder", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="mgba" inputMapping={im} />);
+    const l = screen.getByTestId("sb-touch-btn-l");
+    const r = screen.getByTestId("sb-touch-btn-r");
+    expect(l).toHaveAttribute("data-shoulder", "true");
+    expect(r).toHaveAttribute("data-shoulder", "true");
+    expect(l.className).toContain("ab-shoulder");
+    expect(r.className).toContain("ab-shoulder");
+  });
+
+  it("mgba: A/B/Select/Start NON hanno data-shoulder né .ab-shoulder", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="mgba" inputMapping={im} />);
+    for (const btn of ["a", "b", "select", "start"]) {
+      const el = screen.getByTestId(`sb-touch-btn-${btn}`);
+      expect(el).not.toHaveAttribute("data-shoulder");
+      expect(el.className).not.toContain("ab-shoulder");
+    }
+  });
+
+  it("mgba: L posizionato in alto-sinistra del container (top:0, left:0)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="mgba" inputMapping={im} />);
+    const l = screen.getByTestId("sb-touch-btn-l") as HTMLButtonElement;
+    // Inline style applicato dal componente (vedi shoulderStyle in TouchOverlay.tsx).
+    expect(l.style.position).toBe("absolute");
+    expect(l.style.top).toBe("0px");
+    expect(l.style.left).toBe("0px");
+    // Non setta `right` → distinto da R.
+    expect(l.style.right).toBe("");
+  });
+
+  it("mgba: R posizionato in alto-destra del container (top:0, right:0)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="mgba" inputMapping={im} />);
+    const r = screen.getByTestId("sb-touch-btn-r") as HTMLButtonElement;
+    expect(r.style.position).toBe("absolute");
+    expect(r.style.top).toBe("0px");
+    expect(r.style.right).toBe("0px");
+    expect(r.style.left).toBe("");
+  });
+
+  it("mgba: L e R sono distinti per coordinata orizzontale (no overlap left/right)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="mgba" inputMapping={im} />);
+    const l = screen.getByTestId("sb-touch-btn-l") as HTMLButtonElement;
+    const r = screen.getByTestId("sb-touch-btn-r") as HTMLButtonElement;
+    // L: left:0 right:auto; R: right:0 left:auto → mai stesso lato orizzontale.
+    expect(l.style.left).not.toBe(r.style.left);
+    expect(l.style.right).not.toBe(r.style.right);
   });
 });
 

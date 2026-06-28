@@ -14,7 +14,7 @@ import type { Core } from "../../domain/types";
 import type { InputMapping } from "../../domain/input-mapping";
 import type { GameButton } from "../../core/core-wrapper";
 import type { ConfigPort } from "../../storage/port";
-import { BUTTON_MAP, DPAD_DIRECTIONS } from "./button-map";
+import { BUTTON_MAP, DPAD_DIRECTIONS, coreHasShoulderButtons } from "./button-map";
 import {
   useTouchOverlayConfig,
   type TouchOverlayConfig,
@@ -343,28 +343,65 @@ function TouchOverlayInner({
         <div className="dp-center" />
       </div>
 
-      {/* Pulsanti azione */}
+      {/* Pulsanti azione.
+          TSK-122 — Layout shoulder per L/R (US-063): i pulsanti L/R, presenti
+          solo per i core che espongono shoulder hardware (coreHasShoulderButtons,
+          oggi solo `mgba`), sono posizionati in alto come "spalle" dell'area
+          azione, fisicamente distinti da A/B (.ab-a top-right, .ab-b bottom-left
+          già definiti in solids-theme.css). Marker strutturale `data-shoulder`
+          consente a QA/e2e di asserire la separazione visiva senza CSS lookup. */}
       <div
         className="sb-ab"
         style={buttonsStyle}
         data-testid="sb-touch-buttons"
+        data-has-shoulder={coreHasShoulderButtons(core) ? "true" : "false"}
       >
-        {buttons.map(({ button, label }) => (
-          <button
-            key={button}
-            type="button"
-            className={`ab ab-${button}`}
-            aria-hidden="true"
-            tabIndex={-1}
-            data-testid={`sb-touch-btn-${button}`}
-            onTouchStart={handleTouchStart(button)}
-            onTouchEnd={handleTouchEnd(button)}
-            onTouchCancel={handleTouchCancel(button)}
-            onContextMenu={preventContextMenu}
-          >
-            {label}
-          </button>
-        ))}
+        {buttons.map(({ button, label }) => {
+          const isShoulder = button === "l" || button === "r";
+          // Posizionamento "spalla" inline solo per L/R: top:0 ai due lati del
+          // container .sb-ab (120x120). Pulsante più stretto/più basso (44x28)
+          // per non sovrapporsi visivamente a .ab-a (top:8;right:4) e .ab-b
+          // (bottom:8;left:4) già definiti in solids-theme.css. Per i pulsanti
+          // non-shoulder (A, B, Select, Start) il posizionamento resta governato
+          // dal CSS (override possibile via app-extra.css in TSK futuro).
+          // zIndex:2 garantisce che L/R restino tappabili anche quando un
+          // pulsante senza posizione CSS (oggi `.ab-select`/`.ab-start`, vedi
+          // wiki/gaps.md `touch-overlay-mgba-ab-positioning`) defaulta a top:0
+          // left:0 dentro .sb-ab e finirebbe sovrapposto allo shoulder button.
+          const shoulderStyle: React.CSSProperties | undefined = isShoulder
+            ? {
+                position: "absolute",
+                top: 0,
+                [button === "l" ? "left" : "right"]: 0,
+                width: 44,
+                height: 28,
+                zIndex: 2,
+                borderRadius: "var(--sd-radius-sm, 4px)",
+                fontSize: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }
+            : undefined;
+          return (
+            <button
+              key={button}
+              type="button"
+              className={`ab ab-${button}${isShoulder ? " ab-shoulder" : ""}`}
+              aria-hidden="true"
+              tabIndex={-1}
+              data-testid={`sb-touch-btn-${button}`}
+              data-shoulder={isShoulder ? "true" : undefined}
+              style={shoulderStyle}
+              onTouchStart={handleTouchStart(button)}
+              onTouchEnd={handleTouchEnd(button)}
+              onTouchCancel={handleTouchCancel(button)}
+              onContextMenu={preventContextMenu}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
