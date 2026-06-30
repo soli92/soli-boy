@@ -749,12 +749,12 @@ function AppContent({
                 setAutoStartPreference(value);
                 await saveAutoStartFromLibrary(value);
               }}
-              // TSK-132 (EP-019 / ADR-009 §4) — wiring RTC per e2e stub mode.
-              // In produzione entrambe le prop sono `undefined` → RtcSection non resa.
-              // Con ?rtcPlatform=<platform> in stub mode: RtcSection visibile se
-              // la piattaforma ha RTC (hasRtc("gbc") = true, hasRtc("gba") = false).
-              rtcPlatform={E2E_RTC_PLATFORM}
-              rtcBridge={stubRtcBridge ?? undefined}
+              // ADR-009 §4 — wiring RTC produzione: platform dal gioco caricato,
+              // bridge dall'engine. RtcSection si nasconde da sola se la cartuccia
+              // non ha RTC (bridge null) o la piattaforma non lo supporta.
+              // In e2e stub mode i fallback E2E_RTC_PLATFORM / stubRtcBridge restano attivi.
+              rtcPlatform={selected?.platform ?? E2E_RTC_PLATFORM}
+              rtcBridge={engine.rtcBridge ?? stubRtcBridge ?? undefined}
             />
           </div>
         </div>
