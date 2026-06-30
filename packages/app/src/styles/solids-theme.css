@@ -188,13 +188,31 @@ body{
 .dp-left{top:44px;left:0;}
 .dp-right{top:44px;left:88px;}
 .dp-center{position:absolute;top:44px;left:44px;width:32px;height:32px;background:var(--sd-color-bg-surface);}
-.sb-ab{position:relative;width:120px;height:120px;}
+/* TSK-122 / US-063 — altezza extra per shoulder L/R + Select/Start in basso. */
+.sb-ab{position:relative;width:132px;height:156px;}
 .ab{
   position:absolute;width:50px;height:50px;border-radius:var(--sd-radius-full);
   font-size:18px;font-weight:600;border:none;cursor:pointer;font-family:var(--sd-font-heading);
 }
-.ab-b{bottom:8px;left:4px;background:var(--sd-color-pad-b-bg);color:var(--sd-color-pad-b);}
-.ab-a{top:8px;right:4px;background:var(--sd-color-pad-a-bg);color:var(--sd-color-pad-a);}
+/* Shoulder GBA (EP-018) — riga superiore, simmetrici. */
+.ab-l,.ab-r{
+  top:0;width:48px;height:40px;border-radius:var(--sd-radius-sm);
+  background:var(--sd-color-bg-elevated);border:1px solid var(--sd-color-border-strong);
+  color:var(--sd-color-text-secondary);font-size:14px;
+}
+.ab-l{left:0;}
+.ab-r{right:0;}
+.ab-b{bottom:36px;left:4px;background:var(--sd-color-pad-b-bg);color:var(--sd-color-pad-b);}
+.ab-a{bottom:56px;right:4px;background:var(--sd-color-pad-a-bg);color:var(--sd-color-pad-a);}
+/* Select / Start — fascia inferiore (GBA e GB). */
+.ab-select,.ab-start{
+  bottom:0;width:52px;height:32px;border-radius:var(--sd-radius-sm);
+  font-size:10px;font-weight:600;
+  background:var(--sd-color-bg-elevated);border:1px solid var(--sd-color-border-strong);
+  color:var(--sd-color-text-secondary);
+}
+.ab-select{left:4px;}
+.ab-start{right:4px;}
 .sb-pill{
   min-height:36px;font-size:11px;letter-spacing:0.5px;padding:0 18px;
   border-radius:var(--sd-radius-full);background:var(--sd-color-bg-elevated);

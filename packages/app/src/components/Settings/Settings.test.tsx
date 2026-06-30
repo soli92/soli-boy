@@ -15,6 +15,14 @@ describe("Settings", () => {
     expect(onRemap).toHaveBeenCalledWith("ArrowUp", "a");
   });
 
+  it("espone L e R come opzioni rimappabili (TSK-121 / US-064)", () => {
+    render(<Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} />);
+    const sel = screen.getByLabelText("Pulsante per q") as HTMLSelectElement;
+    expect(sel.value).toBe("l");
+    expect(Array.from(sel.options).map((o) => o.value)).toContain("l");
+    expect(Array.from(sel.options).map((o) => o.value)).toContain("r");
+  });
+
   it("Salva profilo invoca onSaveProfile e mostra conferma", () => {
     const onSaveProfile = vi.fn();
     render(<Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} onSaveProfile={onSaveProfile} />);

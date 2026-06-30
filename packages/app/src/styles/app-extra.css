@@ -97,41 +97,51 @@ footer {
    - L'accessibilità nativa di <details> è PRESERVATA: Space/Enter su <summary>
      funzionano invariati (il marker visivo non tocca il behaviour nativo). Gli
      screen reader annunciano ancora "collapsed/expanded" dal role="group" nativo.
-   Scope: solo i <summary> di classe .sb-lbl dentro .sd-card.sb-sec (Settings)
-   per non influenzare altri eventuali <details> non-Settings del progetto.
+   Scope: <summary> dentro .sd-card.sb-sec (Settings), con o senza .sb-lbl
+   direttamente sul summary (TSK-115: heading h3 annidato).
    ============================================================================ */
 
 /* Nascondi il triangolo nativo (WebKit + Firefox/standard) */
+.sd-card.sb-sec details > summary::-webkit-details-marker,
 .sd-card.sb-sec details > summary.sb-lbl::-webkit-details-marker {
   display: none;
 }
+.sd-card.sb-sec details > summary::marker,
 .sd-card.sb-sec details > summary.sb-lbl::marker {
   content: "";
 }
 
 /* Layout dell'header accordion */
+.sd-card.sb-sec details > summary,
 .sd-card.sb-sec details > summary.sb-lbl {
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  /* Reset list-style nel caso in cui il browser applichi il ruolo di lista. */
   list-style: none;
   padding: var(--sd-space-sm, 8px) 0;
   color: var(--sd-color-text-primary, #f0e9ff);
   font-family: var(--sd-font-body, system-ui, sans-serif);
   user-select: none;
-  /* Linea separatrice sottile fra accordion chiusi */
   border-bottom: 1px solid var(--sd-color-border-muted, #3a2a63);
   transition: color 0.15s;
 }
 
+.sd-card.sb-sec details > summary > h3.sb-lbl {
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  flex: 1;
+}
+
 /* Hover: evidenzia il label con il colore primario */
+.sd-card.sb-sec details > summary:hover,
 .sd-card.sb-sec details > summary.sb-lbl:hover {
   color: var(--sd-color-primary-default, #00e5ff);
 }
 
 /* Focus visibile da tastiera (coerente con sb-tab-btn:focus-visible) */
+.sd-card.sb-sec details > summary:focus-visible,
 .sd-card.sb-sec details > summary.sb-lbl:focus-visible {
   outline: 2px solid var(--sd-color-primary-default, #00e5ff);
   outline-offset: 2px;
@@ -139,6 +149,7 @@ footer {
 }
 
 /* Chevron custom: freccia rotante che indica aperto (su) / chiuso (giù) */
+.sd-card.sb-sec details > summary::after,
 .sd-card.sb-sec details > summary.sb-lbl::after {
   content: "";
   display: inline-block;
@@ -153,11 +164,13 @@ footer {
 }
 
 /* Quando aperto: ruota il chevron verso l'alto */
+.sd-card.sb-sec details[open] > summary::after,
 .sd-card.sb-sec details[open] > summary.sb-lbl::after {
   transform: rotate(-135deg);  /* punta in alto = aperto */
 }
 
 /* Quando aperto: rimuovi la linea separatrice (il contenuto si espande sotto) */
+.sd-card.sb-sec details[open] > summary,
 .sd-card.sb-sec details[open] > summary.sb-lbl {
   border-bottom-color: transparent;
 }
@@ -422,6 +435,30 @@ body {
    #251447 → ratio 4.24. Schiariamo il rosa neon di danger a #ff8fb8 →
    ratio 7.78 vs #251447. Limitiamo l'override al solo .sb-danger (lo
    sfondo danger di altre superfici non cambia). */
+/* TSK-107 — tile ROM correntemente in esecuzione (badge + bordo accent). */
+.sb-tile.sb-tile-active {
+  border: 2px solid var(--sd-color-primary-default, var(--sd-color-accent));
+  box-shadow: 0 0 0 1px var(--sd-color-primary-subtle, transparent);
+}
+.sb-tile-active-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: var(--sd-radius-sm, 4px);
+  background: var(--sd-color-primary-subtle);
+  color: var(--sd-color-primary-default);
+  border: 1px solid var(--sd-color-primary-default);
+}
+.sb-tile-remove {
+  margin-top: 8px;
+  width: 100%;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
 [data-theme="90s-party"] .sb-danger {
   color: #ff8fb8 !important;        /* was var(--sd-color-intent-danger) #ff0055 — WCAG AA fix (7.78:1) */
   border-color: #ff8fb8 !important; /* border coerente con il nuovo foreground */
@@ -436,4 +473,22 @@ body {
    6.76 → già conforme. */
 [data-theme="cyberpunk"] {
   --sd-color-primary-subtle: #052e36; /* was #0e7490 — WCAG AA fix per .sb-chip-on (5.96:1) */
+}
+
+/* --- TSK-116 — testo adiacente canvas (US-060 R-03) ----------------------- */
+.sb-canvas-status {
+  font-size: 11px;
+  color: var(--sd-color-text-secondary);
+  font-family: var(--sd-font-mono);
+  text-align: center;
+  padding: 4px 8px 0;
+  line-height: 1.4;
+}
+
+/* --- TSK-114 — tap target D-pad/A/B ≥44px (padding trasparente 8px) ------ */
+.sb-touch-overlay .dp,
+.sb-touch-overlay .ab {
+  padding: 8px;
+  margin: -8px;
+  background-clip: content-box;
 }

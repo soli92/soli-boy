@@ -19,12 +19,12 @@ const WASMBOY_OPTIONS = {
   frameSkip: 0,
 };
 
-// TSK-060: GB/GBC non ha shoulder button (L/R) → mappa parziale. Il sendInput
-// controlla il risultato prima di chiamare setJoypadState (guard a runtime).
+// TSK-060 / TSK-123: GB/GBC non ha shoulder button (L/R) → mappa parziale in BTN.
+// sendInput ignora l/r prima di WasmBoy.setJoypadState (no-op corretto).
 const BTN: Partial<Record<GameButton, keyof WasmBoyJoypadState>> = {
   up: "UP", down: "DOWN", left: "LEFT", right: "RIGHT",
   a: "A", b: "B", start: "START", select: "SELECT",
-  // l, r: non presenti su Game Boy — no-op (guard in sendInput).
+  // L/R: no-op su GB/GBC (hardware non dispone di shoulder) — guard in sendInput.
 };
 
 /**
@@ -126,7 +126,7 @@ export class WasmBoyEngine implements EmulatorEngine {
   sendInput(button: GameButton, pressed: boolean): void {
     if (!this.configured) return;
     const key = BTN[button];
-    // Guard: GB non ha L/R → no-op se il pulsante non è mappato (TSK-060).
+    // L/R: no-op su GB/GBC (hardware non dispone di shoulder) — TSK-123.
     if (!key) return;
     this.joypad = { ...this.joypad, [key]: pressed };
     WasmBoy.setJoypadState(this.joypad);

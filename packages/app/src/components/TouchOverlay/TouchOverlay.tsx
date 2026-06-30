@@ -289,7 +289,7 @@ function TouchOverlayInner({
   return (
     <div
       className={overlayClassName}
-      aria-hidden="true"
+      aria-hidden={showConfig ? undefined : true}
       data-testid="sb-touch-overlay"
       data-landscape={landscape ? "true" : "false"}
       data-fullscreen={isFullscreen ? "true" : "false"}
@@ -448,12 +448,7 @@ function TouchOverlayConfigPanel({
       data-testid="sb-touch-config-panel"
       role="region"
       aria-labelledby={panelHeadingId}
-      // TSK-114: aria-hidden RIMOSSO (era "true") — il pannello deve essere
-      // accessibile via screen reader e tastiera (WCAG 4.1.2 Name Role Value).
     >
-      {/* TSK-114 — heading semantico h3 + tabIndex=-1 per focus programmatico.
-          tabIndex=-1 permette focus() via script senza aggiungere lo heading
-          alla sequenza Tab dell'utente. */}
       <h3
         id={panelHeadingId}
         ref={headingRef}

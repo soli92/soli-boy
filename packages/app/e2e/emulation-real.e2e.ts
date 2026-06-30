@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+import { gotoApp, uploadRom } from "./helpers/app-nav";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const FREE_ROM = process.env.SOLIBOY_E2E_ROM ?? "dmg-acid2.gb";
@@ -12,14 +13,19 @@ const romPath = path.resolve(dir, "../public/test-roms", FREE_ROM);
 const romTitle = FREE_ROM.replace(/\.[^.]+$/, "");
 
 test.describe("emulazione reale (WasmBoyEngine, GB)", () => {
-  test.skip(!existsSync(romPath), `ROM libera assente (${FREE_ROM}).`);
+  test.skip(
+    !existsSync(romPath) || !!process.env.CI,
+    !existsSync(romPath)
+      ? `ROM libera assente (${FREE_ROM}).`
+      : "CI: coperto da emulation-emulatorjs-engine.e2e.ts",
+  );
+
+  test.describe.configure({ mode: "serial" });
 
   test("carica ROM GB libera → WasmBoy rende il canvas", async ({ page }) => {
     test.slow();
-    await page.goto("/?engine=real");
-    await page.getByLabel("Carica ROM").setInputFiles(romPath);
-    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-    await page.getByRole("tab", { name: "Libreria" }).click();
+    await gotoApp(page, "/?engine=real");
+    await uploadRom(page, romPath);
     await expect(page.getByText(romTitle)).toBeVisible();
     await page.getByText(romTitle).click();
     await page.getByRole("button", { name: /avvia/i }).click();

@@ -56,6 +56,7 @@ export class StubEngine implements EmulatorEngine {
   setAudio(settings: AudioSettings): void {
     this.audio = settings;
   }
+  // TSK-123: accetta qualsiasi GameButton (inclusi L/R) senza errore — traccia lastInput.
   sendInput(button: GameButton, pressed: boolean): void {
     this.lastInput = { button, pressed };
   }

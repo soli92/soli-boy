@@ -67,15 +67,15 @@ Settings, TSK-069), mentre l'URL pubblico è metadata della submission.
 
 ### Avviso legale in-app (R.14: no claim non verificabili)
 
-L'app mostra in `Settings → Legale` (componente `StoreComplianceNotice`,
-TSK-070) il testo verbatim richiesto dal TSK:
+L'app mostra in **Info & Privacy** (tab dedicata) i componenti `StoreComplianceNotice`
+(TSK-070) e `LegalNotice` (TSK-006, US-006) con i testi richiesti per la
+conformità store, ad esempio:
 
 > Soli-boy non include, distribuisce né supporta ROM o BIOS coperti da
 > copyright. Usa solo file di tua legittima proprietà.
 
-Il componente `LegalNotice` (TSK-006, US-006) resta visibile in calce a
-ogni schermata come nota breve. Il `FileLoader` ha la propria nota
-contestuale al momento del caricamento.
+Al primo avvio compare il banner privacy (`PrivacyNotice`, TSK-069). Il
+`FileLoader` ha la propria nota contestuale al momento del caricamento.
 
 ### Checklist di submission (gate umano R.14 / R.15)
 

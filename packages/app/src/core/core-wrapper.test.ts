@@ -118,6 +118,17 @@ describe("CoreWrapper.sendInput (US-012)", () => {
     w.sendInput("a", true);
     expect(engine.sendInput).toHaveBeenCalledWith("a", true);
   });
+
+  it("inoltra L/R in running (TSK-123 / EP-018)", async () => {
+    const engine = fakeEngine();
+    const w = new CoreWrapper(engine);
+    await w.load({ rom: new Blob(["x"]), core: "mgba" });
+    w.start();
+    w.sendInput("l", true);
+    w.sendInput("r", false);
+    expect(engine.sendInput).toHaveBeenNthCalledWith(1, "l", true);
+    expect(engine.sendInput).toHaveBeenNthCalledWith(2, "r", false);
+  });
 });
 
 describe("CoreWrapper.setSpeed (US-014)", () => {

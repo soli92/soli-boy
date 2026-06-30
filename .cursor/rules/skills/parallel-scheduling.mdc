@@ -200,6 +200,14 @@ ratio, drift_count)`. Vedi `caveman-protocol §Fase 5`.
 E un record episodico in `memory/episodic/YYYY-MM-DD-HH-MM-wave-NN.md` con la
 struttura completa del DAG (per audit + retroactive analysis).
 
+**Token Ledger (v2.21, EP-022)** — se `analytics.token_ledger.auto_call_on_wave_close: true`:
+
+```bash
+python3 "$REPO_ROOT/.claude/tools/analytics/show-session-tokens.py" --full 2>/dev/null || true
+```
+
+Appendere l'output nel riepilogo wave in chat. Vedi [token-ledger](mdc:.cursor/rules/skills/token-ledger.mdc).
+
 ## Regole inviolabili (R.S1–R.S8, PATTERN §18.4)
 
 - **R.S1**: Single-committer su `wiki/log.md` e `wiki/gaps.md` — l'orchestrator

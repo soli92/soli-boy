@@ -1,0 +1,56 @@
+# Acceptance-spec soli-boy — scenario: delete-savestate-confirm (TSK-112)
+# Schema: .claude/schemas/acceptance-spec.schema.yaml (EP-018, ADR-065).
+# Flusso: carica ROM GB → avvia → salva slot 1 → Elimina → Annulla →
+#         Elimina di nuovo → conferma → slot vuoto
+# Selector source: SaveStatePanel.tsx (TSK-111 dialog)
+#   - Elimina slot N → button[data-testid="sb-savestate-delete-{slot}"]
+#   - Dialog → [data-testid="delete-savestate-dialog"]
+#   - Annulla / Elimina → button dentro il dialog
+# ROM: dmg-acid2.gb (MIT) — richiede ?engine=real e saveStates capability
+
+app: soliboy
+target: http://127.0.0.1:4317/?engine=real
+
+fixtures:
+  - id: gb-test-rom
+    path: packages/app/public/test-roms/dmg-acid2.gb
+    load_via:
+      selector: 'input[aria-label="Carica ROM"]'
+      action: set_input_files
+
+scenario:
+  - { action: click, selector: 'button:has-text("Ho capito")', optional: true }
+  - { action: set_input_files, selector: 'input[aria-label="Carica ROM"]', fixture: gb-test-rom }
+  - { action: click, selector: 'button[data-tab-id="library"]' }
+  - { action: click, selector: 'button:has-text("dmg-acid2")' }
+  - { action: click, selector: 'button:has-text("Avvia")' }
+  - { action: wait_for, selector: '[data-testid="sb-canvas-host"] canvas', state: visible, timeout_ms: 30000 }
+  - { action: wait_ms, value: 1000 }
+  - { action: click, selector: '[data-testid="sb-savestate-save-0"]' }
+  - { action: wait_for, selector: '[data-testid="sb-savestate-meta-0"]', state: visible, timeout_ms: 5000 }
+  - { action: click, selector: '[data-testid="sb-savestate-delete-0"]' }
+  - { action: wait_for, selector: '[data-testid="delete-savestate-dialog"]', state: visible, timeout_ms: 3000 }
+  - { action: click, selector: '[data-testid="delete-savestate-dialog"] button:has-text("Annulla")' }
+  - { action: wait_for, selector: '[data-testid="delete-savestate-dialog"]', state: hidden, timeout_ms: 3000 }
+  - { action: click, selector: '[data-testid="sb-savestate-delete-0"]' }
+  - { action: wait_for, selector: '[data-testid="delete-savestate-dialog"]', state: visible, timeout_ms: 3000 }
+  - { action: click, selector: '[data-testid="delete-savestate-dialog"] button.sb-danger' }
+  - { action: wait_for, selector: '[data-testid="delete-savestate-dialog"]', state: hidden, timeout_ms: 5000 }
+  - { action: wait_ms, value: 500 }
+
+assertions:
+  - id: delete-savestate-confirm-slot-empty
+    severity: blocking
+    kind: text_matches
+    selector: '[data-testid="sb-savestate-meta-0"]'
+    pattern: vuoto
+  - id: delete-savestate-dialog-closed
+    severity: blocking
+    kind: selector_absent
+    selector: '[data-testid="delete-savestate-dialog"]'
+  - id: no-console-error
+    severity: advisory
+    kind: console_no_error
+
+thresholds:
+  advisory_max: 1

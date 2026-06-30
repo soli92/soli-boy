@@ -233,3 +233,27 @@ describe("WasmBoyEngine — ripresa dopo operazioni che pausano (US-016/017)", (
     expect(lib.paused).toBe(true);
   });
 });
+
+describe("WasmBoyEngine — shoulder L/R no-op (TSK-123 / EP-018)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    lib.paused = true;
+  });
+
+  it("sendInput('l'/'r') non chiama setJoypadState (GB senza shoulder)", async () => {
+    const engine = await makeLoadedEngine();
+    engine.start();
+    vi.clearAllMocks();
+
+    engine.sendInput("l", true);
+    engine.sendInput("r", true);
+
+    expect(WasmBoy.setJoypadState).not.toHaveBeenCalled();
+  });
+
+  it("sendInput('a') inoltra a setJoypadState (regressione)", async () => {
+    const engine = await makeLoadedEngine();
+    engine.sendInput("a", true);
+    expect(WasmBoy.setJoypadState).toHaveBeenCalled();
+  });
+});

@@ -1,0 +1,61 @@
+---
+description: Token Ledger (EP-022) — display inline token reali + costo sessione. Obbligatorio a fine attività se analytics.token_ledger.enabled.
+globs:
+alwaysApply: false
+---
+
+> **Adapter Cursor** — skill [[token-ledger]] (v2.21, EP-022). Display-only; complementa
+> `cost-and-time-analytics` (EP-009 batch).
+
+# Skill: token-ledger
+
+Visibilità economica inline dopo ogni operazione. Legge token **reali** da transcript JSONL
+(`message.usage`), non stime.
+
+## Config (`factory.config.yaml`)
+
+| Chiave | Valore progetto |
+|---|---|
+| `analytics.token_ledger.enabled` | `true` |
+| `display_mode` | `compact` (one-liner) |
+| `auto_call_on_wave_close` | `true` → orchestrator usa `--full` a fine wave |
+
+## Invocazione
+
+```bash
+# One-liner (default — fine attività)
+python3 .claude/tools/analytics/show-session-tokens.py
+
+# Box completo (fine wave / on-demand)
+python3 .claude/tools/analytics/show-session-tokens.py --full
+```
+
+## Sorgenti transcript (adapter-agnostic)
+
+1. Claude Code: `~/.claude/projects/<cwd-mangled>/*.jsonl`
+2. Cursor Cloud Agent: `$AGENT_TRANSCRIPTS/**/*.jsonl` (se presente)
+3. Override: `--transcript <path>`
+
+## Display compatto
+
+```
+◉ TOKENS  in:42.3k  out:8.1k  💾 -$0.0031  │  sessione: ~$0.1527
+```
+
+## Vincoli
+
+- **Display-only** — non scrive in `analytics/events/` (harvest-session-tokens.py a SessionEnd).
+- **Fail-open** — errori o transcript assente → skip silente (exit 0).
+- **Non comprimere** verso l'utente (R.C1).
+
+## Integrazione orchestrator
+
+A fine wave (`parallel-scheduling` Fase 6), se `auto_call_on_wave_close: true`:
+
+```bash
+python3 .claude/tools/analytics/show-session-tokens.py --full
+```
+
+Appendere l'output nel riepilogo wave in chat + opzionale in `memory/episodic/*-wave-*.md`.
+
+Riferimenti: `.claude/skills/token-ledger.md`, `PATTERN.md` §Token Ledger, [[wiki-log-entry]].

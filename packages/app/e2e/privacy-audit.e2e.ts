@@ -23,6 +23,7 @@
 // [^src: code_quality/reports/TSK-068-privacy-audit-iter-1.md]
 
 import { expect, test } from "@playwright/test";
+import { gotoStubApp, uploadRom, waitForAppBoot } from "./helpers/app-nav";
 
 // ── Costanti ─────────────────────────────────────────────────────────────────
 /**
@@ -97,10 +98,7 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
     page,
   }) => {
     await page.goto("/");
-    // Attendi che l'app sia caricata (avviso legale visibile).
-    await expect(page.getByRole("note", { name: /avviso legale/i })).toBeVisible({
-      timeout: 10_000,
-    });
+    await waitForAppBoot(page);
 
     // Breve attesa per raccogliere eventuali richieste lazy (analytics, telemetria, ecc.).
     await page.waitForTimeout(1_000);
@@ -117,16 +115,13 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
 
   // ── Test 2: carica ROM ───────────────────────────────────────────────────
   test("carica ROM: nessun dato utente inviato in rete durante l'ingest", async ({ page }) => {
-    await page.goto("/?engine=stub");
+    await gotoStubApp(page);
 
-    // Carica la ROM tramite file input.
-    await page.getByLabel("Carica ROM").setInputFiles({
+    await uploadRom(page, {
       name: FAKE_ROM_NAME,
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
-    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-    await page.getByRole("tab", { name: "Libreria" }).click();
 
     // Attendi che la ROM compaia in libreria.
     await expect(
@@ -150,16 +145,14 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
   test("flusso completo carica ROM → avvia emulazione → salva stato: nessuna richiesta esterna", async ({
     page,
   }) => {
-    await page.goto("/?engine=stub");
+    await gotoStubApp(page);
 
     // Carica ROM.
-    await page.getByLabel("Carica ROM").setInputFiles({
+    await uploadRom(page, {
       name: FAKE_ROM_NAME,
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
-    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 10_000 });
@@ -203,19 +196,14 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
   }) => {
     // StubEngine non usa WASM, ma verifichiamo che il framework non emetta
     // richieste CDN per risorse engine durante la navigazione base.
-    await page.goto("/?engine=stub");
-    await expect(page.getByRole("note", { name: /avviso legale/i })).toBeVisible({
-      timeout: 10_000,
-    });
+    await gotoStubApp(page);
 
     // Carica e avvia (engine=stub è istantaneo — no WASM vero).
-    await page.getByLabel("Carica ROM").setInputFiles({
+    await uploadRom(page, {
       name: FAKE_ROM_NAME,
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
-    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 5_000 });
@@ -248,19 +236,14 @@ test.describe("TSK-068 — Privacy audit: invariante on-device", () => {
   test("nessuna richiesta esterna durante l'interazione UI (settings, themes, library)", async ({
     page,
   }) => {
-    await page.goto("/?engine=stub");
-    await expect(page.getByRole("note", { name: /avviso legale/i })).toBeVisible({
-      timeout: 10_000,
-    });
+    await gotoStubApp(page);
 
     // Carica una ROM, interagisci con la libreria.
-    await page.getByLabel("Carica ROM").setInputFiles({
+    await uploadRom(page, {
       name: FAKE_ROM_NAME,
       mimeType: "application/octet-stream",
       buffer: FAKE_ROM_BYTES,
     });
-    // IA a 4 tab (increment 2): la tile ROM vive nella tab Libreria.
-    await page.getByRole("tab", { name: "Libreria" }).click();
     await expect(
       page.getByRole("button", { name: GAME_TILE_NAME }),
     ).toBeVisible({ timeout: 5_000 });

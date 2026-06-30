@@ -1,4 +1,6 @@
 // TSK-060 — button-map: mappa core → set di pulsanti virtuali del TouchOverlay (US-026).
+// TSK-122 — L/R su tutti i core (EP-018 / US-063): overlay uniforme; engine GB
+// ignora L/R (no-op hardware) via wasmboy-engine.
 // Per ogni piattaforma espone i soli pulsanti d'azione (esclusi i D-pad,
 // che sono comuni a tutti i core e gestiti separatamente nel componente).
 
@@ -12,40 +14,26 @@ export interface VirtualButton {
   label: string;
 }
 
+/** Set azione con shoulder L/R (layout GBA-style, tutti i core EP-018). */
+const ACTION_BUTTONS_WITH_SHOULDERS: VirtualButton[] = [
+  { button: "l", label: "L" },
+  { button: "b", label: "B" },
+  { button: "a", label: "A" },
+  { button: "r", label: "R" },
+  { button: "select", label: "SEL" },
+  { button: "start", label: "STA" },
+];
+
 /**
  * Mappa `Core → VirtualButton[]`: set di pulsanti d'azione (NO D-pad).
- * - GB / GBC / gambatte: A, B, Select, Start.
- * - GBA / mGBA: A, B, L, R, Select, Start.
- * - ARCADE / fbneo / mame: A, B, Select, Start (mapping conservativo;
- *   i titoli arcade hanno layout variabili — si espande in US futura).
+ * Tutti i core espongono L/R nell'overlay (TSK-122); l'engine GB/GBC
+ * tratta L/R come no-op (WasmBoy — hardware senza shoulder).
  */
 export const BUTTON_MAP: Record<Core, VirtualButton[]> = {
-  gambatte: [
-    { button: "b", label: "B" },
-    { button: "a", label: "A" },
-    { button: "select", label: "SEL" },
-    { button: "start", label: "STA" },
-  ],
-  mgba: [
-    { button: "l", label: "L" },
-    { button: "b", label: "B" },
-    { button: "a", label: "A" },
-    { button: "r", label: "R" },
-    { button: "select", label: "SEL" },
-    { button: "start", label: "STA" },
-  ],
-  fbneo: [
-    { button: "b", label: "B" },
-    { button: "a", label: "A" },
-    { button: "select", label: "SEL" },
-    { button: "start", label: "STA" },
-  ],
-  mame: [
-    { button: "b", label: "B" },
-    { button: "a", label: "A" },
-    { button: "select", label: "SEL" },
-    { button: "start", label: "STA" },
-  ],
+  gambatte: ACTION_BUTTONS_WITH_SHOULDERS,
+  mgba: ACTION_BUTTONS_WITH_SHOULDERS,
+  fbneo: ACTION_BUTTONS_WITH_SHOULDERS,
+  mame: ACTION_BUTTONS_WITH_SHOULDERS,
 };
 
 /** Direzioni D-pad (comuni a tutti i core). */

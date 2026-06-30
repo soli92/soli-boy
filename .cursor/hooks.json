@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterAgentResponse": [
+      {
+        "command": "hooks/record-token-usage.sh",
+        "timeout": 5000
+      }
+    ],
+    "stop": [
+      {
+        "command": "hooks/record-token-usage.sh",
+        "timeout": 5000
+      }
+    ]
+  }
+}

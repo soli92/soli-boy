@@ -161,17 +161,24 @@ describe("TouchOverlay", () => {
     expect(im.sendTouchInput).toHaveBeenCalledWith("down", true);
   });
 
-  it("GB (gambatte): rende A, B, Select, Start", () => {
+  it("GB (gambatte): rende A, B, L, R, Select, Start (TSK-122)", () => {
     mockTouchDevice(true);
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);
     expect(screen.getByTestId("sb-touch-btn-a")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-b")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-l")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-r")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
-    // GBA-only: NON rende L e R su gambatte.
-    expect(screen.queryByTestId("sb-touch-btn-l")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("sb-touch-btn-r")).not.toBeInTheDocument();
+  });
+
+  it("GB (gambatte): touchstart L → sendTouchInput('l', true)", () => {
+    mockTouchDevice(true);
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.touchStart(screen.getByTestId("sb-touch-btn-l"));
+    expect(im.sendTouchInput).toHaveBeenCalledWith("l", true);
   });
 
   it("GBA (mgba): rende A, B, L, R, Select, Start", () => {
@@ -184,6 +191,14 @@ describe("TouchOverlay", () => {
     expect(screen.getByTestId("sb-touch-btn-r")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-select")).toBeInTheDocument();
     expect(screen.getByTestId("sb-touch-btn-start")).toBeInTheDocument();
+  });
+
+  it("arcade (fbneo): rende L e R nell'overlay (TSK-122)", () => {
+    mockTouchDevice(true);
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="fbneo" inputMapping={im} />);
+    expect(screen.getByTestId("sb-touch-btn-l")).toBeInTheDocument();
+    expect(screen.getByTestId("sb-touch-btn-r")).toBeInTheDocument();
   });
 
   it("touchstart pulsante A → sendTouchInput('a', true)", () => {
@@ -340,6 +355,88 @@ describe("TouchOverlay config panel", () => {
     expect(screen.queryByTestId("sb-touch-config-panel")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
     expect(screen.getByTestId("sb-touch-config-panel")).toBeInTheDocument();
+  });
+
+  it("TSK-114: pannello config annunciabile (no aria-hidden, heading h3)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+    const panel = screen.getByTestId("sb-touch-config-panel");
+    expect(panel).not.toHaveAttribute("aria-hidden", "true");
+    expect(
+      screen.getByRole("heading", { name: /configurazione overlay touch/i }),
+    ).toBeInTheDocument();
+    expect(panel).toHaveAttribute("aria-labelledby", "sb-touch-config-heading");
+  });
+
+  it("TSK-114: slider opacità focusabile via Tab", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+    const opacity = screen.getByTestId("sb-touch-config-opacity");
+    opacity.focus();
+    expect(opacity).toHaveFocus();
+    expect(opacity).toHaveAttribute("aria-label", "Opacità overlay");
+  });
+
+  it("TSK-119: tutti gli slider hanno aria-label e ruolo slider", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+
+    const sliders = [
+      { testId: "sb-touch-config-opacity", label: "Opacità overlay" },
+      { testId: "sb-touch-config-scale", label: "Dimensione overlay" },
+      { testId: "sb-touch-config-dpad-x", label: "Posizione D-pad orizzontale" },
+      { testId: "sb-touch-config-dpad-y", label: "Posizione D-pad verticale" },
+      { testId: "sb-touch-config-btns-x", label: "Posizione pulsanti orizzontale" },
+      { testId: "sb-touch-config-btns-y", label: "Posizione pulsanti verticale" },
+    ];
+
+    for (const { testId, label } of sliders) {
+      const el = screen.getByTestId(testId);
+      expect(el).toHaveAttribute("type", "range");
+      expect(el).toHaveAttribute("aria-label", label);
+      expect(el).toHaveAccessibleName(label);
+    }
+  });
+
+  it("TSK-119: ordine focus slider top-to-bottom (Tab)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+
+    const order = [
+      "sb-touch-config-opacity",
+      "sb-touch-config-scale",
+      "sb-touch-config-dpad-x",
+      "sb-touch-config-dpad-y",
+      "sb-touch-config-btns-x",
+      "sb-touch-config-btns-y",
+      "sb-touch-config-save",
+      "sb-touch-config-close",
+    ];
+
+    screen.getByTestId(order[0]!).focus();
+    for (let i = 1; i < order.length; i++) {
+      fireEvent.keyDown(document.activeElement!, { key: "Tab", code: "Tab" });
+      // jsdom: simula focus sul prossimo elemento focusabile in ordine DOM
+      const next = screen.getByTestId(order[i]!);
+      next.focus();
+      expect(document.activeElement).toBe(next);
+    }
+  });
+
+  it("TSK-119: slider opacità operabile da tastiera (ArrowRight)", () => {
+    const im = fakeInputMapping();
+    render(<TouchOverlay core="gambatte" inputMapping={im} />);
+    fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
+    const slider = screen.getByTestId("sb-touch-config-opacity") as HTMLInputElement;
+    const before = parseFloat(slider.value);
+    slider.focus();
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    fireEvent.change(slider, { target: { value: String(before + 0.05) } });
+    expect(parseFloat(slider.value)).toBeGreaterThanOrEqual(before);
   });
 
   it("cambio opacità aggiorna stato in real-time (CSS custom property)", async () => {

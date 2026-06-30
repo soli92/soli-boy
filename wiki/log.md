@@ -692,9 +692,6 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 **DoD:** pass
 **Note:** Aggiunto badge "In esecuzione" + prop `isCurrent`/`currentRomId` + `aria-current="true"`. 511/511 test pass.
 
-## Suggerimento post-esecuzione (EP-033, v2.24)
-Layer fe completato. Se la factory ha `a11y.enabled: true`, considera `/a11y TSK-107` per verifica WCAG 2.2 AA sul badge aggiunto.
-
 ## 2026-06-26 16:15 — develop TSK-108 (EP-016/US-056)
 **Agente:** fe-dev
 **TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-056-library-tile-indicator-rimuovi-fileloader/TSK-108]]
@@ -704,9 +701,6 @@ Layer fe completato. Se la factory ha `a11y.enabled: true`, considera `/a11y TSK
 **Commit:** wave1-sprint13
 **DoD:** pass
 **Note:** Aggiunto dialog conferma rimozione ROM in GameTile. Aggiornati test esistenti con query più specifiche (exact name match "Tetris GB"/"Pokemon Red GB"). 511/511 test pass.
-
-## Suggerimento post-esecuzione (EP-033, v2.24)
-Layer fe completato. Considera `/review TSK-108` se CQRL attivo (dialog modale: a11y focus trap da validare).
 
 ## 2026-06-26 16:20 — develop TSK-109 (EP-016/US-056)
 **Agente:** fe-dev
@@ -738,9 +732,6 @@ Layer fe completato. Considera `/review TSK-108` se CQRL attivo (dialog modale: 
 **DoD:** pass
 **Note:** Aggiunto dialog conferma prima di deleteSaveState. Aggiornato test Elimina per passare per dialog. 511/511 test pass.
 
-## Suggerimento post-esecuzione (EP-033, v2.24)
-Layer fe + dialog modale. TSK-112 (QA test dialog) è la dipendenza naturale successiva → considera eseguire TSK-112 come prossimo step.
-
 ## 2026-06-26 16:35 — develop TSK-113 (EP-016/US-059)
 **Agente:** fe-dev
 **TSK:** [[../management/kanban/EP-016-ux-library-settings-componenti/US-059-footer-cleanup-touchoverlay-fixes/TSK-113]]
@@ -760,9 +751,6 @@ Layer fe + dialog modale. TSK-112 (QA test dialog) è la dipendenza naturale suc
 **Commit:** wave1-sprint13
 **DoD:** pass
 **Note:** p.sb-lbl → h2 in PrivacyNotice (banner + section) e StoreComplianceNotice. Settings già usa <summary> semantico. 511/511 test pass.
-
-## Suggerimento post-esecuzione (EP-033, v2.24)
-TSK a11y (EP-017). Considera TSK-117 (manual check heading nav) come step successivo naturale dopo TSK-116.
 
 ## 2026-06-26 17:00 — develop TSK-112 (EP-016/US-058)
 **Agente:** qa-dev
@@ -784,9 +772,6 @@ TSK a11y (EP-017). Considera TSK-117 (manual check heading nav) come step succes
 **DoD:** pass
 **Note:** Rimosso aria-hidden="true" da TouchOverlayConfigPanel. Aggiunto role=region, aria-labelledby, h3 heading, focus iniziale (useEffect). D-pad buttons padding 8px. 515/515 pass.
 
-## Suggerimento post-esecuzione (EP-033, v2.24)
-Layer fe + a11y EP-016/US-059. TSK-118 (type=button) e TSK-119 (manual check) sono le dipendenze naturali → eseguire come prossimi step.
-
 ## 2026-06-26 17:10 — develop TSK-118 (EP-017/US-061)
 **Agente:** fe-dev
 **TSK:** [[../management/kanban/EP-017-a11y-manual-checks-remediation/US-061-touchoverlay-config-at-validation-type-button/TSK-118]]
@@ -807,5 +792,82 @@ Layer fe + a11y EP-016/US-059. TSK-118 (type=button) e TSK-119 (manual check) so
 **DoD:** pass
 **Note:** Report manual check R-04 prodotto. Analisi statica markup post-TSK-114: 0 violation nuove, 1 finding low (keyboard open per overlay — accettato). Pre-screening: non sostituisce audit EAA/ADA su device fisico.
 
-## Suggerimento post-esecuzione (EP-033, v2.24)
-TSK qa + a11y EP-017. Sprint 13 completato (11/13 TSK done; TSK-116/117 skipped — dipendono da TSK-103 Sprint 12 + TSK-115/TSK-116 chain; TSK-116 sbloccato perché TSK-103 è done).
+## 2026-06-28 — wave sprint-13 (Wave 1, EP-016 + EP-017)
+**Levels:** 1 (7 parallel FE)
+**Dispatched:** 7 TSK (7 ok, 0 failed)
+**Failed:** —
+**Note:** Wave dispatch Sprint 13 Wave 1 — UX Library/Settings + heading semantici a11y.
+
+2026-06-28 | orchestrator | wave | sprint-13-wave-1 | TSK-107,108,109,110,111,113,115 done · 516/516 test · tsc OK
+
+2026-06-28 | fe-dev | develop TSK-107 → done | Library.tsx, App.tsx, app-extra.css | Badge "In gioco" + bordo accent su tile attiva (`activeRomId`).
+2026-06-28 | fe-dev | develop TSK-108 → done | Library.tsx, App.tsx | Dialog rimozione ROM + `onBeforeRemove` ferma Player se ROM in esecuzione.
+2026-06-28 | fe-dev | develop TSK-109 → done | App.tsx | FileLoader rimosso da Play idle; CTA "Vai alla Libreria" mantenuta.
+2026-06-28 | fe-dev | develop TSK-110 → done | Settings.tsx | `currentRom.title` in sezione Dati; accordion "Resa video" open di default.
+2026-06-28 | fe-dev | develop TSK-111 → done | SaveStatePanel.tsx | Dialog conferma eliminazione save state (focus trap Esc/Tab).
+2026-06-28 | fe-dev | develop TSK-113 → done | App.tsx | LegalNotice rimosso dal footer (resta in tab Info).
+2026-06-28 | fe-dev | develop TSK-115 → done | PrivacyNotice, StoreComplianceNotice, Settings.tsx, app-extra.css | Heading semantici h2/h3 (sb-lbl preservata).
+
+## 2026-06-28 — wave sprint-13 (Wave 2, EP-016 + EP-017)
+**Levels:** 2 (3 parallel: TSK-112 qa + TSK-114/116 fe)
+**Dispatched:** 3 TSK (3 ok, 0 failed)
+**Failed:** —
+**Note:** Wave dispatch Sprint 13 Wave 2 — SaveState delete oracle, TouchOverlay a11y, Player canvas status.
+
+2026-06-28 | orchestrator | wave | sprint-13-wave-2 | TSK-112,114,116 done · 521/521 test · tsc OK
+
+2026-06-28 | qa-dev | develop TSK-112 → done | soliboy-savestate-delete.acceptance.yaml, emulation-save.e2e.ts | Scenario delete-savestate-confirm + functional oracle report.
+2026-06-28 | fe-dev | develop TSK-114 → done | TouchOverlay.tsx, app-extra.css | Config panel senza aria-hidden + heading h3; D-pad padding 8px.
+2026-06-28 | fe-dev | develop TSK-116 → done | Player.tsx, Player.hud.test.tsx, app-extra.css, EP-017-US-060-a11y-iter-1.md | aria-live HUD + canvas status adiacente.
+
+2026-06-28 | orchestrator | config | token-ledger-cursor-adapter | factory.config.yaml, .cursor/rules/token-ledger-display.mdc | EP-022: auto_call_on_wave_close ON + display a fine attività (Cursor adapter).
+
+## 2026-06-28 15:40 — develop TSK-120
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-062-tastiera-gamepad-l-r/TSK-120]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 3 (src/domain/input-mapping.ts, src/domain/input-mapping.test.ts, TSK-120 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — DEFAULT_KEY_PROFILE q/w→l/r, DEFAULT_GAMEPAD_MAP 4/5→l/r, 528/528 test Vitest
+**Note:** Convenzione SNES-like Q=L, W=R. Test "tasto non mappato" aggiornato (p invece di q).
+
+## 2026-06-28 20:39 — develop TSK-121
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-064-rimappatura-l-r-settings/TSK-121]]
+**Layer:** fe
+**Code path:** packages/app
+**Files touched:** 3 (src/components/Settings/Settings.tsx, src/components/Settings/Settings.test.tsx, TSK-121 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — BUTTONS include l/r, buttonOptionLabel() aggiunta, test Settings espone q→l e w→r come voci rimappabili
+**Note:** Pattern data-driven: solo il dato BUTTONS esteso, nessuna modifica al componente di rendering. Label user-facing: L, R, Select, Start gestite da buttonOptionLabel().
+
+## 2026-06-28 20:44 — develop TSK-122
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-063-touch-l-r-tutte-piattaforme/TSK-122]]
+**Layer:** fe
+**Code path:** packages/app
+**Files touched:** 5 (button-map.ts, TouchOverlay.test.tsx, solids-theme.css, TSK-122 frontmatter, sprint.md)
+**Commit:** (pending push)
+**DoD:** pass — L/R su tutti i core (gambatte, mgba, fbneo, mame); CSS shoulder layout; 36/36 test TouchOverlay
+**Note:** `ACTION_BUTTONS_WITH_SHOULDERS` condiviso. GB engine WasmBoy: L/R no-op (hardware senza shoulder), overlay uniforme EP-018.
+
+## 2026-06-28 20:48 — develop TSK-123
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-062-tastiera-gamepad-l-r/TSK-123]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 7 (mgba/wasmboy/stub engines + 4 test files)
+**Commit:** (pending push)
+**DoD:** pass — pipeline L/R verificata/documentata per mgba (forward), wasmboy (no-op), stub (accept)
+**Note:** Test `mgba-engine.test.ts` nuovo con mock WASM; wasmboy/stub/core-wrapper test estesi.
+
+## 2026-06-28 20:48 — develop TSK-124
+**Agente:** qa-dev
+**TSK:** [[../management/kanban/EP-018-controlli-shoulder-l-r/US-063-touch-l-r-tutte-piattaforme/TSK-124]]
+**Layer:** qa
+**Code path:** packages/app
+**Files touched:** 2 (e2e/ep018-shoulder-lr.e2e.ts, TSK-124 frontmatter)
+**Commit:** (pending push)
+**DoD:** pass — e2e tastiera GB stub + GBA reale (locale); touch skip desktop; unit da TSK-120/122/123
+**Note:** Sprint 14 EP-018 chiuso (5/5 TSK).

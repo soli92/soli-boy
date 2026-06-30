@@ -28,3 +28,8 @@ L'interfaccia è responsiva e ottimizzata per orientamento verticale e orizzonta
 ## Pagine collegate
 [[requisiti-mobile-soli-boy]]
 [[solids]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-018 Controlli shoulder L e R in tutte le modalità e versioni — `management/kanban/EP-018-controlli-shoulder-l-r/`
+  - US-063 Controlli touch L/R per le piattaforme che li espongono

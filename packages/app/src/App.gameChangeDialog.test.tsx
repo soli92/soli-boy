@@ -134,9 +134,8 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Naviga in Libreria e avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
     const tileA = await screen.findByRole("button", {
-      name: "Tetris GB",
+      name: /^tetris gb$/i,
     });
     await act(async () => {
       fireEvent.click(tileA);
@@ -147,7 +146,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Torna in Libreria e ri-tap'a la stessa ROM.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    const tileAagain = await screen.findByRole("button", { name: "Tetris GB" });
+    const tileAagain = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileAagain);
     });
@@ -172,8 +171,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
-    const tileA = await screen.findByRole("button", { name: "Tetris GB" });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
@@ -181,8 +179,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Tap'a ROM_B (diversa) → deve apparire il dialog.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Pokemon Red GB" per non collidere con "Rimuovi Pokemon Red".
-    const tileB = await screen.findByRole("button", { name: "Pokemon Red GB" });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });
@@ -212,9 +209,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     fireEvent.click(screen.getByRole("tab", { name: /play/i }));
 
     // HUD del Player mostra ancora "Tetris" (ROM A) e "In esecuzione".
-    const hud = await screen.findByRole("status", {
-      name: /stato giocatore/i,
-    });
+    const hud = await screen.findByLabelText("Stato giocatore");
     expect(hud).toHaveTextContent("Tetris");
     expect(hud).toHaveTextContent("In esecuzione");
   });
@@ -225,20 +220,18 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
-    const tileA = await screen.findByRole("button", { name: "Tetris GB" });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
     await screen.findByRole("button", { name: /pausa/i });
     expect(
-      screen.getByRole("status", { name: /stato giocatore/i }),
+      screen.getByLabelText("Stato giocatore"),
     ).toHaveTextContent("Tetris");
 
     // Tap'a ROM_B → dialog.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Pokemon Red GB" per non collidere con "Rimuovi Pokemon Red".
-    const tileB = await screen.findByRole("button", { name: "Pokemon Red GB" });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });
@@ -258,9 +251,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     });
 
     // Il Player ora mostra "Pokemon Red" e ri-parte (autoStart è ON).
-    const hud = await screen.findByRole("status", {
-      name: /stato giocatore/i,
-    });
+    const hud = await screen.findByLabelText("Stato giocatore");
     await waitFor(() => {
       expect(hud).toHaveTextContent("Pokemon Red");
     });
@@ -274,8 +265,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
-    const tileA = await screen.findByRole("button", { name: "Tetris GB" });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
@@ -283,8 +273,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Tap'a ROM_B → dialog.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Pokemon Red GB" per non collidere con "Rimuovi Pokemon Red".
-    const tileB = await screen.findByRole("button", { name: "Pokemon Red GB" });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });
@@ -305,9 +294,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     fireEvent.click(screen.getByRole("tab", { name: /play/i }));
 
     // ROM A ancora attiva.
-    const hud = await screen.findByRole("status", {
-      name: /stato giocatore/i,
-    });
+    const hud = await screen.findByLabelText("Stato giocatore");
     expect(hud).toHaveTextContent("Tetris");
     expect(hud).toHaveTextContent("In esecuzione");
   });
@@ -318,16 +305,14 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     // Avvia ROM_A e apri dialog su ROM_B.
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Tetris GB" per non collidere con "Rimuovi Tetris".
-    const tileA = await screen.findByRole("button", { name: "Tetris GB" });
+    const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
     await screen.findByRole("button", { name: /pausa/i });
 
     fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
-    // TSK-108: ricerca esatta "Pokemon Red GB" per non collidere con "Rimuovi Pokemon Red".
-    const tileB = await screen.findByRole("button", { name: "Pokemon Red GB" });
+    const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
     });

@@ -62,6 +62,8 @@ Dashboard + episodic memory + operazioni `/promote` e `/run` + **parallel schedu
 - **Oracle Pre-Check FE** (v2.17, opt-in): se `fe_correctness.dispatch_gate: true` AND il TSK
   candidato ha `layer: fe`, invoca la skill `oracle-precheck` **prima** del dispatch;
   `passed: false` → **fail-loud bloccante**. A gate off (default) → no-op (v2.16).
+- **Token Ledger (v2.21, EP-022)**: a chiusura wave, se `analytics.token_ledger.auto_call_on_wave_close: true`,
+  invoca `show-session-tokens.py --full` (vedi `parallel-scheduling` Fase 6 e [token-ledger-display](mdc:.cursor/rules/token-ledger-display.mdc)).
 
 ## Oracle Pre-Check FE (opt-in `fe_correctness.dispatch_gate`)
 

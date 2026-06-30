@@ -75,9 +75,10 @@ describe("Player", () => {
         title="Pokemon Red"
       />,
     );
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
-    expect(hud).toHaveAttribute("aria-live", "polite");
-    expect(hud).toHaveAttribute("aria-atomic", "true");
+    const hud = screen.getByLabelText("Stato giocatore");
+    const hudLive = hud.querySelector('[role="status"]')!;
+    expect(hudLive).toHaveAttribute("aria-live", "polite");
+    expect(hudLive).toHaveAttribute("aria-atomic", "true");
     // Idle: HUD mostra title + "Premi Avvia"
     expect(hud).toHaveTextContent("Pokemon Red");
     expect(hud).toHaveTextContent("Premi Avvia");
@@ -110,7 +111,7 @@ describe("Player", () => {
         rom={{ rom: new Blob(["x"]), core: "gambatte" }}
       />,
     );
-    const hud = screen.getByRole("status", { name: /stato giocatore/i });
+    const hud = screen.getByLabelText("Stato giocatore");
     expect(hud).toHaveTextContent("Nessun gioco selezionato");
     expect(hud).toHaveTextContent("Premi Avvia");
   });
