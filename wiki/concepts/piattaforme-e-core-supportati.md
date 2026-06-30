@@ -22,9 +22,25 @@ Il sistema riconosce automaticamente la piattaforma dall'estensione e dal conten
 
 Sono fuori ambito per la prima release il multiplayer online, lo store integrato, le funzionalità social e il supporto a console domestiche (NES/SNES/Sega), previsti come possibili estensioni future. [^src: raw/2026-06-01-specifiche-funzionali.txt §1.3 Obiettivi e ambito]
 
+## Aggiornamenti (v2026-06-30)
+
+### RTC per piattaforma — presenza e detection (ADR-009, Sprint 16)
+
+Non tutte le piattaforme supportate espongono un orologio interno (RTC). La presenza è **per-cartuccia**, non per-piattaforma: lo stesso core (es. Gambatte/WasmBoy) serve sia ROM senza RTC sia ROM MBC3+RTC.
+
+| Piattaforma | Adapter engine | RTC possibile | Condizione |
+|---|---|---|---|
+| GB (DMG) | `WasmBoyEngine` | NO | Mapper MBC1/MBC2/MBC5 — nessun orologio |
+| GBC | `WasmBoyEngine` | SÌ, **solo MBC3+RTC** | Byte ROM `0x0147 ∈ {0x0F, 0x10}` — bridge `WasmBoyRtcBridge` |
+| GBA | `MgbaEngine` | SÌ, **solo chip S-3511A** | Game Code ROM `0xAC..0xAF` in lista 16 titoli — bridge `MgbaRtcBridge` |
+| Arcade | — | fuori scope | Rinviato EP-009 |
+
+La detection è runtime (a ROM caricata) via `RtcBridge.hasRtc()`. L'UI Settings (`RtcSection`) è visibile solo se `hasRtc()` restituisce `true`. Per la documentazione completa dell'architettura bridge vedi [[rtc-orologio-interno]]. [^src: design_&_architecture/decisions/ADR-009.md §Decisione]
+
 ## Concetti correlati
 [[emulazione-via-core-wasm]]
 [[vincoli-legali-rom-bios]]
+[[rtc-orologio-interno]]
 
 ## Pagine collegate
 [[emulatorjs]]

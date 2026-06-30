@@ -9,7 +9,8 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **robustezza codice (EP-014, Sprint 12)** + **UX Player flusso principale (EP-015, Sprint 12)** +
 **UX Library/Settings/componenti (EP-016, Sprint 13)** + **a11y manual checks remediation (EP-017, Sprint 13)** +
 **controlli shoulder L/R (EP-018, Sprint 14)** +
-**orologio interno RTC (EP-019, Sprint 15)**.
+**orologio interno RTC (EP-019, Sprint 15)** +
+**bridge RTC reale GBC+GBA (EP-019 follow-up, Sprint 16)**.
 
 ---
 
@@ -408,16 +409,13 @@ DAG Sprint 14:
 Sprint 14 **completo**.
 
 
-## Sprint 15 — Orologio interno emulatore RTC (EP-019, P0) — 0/8 done
+## Sprint 15 — Orologio interno emulatore RTC (EP-019, P0) — 8/8 done · CLOSED
 
+> **Stato:** Sprint 15 **completo** (chiusura wave dominio/UI/storage). 8/8 TSK done. Bridge engine reali deferred a Sprint 16 (sblocco dopo chiusura ADR-009 RTC).
+>
 > **Obiettivo:** introdurre supporto completo al Real Time Clock (RTC) dell'emulatore:
 > impostazione data/ora dal Settings, persistenza locale per gioco, inclusione nei save
 > state (compat all'indietro), e allineamento all'orologio del dispositivo.
->
-> **Gap attivo:** `rtc-real-time-clock-piattaforme-e-giochi` (wiki/gaps.md, 2026-06-30) —
-> non bloccante per TSK dominio/UI/storage; bloccante per bridge reali engine↔RTC
-> (WasmBoyEngine/MgbaEngine). I TSK engine usano stub ADR-pending; i test e2e su ROM reale
-> sono marcati `test.skip('ADR-RTC pending')` fino a chiusura ADR.
 >
 > **Coordinazione:** TSK-125 (RtcService dominio) e TSK-127 (storage) sono la radice parallela.
 > Wave 2 (TSK-126/128/129/130) parte dopo TSK-125. TSK-131 (UI sync) dopo TSK-126+TSK-130.
@@ -427,24 +425,24 @@ Sprint 14 **completo**.
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-125 | RtcService: interfaccia dominio RTC (getRtcState / setRtcState / hasRtc) | US-065 | EP-019 | be | agent | P0 | M | todo | — |
-| TSK-127 | Storage: store `rtcState` + operazioni StoragePort (putRtcState / getRtcState / deleteRtcState) | US-066 | EP-019 | db | agent | P0 | S | todo | TSK-125 |
+| TSK-125 | RtcService: interfaccia dominio RTC (getRtcState / setRtcState / hasRtc) | US-065 | EP-019 | be | agent | P0 | M | done | — |
+| TSK-127 | Storage: store `rtcState` + operazioni StoragePort (putRtcState / getRtcState / deleteRtcState) | US-066 | EP-019 | db | agent | P0 | S | done | TSK-125 |
 
 ### Wave 2 — UI + Wiring dominio + SaveService (parallelo, dopo Wave 1)
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-126 | Settings: sezione data/ora RTC (form, validazione, visibilità condizionale) | US-065 | EP-019 | fe | agent | P0 | M | todo | TSK-125 |
-| TSK-128 | GameSession: wiring RtcService ↔ engine ↔ StoragePort (persist on stop / restore on start) | US-066 | EP-019 | be | agent | P0 | M | todo | TSK-125, TSK-127 |
-| TSK-129 | SaveService: includi snapshot RTC in putSaveState / ripristina in restoreSaveState (compat all'indietro) | US-067 | EP-019 | be | agent | P0 | M | todo | TSK-125, TSK-127 |
-| TSK-130 | RtcService: metodo syncToDevice() — allineamento all'orologio del dispositivo | US-068 | EP-019 | be | agent | P1 | S | todo | TSK-125 |
+| TSK-126 | Settings: sezione data/ora RTC (form, validazione, visibilità condizionale) | US-065 | EP-019 | fe | agent | P0 | M | done | TSK-125 |
+| TSK-128 | GameSession: wiring RtcService ↔ engine ↔ StoragePort (persist on stop / restore on start) | US-066 | EP-019 | be | agent | P0 | M | done | TSK-125, TSK-127 |
+| TSK-129 | SaveService: includi snapshot RTC in putSaveState / ripristina in restoreSaveState (compat all'indietro) | US-067 | EP-019 | be | agent | P0 | M | done | TSK-125, TSK-127 |
+| TSK-130 | RtcService: metodo syncToDevice() — allineamento all'orologio del dispositivo | US-068 | EP-019 | be | agent | P1 | S | done | TSK-125 |
 
 ### Wave 3 — UI sync + QA chiusura (dopo Wave 2)
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-131 | Settings RtcSection: pulsante "Usa ora del dispositivo" (syncToDevice) | US-068 | EP-019 | fe | agent | P1 | S | todo | TSK-126, TSK-130 |
-| TSK-132 | Test integrazione/e2e: flusso RTC completo (set, persist, save-state, sync-to-device) | US-065/066/067/068 | EP-019 | qa | agent | P0 | M | todo | TSK-125, TSK-126, TSK-127, TSK-128, TSK-129, TSK-130, TSK-131 |
+| TSK-131 | Settings RtcSection: pulsante "Usa ora del dispositivo" (syncToDevice) | US-068 | EP-019 | fe | agent | P1 | S | done | TSK-126, TSK-130 |
+| TSK-132 | Test integrazione/e2e: flusso RTC completo (set, persist, save-state, sync-to-device) | US-065/066/067/068 | EP-019 | qa | agent | P0 | M | done | TSK-125, TSK-126, TSK-127, TSK-128, TSK-129, TSK-130, TSK-131 |
 
 DAG Sprint 15:
 - Wave 1: TSK-125 (radice) ‖ TSK-127 → TSK-125
@@ -452,11 +450,39 @@ DAG Sprint 15:
 - Wave 3: TSK-131 → TSK-126,130; TSK-132 → tutti (chiusura wave)
 
 
-## Lookahead — Sprint 16+ (post-Sprint 15)
+## Sprint 16 — Bridge RTC reale (EP-019, follow-up) — 3/3 done · CLOSED
+
+> **Stato:** Sprint 16 **completo** (2026-06-30). Bridge concreti `WasmBoyRtcBridge` (GBC, MBC3) e `MgbaRtcBridge` (GBA, S-3511A BCD) implementati a chiusura ADR-009 §4; gli stub `rtcBridge = null` negli engine sono stati sostituiti. e2e bridge detection sblocca `test.describe.skip` in `ep019-rtc.e2e.ts`.
+>
+> **Test suite:** 662/662 unit + 30/30 e2e verdi.
+>
+> **Human gate residuo (NON bloccante):** e2e full con ROM Pokémon proprietarie GBC/GBA — marcati `test.fixme` con messaggio esplicito in `ep019-rtc.e2e.ts`, sblocco previa aggiunta manuale delle fixture in `public/test-roms/`.
+
+### Wave 1 — Bridge engine (parallelo) — done
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-133 | WasmBoyRtcBridge: MBC3 registers ↔ RtcState (GBC reale) | US-065 | EP-019 | be | agent | P0 | L | done | TSK-125, TSK-128 |
+| TSK-134 | MgbaRtcBridge: S-3511A BCD ↔ RtcState (GBA reale) | US-065 | EP-019 | be | agent | P0 | L | done | TSK-125, TSK-128 |
+
+### Wave 2 — e2e sblocco (dopo Wave 1) — done
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-135 | e2e bridge reale: sblocca test.describe.skip ep019-rtc (GBC + GBA) | US-065 | EP-019 | qa | agent | P1 | M | done | TSK-133, TSK-134 |
+
+DAG Sprint 16:
+- Wave 1: TSK-133 (**done**) ‖ TSK-134 (**done**)
+- Wave 2: TSK-135 (**done**) → TSK-133, TSK-134
+
+Sprint 16 **completo**. EP-019 chiuso (`status: done`) per scope corrente — bridge reali consegnati, e2e detection sbloccato.
+
+
+## Lookahead — Sprint 17+ (post-Sprint 16)
 
 | Area | Note |
 |------|------|
-| EP-019 — Bridge RTC reale (WasmBoy/Gambatte MBC3, mGBA) | Dopo chiusura ADR-RTC (gap `rtc-real-time-clock-piattaforme-e-giochi`) |
+| EP-019 — e2e full ROM proprietarie (Pokémon GBC/GBA) | Gate umano: aggiungere ROM a `public/test-roms/`; sblocca `test.fixme` TSK-135 |
 | EP-009 — Arcade (FBNeo/MAME) | Gap aperto `arcade-emulation-engine`; percorso libretro da valutare |
 | EP-006 — Build Electron distribuibile (Win/macOS/Linux) | Dopo chiusura gap `electron-packaging-toolchain` |
 | EP-006 — Auto-update produzione | Dopo chiusura gap `electron-autoupdate-mechanism` |
@@ -486,7 +512,8 @@ DAG Sprint 15:
   480/480 test pass. Complessità cognitiva App.tsx + Settings.tsx sotto soglia 15.
 - **Sprint 13 — UX Library/Settings (EP-016) + A11y (EP-017):** **13/13 done**. EP-016 + EP-017 chiusi.
 - **Sprint 14 — Controlli shoulder L/R (EP-018):** 5/5 done — Sprint completo (TSK-120..124).
-- **Sprint 15 — Orologio interno RTC (EP-019):** 8 TSK generati (TSK-125..132). Gap attivo `rtc-real-time-clock-piattaforme-e-giochi` non bloccante per dominio/UI/storage; bridge engine ADR-pending (stub con `// ADR-pending`); e2e su ROM reale `test.skip` fino a chiusura ADR. Consumer distribution Sprint 15: agent=8, human=0.
+- **Sprint 15 — Orologio interno RTC (EP-019):** 8/8 done (TSK-125..132). Dominio `RtcService`, UI `Settings → RtcSection`, store `rtcState`, wiring `GameSession ↔ engine ↔ StoragePort`, inclusione RTC nei save state (compat all'indietro), `syncToDevice`, test integrazione/e2e — tutti done. Consumer distribution Sprint 15: agent=8, human=0.
+- **Sprint 16 — Bridge RTC reale (EP-019 follow-up):** 3/3 done (TSK-133..135) — Sprint completo (2026-06-30). `WasmBoyRtcBridge` (GBC, MBC3) + `MgbaRtcBridge` (GBA, S-3511A BCD) consegnati (ADR-009 §4); e2e bridge detection sblocca `test.describe.skip` in `ep019-rtc.e2e.ts`. Test suite: 662/662 unit + 30/30 e2e verdi. **EP-019 chiuso** (`status: done`). Residuo (human gate, NON bloccante): fixture ROM Pokémon proprietarie — `test.fixme` con messaggio esplicito, sblocco previa aggiunta manuale in `public/test-roms/`. Consumer distribution Sprint 16: agent=3, human=0.
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).
