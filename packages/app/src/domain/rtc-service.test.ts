@@ -251,7 +251,6 @@ describe("RtcService.syncToDevice (US-068, ADR-009 §5)", () => {
     // Spy su API di rete globali; syncToDevice non deve toccarle (RNF-05/RNF-06).
     const fetchSpy = vi.fn();
     const xhrSpy = vi.fn();
-    // @ts-expect-error — override globale solo per asserzione.
     globalThis.fetch = fetchSpy;
     // @ts-expect-error — override globale solo per asserzione.
     globalThis.XMLHttpRequest = xhrSpy;

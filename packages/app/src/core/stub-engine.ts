@@ -29,6 +29,10 @@ export class StubRtcBridge implements RtcBridge {
     this.state = initialState;
   }
 
+  hasRtc(): boolean {
+    return true;
+  }
+
   getRtcState(): RtcState | null {
     return this.state;
   }
