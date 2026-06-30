@@ -28,3 +28,11 @@ Sono fuori ambito per la prima release il multiplayer online, lo store integrato
 
 ## Pagine collegate
 [[emulatorjs]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-019 Modifica data e ora dell'orologio interno dell'emulatore (RTC) — `management/kanban/EP-019-rtc-orologio-interno/`
+  - US-065 Impostare data e ora dell'orologio interno dal Settings
+  - US-066 Persistenza locale dello stato dell'orologio interno
+  - US-067 Stato dell'orologio interno incluso nei save state
+  - US-068 Riallineamento dell'orologio interno all'orologio del dispositivo

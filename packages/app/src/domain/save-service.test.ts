@@ -2,11 +2,13 @@
 // TSK-031 / US-016 + US-017 — SaveService: orchestrazione engine↔storage.
 // Usa StubEngine (round-trip deterministico, TSK-030) e l'IndexedDBAdapter
 // reale via fake-indexeddb, coerente con db.test.ts/bios.test.ts.
+// TSK-129 / US-067 — esteso con cattura/ripristino RTC nei save state.
 import "fake-indexeddb/auto";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StubEngine } from "../core/stub-engine";
 import { closeDB } from "../storage/db";
 import { indexedDbStorage } from "../storage/indexeddb-adapter";
+import type { RtcBridge, RtcState } from "./rtc-service";
 import type { Core } from "./types";
 import { SaveService } from "./save-service";
 
@@ -457,6 +459,45 @@ describe("SaveService.importSave (US-019 AC3 — file invalidi/non corrispondent
     expect(after.length).toBe(before.length);
   });
 
+  it("importSave con rtcState strutturalmente malformato → entry importata senza rtcState (CQRL iter-3 N-1)", async () => {
+    // ADR-009 §4 + CQRL iter-3 N-1: un envelope altrimenti valido con `rtcState`
+    // malformato (oggetto fuori range) viene importato comunque, ma il campo
+    // viene strippato silenziosamente da parseEnvelope (policy strip best-effort:
+    // l'RTC è accessorio, un file con il resto corretto NON deve diventare
+    // non-importabile per via di un campo opzionale corrotto).
+    const romId = await seedRom("PkmnBadRtc", "gambatte");
+    const svc = new SaveService(indexedDbStorage);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const envelope = JSON.stringify({
+      format: "soliboy-save",
+      version: 1,
+      kind: "saveState",
+      romId,
+      core: "gambatte",
+      slot: 0,
+      createdAt: Date.now(),
+      data: btoa("payload"),
+      // Malformato: month=13 fuori range (>12).
+      rtcState: { year: 2024, month: 13, day: 1, hour: 0, minute: 0, second: 0 },
+    });
+
+    const res = await svc.importSave(envelope);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.kind).toBe("saveState");
+    // Il warn diagnostico è stato emesso (policy strip silenziosa ma osservabile).
+    expect(warnSpy).toHaveBeenCalled();
+    expect(warnSpy.mock.calls[0]?.[0]).toMatch(/rtcState malformato/i);
+
+    // L'entry importata NON deve contenere rtcState (campo strippato).
+    const imported = await indexedDbStorage.getSaveState(res.id!);
+    expect(imported).toBeDefined();
+    expect(imported?.rtcState).toBeUndefined();
+
+    warnSpy.mockRestore();
+  });
+
   it("non persiste entry se l'import fallisce (no scrittura orfana)", async () => {
     const romId = await seedRom("StillEmpty", "gambatte");
     const svc = new SaveService(indexedDbStorage);
@@ -480,5 +521,280 @@ describe("SaveService.importSave (US-019 AC3 — file invalidi/non corrispondent
 
     const after = await svc.listSaveStates(romId);
     expect(after.length).toBe(before.length);
+  });
+});
+
+// === TSK-129 (US-067) — RTC incluso nei save state =============================
+//
+// Copre il campo opzionale `rtcState?` aggiunto alla entry `saveStates`
+// (ADR-009 §3). I casi del TSK:
+//  - capture con bridge non-null → entry contiene `rtcState`
+//  - capture con bridge null/assente → entry non contiene `rtcState`
+//  - restore con `rtcState` presente + bridge → `setRtcState` chiamato
+//  - restore con entry legacy (no rtcState) → `setRtcState` non chiamato,
+//    restore completa normalmente (compat all'indietro)
+//  - restore con bridge che lancia → warn + restore comunque ok:true
+
+/** Bridge mock pilotabile per i test (no engine reale necessario). */
+function makeMockRtcBridge(initial: RtcState | null = null): {
+  bridge: RtcBridge;
+  setRtcStateSpy: ReturnType<typeof vi.fn>;
+  getRtcStateSpy: ReturnType<typeof vi.fn>;
+  current: { state: RtcState | null };
+} {
+  const current: { state: RtcState | null } = { state: initial };
+  const getRtcStateSpy = vi.fn<() => RtcState | null>(() => current.state);
+  const setRtcStateSpy = vi.fn<(s: RtcState) => void>((s: RtcState) => {
+    current.state = s;
+  });
+  const bridge: RtcBridge = {
+    hasRtc: vi.fn().mockReturnValue(true),
+    getRtcState: getRtcStateSpy,
+    setRtcState: setRtcStateSpy,
+  };
+  return { bridge, getRtcStateSpy, setRtcStateSpy, current };
+}
+
+const SAMPLE_RTC: RtcState = {
+  year: 2024,
+  month: 6,
+  day: 15,
+  hour: 12,
+  minute: 34,
+  second: 56,
+};
+
+describe("SaveService.saveState — cattura RTC (TSK-129, US-067)", () => {
+  it("con bridge non-null e RTC presente: l'entry persistita contiene `rtcState`", async () => {
+    const romId = await seedRom("Pkmn Crystal RTC", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+    const { bridge, getRtcStateSpy } = makeMockRtcBridge(SAMPLE_RTC);
+
+    const id = await svc.saveState(engine, romId, 0, bridge);
+
+    expect(getRtcStateSpy).toHaveBeenCalledTimes(1);
+    const rec = await indexedDbStorage.getSaveState(id);
+    expect(rec).toBeDefined();
+    expect(rec?.rtcState).toEqual(SAMPLE_RTC);
+  });
+
+  it("con bridge null: l'entry persistita NON contiene `rtcState` (comportamento invariato)", async () => {
+    const romId = await seedRom("Tetris NoRtc", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    const id = await svc.saveState(engine, romId, 0, null);
+
+    const rec = await indexedDbStorage.getSaveState(id);
+    expect(rec).toBeDefined();
+    expect(rec?.rtcState).toBeUndefined();
+  });
+
+  it("senza parametro rtcBridge (call site legacy): `rtcState` assente nell'entry (compat all'indietro)", async () => {
+    const romId = await seedRom("Tetris Legacy", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    // Firma legacy 3-arg: il chiamante non sa nulla di RTC.
+    const id = await svc.saveState(engine, romId, 0);
+
+    const rec = await indexedDbStorage.getSaveState(id);
+    expect(rec).toBeDefined();
+    expect(rec?.rtcState).toBeUndefined();
+  });
+
+  it("con bridge che ritorna null (engine senza RTC attivo): `rtcState` assente, save procede", async () => {
+    const romId = await seedRom("GBA NoRtcCartridge", "mgba");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+    const { bridge, getRtcStateSpy } = makeMockRtcBridge(null);
+
+    const id = await svc.saveState(engine, romId, 1, bridge);
+
+    expect(getRtcStateSpy).toHaveBeenCalledTimes(1);
+    const rec = await indexedDbStorage.getSaveState(id);
+    expect(rec).toBeDefined();
+    expect(rec?.rtcState).toBeUndefined();
+  });
+
+  it("bridge.getRtcState che lancia: save procede senza rtcState, warn emesso", async () => {
+    const romId = await seedRom("Pkmn FlakyRtc", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+    const bridge: RtcBridge = {
+      hasRtc: vi.fn().mockReturnValue(true),
+      getRtcState: () => {
+        throw new Error("RTC bridge KO");
+      },
+      setRtcState: vi.fn(),
+    };
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const id = await svc.saveState(engine, romId, 0, bridge);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]?.[0]).toMatch(/cattura RTC fallita/i);
+    const rec = await indexedDbStorage.getSaveState(id);
+    expect(rec).toBeDefined();
+    expect(rec?.rtcState).toBeUndefined();
+
+    warnSpy.mockRestore();
+  });
+});
+
+describe("SaveService.loadState — ripristino RTC (TSK-129, US-067)", () => {
+  it("entry con rtcState + bridge: `setRtcState(bridge, entry.rtcState)` chiamato; restore ok", async () => {
+    const romId = await seedRom("Pkmn Crystal Load", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    // Save lato A: cattura con bridge popolato.
+    const capture = makeMockRtcBridge(SAMPLE_RTC);
+    const id = await svc.saveState(engine, romId, 0, capture.bridge);
+
+    // Load lato B: bridge separato (vuoto) → deve essere riallineato.
+    const restoreSide = makeMockRtcBridge(null);
+    const res = await svc.loadState(engine, id, "gambatte", restoreSide.bridge);
+
+    expect(res.ok).toBe(true);
+    expect(restoreSide.setRtcStateSpy).toHaveBeenCalledTimes(1);
+    expect(restoreSide.setRtcStateSpy).toHaveBeenCalledWith(SAMPLE_RTC);
+    // Lo stato del bridge "lato restore" riflette il valore catturato.
+    expect(restoreSide.current.state).toEqual(SAMPLE_RTC);
+  });
+
+  it("entry legacy (no rtcState): `setRtcState` NON chiamato, restore ok (compat all'indietro)", async () => {
+    const romId = await seedRom("LegacySave", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    // Save senza bridge → entry priva di rtcState (simulazione save pre EP-019).
+    const id = await svc.saveState(engine, romId, 0);
+    const recCheck = await indexedDbStorage.getSaveState(id);
+    expect(recCheck?.rtcState).toBeUndefined(); // sanity check
+
+    const restoreSide = makeMockRtcBridge(null);
+    const res = await svc.loadState(engine, id, "gambatte", restoreSide.bridge);
+
+    expect(res.ok).toBe(true);
+    expect(restoreSide.setRtcStateSpy).not.toHaveBeenCalled();
+  });
+
+  it("entry con rtcState ma bridge null: `setRtcState` NON chiamato, restore ok", async () => {
+    const romId = await seedRom("RtcButNoBridge", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    const capture = makeMockRtcBridge(SAMPLE_RTC);
+    const id = await svc.saveState(engine, romId, 0, capture.bridge);
+
+    // Restore con bridge=null: la entry ha rtcState ma non c'è chi lo accetti.
+    const res = await svc.loadState(engine, id, "gambatte", null);
+    expect(res.ok).toBe(true);
+    // Nessun side-effect: il capture bridge non viene richiamato in restore.
+    expect(capture.setRtcStateSpy).not.toHaveBeenCalled();
+  });
+
+  it("senza parametro rtcBridge (call site legacy): restore non tocca l'RTC", async () => {
+    const romId = await seedRom("LegacyLoad", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    const capture = makeMockRtcBridge(SAMPLE_RTC);
+    const id = await svc.saveState(engine, romId, 0, capture.bridge);
+
+    // Firma legacy 3-arg: il chiamante non ha aggiornato la call site.
+    const res = await svc.loadState(engine, id, "gambatte");
+    expect(res.ok).toBe(true);
+    expect(capture.setRtcStateSpy).not.toHaveBeenCalled();
+  });
+
+  it("bridge.setRtcState che lancia: warn emesso, restore comunque ok:true (degrade graceful)", async () => {
+    const romId = await seedRom("RtcFlakyOnLoad", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    const capture = makeMockRtcBridge(SAMPLE_RTC);
+    const id = await svc.saveState(engine, romId, 0, capture.bridge);
+
+    const flakyBridge: RtcBridge = {
+      hasRtc: vi.fn().mockReturnValue(true),
+      getRtcState: () => null,
+      setRtcState: () => {
+        throw new Error("RTC apply KO");
+      },
+    };
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const res = await svc.loadState(engine, id, "gambatte", flakyBridge);
+    expect(res.ok).toBe(true);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]?.[0]).toMatch(/ripristino RTC fallito/i);
+
+    warnSpy.mockRestore();
+  });
+});
+
+// === Review iter-2 (F-2/F-5/F-8) — RTC nel round-trip export/import ============
+//
+// Senza propagazione di `rtcState` nell'envelope portabile, l'RTC veniva perso
+// silenziosamente in export → import (l'entry importata non aveva rtcState, e il
+// successivo loadState non poteva ripristinare l'orologio). Verifichiamo:
+//   1. export di un saveState con rtcState → envelope contiene `rtcState`
+//   2. import dell'envelope → entry persistita contiene `rtcState` valorizzato
+//   3. export di un saveState SENZA rtcState → envelope NON contiene il campo
+//      (compat all'indietro, no `rtcState: undefined` serializzato a oggetto vuoto)
+
+describe("SaveService export/import round-trip RTC (review iter-2: F-2/F-5/F-8)", () => {
+  it("round-trip completo: saveState(bridge) → export → import → entry contiene rtcState", async () => {
+    const romId = await seedRom("Pkmn Crystal Roundtrip", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+    const { bridge } = makeMockRtcBridge(SAMPLE_RTC);
+
+    // 1) Save con RTC bridge popolato.
+    const id = await svc.saveState(engine, romId, 0, bridge);
+    const original = await indexedDbStorage.getSaveState(id);
+    expect(original?.rtcState).toEqual(SAMPLE_RTC); // sanity
+
+    // 2) Export → envelope JSON deve contenere `rtcState`.
+    const exp = await svc.exportSaveState(id);
+    expect(exp.ok).toBe(true);
+    if (!exp.ok) return;
+    const env = JSON.parse(await exp.blob.text());
+    expect(env.rtcState).toEqual(SAMPLE_RTC);
+
+    // 3) Import dell'envelope → nuova entry deve contenere `rtcState`.
+    const imp = await svc.importSave(exp.blob);
+    expect(imp.ok).toBe(true);
+    if (!imp.ok) return;
+    expect(imp.id).toBeDefined();
+    const imported = await indexedDbStorage.getSaveState(imp.id!);
+    expect(imported).toBeDefined();
+    expect(imported?.rtcState).toEqual(SAMPLE_RTC);
+  });
+
+  it("export di entry senza rtcState: envelope NON contiene il campo (compat all'indietro)", async () => {
+    const romId = await seedRom("NoRtc Export", "gambatte");
+    const engine = new StubEngine();
+    const svc = new SaveService(indexedDbStorage);
+
+    // Save SENZA bridge → entry priva di rtcState.
+    const id = await svc.saveState(engine, romId, 0);
+    const exp = await svc.exportSaveState(id);
+    expect(exp.ok).toBe(true);
+    if (!exp.ok) return;
+
+    const env = JSON.parse(await exp.blob.text());
+    // Il campo deve essere proprio assente (spread condizionale), non `undefined`.
+    expect(Object.prototype.hasOwnProperty.call(env, "rtcState")).toBe(false);
+
+    // Import → entry importata anch'essa senza rtcState.
+    const imp = await svc.importSave(exp.blob);
+    expect(imp.ok).toBe(true);
+    if (!imp.ok) return;
+    const imported = await indexedDbStorage.getSaveState(imp.id!);
+    expect(imported?.rtcState).toBeUndefined();
   });
 });

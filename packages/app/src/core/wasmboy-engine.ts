@@ -3,6 +3,7 @@
 // di EmulatorJS (gap emulatorjs-real-integration). Singleton WasmBoy → un gioco alla volta.
 // TSK-030 (ADR-006) — esteso con snapshot/restore + SRAM (US-016/US-017).
 import { WasmBoy, type WasmBoyJoypadState, type WasmBoySaveState } from "wasmboy";
+import type { RtcBridge } from "../domain/rtc-service";
 import type {
   AudioSettings,
   EmulatorEngine,
@@ -43,6 +44,11 @@ export class WasmBoyEngine implements EmulatorEngine {
     saveStates: true,
     sram: true,
   };
+
+  // ADR-009: bridge concreto (WasmBoyRtcBridge) pianificato Sprint 16 — stub
+  // null mantiene flusso best-effort no-op in GameSession persist/restore
+  // (TSK-128, ADR-009 §4).
+  readonly rtcBridge: RtcBridge | null = null;
 
   private configured = false;
   private joypad: WasmBoyJoypadState = {};

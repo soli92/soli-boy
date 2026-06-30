@@ -1,0 +1,121 @@
+{
+  "tsk_id": "TSK-132",
+  "iter": 1,
+  "generated_at": "2026-06-30T00:00:00.000Z",
+  "reviewer_version": "code-reviewer v2.12 (PATTERN §19)",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "test_runner": "playwright",
+    "confidence": "EXTRACTED",
+    "stack_mode": "guided",
+    "code_path": "packages/app"
+  },
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "id": "F-001",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "severity": "medium",
+      "pass": "design",
+      "title": "StubRtcBridge esportata da un modulo di produzione (src/core/stub-engine.ts)",
+      "description": "La classe `StubRtcBridge` è dichiarata e `export`-ata da `packages/app/src/core/stub-engine.ts` — un modulo nel percorso `src/` (codice di produzione). Viene importata direttamente in `App.tsx` (riga 55) per essere istanziata solo quando `?rtcPlatform` è presente in URL (stub mode e2e). Il modulo `stub-engine.ts` espone quindi un helper di test nella superficie pubblica del production bundle. In ambiente di produzione la classe è comunque inclusa nel bundle anche se `stubRtcBridge` è `null`.",
+      "locations": [
+        { "file": "packages/app/src/core/stub-engine.ts", "line": 24 },
+        { "file": "packages/app/src/App.tsx", "line": 55 }
+      ],
+      "suggestion": "Spostare `StubRtcBridge` in un file a percorso esplicito test-only (es. `src/core/__test-helpers__/stub-rtc-bridge.ts` o `src/testing/stub-rtc-bridge.ts`) escluso dal bundle di produzione tramite Vite `build.rollupOptions.external` o tree-shaking condizionale. In alternativa, documentare esplicitamente l'eccezione con un commento `// INTENTIONALLY IN PRODUCTION: used only via URL param in stub mode (e2e)` e accettare il rischio di superficie.",
+      "adr_ref": "ADR-009 §4"
+    },
+    {
+      "id": "F-002",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "medium",
+      "pass": "robustness",
+      "title": "Test e2e 5 verifica solo il feedback UI, non lo stato del bridge",
+      "description": "Lo scenario TSK-132 test case 3 (spec: 'click Imposta con valori noti → bridge.setRtcState chiamato') è implementato nel test e2e 5 (riga 146–170 di ep019-rtc.e2e.ts) verificando unicamente la presenza di `sb-rtc-confirmed` nell'UI, senza assertire che `StubRtcBridge.setRtcState` sia stato invocato con i valori attesi. L'invariante di dominio — la chiamata al bridge — non è verificata a livello e2e. Un bug che mostri il messaggio di conferma senza chiamare il bridge non verrebbe rilevato da questo test.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 146, "line_end": 170 }
+      ],
+      "suggestion": "Aggiungere un'asserzione sull'effetto del bridge: poiché il bridge è in-memory (StubRtcBridge), è possibile esporre via window (in stub mode) o via page.evaluate un canale di verifica. Alternativamente, spostare la copertura di questo invariante al livello unit (test RtcSection.test.tsx, dove il bridge è direttamente mockabile), con la nota che il test e2e copra l'integrazione UI e il test unit la chiamata bridge.",
+      "adr_ref": "ADR-009 §4"
+    },
+    {
+      "id": "F-003",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "title": "Test 9 (sync idempotente) ha potenziale flakiness a boundary temporale",
+      "description": "Il test 'RTC reset idempotente' (righe 204–228) esegue due click ravvicinati su 'Usa ora del dispositivo' e asserisce che `year` e `month` siano identici. Se il test viene eseguito nell'intorno di un cambio di mese (es. ultimo giorno del mese, ms prima di mezzanotte), la chiamata `Date()` potrebbe restituire mesi diversi tra le due letture. La probabilità è estremamente bassa ma il test non è deterministico rispetto al wall-clock.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 204, "line_end": 228 }
+      ],
+      "suggestion": "Iniettare un clock fittizio via `page.addInitScript(() => { const D = Date; Date = class extends D { constructor() { super(2027, 2, 15, 12, 0, 0); } }; })` prima del goto, oppure usare `page.clock.setFixedTime(...)` (Playwright >= 1.45). In questo modo il test è deterministico indipendentemente dall'orario di esecuzione CI."
+    },
+    {
+      "id": "F-004",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "title": "Filtro URL nel test 11 (no-network) usa regex fragile",
+      "description": "Il filtro `url.match(/\\?\\w+$/) !== null` (riga 249 di ep019-rtc.e2e.ts) vuole escludere le risorse localhost con parametri Vite HMR. Il pattern `\\w+` non copre parametri con trattini, punti o caratteri URL-encoded (es. `?v=1.0`, `?id=a-b`). Una risorsa statica con parametri non-\\w potrebbe non essere esclusa, generando un falso positivo nel conteggio `networkRequests`. Parallelamente, il filtro è applicato solo alle URL che contengono `localhost`, quindi request a host esterni passerebbero comunque nella lista — comportamento corretto, ma il commento non lo esplicita.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 235, "line_end": 253 }
+      ],
+      "suggestion": "Sostituire il regex con `url.includes('?')` come fallback generico, oppure usare `request.resourceType()` di Playwright (es. `['document','script','stylesheet','image','font'].includes(request.resourceType())`) per filtrare semanticamente le risorse statiche senza regex fragili."
+    },
+    {
+      "id": "F-005",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "severity": "low",
+      "pass": "robustness",
+      "title": "deleteDatabase nel init script senza error handling",
+      "description": "Il setup `page.addInitScript(() => indexedDB.deleteDatabase('soli-boy'))` (riga 46 di ep019-rtc.e2e.ts) ignora il valore di ritorno `IDBOpenDBRequest`. Se il database è bloccato da un'altra connessione aperta (es. un service worker o una scheda precedente nel test runner), la richiesta di delete viene accodata ma l'esito non è verificato. In scenari di CI con parallelismo potrebbe generare test isolation issues.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 46 }
+      ],
+      "suggestion": "Usare `page.evaluate(() => new Promise(res => { const r = indexedDB.deleteDatabase('soli-boy'); r.onsuccess = r.onerror = res; }))` dentro un `beforeEach` anziché `addInitScript`, così il delete è awaitable e viene eseguito dopo `page.goto` ma prima dei test veri."
+    },
+    {
+      "id": "F-006",
+      "rule_id": "TS-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-001.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "title": "Test numerazione non sequenziale nei describe group",
+      "description": "I test in ep019-rtc.e2e.ts usano numeri che rispecchiano i test case del TSK (1–11), ma la distribuzione nei `describe` block è non sequenziale: il describe 'sync-to-device' contiene test '6', '9', '11'; il describe 'persistenza e save-state' contiene '7' e '8'. Un lettore che scansiona il file trova i test fuori ordine rispetto alla numerazione, rendendo la navigazione meno immediata. Non è un errore funzionale, ma riduce la leggibilità.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 78 }
+      ],
+      "suggestion": "Riordinare i test all'interno dei describe per numerazione progressiva, oppure rinumerare i test con numerazione locale al describe (1, 2, 3 dentro ogni gruppo) mantenendo il titolo descrittivo come fonte di verità invece del numero. La seconda opzione è più manutenibile a lungo termine."
+    },
+    {
+      "id": "F-007",
+      "rule_id": "TS-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-001.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "title": "test.skip(true, ...) dentro describe anziché test.describe.skip()",
+      "description": "Il blocco skip per i bridge Sprint 16 (righe 391–394) usa `test.skip(true, '...')` all'interno di un `test.describe`. Questo è funzionalmente corretto ma non idiomatico: in Playwright la modalità canonica per skippare un intero describe group è `test.describe.skip('...')` o annotare il gruppo con `{ tag: '@skip' }`. L'uso di `test.skip(true)` dentro il describe è un pattern meno esplicito e potrebbe sorprendere chi mantiene il file.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 391 }
+      ],
+      "suggestion": "Convertire in `test.describe.skip('EP-019 RTC — bridge concreto Sprint 16 [SKIP]', () => { ... })` per chiarezza e idiomaticità Playwright."
+    }
+  ],
+  "verdict": "conditional",
+  "summary": "7 finding totali: 1 medium (design), 1 medium (robustness), 5 low. Nessun finding high o blocco critico. Il codice è funzionalmente corretto e allineato ad ADR-009; la suite e2e copre i casi previsti dal TSK. Il finding principale (F-001) riguarda una boundary di design: `StubRtcBridge` è esportata da `src/core/` (produzione) anziché da un percorso test-only. Il finding F-002 segnala un gap di asserzione sul bridge call nel test 5. I finding F-003/F-004/F-005 sono robustness low sull'infrastruttura di test. F-006/F-007 sono idiomaticity low. Verdict `conditional`: i finding F-001 e F-002 sono correttamente medium e richiedono una fix o una decisione esplicita documentata prima del `pass`.",
+  "loop_status": {
+    "current_iter": 1,
+    "max_iter": 3,
+    "previous_finding_ids": [],
+    "no_progress": false,
+    "regression_detected": false
+  }
+}

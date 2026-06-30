@@ -30,3 +30,9 @@ Il requisito di sicurezza prescrive l'esecuzione del core in contesto isolato e 
 
 ## Pagine collegate
 [[indexeddb]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-019 Modifica data e ora dell'orologio interno dell'emulatore (RTC) — `management/kanban/EP-019-rtc-orologio-interno/`
+  - US-066 Persistenza locale dello stato dell'orologio interno
+  - US-068 Riallineamento dell'orologio interno all'orologio del dispositivo

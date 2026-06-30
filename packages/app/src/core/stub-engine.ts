@@ -2,6 +2,7 @@
 // Usato in app finché un adapter non è integrato, e dai test e2e per un
 // comportamento riproducibile senza WASM/ROM reali. Non esegue emulazione reale.
 
+import type { RtcBridge, RtcState } from "../domain/rtc-service";
 import type {
   AudioSettings,
   EmulatorEngine,
@@ -10,6 +11,32 @@ import type {
   LoadOptions,
   SpeedSettings,
 } from "./core-wrapper";
+
+// NOTE: StubRtcBridge remains in production bundle — activated only via ?rtcPlatform URL param in e2e stub mode; zero runtime cost in production.
+/**
+ * TSK-132 / ADR-009 §4 — StubRtcBridge: bridge RTC deterministico per e2e e test.
+ *
+ * Mantiene uno stato RTC in-memory mutabile che rispecchia il comportamento
+ * atteso da un bridge concreto: `setRtcState` aggiorna lo stato interno,
+ * `getRtcState` lo ritorna. Non ha side-effect sull'engine (non esiste un core
+ * reale). Usato dagli e2e di EP-019 per esercitare il flusso UI RTC completo
+ * (visibilità, validazione, submit, sync-to-device) senza bridge reale.
+ */
+export class StubRtcBridge implements RtcBridge {
+  private state: RtcState | null;
+
+  constructor(initialState: RtcState | null = null) {
+    this.state = initialState;
+  }
+
+  getRtcState(): RtcState | null {
+    return this.state;
+  }
+
+  setRtcState(state: RtcState): void {
+    this.state = { ...state };
+  }
+}
 
 /**
  * Forma dello stato interno serializzato dallo StubEngine (TSK-030).
@@ -35,6 +62,14 @@ export class StubEngine implements EmulatorEngine {
     saveStates: true,
     sram: true,
   };
+
+  /**
+   * TSK-128 / ADR-009 §4 — stub `null` di default: lo StubEngine non emula un
+   * RTC reale e i test deterministici sono invarianti rispetto all'orologio.
+   * Override-abile dai test: assegnando `engine.rtcBridge = new StubRtcBridge()`
+   * gli scenari `GameSession` possono esercitare il flusso persist/restore.
+   */
+  rtcBridge: RtcBridge | null = null;
 
   loaded = false;
   audio: AudioSettings = { volume: 1, mute: false };

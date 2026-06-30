@@ -4,7 +4,11 @@
 // TSK-031 — aggiunti gli assi `saveStates` (US-016) e `sram` (US-017) come interfacce
 // segmentate (ADR-006 §Decisione p.2): il dominio dei salvataggi consuma solo la porta
 // che gli serve (interface segregation), evitando coupling spurio per i consumer ROM-only.
+// TSK-127 — aggiunto l'asse `rtcState` (US-066, ADR-009 §3) come `RtcStatePort`,
+// segmentato per consentire al dominio RTC (RtcService) di consumare solo la
+// capability necessaria (interface segregation, parità con `SramPort`).
 
+import type { RtcState } from "../domain/rtc-service";
 import type {
   RomFilter,
   RomInput,
@@ -113,16 +117,43 @@ export interface CoverPort {
 }
 
 /**
+ * Porta RTC (US-066, ADR-009 §3).
+ *
+ * Persistenza dello stato dell'orologio interno (quinto object store, distinto
+ * da SRAM e save state — terza categoria di "salvataggio del singolo gioco").
+ * Una entry per `romId`. `getRtcState` ritorna `null` (non `undefined`) per
+ * coerenza con `RtcBridge.getRtcState` del dominio (absence sentinel canonica
+ * in EP-019). `deleteRtcState` è idempotente (no-op se assente).
+ *
+ * I campi di persistenza `updatedAt` (ISO 8601 UTC) e `schemaVersion` sono
+ * gestiti internamente dagli adapter e NON sono esposti al dominio — questa
+ * porta lavora solo sul modello canonico `RtcState` (ADR-009 §2).
+ */
+export interface RtcStatePort {
+  /** Persiste (o sostituisce) lo stato RTC per la ROM `romId`. */
+  putRtcState(romId: string, state: RtcState): Promise<void>;
+  /** Recupera lo stato RTC per `romId`, o `null` se non presente. */
+  getRtcState(romId: string): Promise<RtcState | null>;
+  /** Rimuove lo stato RTC per `romId`. Idempotente (no-op se assente). */
+  deleteRtcState(romId: string): Promise<void>;
+}
+
+/**
  * Porta completa per i salvataggi: combina save state + SRAM + accesso ROM
  * (il SaveService legge `RomRecord` per derivare il `core` canonico ed
  * etichettare l'entry saveState, ADR-006 §Conseguenze).
- * Include anche CoverPort: l'IndexedDBAdapter unico implementa tutto.
+ * Include anche CoverPort e RtcStatePort: l'IndexedDBAdapter unico implementa tutto.
+ *
+ * TSK-127 — esteso con `RtcStatePort` per consentire al SaveService (TSK
+ * Sprint 15 futuri) di includere lo stato RTC nei save state snapshot
+ * (US-067), riusando la porta unica passata al servizio.
  */
 export interface SaveStoragePort
   extends StoragePort,
     SaveStatePort,
     SramPort,
-    CoverPort {}
+    CoverPort,
+    RtcStatePort {}
 
 /**
  * Porta config generica (TSK-036 F-036-01).

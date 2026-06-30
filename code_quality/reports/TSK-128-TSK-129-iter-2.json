@@ -1,0 +1,93 @@
+{
+  "tsk_id": "TSK-128+TSK-129",
+  "iter": 2,
+  "reviewer_version": "code-reviewer v2.24",
+  "generated_at": "2026-06-30T00:00:00Z",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "none (domain layer puro)",
+    "framework_version": "",
+    "runtime": "node (vitest, fake-indexeddb)",
+    "confidence": 0.95,
+    "stack_mode": "guided",
+    "stack_notes": "Dominio TypeScript puro: GameSession (TSK-128) + SaveService / SaveFileEnvelope / RTC round-trip (TSK-129). File in scope: game-session.ts, game-session.test.ts, save-service.ts, save-service.test.ts, stub-engine.ts. Iter-1 verdict: conditional. Finding bloccanti iter-1 (F-1 annotazione RtcState|null, F-2/F-5/F-8 rtcState in SaveFileEnvelope + exportSaveState + importSave, F-6 test round-trip RTC, F-7 rtcState=null ridondante) tutti chiusi e verificati."
+  },
+  "verdict": "conditional",
+  "summary": "I sei finding bloccanti dell'iter-1 sono tutti risolti correttamente: l'annotazione RtcState|null sostituisce il ReturnType inferito (F-1), SaveFileEnvelope porta rtcState? opzionale con spread condizionale coerente sia in exportSaveState sia in importSave (F-2/F-5/F-8), il test round-trip saveState(bridge)→export→import è presente e solido (F-6), la riga rtcState=null ridondante nel catch è rimossa (F-7). La qualità generale è elevata: struttura best-effort sistematica, compat all'indietro per-design, copertura di test completa sui path RTC. Emergono due finding nuovi correlati di robustezza/test (N-1/N-2, severity medium): parseEnvelope non valida la struttura del campo rtcState nei file importati — un JSON con rtcState malformato (es. numero invece di oggetto) supera il parser e viene persistito in IDB senza errore segnalato. Il degrade è parzialmente attenuato dal try/catch best-effort in loadState (il bridge che lancia è catturato), ma la silenziosità del path importa→persiste un dato incoerente è un gap di robustezza documentabile. Un finding low (N-3) segnala i mock RtcBridge nei test che omettono hasRtc() dall'object literal, non soddisfacendo strutturalmente l'interfaccia; non impatta il comportamento runtime.",
+  "findings": [
+    {
+      "id": "N-1",
+      "severity": "medium",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "confidence": 0.85,
+      "title": "parseEnvelope non valida la struttura di rtcState: un campo malformato supera il parser e viene persistito in IDB",
+      "location": "packages/app/src/domain/save-service.ts:237-244",
+      "description": "La funzione parseEnvelope, quando kind===\"saveState\", valida slot (number) e core (string) ma non controlla il campo opzionale rtcState. Il type narrowing finale è `v as SaveFileEnvelope` (cast non-null unsafe dopo validazione parziale). Se un file JSON portabile contenesse `\"rtcState\": 42` oppure `\"rtcState\": {\"year\": \"not-a-number\", \"month\": 6, ...}`, il campo sopravviverebbe senza errore attraverso parseEnvelope → importSave → putSaveState → IDB. La successiva loadState, se bridge presente, chiamerebbe RtcService.setRtcState(bridge, rec.rtcState) con un valore strutturalmente non conforme a RtcState. Il try/catch a righe 399-407 di loadState attutisce il danno (un bridge che lancia è caught + console.warn), ma: (a) il dato malformato è già persistito in IDB senza alcun segnale all'utente al momento dell'import; (b) ImportSaveResult ritorna { ok: true } pur avendo ingerito un rtcState non valido — claim falso per questa specifica property. La policy best-effort per i bridge è corretta e intenzionale (ADR-009 §4); il gap qui è sul confine di validazione input, che TS-ROBUST-001 richiede presidiato ai confini I/O.",
+      "recommendation": "Aggiungere in parseEnvelope, nel branch kind===\"saveState\", un controllo opzionale su rtcState: se il campo è presente (v.rtcState !== undefined), verificare che sia un plain object con i campi year/month/day/hour/minute/second di tipo number. In caso di struttura invalida, due opzioni: (a) rimuovere silenziosamente il campo (strip invece di reject — comportamento di downgrade: save senza rtcState anziché save con rtcState corrotto); (b) ritornare { ok: false, reason: \"invalid-file\", detail: \"Campo rtcState malformato\" }. L'opzione (a) è coerente con la policy best-effort del dominio e con la backward-compat (salva comunque il blob emulatore, RTC viene semplicemente ignorato). L'opzione (b) è più severa ma più onesta verso l'utente. Entrambe eliminano il path in cui IDB riceve un rtcState incoerente.",
+      "auto_fixable": false
+    },
+    {
+      "id": "N-2",
+      "severity": "medium",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "confidence": 0.85,
+      "title": "Manca test per importSave con rtcState strutturalmente malformato nell'envelope",
+      "location": "packages/app/src/domain/save-service.test.ts:359-485",
+      "description": "La suite \"SaveService.importSave (US-019 AC3 — file invalidi/non corrispondenti)\" copre: JSON malformato, format mismatch, versione non supportata, ROM non in libreria, campi mancanti (slot), core cross-engine. Non c'è nessun test che verifichi il comportamento quando rtcState è strutturalmente invalido nell'envelope (es. `\"rtcState\": 42` o `\"rtcState\": {\"year\": \"bad\"}`). In presenza del finding N-1 (parseEnvelope non valida rtcState), questo gap lascia il comportamento corretto non esercitato dal test suite. Conseguente a N-1: il fix di N-1 dovrebbe essere accompagnato da un test che lo copre.",
+      "recommendation": "Aggiungere nella suite AC3 un caso 'rtcState malformato nell'envelope (non è un oggetto RtcState valido) → comportamento atteso secondo la policy scelta in N-1 (strip silenzioso oppure invalid-file, a seconda della scelta implementativa)'. Il test dovrebbe verificare che l'entry importata non contenga un rtcState incoerente (se strip: rec.rtcState === undefined; se reject: res.ok === false). Segnalato a qa-dev per completamento.",
+      "auto_fixable": false
+    },
+    {
+      "id": "N-3",
+      "severity": "low",
+      "rule_id": "TS-IDIOM-002",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "pass": "idiomaticity",
+      "confidence": 0.75,
+      "title": "Mock RtcBridge nei test omettono hasRtc(): object literal non soddisfa strutturalmente l'interfaccia RtcBridge",
+      "location": "packages/app/src/domain/save-service.test.ts:500-516; packages/app/src/domain/game-session.test.ts:80-85,130,148,171,196,232",
+      "description": "L'interfaccia RtcBridge (rtc-service.ts:67) dichiara tre metodi: hasRtc(): boolean, getRtcState(): RtcState|null, setRtcState(state: RtcState): void. I mock costruiti in makeMockRtcBridge (save-service.test.ts:500-516) e nei test diretti di game-session.test.ts (oggetti literal { getRtcState: vi.fn(), setRtcState }) omettono hasRtc(). TypeScript in strict mode dovrebbe segnalare un errore di tipo su questi object literal se il tipo dell'argomento è RtcBridge. L'assenza di errori di compilazione suggerisce che la firma dell'argomento è `RtcBridge | null` e che i mock vengono passati tramite as unknown as EmulatorEngine (game-session.test.ts:31) o tramite la proprietà bridge del costruttore makeEngine, che usa `as unknown as EmulatorEngine` come cast broad. Il comportamento runtime è corretto perché né GameSession né SaveService chiamano bridge.hasRtc() nei path esercitati dai test. Tuttavia la mancanza di hasRtc nel mock significa che se in futuro il codice di produzione iniziasse a chiamare bridge.hasRtc(), i test non rileverebbero la chiamata (il mock non ha la spy). Finding low: nessun impatto runtime attuale.",
+      "recommendation": "Aggiungere hasRtc: vi.fn().mockReturnValue(true) ai mock RtcBridge in entrambi i file di test. Questo rende il mock strutturalmente completo rispetto all'interfaccia, senza richiedere modifiche al codice di produzione. Costo: 2-3 righe per file.",
+      "auto_fixable": true
+    }
+  ],
+  "positives": [
+    "Tutti i sei finding bloccanti dell'iter-1 risolti correttamente e verificati: SaveFileEnvelope porta rtcState? opzionale (F-2), exportSaveState propaga rec.rtcState via spread condizionale (F-5), importSave estrae envelope.rtcState e lo passa a putSaveState con lo stesso pattern (F-8), test round-trip completo saveState(bridge)→export→import solido con verifica hasOwnProperty per l'assenza del campo (F-6), annotazione RtcState|null esplicita su let rtcState (F-1), riga rtcState=null ridondante nel catch rimossa (F-7).",
+    "Policy null-safe e best-effort sistematicamente applicata: spread condizionale `...(x !== undefined ? { x } : {})` usato coerentemente in saveState, exportSaveState e importSave — zero scritture di `rtcState: undefined` in IDB, zero claim falsi su RTC zero.",
+    "Backward-compat by-design verificata con test dedicati: save senza bridge→entry senza rtcState (con 3-arg call site legacy), load su entry senza rtcState→setRtcState non chiamato, export senza rtcState→campo assente nell'envelope (controllo hasOwnProperty esplicito).",
+    "GameSession.restoreOnStart e persistOnStop: doppio try/catch separato e indipendente per storage e bridge — il fallimento di uno non propaga all'altro, il gioco non viene mai bloccato (ADR-009 §5 best-effort rispettato).",
+    "StubRtcBridge in stub-engine.ts: implementazione corretta con copia difensiva in setRtcState ({ ...state }), costruttore con initialState opzionale, commento NOTE su bundle di produzione (trade-off documentato).",
+    "Suite test save-service.test.ts per TSK-129 (US-067): 10 test RTC cattura + 6 test RTC ripristino + 2 test round-trip export/import RTC — copertura eccellente di tutti i path specificati nel DoD."
+  ],
+  "loop_status": {
+    "previous_iter": 1,
+    "previous_verdict": "conditional",
+    "no_progress_detected": false,
+    "regression_detected": false,
+    "iterations_remaining": 1,
+    "iter1_findings_closed": ["F-1", "F-2", "F-5", "F-6", "F-7", "F-8"],
+    "iter1_findings_open": [],
+    "new_findings_this_iter": ["N-1", "N-2", "N-3"]
+  },
+  "task_package": {
+    "tsk_id": "TSK-128+TSK-129",
+    "iter": 2,
+    "verdict": "conditional",
+    "constraint": {
+      "scope": "fix only the findings below; no opportunistic refactor",
+      "max_diff_lines": 40,
+      "blast_radius_warning": [
+        "packages/app/src/domain/save-service.ts"
+      ],
+      "blast_radius_note": "N-1 tocca parseEnvelope in save-service.ts (funzione interna non esportata — blast radius contenuto). N-2 è addizione di test in save-service.test.ts. N-3 è addizione di hasRtc spy nei mock di entrambi i file test — zero impatto su produzione. Non toccare game-session.ts né stub-engine.ts (non coinvolti nei finding)."
+    },
+    "findings_to_fix": ["N-1", "N-2"],
+    "findings_low_effort": ["N-3"],
+    "findings_optional": [],
+    "priority_order": "N-1 (validazione rtcState in parseEnvelope — medium, confine I/O) → N-2 (test per il comportamento scelto in N-1, conseguente) → N-3 (hasRtc mock nei test — low, auto_fixable)"
+  }
+}

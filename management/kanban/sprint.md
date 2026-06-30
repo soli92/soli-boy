@@ -8,7 +8,8 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **fix color-contrast WCAG AA (EP-012/US-049, Sprint 10)** +
 **robustezza codice (EP-014, Sprint 12)** + **UX Player flusso principale (EP-015, Sprint 12)** +
 **UX Library/Settings/componenti (EP-016, Sprint 13)** + **a11y manual checks remediation (EP-017, Sprint 13)** +
-**controlli shoulder L/R (EP-018, Sprint 14)**.
+**controlli shoulder L/R (EP-018, Sprint 14)** +
+**orologio interno RTC (EP-019, Sprint 15)**.
 
 ---
 
@@ -407,10 +408,55 @@ DAG Sprint 14:
 Sprint 14 **completo**.
 
 
-## Lookahead — Sprint 15+ (post-Sprint 14)
+## Sprint 15 — Orologio interno emulatore RTC (EP-019, P0) — 0/8 done
+
+> **Obiettivo:** introdurre supporto completo al Real Time Clock (RTC) dell'emulatore:
+> impostazione data/ora dal Settings, persistenza locale per gioco, inclusione nei save
+> state (compat all'indietro), e allineamento all'orologio del dispositivo.
+>
+> **Gap attivo:** `rtc-real-time-clock-piattaforme-e-giochi` (wiki/gaps.md, 2026-06-30) —
+> non bloccante per TSK dominio/UI/storage; bloccante per bridge reali engine↔RTC
+> (WasmBoyEngine/MgbaEngine). I TSK engine usano stub ADR-pending; i test e2e su ROM reale
+> sono marcati `test.skip('ADR-RTC pending')` fino a chiusura ADR.
+>
+> **Coordinazione:** TSK-125 (RtcService dominio) e TSK-127 (storage) sono la radice parallela.
+> Wave 2 (TSK-126/128/129/130) parte dopo TSK-125. TSK-131 (UI sync) dopo TSK-126+TSK-130.
+> TSK-132 (QA) dipende da tutti.
+
+### Wave 1 — Dominio + Storage (parallelo, radice)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-125 | RtcService: interfaccia dominio RTC (getRtcState / setRtcState / hasRtc) | US-065 | EP-019 | be | agent | P0 | M | todo | — |
+| TSK-127 | Storage: store `rtcState` + operazioni StoragePort (putRtcState / getRtcState / deleteRtcState) | US-066 | EP-019 | db | agent | P0 | S | todo | TSK-125 |
+
+### Wave 2 — UI + Wiring dominio + SaveService (parallelo, dopo Wave 1)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-126 | Settings: sezione data/ora RTC (form, validazione, visibilità condizionale) | US-065 | EP-019 | fe | agent | P0 | M | todo | TSK-125 |
+| TSK-128 | GameSession: wiring RtcService ↔ engine ↔ StoragePort (persist on stop / restore on start) | US-066 | EP-019 | be | agent | P0 | M | todo | TSK-125, TSK-127 |
+| TSK-129 | SaveService: includi snapshot RTC in putSaveState / ripristina in restoreSaveState (compat all'indietro) | US-067 | EP-019 | be | agent | P0 | M | todo | TSK-125, TSK-127 |
+| TSK-130 | RtcService: metodo syncToDevice() — allineamento all'orologio del dispositivo | US-068 | EP-019 | be | agent | P1 | S | todo | TSK-125 |
+
+### Wave 3 — UI sync + QA chiusura (dopo Wave 2)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-131 | Settings RtcSection: pulsante "Usa ora del dispositivo" (syncToDevice) | US-068 | EP-019 | fe | agent | P1 | S | todo | TSK-126, TSK-130 |
+| TSK-132 | Test integrazione/e2e: flusso RTC completo (set, persist, save-state, sync-to-device) | US-065/066/067/068 | EP-019 | qa | agent | P0 | M | todo | TSK-125, TSK-126, TSK-127, TSK-128, TSK-129, TSK-130, TSK-131 |
+
+DAG Sprint 15:
+- Wave 1: TSK-125 (radice) ‖ TSK-127 → TSK-125
+- Wave 2: TSK-126 → TSK-125; TSK-128 → TSK-125,127; TSK-129 → TSK-125,127; TSK-130 → TSK-125
+- Wave 3: TSK-131 → TSK-126,130; TSK-132 → tutti (chiusura wave)
+
+
+## Lookahead — Sprint 16+ (post-Sprint 15)
 
 | Area | Note |
 |------|------|
+| EP-019 — Bridge RTC reale (WasmBoy/Gambatte MBC3, mGBA) | Dopo chiusura ADR-RTC (gap `rtc-real-time-clock-piattaforme-e-giochi`) |
 | EP-009 — Arcade (FBNeo/MAME) | Gap aperto `arcade-emulation-engine`; percorso libretro da valutare |
 | EP-006 — Build Electron distribuibile (Win/macOS/Linux) | Dopo chiusura gap `electron-packaging-toolchain` |
 | EP-006 — Auto-update produzione | Dopo chiusura gap `electron-autoupdate-mechanism` |
@@ -440,6 +486,7 @@ Sprint 14 **completo**.
   480/480 test pass. Complessità cognitiva App.tsx + Settings.tsx sotto soglia 15.
 - **Sprint 13 — UX Library/Settings (EP-016) + A11y (EP-017):** **13/13 done**. EP-016 + EP-017 chiusi.
 - **Sprint 14 — Controlli shoulder L/R (EP-018):** 5/5 done — Sprint completo (TSK-120..124).
+- **Sprint 15 — Orologio interno RTC (EP-019):** 8 TSK generati (TSK-125..132). Gap attivo `rtc-real-time-clock-piattaforme-e-giochi` non bloccante per dominio/UI/storage; bridge engine ADR-pending (stub con `// ADR-pending`); e2e su ROM reale `test.skip` fino a chiusura ADR. Consumer distribution Sprint 15: agent=8, human=0.
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).

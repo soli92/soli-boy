@@ -1,0 +1,69 @@
+{
+  "tsk_id": "TSK-126+TSK-131",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "test_runner": "vitest",
+    "confidence": "EXTRACTED",
+    "confidence_score": 0.98,
+    "notes": "Stack confermato da iter-1/2. Monorepo packages/app. Node v24.16.0. tsc v5.x, vitest v4.1.8."
+  },
+  "iter": 3,
+  "scope_note": "Review iter-3/3 (ULTIMA ITERAZIONE). Verifica chiusura F-08 (medium, bloccante) e F-09 (low). Tre file in scope: RtcSection.tsx, RtcSection.test.tsx, Settings.tsx. Tre passate parallele: idiomaticità, design, robustezza.",
+  "resolved_from_iter2": ["F-08", "F-09"],
+  "findings": [
+    {
+      "id": "F-06",
+      "rule_id": "REACT-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/REACT-IDIOM-001.md",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "blocking": false,
+      "file": "packages/app/src/components/Settings/RtcSection.tsx",
+      "line": 163,
+      "title": "[carry-over iter-1/2, invariato] allValid: useMemo ridondante rispetto a validity",
+      "description": "Invariato rispetto a iter-1 e iter-2. `validity` (linea 151-161) e `allValid` (linea 163-166) sono due `useMemo` separati con la stessa dipendenza `[state]`. `allValid` potrebbe derivare da `Object.values(validity).every(Boolean)` evitando una seconda invocazione di `validateRtcState`. Non bloccante; la duplicazione è benigna in termini di semantica (i risultati sono equivalenti per costruzione) e ha overhead trascurabile su 6 campi. [^src5: packages/app/src/components/Settings/RtcSection.tsx:163]",
+      "adr_ref": null,
+      "recommendation": "Advisory non bloccante — valutare in un refactor futuro se l'overhead diventa misurabile.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-07",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "blocking": false,
+      "file": "packages/app/src/components/Settings/Settings.tsx",
+      "line": 636,
+      "title": "[carry-over iter-1/2, invariato] Gating rtcBridge !== undefined semanticamente ambiguo",
+      "description": "Invariato rispetto a iter-1 e iter-2. Il gating `rtcBridge !== undefined` in Settings.tsx linea 636 è corretto in semantica (consente di passare `null` esplicitamente come valore atteso per 'no game running'), ma non comunica esplicitamente questa distinzione a un lettore rapido. Un commento inline già esiste nel blocco JSX (linea 629-638), ma la condizione di gating stessa non chiarisce perché non sia `rtcBridge != null`. [^src5: packages/app/src/components/Settings/Settings.tsx:636]",
+      "adr_ref": "ADR-009 §4",
+      "recommendation": "Advisory non bloccante — un commento inline alla condizione sarebbe sufficiente per rendere esplicita la distinzione `null` (no bridge) vs `undefined` (prop non passata).",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "pass_count": 0,
+    "conditional_count": 0,
+    "reject_count": 0,
+    "blocking": [],
+    "non_blocking": ["F-06", "F-07"],
+    "f08_closure": "VERIFIED — `makeBridge` (linea 28) ora include `hasRtc: vi.fn(() => true)`. I tre bridge inline alle linee 454, 500, 527 includono tutti `hasRtc: () => true`. tsc --noEmit produce zero errori nei file in scope (RtcSection.tsx, RtcSection.test.tsx, Settings.tsx). I soli errori tsc residui nel codebase sono in App.tsx:757 e stub-engine.ts:25 (StubRtcBridge fuori scope di questa review, già segnalati in iter-2 come out-of-scope).",
+    "f09_closure": "VERIFIED — La direttiva `@ts-expect-error` stale relativa a `globalThis.fetch` è stata rimossa. L'unica direttiva rimasta (linea 425) riguarda `globalThis.XMLHttpRequest` ed è legittima. tsc non riporta TS2578 nei file in scope.",
+    "test_run": "27/27 test passano (vitest v4.1.8, Node v24.16.0). Zero failure, zero skip.",
+    "regression_check": "Nessun nuovo finding in file non toccati dalla fix. I carry-over F-06/F-07 sono invariati rispetto a iter-1/2 (low, non bloccanti).",
+    "rationale": "Tutti i finding bloccanti sono chiusi: F-01..F-05 chiusi in iter-1, F-08 chiuso in iter-3 (F-09 chiuso in iter-3). Il codice RtcSection.tsx è hooks-compliant, idiomatico, ben commentato. La logica di visibilità condizionale (early-return dopo hooks), la gestione NaN, il guard useEffect per piattaforme senza RTC, la notice non bloccante post-sync e il reset `confirmed` su edit sono tutti corretti e testati. Settings.tsx integra RtcSection correttamente con gating opzionale. I due carry-over low (F-06, F-07) sono advisory di refactor futuro, non gate. Verdict: PASS."
+  },
+  "loop_status": {
+    "current_iter": 3,
+    "max_iter": 3,
+    "no_progress_risk": false,
+    "regression_risk": false,
+    "note": "Iter 3/3 — ULTIMA ITERAZIONE. Verdict pass: loop chiuso senza escalation."
+  },
+  "generated_at": "2026-06-30T19:00:00.000Z",
+  "reviewer_version": "CQRL v2.12 (PATTERN §19)"
+}

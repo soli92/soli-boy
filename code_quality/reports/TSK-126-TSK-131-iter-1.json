@@ -1,0 +1,131 @@
+{
+  "tsk_id": "TSK-126+TSK-131",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "test_runner": "vitest",
+    "confidence": "EXTRACTED",
+    "confidence_score": 0.98,
+    "notes": "Stack rilevato da import React 18 hooks (useCallback, useEffect, useMemo, useState), @testing-library/react, vitest. Monorepo packages/app (factory.config.yaml code_paths[0])."
+  },
+  "iter": 1,
+  "scope_note": "Review combinata TSK-126 (RtcSection base) + TSK-131 (sync button). Stesso file code_path — un'unica iterazione copre entrambi i TSK.",
+  "findings": [
+    {
+      "id": "F-01",
+      "rule_id": "REACT-A11Y-001",
+      "rule_path": "code_quality/rules/canonical/REACT-A11Y-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "file": "packages/app/src/components/Settings/RtcSection.tsx",
+      "line": 248,
+      "title": "aria-invalid su input number: valore booleano nativo React vs stringa ARIA attesa",
+      "description": "L'attributo `aria-invalid={!valid}` su <input> è passato come booleano React. In React 18, i boolean prop su elementi HTML nativi vengono serializzati come `aria-invalid=\"true\"` / `aria-invalid=\"false\"` (stringa), il che è tecnicamente conforme ARIA 1.2. Tuttavia il test asserisce `.getAttribute('aria-invalid') === 'false'` (linea 175 del test), che funziona solo perché React serializza il booleano. Il comportamento è stabile, ma la convenzione idiomatica ARIA raccomanda di omettere `aria-invalid` quando il campo è valido (valore 'false' non è un valore ARIA utile, causa confusione agli screen reader che annunciano 'invalid: false'). Il pattern corretto è: `aria-invalid={!valid || undefined}` — presente undefined omette l'attributo DOM quando il campo è valido.",
+      "adr_ref": "ADR-009 §5 Validazione — UC US-065 AC4 feedback comprensibile",
+      "recommendation": "Cambiare `aria-invalid={!valid}` in `aria-invalid={!valid || undefined}` su tutti e 6 gli input del FIELD_ORDER.map. Il test corrispondente (linea 173–177) va aggiornato per verificare che aria-invalid sia assente (non 'false') sullo stato valido.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-02",
+      "rule_id": "REACT-A11Y-001",
+      "rule_path": "code_quality/rules/canonical/REACT-A11Y-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "file": "packages/app/src/components/Settings/RtcSection.tsx",
+      "line": 254,
+      "title": "role='note' sul messaggio di errore non è un live region — assistive tech non lo annuncia automaticamente",
+      "description": "Il messaggio di errore per-campo usa `role='note'` (linea 254). Il role 'note' è un landmark role di tipo informativo non-assertivo: non è una live region, quindi gli screen reader NON annunciano automaticamente la sua comparsa quando il campo diventa invalido (richiede focus esplicito sull'elemento o sulla sezione). L'alternativa idiomatica in questo pattern (campo + messaggio di errore condizionale) è `role='alert'` (atomic, assertive) o semplicemente affidare l'annuncio all'attributo `aria-describedby` già presente sull'input, senza role aggiuntivo sull'elemento descrittore. L'uso di `aria-describedby` è già corretto (linea 245); il `role='note'` è ridondante e potenzialmente fuorviante.",
+      "adr_ref": "ADR-009 §5 / US-065 AC4",
+      "recommendation": "Rimuovere `role='note'` dal <span> del messaggio di errore per-campo (linea 254). L'annuncio è già gestito via `aria-describedby` sull'input. Se si vuole un annuncio live aggiuntivo: usare `role='alert'` con `aria-live='assertive'` solo se lo spec lo richiede — ma in questo pattern il describedby è sufficiente.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-03",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "medium",
+      "file": "packages/app/src/components/Settings/RtcSection.tsx",
+      "line": 196,
+      "title": "handleSyncToDevice: mancata gestione del caso getRtcState → null post-sync",
+      "description": "In `handleSyncToDevice` (linea 193–201), dopo la chiamata a `RtcService.syncToDevice(bridge)`, si chiama `RtcService.getRtcState(bridge)` e si gestisce il caso `null` con un `if (current)` che non aggiorna lo stato (nessun fallback esplicito). Il commento spiega che 'in produzione il bridge reale potrebbe arrotondare' ma nella stessa logica ammette che il `getRtcState` può tornare null 'se RTC non latched'. Se `syncToDevice` riesce ma `getRtcState` ritorna null, il form rimane con lo stato pre-sync senza feedback all'utente — il campo confermato viene resettato (`confirmed=false`) ma i campi non vengono aggiornati, lasciando l'utente in stato ambiguo. Il test (RtcSection.test.tsx linea 287-305) usa sempre un bridge che ritorna lo stato post-sync: il caso null-post-sync non è coperto.",
+      "adr_ref": "ADR-009 §4 — getRtcState: null se hasRtc=false o RTC non latched",
+      "recommendation": "Aggiungere un fallback esplicito nel caso `getRtcState` ritorni null dopo syncToDevice: o resettare i campi a DEFAULT_STATE con un messaggio informativo, oppure mantenere i campi invariati e mostrare un warning. Il test deve coprire questo ramo. Da propagare a qa-dev per aggiunta test case.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-04",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "file": "packages/app/src/components/Settings/RtcSection.tsx",
+      "line": 160,
+      "title": "handleFieldChange: coercion NaN→NaN invece di 0 (commento contradditorio)",
+      "description": "Il commento alla linea 158-162 dice 'Convertiamo a 0 come safety net' ma il codice effettivo alla linea 160 è `const parsed = raw === \"\" ? Number.NaN : Number(raw)` — la stringa vuota produce NaN, non 0. Il comportamento effettivo è corretto (NaN viene poi riconosciuto come invalido da `isFieldValid` che controlla `Number.isFinite`) ma il commento è fuorviante e contradditorio, potenzialmente causando errori in manutenzione futura se un altro developer si fida del commento invece del codice.",
+      "adr_ref": null,
+      "recommendation": "Correggere il commento: documentare esplicitamente che raw=='' produce NaN e che NaN viene intercettato da isFieldValid con `Number.isFinite`. Rimuovere il riferimento al '0 come safety net' che non corrisponde al codice.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-05",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "severity": "medium",
+      "file": "packages/app/src/components/Settings/RtcSection.test.tsx",
+      "line": 55,
+      "title": "Sanity comment linea 53-58: asserzione incompleta sull'effetto del bridge su piattaforma senza RTC",
+      "description": "Il test 'non renderizza nulla su piattaforma senza RTC (gba)' (linea 45-58) ha un commento (linea 53-58) che afferma 'il bridge non viene consultato se la piattaforma non ha RTC' ma poi aggiunge 'tuttavia consultare getRtcState in quel caso è benigno'. In realtà l'implementazione corrente chiama `useEffect` DOPO il render, e il render produce `null` (early return a linea 207 di RtcSection.tsx). Il `useEffect` tuttavia PARTE comunque dopo il primo render — un render con return null. Questo significa che `getRtcState` VIENE chiamato anche per piattaforme senza RTC (se bridge non è null), poiché l'early-return è nella funzione di render JSX, non nell'hook. Il test non asserisce questo comportamento (non verifica né che `getRtcState` sia chiamato né che non lo sia). Il commento dice che è 'benigno' ma non è documentato perché sia sicuro.",
+      "adr_ref": "ADR-009 §1 — detection per-cartuccia",
+      "recommendation": "Aggiungere un'asserzione esplicita: `expect(bridge.getRtcState).toHaveBeenCalled()` (il comportamento attuale) oppure ristrutturare l'implementazione in modo che il bridge non venga consultato quando `!hasRtc(platform)` (spostare il check di visibilità dentro useEffect). Se il comportamento attuale (consultare il bridge anche per gba) è accettato by-design, documentarlo nel codice sorgente, non solo nel test. Da delegare a qa-dev per aggiunta asserzione.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-06",
+      "rule_id": "REACT-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/REACT-IDIOM-001.md",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "file": "packages/app/src/components/Settings/RtcSection.tsx",
+      "line": 149,
+      "title": "allValid: useMemo ridondante — il valore è già computato da validity (stesso stato)",
+      "description": "`validity` (linea 137-147) è un useMemo su `[state]` che calcola isFieldValid per ogni campo. `allValid` (linea 149-152) è un secondo useMemo su `[state]` che chiama `RtcService.validateRtcState(state)` — anche questo dipende solo da `state`. L'esistenza di due useMemo separati dipendenti dallo stesso stato non introduce errori ma crea due memoizzazioni dove una sola sarebbe sufficiente: si potrebbe derivare `allValid` da `validity` (es. `Object.values(validity).every(Boolean)`) oppure includere `allValid` nel memo di `validity`. L'overhead è minimo ma la dualità aggiunge complessità di lettura.",
+      "adr_ref": null,
+      "recommendation": "Valutare se derivare `allValid` dal memo `validity` esistente (es. come campo aggiuntivo: `{ year: ..., ..., all: RtcService.validateRtcState(state) }`) oppure combinare in un singolo memo. Non bloccante: la soluzione attuale è corretta, solo meno idiomatica.",
+      "auto_fixable": false
+    },
+    {
+      "id": "F-07",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "file": "packages/app/src/components/Settings/Settings.tsx",
+      "line": 636,
+      "title": "Gating doppio in Settings.tsx: `rtcBridge !== undefined` può mascherare bridge=null esplicito",
+      "description": "In Settings.tsx linea 636, il gating è `{rtcPlatform !== undefined && rtcBridge !== undefined && (<RtcSection .../>)}`. Questo significa che se il parent passa `rtcBridge={null}` (nessun gioco in esecuzione — scenario documentato in SettingsProps linea 183: 'Null se nessun gioco è in esecuzione'), il gating è `null !== undefined` → true, quindi RtcSection viene montato con bridge=null. RtcSection gestisce correttamente questo (return null quando bridge===null a linea 207). Il gating in Settings è quindi semanticamente corretto ma stilisticamente ambiguo: `rtcBridge !== undefined` non comunica chiaramente che null è un valore atteso e valido. Un commento esplicito o un check come `rtcBridge !== undefined` (attuale) vs `'rtcBridge' in props` aiuterebbe la leggibilità. Non è un bug.",
+      "adr_ref": "ADR-009 §4 — EmulatorEngine.rtcBridge?: RtcBridge | null",
+      "recommendation": "Aggiungere un commento inline al gating spiegando perché null è distinto da undefined in questo contesto (null=bridge attivo senza gioco; undefined=prop non passata=legacy test). Non è una modifica strutturale necessaria.",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "conditional",
+  "summary": {
+    "pass_count": 0,
+    "conditional_count": 7,
+    "reject_count": 0,
+    "blocking": ["F-03", "F-05"],
+    "non_blocking": ["F-01", "F-02", "F-04", "F-06", "F-07"],
+    "rationale": "Nessun finding di severity high o reject. Due finding medium (F-03, F-05) su robustezza: mancata gestione null-post-sync e asserzione test incompleta su comportamento bridge. Cinque finding low su idiomaticità/design/a11y. Il codice è corretto nel flusso nominale, ben strutturato, hooks-compliant (early-return posizionato correttamente dopo tutti gli hook), commenti esplicativi abbondanti. Il verdict conditional richiede: (1) correzione o documentazione esplicita del caso getRtcState→null post-sync (F-03) e (2) asserzione test o chiarimento del comportamento bridge su piattaforma senza RTC (F-05). I finding F-01/F-02 (ARIA) sono raccomandati ma non bloccanti; F-04/F-06/F-07 sono note minori."
+  },
+  "loop_status": {
+    "current_iter": 1,
+    "max_iter": 3,
+    "no_progress_risk": false,
+    "regression_risk": false
+  },
+  "generated_at": "2026-06-30T00:00:00.000Z",
+  "reviewer_version": "CQRL v2.12 (PATTERN §19)"
+}

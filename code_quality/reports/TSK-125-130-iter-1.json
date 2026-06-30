@@ -1,0 +1,111 @@
+{
+  "tsk_id": ["TSK-125", "TSK-130"],
+  "review_slug": "TSK-125-130",
+  "iter": 1,
+  "generated_at": "2026-06-30T00:00:00Z",
+  "reviewer_version": "CQRL v2.12 (PATTERN §19)",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "vitest",
+    "context": ["domain-service", "unit-test"],
+    "confidence": 0.95,
+    "detection_mode": "full"
+  },
+  "files_reviewed": [
+    "packages/app/src/domain/rtc-service.ts",
+    "packages/app/src/domain/rtc-service.test.ts"
+  ],
+  "findings": [
+    {
+      "id": "F-01",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "location": "packages/app/src/domain/rtc-service.test.ts:109-119,164-175",
+      "title": "makeBridge helper duplicato in due describe block",
+      "description": "La funzione makeBridge e' definita in modo identico in due describe block separati (righe 109-119 e 164-175). Una modifica al mock factory (es. aggiunta di un metodo all'interfaccia RtcBridge) richiede aggiornamenti in due punti, con rischio di divergenza silenziosa. Va estratta a scope di file, prima del primo describe.",
+      "auto_fixable": true,
+      "suggested_action": "Estrarre makeBridge a scope-file (prima di tutti i describe) ed eliminare le due definizioni locali. Collegato a F-02: quando si aggiunge hasRtc() all'interfaccia, la duplicazione richiederebbe due aggiornamenti invece di uno."
+    },
+    {
+      "id": "F-02",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "medium",
+      "location": "packages/app/src/domain/rtc-service.ts:63-66",
+      "title": "RtcBridge interface incompleta rispetto ad ADR-009 §4",
+      "description": "ADR-009 §4 definisce il contratto TypeScript vincolante per RtcBridge con tre metodi: hasRtc(): boolean, getRtcState(): RtcState | null, setRtcState(state: RtcState): void. L'implementazione corrente dichiara solo getRtcState e setRtcState, omettendo hasRtc(). Quando i bridge concreti Sprint 16 (WasmBoyRtcBridge, MgbaRtcBridge) verranno implementati conformemente ad ADR-009, il compilatore TypeScript non li trattera' come sottotipi validi di RtcBridge come dichiarato, oppure il metodo hasRtc() sara' presente nei bridge ma non richiesto dal tipo, rendendo il contratto non verificabile staticamente. E' una difformita' tra codice e ADR-009 §4 che impatta la correttezza del sistema di tipi a Sprint 16.",
+      "auto_fixable": false,
+      "suggested_action": "Aggiungere hasRtc(): boolean; all'interfaccia RtcBridge in rtc-service.ts con commento '// ADR-009 §4: detection runtime per-cartuccia; implementata nei bridge concreti Sprint 16'. Aggiornare makeBridge nel test file per includere hasRtc: vi.fn(() => true) nello stub (collegato a F-01: estrarre a scope-file contestualmente)."
+    },
+    {
+      "id": "F-03",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "location": "packages/app/src/domain/rtc-service.ts:184",
+      "title": "syncToDevice ritorna void — razionale del commento non corrisponde all'ADR citato",
+      "description": "TSK-130 Technical Specs specifica syncToDevice(bridge: RtcBridge): RtcState (ritorna lo stato applicato, utile alla UI per aggiornare i campi senza una seconda chiamata). L'implementazione ritorna void con una nota inline che cita 'ADR-009 §5 gerarchia fonti ADR > TSK'. ADR-009 §5 non disciplina il tipo di ritorno di syncToDevice: regola la policy UTC e il vincolo no-network, non la firma del metodo. La gerarchia ADR > TSK e' corretta come principio ma non si applica a questa scelta specifica. Il ritorno void e' una scelta legittima, ma il razionale citato e' impreciso e puo' indurre in errore i maintainer futuri. L'impatto pratico e' che TSK-131 deve chiamare getRtcState separatamente dopo syncToDevice per aggiornare la UI.",
+      "auto_fixable": false,
+      "suggested_action": "Se si mantiene void: aggiornare il commento inline con la vera motivazione (es. 'la UI ri-legge via getRtcState per coerenza con il flusso normale di refresh; il tipo di ritorno RtcState indicato in TSK-130 e' omesso per simmetria con setRtcState — entrambi write-only'). Se si preferisce la spec TSK-130: cambiare il tipo di ritorno in RtcState e aggiungere return state; prima di bridge.setRtcState(state)."
+    },
+    {
+      "id": "F-04",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "medium",
+      "location": "packages/app/src/domain/rtc-service.test.ts:247-264",
+      "title": "globalThis.fetch / globalThis.XMLHttpRequest non ripristinati dopo il test di rete",
+      "description": "Il test 'NON effettua chiamate di rete' (riga 247) assegna direttamente globalThis.fetch = fetchSpy e globalThis.XMLHttpRequest = xhrSpy (righe 252-254). L'afterEach del describe (riga 183) chiama vi.restoreAllMocks() che ripristina solo i mock creati tramite vi.spyOn(), non le assegnazioni dirette su proprieta' globali. Di conseguenza, dopo l'esecuzione di questo test, globalThis.fetch e globalThis.XMLHttpRequest restano sostituiti con le funzioni spy per tutti i test successivi dello stesso worker Vitest (o della stessa suite, se il test runner non isola). Questa e' una violazione di test-isolation che puo' causare falsi negativi in test che verificano l'assenza di chiamate di rete, o falsi positivi in test che le aspettano.",
+      "auto_fixable": false,
+      "suggested_action": "Opzione A (preferita): salvare i riferimenti originali prima dell'override e ripristinarli nell'afterEach: const originalFetch = globalThis.fetch; const originalXHR = globalThis.XMLHttpRequest; ... afterEach(() => { globalThis.fetch = originalFetch; globalThis.XMLHttpRequest = originalXHR; }). Opzione B: spostare il test in un describe con proprio beforeEach/afterEach dedicato al restore. Opzione C: usare vi.spyOn(globalThis, 'fetch') se il tipo lo consente, lasciando che vi.restoreAllMocks() gestisca il restore automaticamente."
+    },
+    {
+      "id": "F-05",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "location": "packages/app/src/domain/rtc-service.ts:124-126",
+      "title": "setRtcState non ha guard su stato non validato — caller-contract solo implicito",
+      "description": "RtcService.setRtcState documenta nel JSDoc (riga 119) che il chiamante deve invocare validateRtcState prima. Il metodo non verifica questo contratto internamente. Uno stato invalido (es. month=13) viene passato silenziosamente al bridge. Per un servizio di dominio il pattern caller-contract e' legittimo, ma un bridge concreto che non tolleri stati invalidi produrrebbe un failure distante e difficile da tracciare. La scelta e' documentata; il finding e' informativo.",
+      "auto_fixable": false,
+      "suggested_action": "Considerare di aggiungere in development mode: if (import.meta.env?.DEV && !RtcService.validateRtcState(state)) { console.warn('[RtcService] setRtcState chiamato con stato invalido', state); } — senza lanciare in produzione. In alternativa, documentare esplicitamente nel JSDoc che i bridge concreti devono tollerare stati non pre-validati."
+    }
+  ],
+  "verdict": "conditional",
+  "summary": {
+    "total_findings": 5,
+    "by_severity": {
+      "high": 0,
+      "medium": 2,
+      "low": 3
+    },
+    "by_pass": {
+      "idiomaticity": 1,
+      "design": 2,
+      "robustness": 2
+    },
+    "positive_notes": [
+      "Documentazione inline eccellente: ogni scelta non-ovvia (range-based validation, soglia year>=2000, UTC-by-spec, guard null bridge) ha commento con riferimento ADR e contesto storico.",
+      "Copertura test ampia e ben strutturata: boundary-value testing su tutti i campi di validateRtcState (lower e upper bound), mock clock con vi.setSystemTime, edge-case null/undefined su syncToDevice, test no-network dedicato.",
+      "Complessita' ciclomatica e cognitiva nei limiti: max CC=7 in validateRtcState (sotto soglia 10), CC=2 in syncToDevice.",
+      "Separazione dominio/bridge rispettata: nessuna logica engine-specifica nel layer di dominio.",
+      "Vincoli RNF-05/RNF-06 (no-network) verificati tramite test dedicato con spy.",
+      "Guard null/undefined su syncToDevice corretto, testato e documentato con riferimento ADR-009 §4.",
+      "import type inline usato correttamente per RtcBridge e RtcState nel test file (TS-IDIOM-001 rispettata)."
+    ],
+    "blocker_for_merge": false
+  },
+  "loop_status": {
+    "current_iter": 1,
+    "max_iter": 3,
+    "no_progress_risk": false,
+    "regression_risk": false
+  },
+  "next_step": "Il dev-agent deve risolvere F-02 (RtcBridge interface incompleta ADR-009 §4 — medium) e F-04 (globalThis non ripristinato — medium) prima del prossimo /review. F-01, F-03, F-05 sono low e possono essere aggregati nello stesso fix o differiti a discrezione del team."
+}

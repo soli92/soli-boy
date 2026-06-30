@@ -1,0 +1,102 @@
+{
+  "tsk_id": ["TSK-125", "TSK-130"],
+  "review_slug": "TSK-125-130",
+  "iter": 2,
+  "generated_at": "2026-06-30T12:00:00Z",
+  "reviewer_version": "CQRL v2.12 (PATTERN §19)",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "vitest",
+    "context": ["domain-service", "unit-test"],
+    "confidence": 0.95,
+    "detection_mode": "full"
+  },
+  "files_reviewed": [
+    "packages/app/src/domain/rtc-service.ts",
+    "packages/app/src/domain/rtc-service.test.ts"
+  ],
+  "fix_verification": {
+    "F-01": {
+      "status": "resolved",
+      "note": "makeBridge estratto a scope-file (rtc-service.test.ts:17-32). Nessuna duplicazione residua."
+    },
+    "F-02": {
+      "status": "resolved",
+      "note": "hasRtc(): boolean aggiunto come primo metodo di RtcBridge (rtc-service.ts:67), commento ADR-009 §4 presente. makeBridge nel test include hasRtc: vi.fn(() => true) (rtc-service.test.ts:26)."
+    },
+    "F-03": {
+      "status": "resolved",
+      "note": "JSDoc syncToDevice ora distingue: (a) UTC-by-spec da ADR-009 §5 e (b) void da write-through del bridge. Residuo minore N-01 (low, non bloccante)."
+    },
+    "F-04": {
+      "status": "resolved",
+      "note": "originalFetch/originalXHR catturati a scope describe (rtc-service.test.ts:175-176), ripristinati in afterEach (rtc-service.test.ts:185-186). Restore non piu' delegato a vi.restoreAllMocks()."
+    },
+    "F-05": {
+      "status": "carry-forward",
+      "note": "Invariato rispetto a iter-1: finding informativo, non bloccante. Caller-contract documentato nel JSDoc. Nessuna azione richiesta."
+    }
+  },
+  "findings": [
+    {
+      "id": "N-01",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "location": "packages/app/src/domain/rtc-service.ts:186-190",
+      "title": "JSDoc syncToDevice — motivazione firma void ancora parzialmente ambigua",
+      "description": "Il fix di F-03 ha migliorato il razionale distinguendo (a) semantica UTC da ADR-009 §5 e (b) firma void da write-through del bridge. Tuttavia la costruzione della frase ('La firma void resta motivata [...] non dalla gerarchia delle fonti') presuppone che il lettore abbia gia' letto la frase precedente e assimili la negazione: un lettore veloce puo' ancora associare la gerarchia ADR > TSK al tipo di ritorno. Finding informativo: nessun impatto funzionale o di tipo. Non bloccante.",
+      "auto_fixable": true,
+      "suggested_action": "Riscrivere l'ultima frase del JSDoc separando le due motivazioni in modo affermativo: 'La scelta void e' motivata dalla simmetria con setRtcState (entrambi write-through sul bridge); la scelta UTC e' motivata da ADR-009 §5. Queste sono decisioni indipendenti.' In alternativa: spostare la nota sulla discrepanza TSK-130 in un commento separato dal paragrafo della firma."
+    },
+    {
+      "id": "F-05",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "location": "packages/app/src/domain/rtc-service.ts:124-126",
+      "title": "setRtcState senza guard su stato non validato — caller-contract solo implicito (carry-forward)",
+      "description": "Invariato da iter-1. RtcService.setRtcState non verifica internamente la validita' dello stato prima di passarlo al bridge. Il caller-contract (invocare validateRtcState prima) e' documentato nel JSDoc ma non enforced a runtime. In un servizio di dominio il pattern e' legittimo. Finding informativo: la scelta e' consapevole e documentata. Non bloccante.",
+      "auto_fixable": false,
+      "suggested_action": "Opzionale: aggiungere in development mode un console.warn se lo stato non supera validateRtcState, senza lanciare in produzione. In alternativa: documentare esplicitamente nel JSDoc che i bridge concreti sono attesi tolleranti a stati non pre-validati (coerente con ADR-009 §4)."
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "total_findings": 2,
+    "by_severity": {
+      "high": 0,
+      "medium": 0,
+      "low": 2
+    },
+    "by_pass": {
+      "idiomaticity": 0,
+      "design": 1,
+      "robustness": 1
+    },
+    "positive_notes": [
+      "Tutti i finding bloccanti di iter-1 (F-02 medium, F-04 medium) risolti correttamente e verificati.",
+      "F-01 (makeBridge duplicato) risolto con estrazione a scope-file, include correttamente hasRtc: vi.fn() coerente con il fix F-02.",
+      "Restore globalThis.fetch/XHR implementato con pattern corretto: cattura a scope describe, restore in afterEach, non delegato a vi.restoreAllMocks().",
+      "hasRtc(): boolean aggiunto come primo metodo di RtcBridge, allineato all'ordine ADR-009 §4, con commento di tracciabilita'.",
+      "Nessuna regressione introdotta: nessun finding in file non toccati dalla fix, nessun finding di severity superiore a iter-1.",
+      "Documentazione inline di qualita' eccellente, copertura test ampia (boundary-value, mock clock, edge-case null/undefined, no-network). Invariate dalle note positive di iter-1.",
+      "No-progress risk: false (i rule_id aperti in iter-2 sono diversi dai blockers iter-1 ormai chiusi)."
+    ],
+    "blocker_for_merge": false
+  },
+  "regression_detection": {
+    "new_findings_in_untouched_files": false,
+    "severity_escalation": false,
+    "no_progress_risk": false
+  },
+  "loop_status": {
+    "current_iter": 2,
+    "max_iter": 3,
+    "no_progress_risk": false,
+    "regression_risk": false
+  },
+  "next_step": "Verdict pass. TSK-125 e TSK-130 promuovibili a review_status: pass. I finding residui N-01 e F-05 (entrambi low) sono facoltativi e possono essere indirizzati in un refactor futuro a discrezione del team."
+}

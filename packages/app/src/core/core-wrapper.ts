@@ -2,6 +2,7 @@
 // Incapsula il motore di emulazione (EmulatorJS in runtime) dietro un'interfaccia stabile,
 // così il dominio resta agnostico rispetto al core specifico. Esegue solo file dell'utente (US-006).
 
+import type { RtcBridge } from "../domain/rtc-service";
 import type { Core, Platform } from "../domain/types";
 import { recognizePlatform } from "../domain/platform-recognition";
 
@@ -68,6 +69,18 @@ export interface EmulatorEngine {
   loadSram(data: Uint8Array): Promise<void>;
   /** Capacità del core (es. rewind dipende dalla piattaforma). TSK-018 / US-014. */
   readonly capabilities: EngineCapabilities;
+  /**
+   * TSK-128 / ADR-009 §4 — bridge engine↔dominio per l'orologio interno (RTC).
+   *
+   * Campo opzionale: `null` significa "questo engine non espone (ancora) un
+   * RTC concreto" — il dominio (`GameSession`) si attende `null`-safety e
+   * degrada a no-op silenzioso per persist-on-stop / restore-on-start
+   * (best-effort by-spec, ADR-009 §4 "no-op silenzioso, comportamento già
+   * pianificato come best-effort"). I bridge concreti `WasmBoyRtcBridge` /
+   * `MgbaRtcBridge` sono pianificati Sprint 16 (TSK separati): finché non
+   * sono implementati, gli adapter espongono `rtcBridge = null` come stub.
+   */
+  readonly rtcBridge?: RtcBridge | null;
 }
 
 /** Impostazioni audio. `volume` normalizzato 0..1. */

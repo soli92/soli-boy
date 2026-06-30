@@ -68,9 +68,15 @@
 // [^src: packages/desktop/electron/preload.ts §contextBridge]
 // [^src: management/kanban/EP-006-distribuzione-desktop/US-023-filesystem-nativo/TSK-053.md §Implementazione]
 
+import type { RtcState } from "../domain/rtc-service";
+// F-127-2 (CQRL TSK-127 iter-1): importa la costante `RTC_STATE_SCHEMA_VERSION`
+// invece di hardcodare `1` nel record persistito (vedi `putRtcState`). Manteniamo
+// IDB e NativeFs allineati sulla stessa source of truth per la versione di schema.
+import { RTC_STATE_SCHEMA_VERSION } from "./db";
 import type {
   ConfigPort,
   CoverPort,
+  RtcStatePort,
   SaveStatePort,
   SaveStoragePort,
   SramPort,
@@ -81,6 +87,7 @@ import type {
   RomInput,
   RomMeta,
   RomRecord,
+  RtcStateRecord,
   SaveStateInput,
   SaveStateRecord,
   SramRecord,
@@ -183,6 +190,7 @@ interface ConfigManifest {
 const ROMS_DIR = "roms";
 const SAVE_STATES_DIR = "save-states";
 const SRAM_DIR = "sram";
+const RTC_STATE_DIR = "rtc-state"; // TSK-127 stub layout (ADR-009 §3 / NativeFs)
 const ROMS_MANIFEST = "index.json";
 const SAVE_STATES_MANIFEST = "index.json";
 const SRAM_MANIFEST = "index.json";
@@ -268,7 +276,14 @@ function saveStateId(romId: string, slot: number, createdAt: number): string {
  * non a questo file: l'adapter è location-agnostic).
  */
 export class NativeFsAdapter
-  implements StoragePort, SaveStatePort, SramPort, CoverPort, ConfigPort, SaveStoragePort
+  implements
+    StoragePort,
+    SaveStatePort,
+    SramPort,
+    CoverPort,
+    RtcStatePort,
+    ConfigPort,
+    SaveStoragePort
 {
   private readonly bridge: NativeFsBridge;
   /**
@@ -396,6 +411,17 @@ export class NativeFsAdapter
   }
   private async sramBlobPath(romId: string): Promise<string> {
     return joinPath(await this.resolveBaseDir(), SRAM_DIR, `${romId}.sram`);
+  }
+  // TSK-127 — path RTC stub (file per-romId, pattern analogo a SRAM, ADR-009 §3
+  // "NativeFsAdapter (desktop, ADR-007): mappatura su file <romId>.rtc.json").
+  // Implementazione completa NativeFs è gap noto (TSK desktop dedicato post-EP-019):
+  // qui resta uno stub funzionante che persiste un JSON con la stessa shape di IDB
+  // (`RtcStateRecord`) — sufficiente per coprire la cascade-delete da `removeRom`.
+  private async rtcStateFilePath(romId: string): Promise<string> {
+    return joinPath(await this.resolveBaseDir(), RTC_STATE_DIR, `${romId}.rtc.json`);
+  }
+  private async rtcStateDirPath(): Promise<string> {
+    return joinPath(await this.resolveBaseDir(), RTC_STATE_DIR);
   }
   private async configFilePath(): Promise<string> {
     return joinPath(await this.resolveBaseDir(), CONFIG_FILE);
@@ -590,6 +616,10 @@ export class NativeFsAdapter
     if (entry.coverPath) {
       await this.tryUnlink(await this.romCoverPath(id));
     }
+    // TSK-127 (ADR-009 §3, US-066) — cascade RTC.
+    // Idempotente: `tryUnlink` tollera ENOENT, quindi se non c'è mai stato un
+    // RTC per questa ROM il delete è no-op. Parità con `db.removeRom` IDB.
+    await this.tryUnlink(await this.rtcStateFilePath(id));
   }
 
   // ── Cover (CoverPort) ──────────────────────────────────────────────────────
@@ -712,6 +742,47 @@ export class NativeFsAdapter
     const bytes = await this.readFileIfExists(await this.sramBlobPath(romId));
     if (!bytes) return undefined;
     return { romId: entry.romId, updatedAt: entry.updatedAt, data: bytesToBlob(bytes) };
+  }
+
+  // ── RTC state (RtcStatePort) ───────────────────────────────────────────────
+  // TSK-127 (ADR-009 §3, US-066) — stub NativeFs.
+  //
+  // Implementazione minimale per chiudere la cascade-delete e la parità di
+  // contratto col `IndexedDBAdapter`: ogni stato RTC è un file JSON dedicato
+  // `rtc-state/<romId>.rtc.json` (no manifest aggregato — non serve listing,
+  // l'accesso è sempre per `romId`, e il volume è O(N_roms) come SRAM).
+  //
+  // planned: piena implementazione NativeFs in TSK desktop dedicato (post EP-019)
+  //   — possibili evoluzioni: lock file per write atomico, migration su bump
+  //   `schemaVersion`, riconciliazione orfani via `readdir`. ADR-009 §3 cita
+  //   esplicitamente lo stub qui presente come transitorio (oggi sufficiente
+  //   per le test su IDB; il path NativeFs ha copertura test demandata al TSK
+  //   desktop futuro).
+
+  async putRtcState(romId: string, state: RtcState): Promise<void> {
+    await this.ensureDir(await this.rtcStateDirPath());
+    const record: RtcStateRecord = {
+      romId,
+      state,
+      updatedAt: new Date().toISOString(),
+      // F-127-2 (CQRL TSK-127 iter-1): allineato a `db.ts §putRtcState`, evita drift
+      // tra IDB e NativeFs sul bump della schemaVersion futura.
+      schemaVersion: RTC_STATE_SCHEMA_VERSION,
+    };
+    await this.writeJson(await this.rtcStateFilePath(romId), record);
+  }
+
+  async getRtcState(romId: string): Promise<RtcState | null> {
+    const bytes = await this.readFileIfExists(await this.rtcStateFilePath(romId));
+    if (!bytes || bytes.length === 0) return null;
+    // TODO: shape-validation in TSK desktop
+    const record = bytesToJson<RtcStateRecord>(bytes);
+    return record.state ?? null;
+  }
+
+  async deleteRtcState(romId: string): Promise<void> {
+    // Idempotente: `tryUnlink` tollera ENOENT (parità con IDB.deleteRtcState).
+    await this.tryUnlink(await this.rtcStateFilePath(romId));
   }
 
   // ── Config (ConfigPort) ────────────────────────────────────────────────────

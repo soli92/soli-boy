@@ -1,0 +1,59 @@
+{
+  "tsk_id": "TSK-132",
+  "iter": 2,
+  "generated_at": "2026-06-30T00:00:00.000Z",
+  "reviewer_version": "code-reviewer v2.12 (PATTERN §19)",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "test_runner": "playwright",
+    "confidence": "EXTRACTED",
+    "stack_mode": "guided",
+    "code_path": "packages/app"
+  },
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "id": "F-006",
+      "rule_id": "TS-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-001.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "status": "open",
+      "carried_from_iter": 1,
+      "title": "Test numerazione non sequenziale nei describe group (carried from iter-1)",
+      "description": "Portato da iter-1, non risolto. Il describe 'sync-to-device' contiene i test '6', '9', '11' (non sequenziali all'interno del gruppo); il describe 'persistenza e save-state' contiene '7' e '8'. Un lettore che scansioni il file trova numeri fuori ordine rispetto alla progressione intra-gruppo. Non è un errore funzionale; la suite esegue correttamente.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 186 }
+      ],
+      "suggestion": "Riordinare i test all'interno dei describe per numerazione progressiva, oppure rinumerare con numerazione locale al describe (1, 2, 3 per gruppo) mantenendo il titolo descrittivo come fonte di verità. Questo finding è low e non blocca il pass.",
+      "adr_ref": null
+    },
+    {
+      "id": "F-008",
+      "rule_id": "TS-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-001.md",
+      "severity": "low",
+      "pass": "idiomaticity",
+      "status": "new",
+      "title": "Titolo test.describe.skip con testo duplicato",
+      "description": "La stringa passata a `test.describe.skip` alla riga 399 contiene \"bridge concreto Sprint 16\" ripetuto due volte: `\"EP-019 RTC — bridge concreto Sprint 16 [SKIP] — bridge concreto Sprint 16 — ADR-009 §4 follow-up\"`. Uno dei due occorrenze è un residuo del refactoring da `test.skip(true, ...)` a `test.describe.skip(...)`. Non influenza il comportamento, ma riduce la leggibilità del report CLI Playwright.",
+      "locations": [
+        { "file": "packages/app/e2e/ep019-rtc.e2e.ts", "line": 399 }
+      ],
+      "suggestion": "Ridurre a `\"EP-019 RTC — bridge concreto Sprint 16 [SKIP] — ADR-009 §4 follow-up\"` eliminando la ripetizione.",
+      "adr_ref": null
+    }
+  ],
+  "resolved_since_iter1": ["F-001", "F-002", "F-003", "F-004", "F-005", "F-007"],
+  "verdict": "pass",
+  "summary": "Iter-2: tutti i finding medium (F-001, F-002) e i low con azione richiesta (F-003, F-004, F-005, F-007) sono stati risolti correttamente. F-001 risolto tramite commento esplicito documentato su `stub-engine.ts` e import in `App.tsx` (eccezione accettata per design). F-002 risolto con delega esplicita alla copertura unit in `RtcSection.test.tsx`. F-003: `page.clock.setFixedTime` nel `beforeEach`. F-004: filtro `resourceType()`. F-005: `addInitScript` con Promise awaitable. F-007: `test.describe.skip` canonico. Rimangono 2 finding low: F-006 (numerazione non sequenziale, carried) e F-008 nuovo (titolo duplicato nel describe skip). Nessun finding medium o high. Nessuna regressione rilevata. Verdict: pass.",
+  "loop_status": {
+    "current_iter": 2,
+    "max_iter": 3,
+    "previous_finding_ids": ["F-001", "F-002", "F-003", "F-004", "F-005", "F-006", "F-007"],
+    "no_progress": false,
+    "regression_detected": false
+  }
+}

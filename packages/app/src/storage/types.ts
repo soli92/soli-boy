@@ -1,4 +1,7 @@
 // TSK-001 — tipi di persistenza (db_schemas/indexeddb-stores.md).
+// TSK-127 — aggiunto `RtcStateRecord` per il quinto object store `rtcState`
+// (ADR-009 §3, US-066).
+import type { RtcState } from "../domain/rtc-service";
 import type { Core, Platform } from "../domain/types";
 
 export interface RomRecord {
@@ -48,6 +51,24 @@ export interface SaveStateRecord {
    */
   core: Core;
   createdAt: number;
+  /**
+   * Snapshot dello stato dell'orologio interno catturato al momento del save
+   * (TSK-129, ADR-009 §3, US-067).
+   *
+   * Campo **opzionale** by-design — il punto cardine della compat all'indietro:
+   *  - Entry preesistenti (save state creati prima di EP-019) restano valide:
+   *    il campo è semplicemente assente nell'oggetto materializzato da IDB,
+   *    e il restore lo tratta come no-op silenzioso (vedi `SaveService.loadState`).
+   *  - **Nessun bump di versione IDB** richiesto: IndexedDB è schema-less per
+   *    campi non-keyPath/non-index, e questa estensione non tocca né l'uno né
+   *    l'altro asse (l'index canonico resta `by_rom`).
+   *
+   * Cattura best-effort: se al momento del save l'engine non espone un
+   * `RtcBridge` (es. nessuna cartuccia RTC, o bridge stub `null` da ADR-009 §4),
+   * il campo resta assente nell'entry — comportamento invariato per i giochi
+   * senza RTC. Vedi `SaveService.saveState` per la policy di cattura.
+   */
+  rtcState?: RtcState;
 }
 
 /**
@@ -65,6 +86,31 @@ export interface SramRecord {
 export interface ConfigRecord {
   key: string;
   value: unknown;
+}
+
+/**
+ * Stato persistito dell'orologio interno (RTC) della cartuccia (TSK-127,
+ * ADR-009 §3, US-066).
+ *
+ * Una entry per ROM (chiave logica = `romId`, FK verso `roms.id` con
+ * cascade-delete su `removeRom`). Distinto da `sram` e `saveStates` per
+ * mantenere semantica esplicita ("terza categoria di dato del salvataggio").
+ *
+ * Campi gestiti dall'adapter (NON esposti al dominio):
+ *  - `updatedAt`: timestamp ISO 8601 UTC (`new Date().toISOString()`) della
+ *    ultima `putRtcState`. Solo diagnostico / audit; il dominio non lo legge.
+ *  - `schemaVersion`: marker di versione del payload `state`. Vale `1` per
+ *    EP-019; riservato per future migration (ADR-009 §3 "schema versioning").
+ */
+export interface RtcStateRecord {
+  /** FK logica → roms.id (cascade-delete su removeRom). */
+  romId: string;
+  /** Modello canonico wall-clock UTC (ADR-009 §2, definito in domain/rtc-service.ts). */
+  state: RtcState;
+  /** ISO 8601 UTC della ultima persistenza. */
+  updatedAt: string;
+  /** Versione del payload `state` (1 in EP-019). */
+  schemaVersion: number;
 }
 
 export interface RomFilter {

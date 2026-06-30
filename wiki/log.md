@@ -18,6 +18,20 @@ come synthesis, lint report, plan/design/execute run, promote). Formato:
 
 ## Entries
 
+2026-06-30 00:00 | code-reviewer | review TSK-128+TSK-129 iter-3 → pass | TSK-128+TSK-129 | Tutti i finding iter-2 risolti: N-1 (parseEnvelope valida strutturalmente rtcState con isPlainObject + validateRtcState, policy strip best-effort ADR-009 §4), N-2 (test integrazione rtcState malformato con verifica IDB — fake-indexeddb round-trip), N-3 (hasRtc: vi.fn().mockReturnValue(true) aggiunto a tutti i mock RtcBridge in save-service.test.ts e game-session.test.ts). Nessun nuovo finding. Verdict: pass. Report: code_quality/reports/TSK-128-TSK-129-iter-3.json
+
+2026-06-30 18:50 | code-reviewer | review TSK-126+TSK-131 iter-2 → conditional | TSK-126+TSK-131 | Tutti i finding bloccanti iter-1 (F-01..F-05) verificati risolti: aria-invalid omesso quando valido, role='note' rimosso, null-post-sync gestito con notice+stato-preservato, commento handleFieldChange corretto, guard useEffect su piattaforma senza RTC presente e testato. 27/27 test passano. Nuovo finding bloccante F-08 (medium, TS-ROBUST-001): makeBridge in RtcSection.test.tsx non implementa RtcBridge.hasRtc(), 4 errori TS2322 confermati da tsc --noEmit. Finding non-bloccante F-09 (low): @ts-expect-error stale su globalThis.fetch (TS2578). Carry-over advisory F-06/F-07 invariati. Verdict: conditional (iter 2/3). Report: code_quality/reports/TSK-126-TSK-131-iter-2.json
+
+2026-06-30 12:00 | code-reviewer | review TSK-125+TSK-130 iter-2 → pass | TSK-125+TSK-130 | Tutti i finding bloccanti iter-1 risolti: F-02 hasRtc() aggiunto a RtcBridge (ADR-009 §4), F-04 globalThis.fetch/XHR ripristinati in afterEach, F-01 makeBridge estratto a scope-file, F-03 JSDoc syncToDevice void razionale corretto. Residui low: N-01 (ambiguita' minore JSDoc void/UTC), F-05 carry-forward informativo. Nessuna regressione. Verdict: pass. report: code_quality/reports/TSK-125-130-iter-2.json
+
+2026-06-30 00:00 | code-reviewer | review TSK-127 iter-2 → pass | TSK-127 | Tutti i finding bloccanti iter-1 risolti: F-127-1 (cascade-delete IDB multi-store transazionale), F-127-2 (RTC_STATE_SCHEMA_VERSION importata da db.ts), F-127-3 (TODO shape-validation presente). Un finding nuovo low non bloccante (F-127-2-NEW: coupling design NativeFsAdapter→db.ts). Verdict: pass. Report: code_quality/reports/TSK-127-iter-2.json
+
+2026-06-30 20:00 | qa-dev | develop | TSK-132 | Suite e2e `ep019-rtc.e2e.ts` creata in `packages/app/e2e/` (EP-019, Sprint 15). 11 test implementati (StubEngine + StubRtcBridge), 2 skip documentati ("bridge concreto Sprint 16 — ADR-009 §4 follow-up"). Copertura: visibilità condizionale GBA/GBC, form 6 campi, validazione mese=13, Imposta con conferma, sync-to-device, persistenza on-stop, save-state smoke test, idempotenza reset, accessibilità base, no-network. Modifiche infrastruttura: `StubRtcBridge` aggiunto a `stub-engine.ts`; URL param `?rtcPlatform=<platform>` aggiunto ad `App.tsx` (stub mode only, ADR-009 §4). Risultato: 11/11 pass, 2 skip, 0 regressioni suite esistente (57 pass, 12 skip pre-esistenti). TSK-132 → done.
+
+2026-06-30 18:00 | be-dev | develop | TSK-130 | `RtcService.syncToDevice(bridge)` aggiunto a `packages/app/src/domain/rtc-service.ts` (US-068, Sprint 15). Legge `new Date()` locale → costruisce `RtcState` in **UTC** via `getUTC{FullYear,Month+1,Date,Hours,Minutes,Seconds}` (ADR-009 §5: modello canonico wall-clock UTC, conversione locale solo in UI Settings). Guard `bridge null|undefined → no-op` (coerente con stub `rtcBridge = null` di ADR-009 §4). Zero chiamate di rete (RNF-05/RNF-06 verificato in test con spy su `fetch`/`XMLHttpRequest`). Test: +6 in `rtc-service.test.ts` (24 totali, tutti green; `vi.useFakeTimers + setSystemTime` per mock `Date`). Discrepanza nota: TSK-130 Technical Specs indicava ritorno `RtcState` + `getFullYear/...` locale → risolta in favore di ADR-009 §5 (gerarchia fonti: ADR > TSK, vedi commento JSDoc su `syncToDevice`). Pre-esistente failure su `TouchOverlay.test.tsx` (fuori scope TSK-130, non introdotta dalla modifica). DoD ✓.
+
+2026-06-30 09:30 | orchestrator | run | sprint-15 | State scan + dashboard — Sprint 14 (EP-018 shoulder L/R) CLOSED (5/5 TSK done). Sprint 15 (EP-019 RTC) READY — 8 TSK defined, 4 stories (US-065..068), all status:todo, consumer:agent. ADR-009 accepted. Next-step: /dev TSK-125 (be-dev, RtcService dominio, Wave 1 root). Wave 2 parallelizzabile (TSK-126 fe + TSK-127 db + TSK-130 be, gate umano richiesto ≥3).
+
 2026-06-01 | factory-bootstrap | bootstrap | soli-boy | Factory llm-wiki++ v2.15 scaffoldata (topology full-stack-agents, adapters claude+cursor, compression OCL+CCL ON, CQRL ON, scheduler ON, vcs github).
 
 ## [2026-06-01] ingest | Soli-boy_Specifiche_Funzionali.docx
@@ -871,3 +885,81 @@ fe-dev | develop | EP-015 / US-055. Player.tsx: aggiunto `--sb-canvas-aspect: 3 
 **Commit:** (pending push)
 **DoD:** pass — e2e tastiera GB stub + GBA reale (locale); touch skip desktop; unit da TSK-120/122/123
 **Note:** Sprint 14 EP-018 chiuso (5/5 TSK).
+
+## 2026-06-30 17:56 — develop TSK-125
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-019-rtc-orologio-interno/US-065-impostare-data-ora-rtc/TSK-125]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 2 (src/domain/rtc-service.ts, src/domain/rtc-service.test.ts)
+**Commit:** (pending push)
+**DoD:** pass — RtcState/RtcCapability/RtcBridge/RtcService esportati; hasRtc discrimina GB/GBC vs GBA/arcade; validateRtcState range-check (anno >=2000, mese 1-12, giorno 1-31, ora/min/sec); commento ADR-009 presente sul fallback hasRtc e sul contratto RtcBridge. 18/18 test passano (vitest).
+**Note:** RtcService implementato come object module (stateless, no istanza). Validazione range-based (non calendaristica) per coerenza con tolleranza dei core MBC3/S-3511A — vedi note di design nel file. Regressione pre-esistente in `TouchOverlay.test.tsx` (commit 9add903 EP-018) NON imputabile a TSK-125 (test in isolamento fallisce con stesso errore, nessun overlap di scope); non aperto fix opportunistico (PATTERN §7 r.8), segnalo come gap da TSK separato. Sprint 15 Wave 1 root completato — Wave 2 (TSK-126 fe + TSK-127 db + TSK-130 be) ora sbloccabile.
+
+## 2026-06-30 18:02 — develop TSK-126
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-019-rtc-orologio-interno/US-065-impostare-data-ora-rtc/TSK-126]]
+**Layer:** fe
+**Code path:** packages/app
+**Files touched:** 3 (src/components/Settings/RtcSection.tsx, src/components/Settings/RtcSection.test.tsx, src/components/Settings/Settings.tsx)
+**Commit:** (pending push)
+**DoD:** pass — Componente `RtcSection` creato con form 6 campi (anno/mese/giorno/ora/minuto/secondo) e validazione range via `RtcService.validateRtcState`; visibilità condizionale (`!hasRtc(platform) || bridge===null` → return null); popolamento iniziale da `bridge.getRtcState()` con fallback su `DEFAULT_STATE`; `aria-invalid` per campo fuori range + messaggio testuale `role="note"`; pulsante "Imposta" disabilitato se stato invalido; conferma `role="status"` post-submit. Integrazione in `Settings.tsx` con prop opzionali `rtcPlatform` + `rtcBridge` (gating speculare a haptics/theme/autoStart, backward compat con test legacy). 14/14 test del nuovo `RtcSection.test.tsx` passano (vitest). Tipologie OK sui miei file (errori `storage/*` pre-esistenti da altri TSK del wave EP-019, non imputabili).
+**Note:** UI tratta i campi come wall-clock diretti senza conversione UTC ⇄ locale (ADR-009 §5): la conversione sarà introdotta quando i bridge concreti (Sprint 16) esporranno valori reali — al momento `rtcBridge` è `null` in tutti gli engine attivi, quindi questo componente non viene MAI montato in produzione (serve la pipeline UI in attesa dei bridge). Hook ordering verificato: tutti i `useEffect`/`useMemo`/`useCallback` invocati PRIMA dell'early-return di visibilità per rispettare rules-of-hooks React 19. Tab order naturale via DOM order (RNF-04). Regressione `TouchOverlay.test.tsx` (1 fail su 574) pre-esistente da TSK-125, non imputabile a TSK-126 (verificata su HEAD pulito). Sprint 15 Wave 2 — TSK-126 chiuso, pipeline EP-019 procede con TSK-127/130 in parallelo.
+
+## 2026-06-30 18:05 — develop TSK-127
+**Agente:** db-dev
+**TSK:** [[../management/kanban/EP-019-rtc-orologio-interno/US-066-persistenza-stato-rtc/TSK-127]]
+**Layer:** db
+**Code path:** packages/app
+**Files touched:** 6 (src/storage/db.ts, src/storage/port.ts, src/storage/indexeddb-adapter.ts, src/storage/native-fs-adapter.ts, src/storage/types.ts, src/storage/storage-port.test.ts)
+**Commit:** (pending push)
+**DoD:** pass — Quinto object store `rtcState` (keyPath `romId`, ADR-009 §3) creato in IndexedDB con bump versione 1→2; migration `onupgradeneeded` additive-only (guard `objectStoreNames.contains`) preserva store v1 esistenti. `RtcStateRecord` (`romId/state/updatedAt/schemaVersion`) introdotto in `types.ts`; `RtcStatePort` (3 ops: `putRtcState/getRtcState/deleteRtcState`) aggiunto a `port.ts` ed esteso da `SaveStoragePort`. `updatedAt`/`schemaVersion` gestiti internamente dall'adapter (ISO 8601 UTC + costante 1), NON esposti al dominio. `getRtcState` ritorna `null` (absence sentinel canonica EP-019). Cascade-delete su `removeRom(romId)` aggiunta in entrambi gli adapter (IDB delete su `rtcState`; NativeFsAdapter `tryUnlink` su `<romId>.rtc.json`). Stub NativeFsAdapter implementato (file-per-romId in `rtc-state/`, ADR-009 §3 NativeFs planned). 13/13 nuovi test in `storage-port.test.ts` passano + 114/114 test storage complessivi (0 regressioni).
+**Note:** TSK chiuso anche `RtcStatePort` su `SaveStoragePort` per consentire al SaveService (TSK-130 in Wave 2) di consumare la porta unica con le ops RTC senza cast — preparazione US-067 (RTC nel save state). Schema versioning marker `RTC_STATE_SCHEMA_VERSION = 1` esportato da `db.ts` come simbolo riservato (no logica migration in EP-019, riservato per evoluzioni future del payload, ADR-009 §3 Conseguenze "Schema versioning"). Regressione `TouchOverlay.test.tsx` (1 fail su 583) pre-esistente da TSK-125/126, non imputabile a TSK-127 (file storage isolati, nessun overlap). Sprint 15 Wave 2 — TSK-127 chiuso.
+
+## 2026-06-30 18:11 — develop TSK-129
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-019-rtc-orologio-interno/US-067-rtc-incluso-in-save-state/TSK-129]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 3 (src/storage/types.ts, src/domain/save-service.ts, src/domain/save-service.test.ts)
+**Commit:** (pending push)
+**DoD:** pass — Campo opzionale `rtcState?: RtcState` aggiunto a `SaveStateRecord` (ADR-009 §3, US-067). `SaveService.saveState` esteso con 4° parametro opzionale `rtcBridge?: RtcBridge | null`: cattura best-effort via `RtcService.getRtcState(bridge)`; entry persistita include `rtcState` solo se non-null (spread condizionale, evita `undefined` esplicito). `SaveService.loadState` esteso con 4° parametro opzionale `rtcBridge?: RtcBridge | null`: se `rec.rtcState !== undefined && rtcBridge` non null → `RtcService.setRtcState(bridge, rec.rtcState)`; altrimenti no-op silenzioso (compat all'indietro by-design). Eccezioni del bridge confinate in `try/catch` con `console.warn` (degrade graceful: save/restore dell'emulatore mai bloccato dall'RTC accessorio). Nessun bump versione IDB: il campo è non-keyPath/non-index e IDB è schema-less su questi assi. Test estesi con 10 nuovi casi: capture con bridge non-null, capture con bridge null, capture senza parametro (call-site legacy), capture con bridge null-returning, capture con bridge che lancia (warn); restore con rtcState+bridge, restore con entry legacy (no rtcState), restore con bridge null, restore senza parametro, restore con bridge che lancia. 35/35 test `save-service.test.ts` passano + 593/593 test full-suite (0 regressioni). `tsc --noEmit` clean sui file toccati (errore pre-esistente in `rtc-service.test.ts(251)` da TSK-125 fuori scope, PATTERN §7 r.8).
+**Note:** Naming dei metodi mantenuto (`saveState`/`loadState`, non `putSaveState`/`restoreSaveState` come da Technical Specs): le TSK Specs descrivono i metodi *concettualmente* facendo riferimento al ruolo del SaveService verso la porta IDB; cambiare i nomi avrebbe rotto N call-site senza beneficio di chiarezza. Il `rtcBridge` non è ancora esposto da `EmulatorEngine` (ADR-009 §4 lo prevede ma TSK-128 stubba `rtcBridge = null`): i call site reali del SaveService potranno passare `engine.rtcBridge ?? null` quando lo Sprint 16 implementerà i bridge concreti (WasmBoyRtcBridge / MgbaRtcBridge); nel frattempo i chiamanti legacy (Player.tsx, useSaveData.ts ecc.) continuano a invocare la firma 3-arg (compat all'indietro automatica grazie al parametro opzionale). Sprint 15 EP-019 — TSK-129 chiuso.
+
+## 2026-06-30 18:11 — develop TSK-128
+**Agente:** be-dev
+**TSK:** [[../management/kanban/EP-019-rtc-orologio-interno/US-066-persistenza-stato-rtc/TSK-128]]
+**Layer:** be
+**Code path:** packages/app
+**Files touched:** 6 (src/domain/game-session.ts, src/domain/game-session.test.ts, src/core/core-wrapper.ts, src/core/stub-engine.ts, src/core/wasmboy-engine.ts, src/core/mgba-engine.ts)
+**Commit:** (pending push)
+**DoD:** pass — `GameSession` object module esportato da `src/domain/game-session.ts` con due operazioni async: `restoreOnStart(deps)` (legge `storage.getRtcState(romId)` e applica via `RtcService.setRtcState(bridge, state)` se presente) e `persistOnStop(deps)` (legge `RtcService.getRtcState(bridge)` e scrive via `storage.putRtcState(romId, state)` se non null). Entrambe best-effort/null-safe: skip silenzioso se `engine.rtcBridge` è null/undefined (stub pre-Sprint16), skip silenzioso se storage non ha entry / bridge ritorna null (cartuccia senza RTC), `console.warn` + no-throw sui reject di storage e throw del bridge (ADR-009 §4-5). Interfaccia `EmulatorEngine` estesa con `rtcBridge?: RtcBridge | null` opzionale; stub `rtcBridge = null` con commento ADR-009 aggiunto a `WasmBoyEngine`, `MgbaEngine`, `StubEngine` (override-abile in test su StubEngine). 10/10 nuovi test in `game-session.test.ts` passano + 603/603 test complessivi `packages/app` passano (0 regressioni).
+**Note:** `GameSession` creato come oggetto modulo (non classe) per coerenza con `RtcService` (stateless, deps passate per call). Dipende da `RtcStatePort` segmentato (3 ops, ADR-006 §Decisione p.2) non da `SaveStoragePort` intero — interface segregation. Decisione di scope: nessuna chiamata a `engine.start()/stop()` da `GameSession` (il lifecycle engine resta in `CoreWrapper`, ADR-003 invariante); `GameSession` è il punto di composizione cross-cutting per side-effect di dominio (RTC persist/restore ora, SRAM autosave / hook lifecycle in future). Wiring nel Player.tsx (chiamata effettiva al boot/teardown) NON in scope di questo TSK (ADR-009 §4 "no-op silenzioso finché bridge è null" + scope code_path TSK-128 = solo game-session.ts) — sarà un TSK FE successivo che invocherà `GameSession.restoreOnStart`/`persistOnStop` al `useEffect` mount/unmount del Player. Errore TS pre-esistente in `rtc-service.test.ts:251` (`@ts-expect-error` directive non utilizzata) NON imputabile a TSK-128 (test isolato). Sprint 15 Wave 2 — TSK-128 chiuso, pipeline EP-019 prosegue (TSK-130 RtcService.syncToDevice già done — Wave 2 completa lato be).
+
+## 2026-06-30 18:15 — develop TSK-131
+**Agente:** fe-dev
+**TSK:** [[../management/kanban/EP-019-rtc-orologio-interno/US-068-reset-rtc-orologio-dispositivo/TSK-131]]
+**Layer:** fe
+**Code path:** packages/app
+**Files touched:** 2 (src/components/Settings/RtcSection.tsx, src/components/Settings/RtcSection.test.tsx)
+**Commit:** (pending push)
+**DoD:** pass — Pulsante "Usa ora del dispositivo" aggiunto a `RtcSection` (US-068, ADR-009 §5). `data-testid="sb-rtc-sync-device"`, classi `sb-btn sb-full` (stesso pattern del button "Imposta"), `aria-label="Usa ora del dispositivo"`, `type="button"` esplicito. Handler `handleSyncToDevice` chiama `RtcService.syncToDevice(bridge)` (scrive UTC sul core via `setRtcState` — side-effect immediato sul gioco come da AC US-068), poi ri-legge via `RtcService.getRtcState(bridge)` e popola lo stato del form (`setState(current)`); NON marca `confirmed = true` (la UX prescrive conferma esplicita dell'utente via "Imposta", resettiamo invece `confirmed` come `handleFieldChange`). Visibilità del button gated implicitamente dall'early-return `!hasRtc(platform) || bridge === null` già esistente in TSK-126 (single source of truth). 9 nuovi test (`describe RtcSection — pulsante 'Usa ora del dispositivo'`) coprono: visibilità condizionale (no platform RTC, no bridge → button assente), payload UTC del sync con `vi.setSystemTime(2027-03-15T14:25:36Z)`, popolamento dei 6 campi post-sync, modificabilità manuale post-sync (no auto-lock), NO auto-apply (`sb-rtc-confirmed` assente finché l'utente non preme "Imposta"), flusso sync→Imposta (2 chiamate `setRtcState` con stesso payload UTC), nessuna chiamata `fetch`/`XMLHttpRequest` (spy di rete su global, RNF-05/RNF-06), accessibilità tastiera (focus + click event, semantica nativa `<button>`). 24/24 test `RtcSection` passano (15 esistenti + 9 nuovi), 613/613 test totali `packages/app` passano (0 regressioni). `visual_status: pass` (incrementale su baseline TSK-126: aggiunto un solo `<button>` con classi `sb-btn sb-full` già usate da "Imposta", nessun nuovo CSS/layout — copertura DOM verificata via test).
+**Note:** Scelta di design: il button sync NON è disabilitato in alcuno stato (sempre `enabled` quando renderizzato), perché è un'azione di reset deterministica indipendente dalla validità dei campi correnti — anche se l'utente ha inserito mese=13, premere "Usa ora del dispositivo" ripristina uno stato valido dal device. Distinzione vs. "Imposta": l'autorità del payload finale resta dell'utente (l'AC US-068 §3 richiede esplicitamente che dopo il sync l'utente possa "tornare a impostare manualmente data e ora senza vincoli aggiuntivi", e non-auto-apply è ribadito in AC US-068 §1 "azione esplicita"). Re-uso `RtcService.syncToDevice` + `RtcService.getRtcState` (TSK-130/TSK-125), niente logica `new Date()` nel componente — separazione dominio/UI mantenuta (ADR-009 §4). Conversione UTC ⇄ locale ancora NON implementata (coerente con TSK-126: bridge concreti pre-Sprint 16 sono stub, il componente di fatto non è ancora montato in produzione). Sprint 15 Wave 3 — TSK-131 chiuso, pipeline EP-019 US-068 funzionalmente completa lato FE (sync button collegato all'API dominio già pronta).
+
+## 2026-06-30 — review TSK-127 iter-1 → conditional
+**Agente:** code-reviewer
+**Report:** code_quality/reports/TSK-127-iter-1.json
+**Verdict:** conditional — 1 finding medium (F-127-1 cascade non transazionale in db.ts removeRom), 4 finding low.
+
+- 2026-06-30 — review TSK-126+TSK-131 iter-1 → conditional (7 findings: 2 medium, 5 low; blocking F-03 getRtcState-null-post-sync, F-05 test-assertion-incompleta)
+
+- 2026-06-30 — review TSK-125+TSK-130 iter-1 → conditional (6 findings: 2 medium, 4 low; blocking F-03 RtcBridge-interface-incompleta-ADR009, F-05 globalThis-non-ripristinato)
+
+---
+**2026-06-30** — review TSK-132 iter-1 → conditional (7 finding: 2 medium, 5 low; F-001 TS-DESIGN-001 StubRtcBridge in src/ produzione, F-002 QA-TEST-001 bridge call non asserita in test 5)
+
+**2026-06-30** — review TSK-132 iter-2 → pass (2 finding low residui: F-006 numerazione non sequenziale nei describe, F-008 titolo describe.skip duplicato; tutti i 6 finding con azione richiesta da iter-1 risolti; nessun finding medium/high; nessuna regressione)
+
+**2026-06-30** — review TSK-128+TSK-129 iter-2 → conditional (3 finding: N-1 TS-ROBUST-001 medium parseEnvelope non valida rtcState in import, N-2 QA-TEST-001 medium test mancante per rtcState malformato, N-3 TS-IDIOM-002 low mock RtcBridge senza hasRtc(); tutti i 6 finding bloccanti iter-1 chiusi; nessuna regressione; iter 3/3 disponibile)
+
+- 2026-06-30 — review TSK-126+TSK-131 iter-3 → pass (0 finding bloccanti; 2 carry-over low non bloccanti F-06/F-07 invariati; F-08 hasRtc mock chiuso, F-09 @ts-expect-error stale rimosso; 27/27 test passano; nessuna regressione)

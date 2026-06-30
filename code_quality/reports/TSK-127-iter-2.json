@@ -1,0 +1,46 @@
+{
+  "tsk_id": "TSK-127",
+  "iter": 2,
+  "generated_at": "2026-06-30T00:00:00.000Z",
+  "reviewer_version": "v2.12",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "none (storage layer, no UI framework)",
+    "runtime": "browser / node (vitest)",
+    "stack_confidence": 0.95,
+    "stack_mode": "guided",
+    "rules_tiers_applied": ["canonical"],
+    "degraded": false
+  },
+  "findings": [
+    {
+      "id": "F-127-2-NEW",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "title": "native-fs-adapter.ts: import di RTC_STATE_SCHEMA_VERSION da db.ts introduce coupling IDB-adapter → NativeFs-adapter",
+      "description": "La fix di F-127-2 (iter-1) ha correttamente eliminato il letterale hardcoded `1`, importando `RTC_STATE_SCHEMA_VERSION` dalla single source of truth. Tuttavia il percorso scelto — `import { RTC_STATE_SCHEMA_VERSION } from './db'` in `native-fs-adapter.ts` — introduce un accoppiamento a livello di modulo: il NativeFsAdapter (adapter desktop/Electron) dipende da `db.ts` (modulo IDB-web). A runtime non vi sono effetti collaterali rischiosi (`RTC_STATE_SCHEMA_VERSION` è una costante pura; `openDB` non viene chiamato al solo import), ma il grafo delle dipendenze ora mette l'adapter desktop in relazione con il modulo IDB. Il design più pulito è spostare `RTC_STATE_SCHEMA_VERSION` in `types.ts` (modulo condiviso, già importato da entrambi gli adapter): eliminando il coupling incrociato senza perdere la single source of truth. Severità `low`: nessun rischio runtime, puramente manutenibilità futura.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:75",
+      "suggestion": "Spostare `RTC_STATE_SCHEMA_VERSION` da `db.ts` a `types.ts` (accanto a `RtcStateRecord`). Aggiornare l'import in `db.ts` e `native-fs-adapter.ts` da `'./types'` anziché `'./db'`. Operazione a diff minimo (< 10 righe); non richiesta per il pass corrente — pianificabile come cleanup.",
+      "adr_ref": "ADR-009 §3 (schemaVersion single source of truth)"
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "total_findings": 1,
+    "by_severity": { "high": 0, "medium": 0, "low": 1 },
+    "blocking_findings": [],
+    "non_blocking_findings": ["F-127-2-NEW"],
+    "pass_rate": 1.0,
+    "verdict_rationale": "Tutti i finding bloccanti dell'iter-1 sono stati risolti correttamente: F-127-1 (cascade-delete non transazionale) chiuso con transazione IDB multi-store [`roms`, `rtcState`] in `removeRom`; F-127-2 (schemaVersion DRY) chiuso con import di `RTC_STATE_SCHEMA_VERSION` da `db.ts`; F-127-3 (TODO shape-validation) chiuso con commento `// TODO: shape-validation in TSK desktop`. Il finding advisory F-127-4 (test esplicito DB_VERSION) non era bloccante e resta posticipato al TSK desktop. Il solo finding nuovo (F-127-2-NEW, low) è una conseguenza della fix F-127-2: coupling design tra NativeFsAdapter e db.ts, senza impatto runtime. Non blocca il pass. Il codice è idiomatico, robusto per il suo scope, conforme ad ADR-009 §3."
+  },
+  "loop_status": {
+    "iter": 2,
+    "max_iterations": 3,
+    "previous_finding_ids": ["F-127-1", "F-127-2", "F-127-3", "F-127-4", "F-127-5"],
+    "no_progress": false,
+    "regression_detected": false,
+    "note": "F-127-1 (medium, bloccante) risolto. F-127-2, F-127-3 (low, advisory) risolti. F-127-4 (advisory non richiesto per pass) e F-127-5 (informativo) confermati invariati. Nuovo finding F-127-2-NEW (low, design smell) emerso dalla fix F-127-2 — non bloccante."
+  }
+}

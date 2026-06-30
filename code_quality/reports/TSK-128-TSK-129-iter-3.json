@@ -1,0 +1,35 @@
+{
+  "tsk_id": "TSK-128+TSK-129",
+  "iter": 3,
+  "reviewer_version": "code-reviewer v2.24",
+  "generated_at": "2026-06-30T00:00:00Z",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "none (domain layer puro)",
+    "framework_version": "",
+    "runtime": "node (vitest, fake-indexeddb)",
+    "confidence": 0.95,
+    "stack_mode": "guided",
+    "stack_notes": "Dominio TypeScript puro: GameSession (TSK-128) + SaveService / SaveFileEnvelope / RTC round-trip (TSK-129). File in scope: game-session.ts, game-session.test.ts, save-service.ts, save-service.test.ts. Iter-2 verdict: conditional (N-1 medium, N-2 medium, N-3 low). Tutti e tre risolti in questa iterazione."
+  },
+  "verdict": "pass",
+  "summary": "Tutti e tre i finding dell'iter-2 sono risolti correttamente. N-1 (parseEnvelope non validava rtcState): aggiunto blocco di validazione strutturale con pre-check isPlainObject + RtcService.validateRtcState; policy strip (delete + console.warn) coerente con ADR-009 §4 best-effort, correttamente documentata nel commento inline. N-2 (test mancante per rtcState malformato): aggiunto test round-trip completo con fake-indexeddb reale che verifica sia il warn diagnostico sia l'assenza di rtcState sull'entry persistita. N-3 (hasRtc omesso nei mock): hasRtc: vi.fn().mockReturnValue(true) aggiunto a tutti i mock RtcBridge in entrambi i file di test (makeMockRtcBridge + tutti gli inline bridge literal). Nessun nuovo finding di severità bloccante identificato. Qualità complessiva elevata: policy null-safe e best-effort sistematiche, compat all'indietro verificata, copertura test completa su tutti i path RTC (cattura, ripristino, round-trip export/import, degrade graceful).",
+  "findings": [],
+  "positives": [
+    "N-1 risolto con la policy strip (opzione a dell'iter-2): isPlainObject guard + validateRtcState in parseEnvelope, delete del campo prima del cast a SaveFileEnvelope. Il delete opera su un oggetto JSON freshly-parsed (non frozen, non condiviso) — nessun rischio di aliasing. Il pre-check isPlainObject copre correttamente i casi non-oggetto (number, null, Array) prima del cast a RtcState richiesto da validateRtcState.",
+    "N-2 risolto con test di integrazione reale (fake-indexeddb + round-trip importSave): verifica warn diagnostico, ok:true sull'import, e assenza di rtcState sull'entry letta da IDB. La scelta di verificare lo stato IDB direttamente (non solo il valore di ritorno) è il livello di copertura corretto per un confine I/O.",
+    "N-3 risolto uniformemente in entrambi i file: makeMockRtcBridge (save-service.test.ts) e tutti gli object literal bridge inline in game-session.test.ts includono hasRtc: vi.fn().mockReturnValue(true). I mock soddisfano ora strutturalmente l'interfaccia RtcBridge.",
+    "Nessuna modifica opportunistica al codice di produzione (game-session.ts non toccato, save-service.ts modificata solo nel blocco parseEnvelope target del finding N-1 — scope rispettato).",
+    "Il commento inline del blocco N-1 (righe 244-261 save-service.ts) è di qualità eccellente: cita ADR-009 §4, spiega la scelta strip vs reject, documenta il razionale del pre-check isPlainObject rispetto alla firma di validateRtcState. Contribuisce alla manutenibilità futura."
+  ],
+  "loop_status": {
+    "previous_iter": 2,
+    "previous_verdict": "conditional",
+    "no_progress_detected": false,
+    "regression_detected": false,
+    "iterations_remaining": 0,
+    "iter2_findings_closed": ["N-1", "N-2", "N-3"],
+    "iter2_findings_open": [],
+    "new_findings_this_iter": []
+  }
+}

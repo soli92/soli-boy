@@ -28,3 +28,8 @@ Entrambi i tipi di salvataggio sono persistiti in IndexedDB e ripristinabili nel
 ## Pagine collegate
 [[indexeddb]]
 [[requisiti-funzionali-soli-boy]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-019 Modifica data e ora dell'orologio interno dell'emulatore (RTC) — `management/kanban/EP-019-rtc-orologio-interno/`
+  - US-067 Stato dell'orologio interno incluso nei save state

@@ -56,6 +56,13 @@ import { PrivacyNotice } from "../PrivacyNotice/PrivacyNotice";
 // presenza è incondizionata per soddisfare il TSK-070 §DoD
 // ("Avviso legale no-ROM protette visibile in Settings → Legale").
 import { StoreComplianceNotice } from "../StoreComplianceNotice/StoreComplianceNotice";
+// TSK-126 (US-065, ADR-009) — Sezione "Orologio interno (RTC)" gating su
+// piattaforma+bridge. Visibilità condizionale gestita internamente da
+// RtcSection (return null se !hasRtc(platform) || bridge === null), quindi le
+// prop `platform` / `rtcBridge` sono opzionali a livello di Settings per non
+// rompere i test legacy che istanziano <Settings/> senza wiring RTC.
+import type { RtcBridge } from "../../domain/rtc-service";
+import { RtcSection } from "./RtcSection";
 
 // TSK-121 / US-064 — L e R rimappabili come gli altri comandi (EP-018).
 const BUTTONS: GameButton[] = [
@@ -159,6 +166,21 @@ export interface SettingsProps {
   autoStartFromLibrary?: boolean;
   /** Callback invocata al cambio del toggle "Avvio automatico" (US-053 AC2). */
   onAutoStartChange?: (enabled: boolean) => void;
+  /**
+   * TSK-126 (US-065, ADR-009) — Piattaforma corrente per la sezione RTC.
+   * Determina la visibilità della sezione `RtcSection` (visibile solo se
+   * `hasRtc(platform)` e bridge non null). Prop OPZIONALI per backward
+   * compat: i test legacy che istanziano `<Settings>` senza wiring RTC
+   * non vedono la sezione (parità gating con haptics/theme).
+   */
+  rtcPlatform?: string;
+  /**
+   * TSK-126 (US-065, ADR-009) — Bridge engine↔RTC. Null se nessun gioco è
+   * in esecuzione o se l'engine non ha inizializzato un bridge RTC
+   * (comportamento corrente: gli engine concreti hanno `rtcBridge = null`,
+   * le implementazioni reali arriveranno con Sprint 16).
+   */
+  rtcBridge?: RtcBridge | null;
 }
 
 /** Etichetta user-facing per un `GameButton` nel selettore rimappatura. */
@@ -212,6 +234,8 @@ export function Settings({
   onHapticsChange,
   autoStartFromLibrary,
   onAutoStartChange,
+  rtcPlatform,
+  rtcBridge,
 }: SettingsProps) {
   const [saved, setSaved] = useState(false);
 
@@ -602,7 +626,18 @@ export function Settings({
         )}
       </details>
 
-      {/* === Accordion 7: Legale (chiuso) ==================================== */}
+      {/* === Accordion 7: Orologio interno RTC (chiuso, opzionale) =========== */}
+      {/* TSK-126 (US-065, ADR-009) — Sezione "Orologio interno (RTC)".
+          Visibile solo se la piattaforma corrente ha un RTC E un bridge attivo
+          è disponibile (gating interno a RtcSection, return null altrimenti).
+          Posta dopo "Dati": il payload RTC è la "terza categoria di dato del
+          salvataggio" (ADR-009 §3), quindi semanticamente vicina ai save state.
+          Prop opzionali: i test legacy senza wiring RTC non vedono la sezione. */}
+      {rtcPlatform !== undefined && rtcBridge !== undefined && (
+        <RtcSection platform={rtcPlatform} bridge={rtcBridge} />
+      )}
+
+      {/* === Accordion 8: Legale (chiuso) ==================================== */}
       {/* TSK-070 (US-034) — Sezione "Legale" SEMPRE consultabile, posta
           PRIMA della sezione Privacy così il cross-link interno "qui sotto"
           è coerente (vedi StoreComplianceNotice.tsx). Avviso esplicito
@@ -617,7 +652,7 @@ export function Settings({
         <StoreComplianceNotice headingHidden />
       </details>
 
-      {/* === Accordion 8: Privacy (chiuso) =================================== */}
+      {/* === Accordion 9: Privacy (chiuso) =================================== */}
       {/* TSK-069 (US-033) — Sezione "Privacy" SEMPRE consultabile.
           Incondizionata (no prop gating) perché il contenuto è statico e
           riflette il modello on-device dell'app (ADR-002 §Conseguenze).

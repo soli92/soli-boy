@@ -38,3 +38,9 @@ Le sezioni sono disposte in 1 colonna su mobile, 2 su tablet e 3 su desktop. [^s
 ## Pagine collegate
 [[2026-06-01-mockups-ui]]
 [[requisiti-funzionali-soli-boy]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-019 Modifica data e ora dell'orologio interno dell'emulatore (RTC) — `management/kanban/EP-019-rtc-orologio-interno/`
+  - US-065 Impostare data e ora dell'orologio interno dal Settings
+  - US-068 Riallineamento dell'orologio interno all'orologio del dispositivo

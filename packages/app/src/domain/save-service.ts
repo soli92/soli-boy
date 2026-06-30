@@ -18,6 +18,7 @@
 import type { EmulatorEngine } from "../core/core-wrapper";
 import type { SaveStoragePort } from "../storage/port";
 import type { SaveStateRecord } from "../storage/types";
+import { RtcService, type RtcBridge, type RtcState } from "./rtc-service";
 import type { Core } from "./types";
 
 /**
@@ -100,6 +101,13 @@ export type SaveFileEnvelope =
       slot: number;
       createdAt: number;
       data: string; // base64
+      // TSK-129/EP-019 (review iter-2, F-2/F-5/F-8): l'envelope portabile
+      // include lo stato RTC se presente sull'entry sorgente, per consentire
+      // un round-trip completo export → import senza perdita silenziosa
+      // dell'orologio interno. Campo opzionale: assente per save senza RTC
+      // (giochi non-RTC o save legacy), in piena backward-compat (parseEnvelope
+      // non lo richiede; l'import lo propaga solo se presente).
+      rtcState?: RtcState;
     }
   | {
       format: typeof SAVE_FILE_FORMAT;
@@ -233,6 +241,24 @@ function parseEnvelope(v: unknown):
     if (typeof v.core !== "string") {
       return { ok: false, reason: "invalid-file", detail: "Campo \"core\" assente o non stringa." };
     }
+    // CQRL iter-3 N-1: validazione strutturale del campo opzionale `rtcState`.
+    // Policy strip (best-effort, ADR-009 §4): se `rtcState` è presente ma malformato
+    // (non-oggetto, oppure oggetto con campi fuori range), lo silenziamo via delete
+    // anziché rigettare l'intero import. Razionale: l'RTC è un sotto-sistema accessorio
+    // (coerente con la policy save/load best-effort di SaveService) e un file altrimenti
+    // valido NON deve essere reso non-importabile per un campo opzionale corrotto;
+    // l'entry importata sarà priva di rtcState e l'eventuale loadState non chiamerà
+    // setRtcState (no claim falsi, no payload spazzatura propagato all'engine).
+    if (v.rtcState !== undefined) {
+      const rtc = v.rtcState;
+      // `validateRtcState` è tipizzato su RtcState e non gestisce null/non-object:
+      // serve un pre-check `isPlainObject` per evitare TypeError a runtime.
+      if (!isPlainObject(rtc) || !RtcService.validateRtcState(rtc as RtcState)) {
+        // eslint-disable-next-line no-console
+        console.warn("[parseEnvelope] rtcState malformato: ignorato");
+        delete (v as Record<string, unknown>).rtcState;
+      }
+    }
     return { ok: true, envelope: v as SaveFileEnvelope };
   }
   if (v.kind === "sram") {
@@ -285,8 +311,28 @@ export class SaveService {
    * Cattura lo snapshot dall'engine, lo persiste etichettandolo col core
    * canonico della ROM (per il guard cross-engine in fase di load).
    * Reject se la ROM non esiste o se l'engine non supporta i save state.
+   *
+   * TSK-129 (ADR-009 §3, US-067) — `rtcBridge?` opzionale: se passato e
+   * non-null, lo stato corrente dell'orologio interno (`RtcService.getRtcState`)
+   * viene incluso nell'entry persistita come campo opzionale `rtcState`. Policy
+   * **best-effort, null-safe**:
+   *  - `rtcBridge` assente / `null` / `undefined` → campo `rtcState` non incluso
+   *    (comportamento invariato per i giochi senza RTC, compat all'indietro
+   *    automatica con i call site preesistenti che non passano il bridge).
+   *  - `RtcService.getRtcState(bridge)` ritorna `null` (engine senza RTC attivo)
+   *    → campo `rtcState` non incluso (nessun claim di "RTC zero").
+   *  - Un'eventuale eccezione del bridge non interrompe il save: viene
+   *    registrata via `console.warn` e l'entry viene persistita comunque
+   *    SENZA il campo `rtcState`. La policy "save dell'emulatore non bloccato
+   *    da un sotto-sistema accessorio" è coerente con il dual best-effort
+   *    su SRAM (ADR-006) e con la natura accessoria dell'RTC in EP-019.
    */
-  async saveState(engine: EmulatorEngine, romId: string, slot: number): Promise<string> {
+  async saveState(
+    engine: EmulatorEngine,
+    romId: string,
+    slot: number,
+    rtcBridge?: RtcBridge | null,
+  ): Promise<string> {
     const rom = await this.storage.getRom(romId);
     if (!rom) {
       throw new Error(`SaveService.saveState: ROM non trovata (romId=${romId}).`);
@@ -294,14 +340,35 @@ export class SaveService {
     // `engine.snapshot()` farà reject onesto se l'engine non supporta i save state
     // (capabilities.saveStates=false ⇒ rifiuto al chiamante).
     const snapshot = await engine.snapshot();
+
+    // Cattura RTC best-effort (TSK-129). Confinata in try/catch: un bridge che
+    // lancia non deve invalidare lo snapshot dell'emulatore (vedi nota di metodo).
+    let rtcState: RtcState | null = null;
+    if (rtcBridge) {
+      try {
+        rtcState = RtcService.getRtcState(rtcBridge);
+      } catch (e) {
+        // Best-effort: log + procedi senza rtcState (variabile già `null`).
+        // eslint-disable-next-line no-console
+        console.warn(
+          `SaveService.saveState: cattura RTC fallita (romId=${romId}, slot=${slot}): ${(e as Error).message}. Procedo senza rtcState.`,
+        );
+      }
+    }
+
     // Snapshot → Blob: passiamo il buffer come ArrayBuffer concreto per evitare
     // l'incompatibilità Uint8Array<ArrayBufferLike> ↔ BlobPart (lib TS 5.x
     // distingue SharedArrayBuffer da ArrayBuffer in BlobPart).
+    // Il campo `rtcState` è incluso SOLO se non-null: spread condizionale
+    // (`...(rtcState !== null && { rtcState })`) per evitare di scrivere
+    // `rtcState: undefined` nell'entry (semantica IDB: undefined viene
+    // serializzato; preferiamo l'assenza pulita del campo).
     const id = await this.storage.putSaveState({
       romId,
       slot,
       core: rom.core,
       snapshotBlob: new Blob([toArrayBuffer(snapshot)]),
+      ...(rtcState !== null ? { rtcState } : {}),
     });
     return id;
   }
@@ -321,6 +388,7 @@ export class SaveService {
     engine: EmulatorEngine,
     saveStateId: string,
     currentCore: Core,
+    rtcBridge?: RtcBridge | null,
   ): Promise<LoadStateResult> {
     const rec = await this.storage.getSaveState(saveStateId);
     if (!rec) {
@@ -335,6 +403,27 @@ export class SaveService {
     }
     const buf = await rec.snapshotBlob.arrayBuffer();
     await engine.restore(new Uint8Array(buf));
+
+    // Restore RTC best-effort (TSK-129, ADR-009 §3, US-067). Policy null-safe:
+    //  - `rec.rtcState` assente (entry legacy pre EP-019, oppure save fatto
+    //    senza bridge) → no-op silenzioso, compat all'indietro by-design.
+    //  - `rtcBridge` assente / null → no-op silenzioso (il chiamante non
+    //    ha bridge da applicare; non c'è nulla da fare).
+    //  - Eccezione dal bridge → `console.warn`, restore dell'emulatore già
+    //    riuscito → restituiamo comunque `{ ok: true }` (l'utente vede il
+    //    gioco caricato; il drift sull'orologio interno è degrade-graceful,
+    //    coerente con la natura "accessoria" dell'RTC, ADR-009 §Decisione).
+    if (rec.rtcState !== undefined && rtcBridge) {
+      try {
+        RtcService.setRtcState(rtcBridge, rec.rtcState);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `SaveService.loadState: ripristino RTC fallito (saveStateId=${saveStateId}): ${(e as Error).message}. Restore dell'emulatore già completato; orologio non riallineato.`,
+        );
+      }
+    }
+
     return { ok: true };
   }
 
@@ -423,6 +512,10 @@ export class SaveService {
       };
     }
     const bytes = await rec.snapshotBlob.arrayBuffer();
+    // F-2/F-5/F-8 (review iter-2): propaga `rtcState` se presente sull'entry,
+    // via spread condizionale per mantenere il campo assente quando undefined
+    // (coerente con la policy null-safe del save: nessun claim su "RTC zero"
+    // né sporcizia JSON con `rtcState: undefined`).
     const envelope: SaveFileEnvelope = {
       format: SAVE_FILE_FORMAT,
       version: SAVE_FILE_VERSION,
@@ -432,6 +525,7 @@ export class SaveService {
       slot: rec.slot,
       createdAt: rec.createdAt,
       data: bytesToBase64(bytes),
+      ...(rec.rtcState !== undefined ? { rtcState: rec.rtcState } : {}),
     };
     // application/json + filename derivato dal titolo (sanitizzato) + slot.
     // Il filename è un suggerimento per il download — l'UI lo userà come
@@ -524,11 +618,15 @@ export class SaveService {
           detail: `Core dell'envelope "${envelope.core}" diverso da quello della ROM "${rom.core}".`,
         };
       }
+      // F-2/F-5/F-8 (review iter-2): se l'envelope porta `rtcState`, lo
+      // ripristiniamo nell'entry persistita usando lo stesso spread condizionale
+      // del path `saveState()` (nessun campo `rtcState: undefined` su IDB).
       const id = await this.storage.putSaveState({
         romId: envelope.romId,
         slot: envelope.slot,
         core: envelope.core,
         snapshotBlob: new Blob([dataBuf]),
+        ...(envelope.rtcState !== undefined ? { rtcState: envelope.rtcState } : {}),
       });
       return { ok: true, kind: "saveState", romId: envelope.romId, id };
     }

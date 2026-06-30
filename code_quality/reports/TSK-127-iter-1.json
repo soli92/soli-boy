@@ -1,0 +1,131 @@
+{
+  "tsk_id": "TSK-127",
+  "iter": 1,
+  "generated_at": "2026-06-30T00:00:00.000Z",
+  "reviewer_version": "v2.12",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "none (storage layer, no UI framework)",
+    "runtime": "browser / node (vitest)",
+    "stack_confidence": 0.95,
+    "stack_mode": "guided",
+    "rules_tiers_applied": ["canonical"],
+    "degraded": false
+  },
+  "findings": [
+    {
+      "id": "F-127-1",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "medium",
+      "title": "removeRom (db.ts): cascade delete RTC non transazionale — db.delete roms + db.delete rtcState sono due operazioni separate",
+      "description": "In `db.ts` `removeRom` esegue prima `db.delete('roms', id)` e poi `db.delete('rtcState', id)` come due operazioni IDB sequenziali e indipendenti. Se l'engine IDB commette la prima e l'app crasha prima della seconda (es. OOM del tab, forza-chiusura browser) la ROM è rimossa ma la entry `rtcState` resta orfana — violazione della cascade-delete richiesta da US-066 AC. La corretta implementazione è avvolgere entrambe le delete in una singola transazione IDB multi-store. La libreria `idb` supporta `db.transaction(['roms', 'rtcState'], 'readwrite')` con operazioni su entrambi gli store prima del `await tx.done`.",
+      "location": "packages/app/src/storage/db.ts:143-148",
+      "suggestion": "Aprire un'unica transazione IDB multi-store: `const tx = db.transaction(['roms', 'rtcState'], 'readwrite'); tx.objectStore('roms').delete(id); tx.objectStore('rtcState').delete(id); await tx.done;`",
+      "adr_ref": "ADR-009 §3 (cascade-delete atomica implicita nell'AC US-066)"
+    },
+    {
+      "id": "F-127-2",
+      "rule_id": "TS-IDIOM-001",
+      "rule_path": "code_quality/rules/canonical/TS-IDIOM-001.md",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "title": "native-fs-adapter.ts: schemaVersion hardcoded a 1 invece di usare RTC_STATE_SCHEMA_VERSION da db.ts",
+      "description": "In `native-fs-adapter.ts` riga 764, `putRtcState` scrive `schemaVersion: 1` con un letterale numerico. La costante `RTC_STATE_SCHEMA_VERSION = 1` esportata da `db.ts` è la single source of truth per questa versione (come documentato nel JSDoc di `RtcStateRecord` in `types.ts`). Il duplicato letterale divergerà silenziosamente se in futuro si bumpa la costante in `db.ts` senza aggiornare anche `native-fs-adapter.ts`. Viola il principio DRY e rompe la parità IDB ↔ NativeFs sullo `schemaVersion` persistito.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:764",
+      "suggestion": "Importare `RTC_STATE_SCHEMA_VERSION` da `./db` e usarla: `schemaVersion: RTC_STATE_SCHEMA_VERSION`.",
+      "adr_ref": "ADR-009 §3 (schemaVersion riservato per future migration — single source of truth)"
+    },
+    {
+      "id": "F-127-3",
+      "rule_id": "TS-ROBUST-001",
+      "rule_path": "code_quality/rules/canonical/TS-ROBUST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "title": "native-fs-adapter.ts getRtcState: nessuna validazione del payload JSON deserializzato",
+      "description": "In `getRtcState` del `NativeFsAdapter` (riga 771-773), il file `.rtc.json` viene deserializzato direttamente con `bytesToJson<RtcStateRecord>(bytes)` senza alcuna validazione della shape. Se il file è corrotto su disco (troncato, encoding errato, migration manuale futura che non bumpa `schemaVersion`) il cast silenzioso `<RtcStateRecord>` lascia passare un oggetto privo di `record.state` o con campi `undefined`; la riga 773 `return record.state ?? null` protegge solo l'assenza di `state` ma non la correttezza dei campi interni di `RtcState` (year/month/day/hour/minute/second). Questo è un confine I/O (filesystem) dove TS-ROBUST-001 richiede validazione esplicita. Nota: è uno stub esplicito (planned per TSK desktop futuro) — la severity è quindi `low` e non blocca la wave.",
+      "location": "packages/app/src/storage/native-fs-adapter.ts:769-774",
+      "suggestion": "Aggiungere nel TSK desktop futuro una validazione di shape minima su `record.state` (verifica che i 6 campi numerici esistano e siano `typeof === 'number'`) prima di ritornare il payload. Per lo stub corrente è accettabile documentare il gap con un `// TODO: aggiungere shape-validation in TSK desktop (ADR-009 §3)`.",
+      "adr_ref": "ADR-009 §3, TS-ROBUST-001"
+    },
+    {
+      "id": "F-127-4",
+      "rule_id": "QA-TEST-001",
+      "rule_path": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "severity": "low",
+      "title": "storage-port.test.ts: nessun test verifica il DB_VERSION bump e la creazione dello store rtcState in onupgradeneeded",
+      "description": "Il file di test dichiara nel commento header che uno degli scope del DoD è 'parità schema: bump DB_VERSION 1→2, store rtcState creato in upgrade', ma nessun test case verifica esplicitamente (1) che `DB_VERSION === 2` e (2) che lo store `rtcState` esiste nell'IDB dopo l'apertura. I test del round-trip put/get sono sufficienti per la funzionalità, ma non testano la migration path: se domani il `getDB()` venisse refactorizzato senza `createObjectStore('rtcState')`, i test round-trip potrebbero fallire con un errore non diagnostico ('no objectStore named rtcState') invece di un test esplicito che nomina la migration. La severità è `low` perché i test funzionali esistenti catturano comunque il problema: un IDB senza lo store lancerebbe un errore nei test di round-trip.",
+      "location": "packages/app/src/storage/storage-port.test.ts",
+      "suggestion": "Aggiungere un test dedicato: `it('DB_VERSION === 2 e store rtcState presente dopo apertura', async () => { const db = await getDB(); expect(DB_VERSION).toBe(2); expect(db.objectStoreNames.contains('rtcState')).toBe(true); })`.",
+      "adr_ref": "ADR-009 §3 (bump versione DB obbligatorio)"
+    },
+    {
+      "id": "F-127-5",
+      "rule_id": "TS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/TS-DESIGN-001.md",
+      "pass": "design",
+      "severity": "low",
+      "title": "db.ts: getRom importato nel test ma non usato per la funzionalità RTC (import non necessario)",
+      "description": "In `storage-port.test.ts` riga 26, `getRom` è importato da `./db` e usato solo nel test di cascade-delete per la pre-condizione `expect(await getRom(romId)).toBeDefined()`. Questo è corretto (serve verificare che la ROM esista prima di testarla), ma va segnalato come osservazione: l'import è strettamente necessario al test di cascade e non costituisce una violazione. Nota: this finding è informativo, non blocca.",
+      "location": "packages/app/src/storage/storage-port.test.ts:26",
+      "suggestion": "Nessun cambiamento richiesto. Osservazione documentata.",
+      "adr_ref": "TS-DESIGN-001"
+    }
+  ],
+  "verdict": "conditional",
+  "summary": {
+    "total_findings": 5,
+    "by_severity": { "high": 0, "medium": 1, "low": 4 },
+    "blocking_findings": ["F-127-1"],
+    "non_blocking_findings": ["F-127-2", "F-127-3", "F-127-4", "F-127-5"],
+    "pass_rate": 0.8,
+    "verdict_rationale": "Un finding `medium` bloccante (F-127-1: cascade delete non transazionale in db.ts removeRom). Quattro finding `low` non bloccanti, dei quali F-127-2 (schemaVersion DRY) è fortemente raccomandato per prevenire divergenza silenziosa. Il resto del codice è solido: schema IDB conforme ad ADR-009 §3, interface segregation corretta (RtcStatePort separata), stub NativeFs ben marcato come planned, test completi e chiari. Verdict `conditional`: il dev-agent deve risolvere F-127-1 e F-127-2; F-127-3 e F-127-4 possono essere posticipati al TSK desktop futuro con commento esplicito."
+  },
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "previous_finding_ids": [],
+    "no_progress": false,
+    "regression_detected": false
+  },
+  "task_package": {
+    "tsk_id": "TSK-127",
+    "iter": 1,
+    "constraint": {
+      "scope": "fix only the findings F-127-1 and F-127-2; no opportunistic refactor",
+      "max_diff_lines": 80,
+      "blast_radius_warning": [],
+      "blast_radius_note": "F-127-1 tocca db.ts:removeRom — verificare che i test di cascade-delete in storage-port.test.ts continuino a passare dopo la modifica transazionale."
+    },
+    "required_fixes": [
+      {
+        "finding_id": "F-127-1",
+        "severity": "medium",
+        "file": "packages/app/src/storage/db.ts",
+        "action": "Avvolgere db.delete('roms', id) e db.delete('rtcState', id) in una singola transazione IDB multi-store: transaction(['roms', 'rtcState'], 'readwrite')."
+      },
+      {
+        "finding_id": "F-127-2",
+        "severity": "low",
+        "file": "packages/app/src/storage/native-fs-adapter.ts",
+        "action": "Importare RTC_STATE_SCHEMA_VERSION da './db' e sostituire il letterale 1 a riga 764."
+      }
+    ],
+    "advisory_fixes": [
+      {
+        "finding_id": "F-127-3",
+        "severity": "low",
+        "file": "packages/app/src/storage/native-fs-adapter.ts",
+        "action": "Aggiungere TODO comment per shape-validation nel TSK desktop futuro."
+      },
+      {
+        "finding_id": "F-127-4",
+        "severity": "low",
+        "file": "packages/app/src/storage/storage-port.test.ts",
+        "action": "Aggiungere test esplicito per DB_VERSION e store name in onupgradeneeded (opzionale)."
+      }
+    ]
+  }
+}

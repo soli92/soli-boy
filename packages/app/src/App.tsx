@@ -50,6 +50,9 @@ import { useHapticsConfig } from "./components/TouchOverlay/useHapticsConfig";
 // rispetta il valore per decidere se impostare `autoStartFromLibrary` (flag di
 // auto-avvio della selezione corrente) a true o false.
 import { useAutoStartConfig } from "./components/Settings/useAutoStartConfig";
+// TSK-132 (ADR-009 §4) — StubRtcBridge per e2e EP-019: bridge RTC deterministico
+// usato quando il URL param ?rtcPlatform è presente in stub mode.
+import { StubRtcBridge } from "./core/stub-engine"; // StubRtcBridge: e2e-only, see stub-engine.ts
 
 // TSK-025 (ADR-005): selezione engine. Default ENGINE REALE per-piattaforma via
 // registry (l'utente che apre la webapp vuole emulare davvero). Lo StubEngine
@@ -62,6 +65,16 @@ const engineParam =
     : null;
 const STUB_ENGINE = engineParam === "stub" || import.meta.env.MODE === "test";
 const REAL_ENGINE = !STUB_ENGINE;
+
+// TSK-132 (EP-019 / ADR-009 §4) — Piattaforma RTC iniettata via URL param
+// `?rtcPlatform=<platform>` in stub mode. Usato esclusivamente dagli e2e di
+// EP-019 per rendere visibile la `RtcSection` in Settings senza un bridge reale.
+// Solo attivo con STUB_ENGINE: in produzione (engine reale) questo param è
+// ignorato (il wiring arriverà con i bridge concreti Sprint 16).
+const E2E_RTC_PLATFORM =
+  STUB_ENGINE && typeof location !== "undefined"
+    ? new URLSearchParams(location.search).get("rtcPlatform") ?? undefined
+    : undefined;
 
 // TSK-055 — Bundle storage+config selezionato a runtime una sola volta a
 // modulo-load. Su web/mobile coincide con i singleton storici IndexedDB
@@ -297,6 +310,17 @@ function AppContent({
   config: AdapterBundle["config"];
 }) {
   const stub = useMemo(() => new StubEngine(), []);
+
+  // TSK-132 (EP-019 / ADR-009 §4) — bridge RTC stub per e2e: creato solo se
+  // `E2E_RTC_PLATFORM` è valorizzato (URL param `?rtcPlatform=<platform>` in
+  // stub mode). Singleton stabile per tutta la vita di AppContent (useMemo senza
+  // deps: il valore del param è costante per sessione). In produzione vale `null`
+  // e Settings non renderizza RtcSection (prop `rtcBridge` non passata).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stubRtcBridge = useMemo(
+    () => (E2E_RTC_PLATFORM ? new StubRtcBridge() : null),
+    [],
+  );
   const [profile, setProfile] = useState<KeyProfile>(DEFAULT_KEY_PROFILE);
   const [selected, setSelected] = useState<RomRecord | null>(null);
   const [refresh, setRefresh] = useState(0);
@@ -725,6 +749,12 @@ function AppContent({
                 setAutoStartPreference(value);
                 await saveAutoStartFromLibrary(value);
               }}
+              // TSK-132 (EP-019 / ADR-009 §4) — wiring RTC per e2e stub mode.
+              // In produzione entrambe le prop sono `undefined` → RtcSection non resa.
+              // Con ?rtcPlatform=<platform> in stub mode: RtcSection visibile se
+              // la piattaforma ha RTC (hasRtc("gbc") = true, hasRtc("gba") = false).
+              rtcPlatform={E2E_RTC_PLATFORM}
+              rtcBridge={stubRtcBridge ?? undefined}
             />
           </div>
         </div>

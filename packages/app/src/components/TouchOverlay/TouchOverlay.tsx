@@ -438,7 +438,7 @@ function TouchOverlayConfigPanel({
   };
 
   // TSK-114 — id stabile per aria-labelledby del wrapper.
-  const panelHeadingId = "sb-touch-config-panel-heading";
+  const panelHeadingId = "sb-touch-config-heading";
 
   return (
     <div
@@ -456,7 +456,7 @@ function TouchOverlayConfigPanel({
         tabIndex={-1}
         style={{ margin: 0, outline: "none" }}
       >
-        Configura overlay
+        Configurazione overlay touch
       </h3>
 
       {/* Opacità */}

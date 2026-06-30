@@ -6,6 +6,7 @@
 // NOTA (onestà): non verificato a runtime in questo repo (manca una ROM GBA libera
 // per gli specifici flussi di save). L'adapter segue l'API documentata
 // (dist/mgba.d.ts); validare con e2e quando disponibile (vedi public/test-roms/README.md).
+import type { RtcBridge } from "../domain/rtc-service";
 import type {
   AudioSettings,
   EmulatorEngine,
@@ -73,6 +74,12 @@ export class MgbaEngine implements EmulatorEngine {
     saveStates: true,
     sram: true,
   };
+
+  // ADR-009: bridge concreto (MgbaRtcBridge) pianificato Sprint 16 — stub
+  // null mantiene flusso best-effort no-op in GameSession persist/restore
+  // (TSK-128, ADR-009 §4).
+  readonly rtcBridge: RtcBridge | null = null;
+
   private module: MgbaModule | null = null;
   /** Path del file rom caricato (serve a derivare il nome del save state file). */
   private gameFileName: string | null = null;
