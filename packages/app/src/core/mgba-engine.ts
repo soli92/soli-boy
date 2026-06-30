@@ -7,6 +7,7 @@
 // per gli specifici flussi di save). L'adapter segue l'API documentata
 // (dist/mgba.d.ts); validare con e2e quando disponibile (vedi public/test-roms/README.md).
 import type { RtcBridge } from "../domain/rtc-service";
+import { MgbaRtcBridge } from "./mgba-rtc-bridge";
 import type {
   AudioSettings,
   EmulatorEngine,
@@ -75,10 +76,12 @@ export class MgbaEngine implements EmulatorEngine {
     sram: true,
   };
 
-  // ADR-009: bridge concreto (MgbaRtcBridge) pianificato Sprint 16 — stub
-  // null mantiene flusso best-effort no-op in GameSession persist/restore
-  // (TSK-128, ADR-009 §4).
-  readonly rtcBridge: RtcBridge | null = null;
+  // TSK-134 / ADR-009 §4 — bridge concreto inizializzato in `load()` dopo
+  // `loadGame()`, quando il filesystem virtuale mGBA contiene la ROM (header
+  // ROM 0xAC..0xAF leggibile per la detection Opzione A). Resta `null` finché
+  // la ROM non è caricata: `GameSession` (persist/restore) degrada a no-op
+  // silenzioso (best-effort by-spec, ADR-009 §4).
+  rtcBridge: RtcBridge | null = null;
 
   private module: MgbaModule | null = null;
   /** Path del file rom caricato (serve a derivare il nome del save state file). */
@@ -101,6 +104,10 @@ export class MgbaEngine implements EmulatorEngine {
     const ok = this.module.loadGame(`${this.module.filePaths().gamePath}/${name}`);
     if (!ok) throw new Error("MgbaEngine.load: loadGame fallito.");
     this.gameFileName = name;
+    // TSK-134 / ADR-009 §4: bridge RTC concreto inizializzato dopo loadGame
+    // (gameName è popolato da mGBA in loadGame → necessario per la detection
+    // Opzione A via header ROM e per il path del save state).
+    this.rtcBridge = new MgbaRtcBridge(this.module);
   }
 
   start(): void {
@@ -116,6 +123,10 @@ export class MgbaEngine implements EmulatorEngine {
     this.module?.quitGame();
     this.module = null;
     this.gameFileName = null;
+    // TSK-134 / ADR-009 §4: il bridge RTC è legato al modulo mGBA — quando il
+    // modulo viene rilasciato, anche il bridge torna a `null` (coerente con
+    // il pattern best-effort: nessuna ROM caricata ↔ nessun RTC accessibile).
+    this.rtcBridge = null;
   }
 
   setAudio(settings: AudioSettings): void {

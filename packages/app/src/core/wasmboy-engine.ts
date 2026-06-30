@@ -4,6 +4,7 @@
 // TSK-030 (ADR-006) — esteso con snapshot/restore + SRAM (US-016/US-017).
 import { WasmBoy, type WasmBoyJoypadState, type WasmBoySaveState } from "wasmboy";
 import type { RtcBridge } from "../domain/rtc-service";
+import { WasmBoyRtcBridge } from "./wasmboy-rtc-bridge";
 import type {
   AudioSettings,
   EmulatorEngine,
@@ -45,10 +46,16 @@ export class WasmBoyEngine implements EmulatorEngine {
     sram: true,
   };
 
-  // ADR-009: bridge concreto (WasmBoyRtcBridge) pianificato Sprint 16 — stub
-  // null mantiene flusso best-effort no-op in GameSession persist/restore
-  // (TSK-128, ADR-009 §4).
-  readonly rtcBridge: RtcBridge | null = null;
+  // TSK-133 / ADR-009 §4: bridge MBC3 ↔ RtcState. Inizializzato in `load()`
+  // dopo `WasmBoy.loadROM(bytes)` quando l'header ROM byte 0x0147 è noto.
+  // Resta `null` finché nessuna ROM è caricata: `GameSession` (TSK-128) e
+  // `SaveService` (TSK-129) trattano il null come no-op silenzioso (ADR-009 §4
+  // "best-effort, no-op tolerance"). Per cartucce non-MBC3+RTC il bridge è
+  // istanziato ma `hasRtc()` ritorna false: stessa semantica no-op a valle.
+  private _rtcBridge: RtcBridge | null = null;
+  get rtcBridge(): RtcBridge | null {
+    return this._rtcBridge;
+  }
 
   private configured = false;
   private joypad: WasmBoyJoypadState = {};
@@ -78,6 +85,13 @@ export class WasmBoyEngine implements EmulatorEngine {
     this.configured = true;
     const bytes = new Uint8Array(await opts.rom.arrayBuffer());
     await WasmBoy.loadROM(bytes);
+    // TSK-133 / ADR-009 §4: inizializza il bridge RTC concreto. `hasRtc()`
+    // ispeziona il byte header `0x0147` (MBC3+TIMER+BATTERY 0x0F o
+    // MBC3+TIMER+RAM+BATTERY 0x10 → true; altrimenti false / no-op).
+    // Guard difensivo su buffer troppo corto (ROM patologica): in quel caso
+    // resta `null` e il flow downstream si comporta come prima del TSK-133.
+    this._rtcBridge =
+      bytes.length > 0x0147 ? new WasmBoyRtcBridge(WasmBoy, bytes[0x0147]) : null;
   }
 
   start(): void {
