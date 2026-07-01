@@ -58,6 +58,19 @@ Tutto il resto del protocollo (Fasi 1-5) usa `resolved_code_path` e `resolved_vc
 posto del legacy `code_path` + `vcs`. La citazione codice nei dev-agent (§6) usa il
 prefisso appropriato in base a `resolved_vcs.mode`.
 
+### Step 2-ter — Branch alignment gate (opt-in, EP-034 v2.25, PATTERN §15 §Branch Awareness Layer)
+
+Gate **pre-dispatch** attivo **solo se** `resolved_vcs.branch_awareness.enabled: true` AND
+`dispatch_gate ≠ off`, e **solo** per `resolved_vcs.mode ∈ {submodule, sibling}`. Altrimenti
+no-op (R.B10) → salta a Fase 1. (Su `mode: monorepo` come questa factory è sempre no-op.)
+
+1. Calcola `expected_branch` via `branch-resolver` (R.B9).
+2. Stato reale read-only (R.B7): submodule non init → STOP `git submodule update --init`;
+   branch via `symbolic-ref` (fallisce = detached).
+3. Mismatch (detached o branch ≠ expected) → azione secondo `dispatch_gate`: `block` = STOP con
+   comando esatto; `warn` = WARNING + procede; `auto_align: propose` = propone `git checkout`
+   sotto gate umano (mai auto, R.B8).
+
 ## Fase 1 — Preparazione contesto
 
 1. Leggi la US riferita dal TSK (path deducibile: `EP-XXX-*/US-YYY-*/US-YYY.md`).

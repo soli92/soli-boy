@@ -458,6 +458,19 @@ heal_eligible_categories: [broken-wikilink, missing-frontmatter-field, citation-
 - [WARNING][orphan-pending-clarification] management/kanban/.../US-024.md: `pending_clarification: [Q_005]` ma nessun ADR cita Q_005.
 ```
 
+## Check 4ah — Branch Awareness config coherence (WARNING, opt-in — EP-034)
+
+**Trigger**: solo se `factory.config.yaml` contiene un blocco `vcs.branch_awareness` (top-level
+o `code_paths[i].vcs`). Assente → skip silenzioso (R.B10). **Severità**: WARNING (non blocca).
+
+1. Enum: `dispatch_gate ∈ {off, warn, block}`; `auto_align ∈ {off, propose}`; flag booleani.
+2. Se `preflight: true` O `dispatch_gate != off` O `drift_check: true` ma `enabled: false` →
+   WARNING `[Check 4ah] sotto-flag attivo con enabled: false (no-op, R.B10)`.
+3. Se `enabled: true` ma `vcs.mode ∈ {monorepo, external, none}` → INFO `[Check 4ah] degenere su mode <X>`.
+4. `.factory-branches.yaml` con target non in `code_paths[].name` → WARNING `[Check 4ah] target <X> non in code_paths`.
+
+Read-only (coerente R.B7); solo WARNING/INFO; skip a blocco assente (R.B10).
+
 ## Log entry
 
 Append a `wiki/log.md` secondo `wiki-log-entry` (template `lint`).

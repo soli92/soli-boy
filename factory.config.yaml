@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.24"   # bump 2.21→2.24 (2026-06-26): upgrade a v2.23 (Semantic Drift Detection EP-031) + v2.24 (Runtime Contextual Suggestions EP-033).
+pattern_version: "2.25"   # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01): upgrade a v2.25 (VCS Branch Awareness Layer EP-034, opt-in). Nota: monorepo → EP-034 degenere (single-HEAD).
 
 owner: soli92
 language: it
@@ -33,6 +33,14 @@ code_paths:
       remote_url: ""
       branch_strategy: shared
       commit_coupling: float
+      # Branch Awareness Layer (v2.25 EP-034, opt-in — PATTERN §15). Default off (R.B10).
+      # monorepo = single-HEAD → layer degenere (nessun submodule); chiavi documentate.
+      branch_awareness:
+        enabled: false
+        preflight: false
+        dispatch_gate: off      # off | warn | block
+        auto_align: off         # off | propose (mai checkout silente, R.B8)
+        drift_check: false
 
 # Legacy single-repo (non usato — code_paths valorizzato)
 code_path: ""

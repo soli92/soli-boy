@@ -39,6 +39,7 @@ Dashboard + episodic memory + operazioni `/promote` e `/run` + **parallel schedu
   - `factory.config.yaml.scheduler.enabled: true` (default)
   - ci sono ≥ 2 TSK con `status: todo`, `consumer: agent`, dipendenze risolte
 - Log entry: vedi `wiki-log-entry`
+- **VCS Branch Preflight (EP-034, v2.25, opt-in)**: vedi sezione omonima in fondo
 - **Fase 6 — Capability Relevance Check (EP-033, v2.24)**: vedi sezione omonima in fondo
 
 ## Regole
@@ -208,6 +209,16 @@ direttamente.
 Cross-link: [ADR-020](../../design_&_architecture/decisions/ADR-020.md),
 [ADR-019](../../design_&_architecture/decisions/ADR-019.md),
 [US-030](../../management/kanban/EP-008-ux-ui-review-design-capability/US-030-agenti-distinti-ux-ui-reviewer-ui-designer/US-030.md).
+
+## VCS Branch Preflight (opt-in, EP-034 v2.25)
+
+Gate **informativo read-only** che rende visibile lo stato branch/HEAD dei target VCS prima
+del wave dispatch. Si attiva in `/run` solo se `vcs.branch_awareness.enabled: true` AND
+`preflight: true`; altrimenti no-op (R.B10). Invoca `vcs-preflight-protocol` (read-only, R.B7)
+e stampa la tabella stato (`target | mode | branch corrente | branch atteso | HEAD | drift |
+verdict`) con comando di remediation per ogni `ACTION`. Non blocca il dispatch (il blocco
+opt-in vive nel gate `dev-protocol` Fase 0). `/vcs-status` funziona sempre esplicitamente.
+Su questa factory (`mode: monorepo`, single-HEAD) il layer è degenere.
 
 ## Fase 6 — Capability Relevance Check (EP-033, v2.24)
 

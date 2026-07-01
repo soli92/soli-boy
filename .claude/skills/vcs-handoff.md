@@ -21,14 +21,25 @@ Branch logico per `vcs.mode` letto da `factory.config.yaml`.
 
 ## Fase 1 — Branch (solo `submodule` e `sibling`)
 
-Determina il branch target in base a `branch_strategy`:
+Determina il branch target invocando la skill **`branch-resolver`** (single source of truth
+dell'expected branch, EP-034 R.B9): passa `resolved_vcs`, `resolved_target_name` e il TSK
+corrente; ricevi `expected_branch` + `source`. Naming identico a quello mostrato da
+`/vcs-status` (nessuna logica divergente).
 
-- **`shared`**: usa il branch corrente. Se HEAD detached → STOP, segnala.
-- **`per-tsk`**: nome branch `tsk-<id-lowercase>-<slug-from-tsk-title>` (es. `tsk-042-add-login-endpoint`).
-  Se non esiste, propone `git checkout -b <branch>` → **gate umano** → esegui.
-  Se esiste e siamo già su quello → OK.
-  Se esiste ma siamo altrove → STOP, segnala potenziale conflitto.
-- **`per-sprint`**: nome `sprint-<NN>` (NN da frontmatter TSK `sprint:`). Stesso flow di `per-tsk`.
+Regola risolta da `branch-resolver` (dettaglio nella skill):
+- **`shared`**: `base_branch` se valorizzato, altrimenti branch corrente. Detached → STOP.
+- **`per-tsk`**: `tsk-<id-lowercase>-<slug-from-tsk-title>`.
+- **`per-sprint`**: `sprint-<NN>` (da frontmatter TSK `sprint:`).
+
+Applicazione: se non esiste → propone `git checkout -b <expected_branch>` (gate umano); se
+esiste e ci siamo → OK; se altrove → STOP (comando suggerito `git checkout <expected_branch>`,
+mai auto-checkout R.B8).
+
+### Drift check parent-ref vs submodule-HEAD (opt-in, solo `submodule`)
+
+Se `resolved_vcs.branch_awareness.drift_check: true`, prima del bump confronta il commit del
+parent (`git -C <root> ls-tree HEAD <submodule_path>`) con l'HEAD del submodule
+(`git -C <submodule_path> rev-parse HEAD`); se divergono → segnala + conferma umana (R.B7).
 
 ## Fase 2 — Procedura per mode
 

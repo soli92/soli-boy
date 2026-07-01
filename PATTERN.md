@@ -1,4 +1,4 @@
-# PATTERN — Agentic Factory `llm-wiki++` v2.24
+# PATTERN — Agentic Factory `llm-wiki++` v2.25
 
 > Contratto universale agent-agnostic. Qualsiasi runtime (Claude Code, OpenAI Assistants,
 > Cursor, Aider, Gemini, ChatGPT, …) che rispetti questo file può operare sul repo. Gli
@@ -8,7 +8,7 @@
 
 ## §0 — Identità & versione
 <!-- profiles: minimal, standard, full -->
-Pattern version: **2.20**.
+Pattern version: **2.25**.
 Origine: llm-wiki (Karpathy) + estensione PM/Arch + memory tree cross-conversazione + adapter `thin agents, fat skills` + execution layer L5 + topology + stack modes + VCS integration + sync adapters multi-sorgente (PDF, Figma, **repo esistenti**, **knowledge graph**) + publisher adapters multi-target (GitHub, GitLab, Jira, Linear, …) + parallel scheduler basato su DAG di dipendenze frontmatter + code quality review layer post-Develop con ruleset evolutivo stack-aware + multi-adapter scaffolding parallelo via registry manifest (v2.13) + **compression layer a due assi opt-in (output via Caveman, context via Graphify), consolidato in v2.15 con gate empirici Fase 1.5/3a riformulati come opt-in deferred (eseguibili a discrezione del derivatore su factory candidata, non bloccanti per il consolidamento)** + **FE Visual Oracle Integration opt-in (v2.17): variante Develop FE «Visual Verification» via skill `visual-oracle-protocol` + comando `/visual-oracle` + State Matrix nel DoD FE + ordering develop→visual-oracle→review; tutto opt-in via `factory.config.yaml.fe_correctness`, niente nuova invariante §7** + **A11y + UX/UI Integration opt-in (v2.18, EP-007/EP-008): capability `a11y` (Accessibility Testing WCAG 2.2 AA via tool `run_a11y_scan` + skill `accessibility-testing-protocol`) e `ux_ui` (Review & Design via `ux-ui-review-protocol` + `ux-ui-design-protocol`), ordering develop→visual-oracle→ux-ui-review→code-review** + **Task Analytics opt-in (v2.18, EP-009/EP-010): operazioni canoniche autonome di misurazione (`/analytics`) e stima (`/estimate`) costi/tempi; tutto opt-in via `factory.config.yaml.{a11y,ux_ui,analytics}`, niente nuova invariante §7** + **Hardening & Sustainability (v2.19, EP-012..017): §22 Release Governance (battle-test forcing function — gate `/release` + skill `release-validation-gate`, nessun tag senza ≥N RUN-REPORT validi, ADR-032..037) + §23 Complexity Budget & Deprecations (regola N:1, profili di adozione) + EP-013 Analytics Dogfooding (il framework si auto-misura, hook SessionEnd) + ADR-062 (criterio "run esterno denso") + ADR-063 (anti-fabbricazione review visiva, fail-loud su evidenza mancante); §22/§23 governance meta non scaffoldate in factory derivate (ADR-033 §C), niente nuova invariante §7 (resta 18)** + **FE Functional Oracle opt-in (v2.20, EP-018): operazione opzionale «Functional Oracle» che *esercita* il flusso reale dell'app (serve → fixture → interazione Playwright → asserzioni domain-agnostic → verdict deterministico, critic LLM solo advisory) — complementare a Visual Oracle (osserva il render) e UX/UI Review (giudica l'aspetto); chiude il failure mode «renderizza ma non funziona». Skill `functional-oracle-protocol` + `interaction-drive-protocol` + comando `/functional-oracle` + schema `acceptance-spec` (framework possiede schema+engine, progetto possiede contenuto) + dominio scheduler `functional-oracle`; tutto opt-in via `factory.config.yaml.fe_correctness.functional_oracle`, niente nuova invariante §7 (resta 18), ADR-065/066/067**.
 Scope: knowledge-base eseguibile **e** (opzionale) produzione codice tramite dev-agent o consumo umano dei task; integrazione esplicita con git per layout monorepo/submodule/sibling/external; ingestione L1 da fonti eterogenee tramite sub-agent Sync dedicati (incluso reverse-engineering di repo esistenti via `repo-sync`); pubblicazione opzionale di L3/L4 su tool esterni di project tracking tramite sub-agent Publisher (provider-agnostic); orchestrazione parallela di operazioni indipendenti sui livelli L1→L5 con safety-by-default (single-committer e conflict detection su `code_path`); valutazione qualitativa del codice prodotto a valle di Develop (idiomaticità, design, robustezza) tramite Code Reviewer opzionale con loop evaluator-optimizer bounded.
 Progetto host: **Soli Multi-Agents Factory** (`owner: soli92`, `language: it`).
@@ -984,6 +984,23 @@ Solo per `submodule` e `sibling`:
 - **Mai `git clone`** automatico al bootstrap per `sibling`: stampa istruzioni, l'umano cloni.
 - **Mai `--force` / `--no-verify`** in nessun caso.
 - **Mai modificare `.gitmodules`** o `.factory-lock` fuori da `vcs-handoff`.
+
+### Branch Awareness Layer (v2.25, EP-034, opt-in)
+
+Rende preciso e visibile «su quale branch sto / su quale devo stare» nei progetti multi-repo/
+**submodule** (problema dei due HEAD: parent gitlink → detached HEAD + branch submodule
+indipendente + drift parent-ref vs submodule-HEAD). Ciclo **declare → inspect → align**, tutto
+opt-in (default off, R.B10; su `mode: monorepo` il layer è degenere ma ammesso).
+
+- **Declare**: skill `branch-resolver` (expected branch, single source of truth R.B9) +
+  `vcs.base_branch` + manifest `.factory-branches.yaml`.
+- **Inspect**: skill `vcs-preflight-protocol` (snapshot read-only R.B7) + comando `/vcs-status` +
+  tabella dashboard `/run`.
+- **Align**: gate `dev-protocol` Fase 0 (`dispatch_gate: off|warn|block`, `auto_align: propose`,
+  mai checkout silente R.B8) + `vcs-handoff` Fase 1 usa `branch-resolver` + `drift_check` opt-in.
+
+Invarianti locali §15 R.B7-R.B10. Config `vcs.branch_awareness` (default off). Nessuna nuova
+invariante §7. ADR-EP034-001 GO.
 
 ## §16 — Sync adapters (multi-source L1, v2.9, esteso v2.14 Fase 2)
 <!-- profiles: standard, full -->
