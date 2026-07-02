@@ -29,6 +29,15 @@ export async function waitForAppBoot(page: Page): Promise<void> {
   });
 }
 
+/** Chiude il banner privacy se visibile (IDB pulito → primo avvio). */
+export async function dismissPrivacyBannerIfVisible(page: Page): Promise<void> {
+  const banner = page.getByTestId("sb-privacy-banner");
+  if (await banner.isVisible().catch(() => false)) {
+    await page.getByRole("button", { name: /ho capito/i }).click();
+    await expect(banner).not.toBeVisible();
+  }
+}
+
 export async function openInfoPrivacyTab(page: Page): Promise<void> {
   await page.getByRole("tab", { name: INFO_PRIVACY_TAB }).click();
   await expect(page.locator('[data-testid="panel-info"]')).toBeVisible();
@@ -74,6 +83,7 @@ export async function uploadRom(page: Page, files: RomUpload): Promise<void> {
 export async function openSettingsTab(page: Page): Promise<void> {
   await page.getByRole("tab", { name: "Impostazioni" }).click();
   await expect(page.locator('[data-testid="panel-settings"]')).toBeVisible();
+  await dismissPrivacyBannerIfVisible(page);
 }
 
 /** Apre l'accordion "Controlli — rimappatura" (chiuso di default in Settings).
