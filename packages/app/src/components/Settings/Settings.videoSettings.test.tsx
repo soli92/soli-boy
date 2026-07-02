@@ -1,11 +1,7 @@
 // TSK-036 — Test Settings: scala + aspect ratio (US-021).
-// Verifica:
-// - Esposizione dei controlli (scala + aspect) come elementi accessibili.
-// - Cambio scala/aspect invoca onVideoSettingsChange in modalità controllata.
-// - In modalità auto-gestita (con `videoConfigPort`), il valore caricato dalla
-//   porta è riapplicato al mount; il cambio invoca `port.save(next)`.
+// TSK-150 (EP-020) — Select Radix al posto dei <select> nativi.
 
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_KEY_PROFILE } from "../../domain/input-mapping";
 import type {
@@ -13,6 +9,7 @@ import type {
   VideoSettingsPort,
 } from "../Player/useVideoSettings";
 import { Settings } from "./Settings";
+import { openRadixSelect, pickRadixSelectOption } from "../../test-radix-select";
 
 function makePort(initial: VideoSettings | null = null): VideoSettingsPort & {
   load: ReturnType<typeof vi.fn>;
@@ -24,29 +21,35 @@ function makePort(initial: VideoSettings | null = null): VideoSettingsPort & {
   };
 }
 
+function openSelect(label: string | RegExp) {
+  return openRadixSelect(label);
+}
+
 describe("Settings — Resa video (TSK-036 / US-021)", () => {
   it("espone i controlli fattore di scala e aspect ratio con default", () => {
     render(
       <Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} />,
     );
-    const scaleSel = screen.getByLabelText("Fattore di scala") as HTMLSelectElement;
-    const aspectSel = screen.getByLabelText("Aspect ratio") as HTMLSelectElement;
-    // Default: scale=2 (emulator-first, TSK-086), aspect=original.
-    expect(scaleSel.value).toBe("2");
-    expect(aspectSel.value).toBe("original");
-    // Le opzioni includono i fattori 1x..5x e gli aspect richiesti.
-    expect(
-      Array.from(scaleSel.options).map((o) => o.value),
-    ).toEqual(["auto", "1", "2", "3", "4", "5"]);
-    expect(
-      Array.from(aspectSel.options).map((o) => o.value),
-    ).toEqual(["original", "4:3", "stretch"]);
+    const scaleTrigger = screen.getByLabelText("Fattore di scala");
+    const aspectTrigger = screen.getByLabelText("Aspect ratio");
+    expect(scaleTrigger).toHaveTextContent("2x");
+    expect(aspectTrigger).toHaveTextContent("Originale");
+
+    openSelect("Fattore di scala");
+    expect(screen.getByRole("option", { name: "Adatta" })).toBeInTheDocument();
+    for (const factor of ["1x", "2x", "3x", "4x", "5x"]) {
+      expect(screen.getByRole("option", { name: factor })).toBeInTheDocument();
+    }
+    fireEvent.keyDown(document.body, { key: "Escape" });
+
+    openSelect("Aspect ratio");
+    expect(screen.getByRole("option", { name: "Originale" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "4:3" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Stretch" })).toBeInTheDocument();
   });
 
-  it("modalità controllata: il cambio scala/aspect invoca onVideoSettingsChange", () => {
+  it("modalità controllata: il cambio scala/aspect invoca onVideoSettingsChange", async () => {
     const onChange = vi.fn();
-    // TSK-037: il campo `filter` è ora parte di `VideoSettings`. I cambi su
-    // scala/aspect devono preservarlo (spread su `effective`).
     const current: VideoSettings = {
       scale: "auto",
       aspect: "original",
@@ -61,18 +64,14 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Fattore di scala"), {
-      target: { value: "3" },
-    });
+    await pickRadixSelectOption("Fattore di scala", "3x");
     expect(onChange).toHaveBeenLastCalledWith({
       scale: 3,
       aspect: "original",
       filter: "nearest",
     });
 
-    fireEvent.change(screen.getByLabelText("Aspect ratio"), {
-      target: { value: "4:3" },
-    });
+    await pickRadixSelectOption("Aspect ratio", "4:3");
     expect(onChange).toHaveBeenLastCalledWith({
       scale: "auto",
       aspect: "4:3",
@@ -91,34 +90,21 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
       />,
     );
 
-    // load invocata al mount.
     expect(port.load).toHaveBeenCalledOnce();
 
-    // Attendiamo l'hydration: i select riflettono i valori salvati.
     await waitFor(() => {
-      const scale = screen.getByLabelText("Fattore di scala") as HTMLSelectElement;
-      const aspect = screen.getByLabelText("Aspect ratio") as HTMLSelectElement;
-      expect(scale.value).toBe("4");
-      expect(aspect.value).toBe("4:3");
+      expect(screen.getByLabelText("Fattore di scala")).toHaveTextContent("4x");
+      expect(screen.getByLabelText("Aspect ratio")).toHaveTextContent("4:3");
     });
 
-    // Modifica → save invocata con il nuovo valore.
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("Fattore di scala"), {
-        target: { value: "2" },
-      });
-    });
+    await pickRadixSelectOption("Fattore di scala", "2x");
     expect(port.save).toHaveBeenLastCalledWith({
       scale: 2,
       aspect: "4:3",
       filter: "nearest",
     });
 
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("Aspect ratio"), {
-        target: { value: "stretch" },
-      });
-    });
+    await pickRadixSelectOption("Aspect ratio", "Stretch");
     expect(port.save).toHaveBeenLastCalledWith({
       scale: 2,
       aspect: "stretch",
@@ -136,9 +122,7 @@ describe("Settings — Resa video (TSK-036 / US-021)", () => {
       />,
     );
     await waitFor(() => expect(port.load).toHaveBeenCalled());
-    const scale = screen.getByLabelText("Fattore di scala") as HTMLSelectElement;
-    const aspect = screen.getByLabelText("Aspect ratio") as HTMLSelectElement;
-    expect(scale.value).toBe("2");
-    expect(aspect.value).toBe("original");
+    expect(screen.getByLabelText("Fattore di scala")).toHaveTextContent("2x");
+    expect(screen.getByLabelText("Aspect ratio")).toHaveTextContent("Originale");
   });
 });

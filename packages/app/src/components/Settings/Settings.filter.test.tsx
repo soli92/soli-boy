@@ -1,14 +1,7 @@
 // TSK-037 — Test Settings: select "Filtro" (US-022).
-// Verifica:
-// - Presenza e accessibilità del select "Filtro" con le tre opzioni.
-// - Default = nearest quando non c'è valore persistito né prop controllata.
-// - Modalità controllata: cambio del filtro invoca onVideoSettingsChange.
-// - Auto-gestito con porta: il valore caricato viene mostrato; il cambio
-//   invoca port.save con il nuovo `filter` (e preserva scale/aspect).
-// - Backward-compat: porta che ritorna un valore legacy (senza `filter`) →
-//   il select mostra il default `nearest`.
+// TSK-150 (EP-020) — Select Radix al posto dei <select> nativi.
 
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_KEY_PROFILE } from "../../domain/input-mapping";
 import type {
@@ -16,6 +9,7 @@ import type {
   VideoSettingsPort,
 } from "../Player/useVideoSettings";
 import { Settings } from "./Settings";
+import { openRadixSelect, pickRadixSelectOption } from "../../test-radix-select";
 
 function makePort(initial: VideoSettings | null = null): VideoSettingsPort & {
   load: ReturnType<typeof vi.fn>;
@@ -27,24 +21,26 @@ function makePort(initial: VideoSettings | null = null): VideoSettingsPort & {
   };
 }
 
+function openSelect(label: string | RegExp) {
+  return openRadixSelect(label);
+}
+
 describe("Settings — Filtro (TSK-037 / US-022)", () => {
   it("espone un select Filtro accessibile con le tre opzioni base", () => {
     render(
       <Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} />,
     );
-    // AC US-022 #1: deve essere selezionabile almeno nearest/smoothing/scanline.
-    const filterSel = screen.getByLabelText(/filtro video/i) as HTMLSelectElement;
-    expect(filterSel).toBeInTheDocument();
-    expect(Array.from(filterSel.options).map((o) => o.value)).toEqual([
-      "nearest",
-      "smoothing",
-      "scanline",
-    ]);
-    // Default: nearest (resa tipica pixel-art).
-    expect(filterSel.value).toBe("nearest");
+    const filterTrigger = screen.getByLabelText(/filtro video/i);
+    expect(filterTrigger).toBeInTheDocument();
+    expect(filterTrigger).toHaveTextContent("Nearest");
+
+    openSelect(/filtro video/i);
+    expect(screen.getByRole("option", { name: "Nearest" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Smoothing" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Scanline" })).toBeInTheDocument();
   });
 
-  it("modalità controllata: il cambio filtro invoca onVideoSettingsChange preservando scale/aspect", () => {
+  it("modalità controllata: il cambio filtro invoca onVideoSettingsChange preservando scale/aspect", async () => {
     const onChange = vi.fn();
     const current: VideoSettings = {
       scale: 2,
@@ -60,18 +56,14 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/filtro video/i), {
-      target: { value: "scanline" },
-    });
+    await pickRadixSelectOption(/filtro video/i, "Scanline");
     expect(onChange).toHaveBeenLastCalledWith({
       scale: 2,
       aspect: "4:3",
       filter: "scanline",
     });
 
-    fireEvent.change(screen.getByLabelText(/filtro video/i), {
-      target: { value: "smoothing" },
-    });
+    await pickRadixSelectOption(/filtro video/i, "Smoothing");
     expect(onChange).toHaveBeenLastCalledWith({
       scale: 2,
       aspect: "4:3",
@@ -91,15 +83,10 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
 
     expect(port.load).toHaveBeenCalledOnce();
     await waitFor(() => {
-      const sel = screen.getByLabelText(/filtro video/i) as HTMLSelectElement;
-      expect(sel.value).toBe("scanline");
+      expect(screen.getByLabelText(/filtro video/i)).toHaveTextContent("Scanline");
     });
 
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText(/filtro video/i), {
-        target: { value: "smoothing" },
-      });
-    });
+    await pickRadixSelectOption(/filtro video/i, "Smoothing");
     expect(port.save).toHaveBeenLastCalledWith({
       scale: "auto",
       aspect: "original",
@@ -119,14 +106,9 @@ describe("Settings — Filtro (TSK-037 / US-022)", () => {
     );
 
     await waitFor(() => {
-      const sel = screen.getByLabelText(/filtro video/i) as HTMLSelectElement;
-      // Il default è stato applicato dal merge in `useVideoSettings`.
-      expect(sel.value).toBe("nearest");
-      // scale/aspect dal valore legacy sono preservati.
-      const scaleSel = screen.getByLabelText("Fattore di scala") as HTMLSelectElement;
-      const aspectSel = screen.getByLabelText("Aspect ratio") as HTMLSelectElement;
-      expect(scaleSel.value).toBe("3");
-      expect(aspectSel.value).toBe("4:3");
+      expect(screen.getByLabelText(/filtro video/i)).toHaveTextContent("Nearest");
+      expect(screen.getByLabelText("Fattore di scala")).toHaveTextContent("3x");
+      expect(screen.getByLabelText("Aspect ratio")).toHaveTextContent("4:3");
     });
   });
 });

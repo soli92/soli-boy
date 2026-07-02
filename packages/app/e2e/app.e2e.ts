@@ -83,8 +83,9 @@ test("file non supportato mostra errore e non entra in libreria", async ({ page 
 test("Settings: rimappatura comando (US-013)", async ({ page }) => {
   await openSettingsTab(page);
   await openControlsRemapAccordion(page);
-  const sel = page.getByLabel("Pulsante per ArrowUp");
-  await expect(sel).toHaveValue("up");
-  await sel.selectOption("a");
-  await expect(sel).toHaveValue("a");
+  const trigger = page.getByLabel("Pulsante per ArrowUp");
+  await expect(trigger).toContainText("UP");
+  await trigger.click();
+  await page.getByRole("option", { name: "A" }).click();
+  await expect(trigger).toContainText("A");
 });
