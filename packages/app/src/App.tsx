@@ -142,13 +142,13 @@ type Tab = (typeof TABS)[number]["id"];
 function StorageInitErrorFallback({ error }: { error: Error }) {
   return (
     <main className="sb-app" role="alert" data-testid="sb-storage-init-error">
-      <header className="sd-flex sd-items-center sd-between">
+      <header className="flex items-center justify-between">
         <h1 className="sb-title sb-title--logo">
           <img className="sb-logo" src={logoUrl} alt="Soli-boy" />
         </h1>
       </header>
-      <p className="sb-note">{STORAGE_INIT_ERROR_MESSAGE}</p>
-      <p className="sb-note" data-testid="sb-storage-init-error-detail">
+      <p className="text-xs text-muted-foreground">{STORAGE_INIT_ERROR_MESSAGE}</p>
+      <p className="text-xs text-muted-foreground" data-testid="sb-storage-init-error-detail">
         {error.message}
       </p>
     </main>
@@ -408,7 +408,7 @@ function AppContent({
 
   return (
     <main className="sb-app">
-      <header className="sd-flex sd-items-center sd-between">
+      <header className="flex items-center justify-between">
         {/* a11y (EP-012 window A): h1 mantenuto per WCAG page-has-heading-one.
             Il nome accessibile dell'heading è fornito dall'alt dell'immagine
             del logo brand (sostituisce il testo "Soli-boy"). */}

@@ -34,10 +34,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-// TSK-148 (US-096 / EP-020) — RemoveRomConfirmDialog migrato a Radix AlertDialog:
-// Portal, focus trap, gestione Esc, backdrop overlay e ruolo ARIA `alertdialog`
-// sono forniti nativamente dalla primitiva (elimina la gestione manuale di
-// useRef+useEffect e le classi inline .sb-dialog / .sb-dialog-backdrop).
+// TSK-148 (US-096 / EP-020) — RemoveRomConfirmDialog migrato a Radix AlertDialog.
+// TSK-156 (EP-020 Wave D) — SaveStatePanel delete dialog migrato ad AlertDialog.
 // Il ruolo ARIA passa da "dialog" a "alertdialog": più corretto per una
 // conferma distruttiva (l'utente deve confermare prima di procedere) — coerente
 // con il pattern EP-020. Vedi Library.test.tsx per la coerenza dei query
@@ -251,37 +249,37 @@ export function Library({ storage, onSelect, activeRomId, onBeforeRemove }: Libr
   // fornisce l'accessible name all'<img> (role=img); l'alt NON è testo nodale
   // → non interferisce con getByText() degli e2e/test esistenti.
   const header = (
-    <header className="sd-flex sd-items-center sd-gap-md">
+    <header className="flex items-center gap-3">
       <img src={logoUrl} alt="Soli-boy" className="sb-app-logo" style={LOGO_STYLE} />
     </header>
   );
 
   if (error !== null)
     return (
-      <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+      <section aria-label="Libreria giochi" className="flex flex-col gap-3">
         {header}
-        <p className="sb-note" role="alert">
+        <p className="text-xs text-muted-foreground" role="alert">
           {error}
         </p>
       </section>
     );
   if (roms === null)
     return (
-      <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+      <section aria-label="Libreria giochi" className="flex flex-col gap-3">
         {header}
-        <p className="sb-note">Caricamento libreria…</p>
+        <p className="text-xs text-muted-foreground">Caricamento libreria…</p>
       </section>
     );
   if (roms.length === 0)
     return (
-      <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+      <section aria-label="Libreria giochi" className="flex flex-col gap-3">
         {header}
-        <p className="sb-note">Nessun gioco. Carica una ROM per iniziare.</p>
+        <p className="text-xs text-muted-foreground">Nessun gioco. Carica una ROM per iniziare.</p>
       </section>
     );
 
   return (
-    <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
+    <section aria-label="Libreria giochi" className="flex flex-col gap-3">
       {header}
       {/* TSK-147 — search + filter migrati a Input/Label + ToggleGroup Radix */}
       <div className="flex flex-wrap items-end gap-4">
@@ -327,13 +325,13 @@ export function Library({ storage, onSelect, activeRomId, onBeforeRemove }: Libr
       </div>
 
       {coverError !== null && (
-        <p className="sb-note" role="alert">
+        <p className="text-xs text-muted-foreground" role="alert">
           {coverError}
         </p>
       )}
 
       {filtered.length === 0 ? (
-        <p className="sb-note" role="status">
+        <p className="text-xs text-muted-foreground" role="status">
           Nessun risultato per i filtri selezionati.
         </p>
       ) : (

@@ -31,7 +31,7 @@ async function startGbaReal(page: import("@playwright/test").Page) {
   });
   await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible();
-  await expect(page.locator('.sb-app .sb-note[role="alert"]')).not.toBeVisible();
+  await expect(page.locator('.sb-app [role="alert"]')).not.toBeVisible();
 }
 
 test.describe("save/load state reale (MgbaEngine, GBA)", () => {
@@ -57,7 +57,7 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     // selectAdapter() lancia. Restringiamo il controllo all'errore del Player
     // (sb-storage-init-error non deve essere visibile) + nessun alert di Player.
     await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible();
-    await expect(page.locator('.sb-app .sb-note[role="alert"]')).not.toBeVisible();
+    await expect(page.locator('.sb-app [role="alert"]')).not.toBeVisible();
   });
 
   test("salva stato → carica stato: nessun errore, canvas resta visibile", async ({ page }) => {
@@ -80,7 +80,7 @@ test.describe("save/load state reale (MgbaEngine, GBA)", () => {
     // selectAdapter() lancia. Stessa strategia del test precedente: escludiamo
     // il fallback storage e verifichiamo solo gli alert di gioco/Player.
     await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.sb-app .sb-note[role="alert"]')).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('.sb-app [role="alert"]')).not.toBeVisible({ timeout: 5_000 });
     await expect(page.locator(".sb-screen canvas")).toBeVisible({ timeout: 5_000 });
   });
 });

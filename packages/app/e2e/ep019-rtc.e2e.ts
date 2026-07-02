@@ -406,7 +406,7 @@ test.describe("EP-019 RTC — persistenza e save-state (TSK-132)", () => {
 
     // Nessun errore UI dopo lo stop (niente alert, niente eccezioni visible).
     await expect(
-      page.locator('.sb-app .sb-note[role="alert"]'),
+      page.locator('.sb-app [role="alert"]'),
     ).not.toBeVisible();
     await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible();
   });
@@ -444,7 +444,7 @@ test.describe("EP-019 RTC — persistenza e save-state (TSK-132)", () => {
 
     // Nessun alert di errore.
     await expect(
-      page.locator('.sb-app .sb-note[role="alert"]'),
+      page.locator('.sb-app [role="alert"]'),
     ).not.toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId("sb-storage-init-error")).not.toBeVisible();
     // Screen ancora visibile e in stato running.

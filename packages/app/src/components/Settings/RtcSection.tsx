@@ -140,7 +140,7 @@ export function RtcSection({ platform, bridge }: RtcSectionProps) {
     <AccordionItem value="rtc" data-testid="sb-rtc-section">
       <AccordionTrigger>Orologio interno (RTC) — data e ora</AccordionTrigger>
       <AccordionContent>
-        <p className="sb-note">
+        <p className="text-xs text-muted-foreground">
           Imposta l'orologio interno della cartuccia. Valori espressi nel fuso
           orario locale del dispositivo.
         </p>
@@ -204,12 +204,12 @@ export function RtcSection({ platform, bridge }: RtcSectionProps) {
           Usa ora del dispositivo
         </Button>
         {confirmed && (
-          <p className="sb-note" role="status" data-testid="sb-rtc-confirmed">
+          <p className="text-xs text-muted-foreground" role="status" data-testid="sb-rtc-confirmed">
             Orologio interno impostato.
           </p>
         )}
         {syncNotice && (
-          <p className="sb-note" role="status" data-testid="sb-rtc-sync-notice">
+          <p className="text-xs text-muted-foreground" role="status" data-testid="sb-rtc-sync-notice">
             {syncNotice}
           </p>
         )}

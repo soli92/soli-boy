@@ -82,6 +82,7 @@ import {
 } from "@/components/ui/accordion";
 // TSK-150 (EP-020) — Form controls migrati a primitive solids/shadcn.
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
 import { Label } from "@/components/ui/label";
@@ -385,7 +386,8 @@ export function Settings({
   // apre singolarmente. `type="multiple"` consente più sezioni aperte insieme
   // (parità pre-migrazione: ogni <details> era indipendente).
   return (
-    <section className="sd-card sb-sec" aria-label="Impostazioni controlli">
+    <Card aria-label="Impostazioni controlli">
+      <CardContent className="pt-6">
       <Accordion
         type="multiple"
         defaultValue={["video"]}
@@ -435,7 +437,7 @@ export function Settings({
               Salva profilo
             </Button>
             {saved && (
-              <p className="sb-note" role="status">
+              <p className="text-xs text-muted-foreground" role="status">
                 Profilo salvato.
               </p>
             )}
@@ -607,7 +609,7 @@ export function Settings({
           <AccordionTrigger>Dati — salvataggi (export/import)</AccordionTrigger>
           <AccordionContent>
             <div
-              className="sd-flex sd-items-center sd-gap-sm mb-3"
+              className="flex items-center gap-2 mb-3"
               role="group"
               aria-label="Esporta e importa salvataggi"
               data-testid="sb-data-section"
@@ -677,13 +679,13 @@ export function Settings({
               // quando manca il SaveService, non un feedback contestuale. Mantenere
               // un role="status" qui creerebbe ambiguità con il messaggio "Profilo
               // salvato" (anch'esso role="status"): l'AT leggerebbe entrambi.
-              <p className="sb-note" data-testid="sb-data-unavailable">
+              <p className="text-xs text-muted-foreground" data-testid="sb-data-unavailable">
                 La gestione dei salvataggi non è disponibile.
               </p>
             )}
             {dataMessage && (
               <p
-                className="sb-note"
+                className="text-xs text-muted-foreground"
                 role={dataMessage.kind === "error" ? "alert" : "status"}
                 data-testid="sb-data-message"
               >
@@ -736,6 +738,7 @@ export function Settings({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-    </section>
+      </CardContent>
+    </Card>
   );
 }

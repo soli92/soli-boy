@@ -257,7 +257,7 @@ describe("SaveStatePanel — US-016 / US-018", () => {
       fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
     });
 
-    const dialog = await screen.findByRole("dialog", { name: /eliminare save state/i });
+    const dialog = await screen.findByRole("alertdialog", { name: /eliminare save state/i });
     expect(dialog).toBeInTheDocument();
 
     await act(async () => {
@@ -291,7 +291,7 @@ describe("SaveStatePanel — US-016 / US-018", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /elimina slot 1/i }));
     });
-    await screen.findByRole("dialog", { name: /eliminare save state/i });
+    await screen.findByRole("alertdialog", { name: /eliminare save state/i });
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /annulla/i }));

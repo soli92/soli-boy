@@ -1,10 +1,9 @@
 /* ============================================================================
-   Soli-boy — App skin (TSK-040).
+   Soli-boy — App skin (TSK-040 / TSK-156 EP-020).
    Design system REALE: @soli92/solids (importato in main.tsx prima di questo file).
-   Token semantici e temi (data-theme dark/cyberpunk) e utilities sd- arrivano dal
-   pacchetto reale. Qui restano SOLO: classi app sb-, le poche sd- usate dall'app e
-   non fornite dal pacchetto, e uno strato di scale token (:root) come fallback —
-   sovrascritto dal pacchetto reale quando presente.
+   Token semantici e temi (data-theme dark/cyberpunk) arrivano dal pacchetto reale.
+   Qui restano SOLO: token app-specific (:root), classi sb-* ancora referenziate dal
+   markup, e regole di posizionamento touch (D-pad / pulsanti A-B).
    ============================================================================ */
 
 
@@ -63,134 +62,49 @@ body{
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
 
 /* ============================================================================
-   SoliDS-style utility classes (sd-*) + Soli-boy component classes (sb-*)
+   Soli-boy component classes (sb-*) — solo ciò che resta dopo EP-020 Wave D
    ============================================================================ */
-.sd-flex{display:flex;}
-.sd-items-center{align-items:center;}
-.sd-between{justify-content:space-between;}
-.sd-center{justify-content:center;}
-.sd-gap-sm{gap:var(--sd-space-sm);}
-.sd-gap-md{gap:var(--sd-space-md);}
-.sd-wrap{flex-wrap:wrap;}
-
-.sd-card{
-  background:var(--sd-color-bg-surface);
-  border:1px solid var(--sd-color-border-muted);
-  border-radius:var(--sd-radius-lg);
-}
 
 /* app shell */
 .sb-app{max-width:1180px;margin:0 auto;padding:var(--sd-space-2xl) var(--sd-space-lg);}
-.sb-frame{padding:var(--sd-space-lg);}
 
-/* header */
+/* header / brand */
 .sb-logo{
   width:34px;height:34px;border-radius:var(--sd-radius-md);
   background:var(--sd-color-primary-subtle);color:var(--sd-color-primary-default);
   display:flex;align-items:center;justify-content:center;font-size:20px;
 }
 .sb-title{font-family:var(--sd-font-heading);font-weight:600;color:var(--sd-color-text-primary);}
-/* Header con logo brand: l'h1 fa da contenitore all'immagine (margin azzerato
-   così non aggiunge spazio attorno al logo). */
 .sb-title--logo{margin:0;line-height:0;}
 .sb-logo{display:block;height:40px;width:auto;max-width:200px;}
 
-/* buttons */
-/* TSK-144 (EP-020 Wave B P1) — rimozione DIFFERITA di .sb-btn / .sb-btn-primary
-   / .sb-icon / .sb-danger. Il TSK-144 prescrive la rimozione condizionata a
-   "grep-confirm che non siano usati altrove": la grep del 2026-07-02 ha rilevato
-   uso attivo in App.tsx, Settings.tsx, RtcSection.tsx, TouchOverlay.tsx,
-   FileLoader.tsx, Library.tsx, PrivacyNotice.tsx, UpdateBanner.tsx, e override
-   WCAG in app-extra.css. Player/SaveStatePanel migrati a Button shadcn; la
-   rimozione delle classi legacy avverrà in un TSK successivo di EP-020 quando
-   tutti i consumer saranno migrati (non è scope atomico di TSK-144). */
-.sb-btn{
-  font-family:var(--sd-font-body);font-size:14px;min-height:var(--sd-layout-touch-target-min);
-  padding:0 14px;border-radius:var(--sd-radius-md);
-  border:1px solid var(--sd-color-border-strong);background:var(--sd-color-bg-elevated);
-  color:var(--sd-color-text-primary);cursor:pointer;
-  display:inline-flex;align-items:center;gap:6px;
-}
-.sb-btn:hover{background:var(--sd-color-bg-hover);}
-.sb-btn-primary{background:var(--sd-color-primary-default);border-color:var(--sd-color-primary-default);color:var(--sd-color-primary-foreground);font-weight:600;}
-.sb-btn-primary:hover{background:var(--sd-color-primary-hover);}
-.sb-icon{width:var(--sd-layout-touch-target-min);justify-content:center;padding:0;font-size:18px;}
-.sb-full{width:100%;justify-content:center;margin-top:8px;}
-.sb-danger{color:var(--sd-color-intent-danger);border-color:var(--sd-color-intent-danger-border);}
-
-/* search */
-.sb-search{position:relative;}
-.sb-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--sd-color-text-tertiary);font-size:16px;}
-.sb-search input{
-  width:100%;min-height:var(--sd-layout-touch-target-min);
-  padding:0 12px 0 36px;border-radius:var(--sd-radius-md);
-  border:1px solid var(--sd-color-border-default);background:var(--sd-color-bg-canvas);
-  color:var(--sd-color-text-primary);font-family:var(--sd-font-body);font-size:14px;
-}
-
-/* filter chips */
-.sd-badge.sb-chip{
-  font-size:13px;padding:6px 14px;border-radius:var(--sd-radius-full);
-  background:transparent;border:1px solid var(--sd-color-border-strong);
-  color:var(--sd-color-text-secondary);cursor:pointer;
-}
-.sb-chip-on{
-  background:var(--sd-color-primary-subtle)!important;
-  border-color:var(--sd-color-primary-default)!important;
-  color:var(--sd-color-primary-default)!important;
-}
-
-/* game grid + tiles — TSK-146 (EP-020): .sb-grid, .sb-tile e .sb-tt rimossi;
-   grid → utility Tailwind in Library.tsx; tile → Card primitive (solids/shadcn).
-   .sb-art e .a-1..a-5 mantenuti: accent color ramps app-specific non forniti dal DS. */
+/* game tile accent ramps — TSK-146: .sb-art + .a-1..a-5 in Library.tsx */
 .sb-art{height:88px;border-radius:var(--sd-radius-sm);display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:30px;}
 .a-1{background:var(--sd-color-accent-1-bg);color:var(--sd-color-accent-1);}
 .a-2{background:var(--sd-color-accent-2-bg);color:var(--sd-color-accent-2);}
 .a-3{background:var(--sd-color-accent-3-bg);color:var(--sd-color-accent-3);}
 .a-4{background:var(--sd-color-accent-4-bg);color:var(--sd-color-accent-4);}
 .a-5{background:var(--sd-color-accent-5-bg);color:var(--sd-color-accent-5);}
-.sb-mt{font-size:12px;color:var(--sd-color-text-secondary);margin:2px 0 0;}
-.sb-add{
-  border-style:dashed;border-color:var(--sd-color-border-strong);
-  display:flex;align-items:center;justify-content:center;min-height:150px;
-  text-align:center;color:var(--sd-color-text-tertiary);font-size:24px;cursor:pointer;
-}
-.sb-add .sb-mt{color:var(--sd-color-text-tertiary);font-size:13px;}
 
-/* player */
-/* TSK — Fix B: canvas schiacciato. L'aspect-ratio effettivo è iniettato inline
-   da videoSettingsToContainerStyle (3/2 per "original", 4/3 per "4:3",
-   auto per "stretch"). overflow:hidden: il canvas non fuoriesce dal
-   border-radius.
-   INCREMENT 3 — position:relative aggiunta nel CSS statico (non solo via <style>
-   scoped a runtime in Player.tsx) per garantire che il TouchOverlay (position:absolute
-   inset:0 figlio di .sb-screen) si ancori al viewport di gioco in modo affidabile,
-   indipendentemente dall'ordine di mount del tag <style> scoped. La regola runtime
-   rimane (ridondante ma non conflittuale). */
+/* player viewport */
 .sb-screen{
   position:relative;
   background:var(--sd-screen-bg);border:1px solid var(--sd-color-border-muted);
   border-radius:var(--sd-radius-md);display:flex;align-items:center;justify-content:center;
   overflow:hidden;
 }
-.sb-hud{
-  display:flex;align-items:center;justify-content:space-between;
-  font-size:11px;color:var(--sd-color-text-tertiary);font-family:var(--sd-font-mono);
-}
+
+/* touch overlay — positioning only (visual styling in Tailwind, TSK-155) */
 .sb-dpad{position:relative;width:120px;height:120px;}
-/* TSK-155 (EP-020) — .dp: solo meccanica posizionamento/dimensione; stile visivo in Tailwind (TouchOverlay.tsx). */
 .dp{
   position:absolute;width:44px;height:44px;
 }
-/* TSK-067 FINDING#2 — posizionamento a croce dei tasti D-pad. */
 .dp-up{top:0;left:44px;}
 .dp-down{top:88px;left:44px;}
 .dp-left{top:44px;left:0;}
 .dp-right{top:44px;left:88px;}
 .dp-center{position:absolute;top:44px;left:44px;width:32px;height:32px;}
-/* TSK-122 / US-063 — altezza extra per shoulder L/R + Select/Start in basso. */
 .sb-ab{position:relative;width:132px;height:156px;}
-/* TSK-155 — .ab: solo posizionamento/dimensione base; stile visivo in Tailwind. */
 .ab{
   position:absolute;width:50px;height:50px;
 }
@@ -213,27 +127,7 @@ body{
   cursor:pointer;font-family:var(--sd-font-mono);
 }
 
-/* settings */
-.sb-secs{display:grid;gap:var(--sd-space-md);}
-.sb-sec{padding:16px;}
-.sb-lbl{font-size:13px;font-weight:500;color:var(--sd-color-text-secondary);margin:0 0 12px;display:flex;align-items:center;gap:6px;font-family:var(--sd-font-heading);}
-.sb-lbl i{font-size:16px;}
-.sb-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:6px 0;color:var(--sd-color-text-primary);}
-.sb-range{width:130px;accent-color:var(--sd-color-primary-default);}
-.sd-badge.sb-badge-success{font-size:12px;padding:4px 10px;border-radius:var(--sd-radius-full);background:var(--sd-color-intent-success-bg);color:var(--sd-color-intent-success);}
-.sb-note{font-size:12px;color:var(--sd-color-text-tertiary);margin:var(--sd-space-lg) 0 0;display:flex;align-items:center;gap:6px;}
-
-/* device frames */
-.device{margin:0 auto;}
-.device-mobile{width:320px;}
-.device-mobile .sb-frame{border-radius:26px;border:1px solid var(--sd-color-border-default);background:var(--sd-color-bg-surface);}
-.device-tablet{width:740px;max-width:100%;}
-.device-desktop{width:100%;}
-
-/* responsive game grid per device handled inline per screen */
-
 /* TSK-084 — Gli override WCAG AA color-contrast vivono in app-extra.css
    (importato in main.tsx DOPO @soli92/solids/dist/css/index.css, così
    sovrascrivono effettivamente i token DS). Vedi packages/app/src/styles/app-extra.css
    §"TSK-084 — WCAG 2.2 AA color-contrast overrides". */
-
