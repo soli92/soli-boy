@@ -15,6 +15,7 @@
     "electron:start": "npm run build && electron .",
     "smoke": "npm run build:main && cross-env SOLIBOY_SMOKE=1 electron .",
     "dist": "npm run build && electron-builder",
+    "dist:linux": "npm run build && electron-builder --linux AppImage --publish never",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

@@ -577,9 +577,9 @@ Sprint 18 **completo**. EP-020 chiuso — 22/22 TSK (TSK-136..157) `done`.
 | EP-008 — Submission Google Play e App Store | Human, dopo TSK-071 e TSK-072 (TSK-072 todo) |
 
 
-## Sprint 19 — Visual fidelity prototipo (EP-021) + Release desktop (EP-006) — 4/7 done · IN PROGRESS
+## Sprint 19 — Visual fidelity prototipo (EP-021) + Release desktop (EP-006) — 5/7 done · IN PROGRESS
 
-> **Stato:** EP-021 **chiuso** (4/4 TSK done, retroattivo PR #26). EP-006 US-104 **in corso** (0/3 TSK todo: pipeline Linux AppImage + GitHub Release).
+> **Stato:** EP-021 **chiuso** (4/4 TSK done). EP-006 US-104 **in corso** (TSK-162 done; TSK-163..164 todo).
 >
 > **Obiettivo:** (1) Formalizzare e chiudere parità visiva produzione↔prototipo EP-020; (2) prima build Electron distribuibile unsigned con CI/CD su tag `v*`.
 
@@ -598,14 +598,14 @@ Sprint 19 Wave A **completo**. EP-021 chiuso (`status: done`).
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-162 | CI: electron-builder Linux AppImage | US-104 | EP-006 | infra | agent | P0 | M | todo | TSK-055,056 |
+| TSK-162 | CI: electron-builder Linux AppImage | US-104 | EP-006 | infra | agent | P0 | M | done | TSK-055,056 |
 | TSK-163 | CD: GitHub Release workflow tag `v*` | US-104 | EP-006 | infra | agent | P1 | M | todo | TSK-162 |
 | TSK-164 | QA smoke desktop + doc release unsigned | US-104 | EP-006 | qa | agent | P1 | S | todo | TSK-162 |
 
 DAG Sprint 19 Wave B:
 - TSK-162 (radice) → TSK-163 ‖ TSK-164
 
-**Prossimo step agente:** `/dev TSK-162` (infra, CI Linux AppImage).
+**Prossimo step agente:** `/dev TSK-163` (GitHub Release workflow) o `/dev TSK-164` (smoke + doc).
 
 
 ## Lookahead — Sprint 20+ (post-Sprint 19)

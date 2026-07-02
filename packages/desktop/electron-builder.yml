@@ -2,6 +2,7 @@
 # Renderer = build di @soli-boy/app, riusata 1:1 (nessuna modifica al bundler Vite).
 appId: com.soli92.soliboy
 productName: Soli-Boy
+executableName: soli-boy
 artifactName: Soli-Boy-${version}-${os}-${arch}.${ext}
 asar: true
 
