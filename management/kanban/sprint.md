@@ -577,9 +577,9 @@ Sprint 18 **completo**. EP-020 chiuso — 22/22 TSK (TSK-136..157) `done`.
 | EP-008 — Submission Google Play e App Store | Human, dopo TSK-071 e TSK-072 (TSK-072 todo) |
 
 
-## Sprint 19 — Visual fidelity prototipo (EP-021) + Release desktop (EP-006) — 5/7 done · IN PROGRESS
+## Sprint 19 — Visual fidelity prototipo (EP-021) + Release desktop (EP-006) — 7/7 done · CLOSED
 
-> **Stato:** EP-021 **chiuso** (4/4 TSK done). EP-006 US-104 **in corso** (TSK-162 done; TSK-163..164 todo).
+> **Stato:** Sprint 19 **completo** (2026-07-02). EP-021 chiuso (TSK-158..161). EP-006 US-104 chiusa (TSK-162..164: CI AppImage + smoke + GitHub Release workflow).
 >
 > **Obiettivo:** (1) Formalizzare e chiudere parità visiva produzione↔prototipo EP-020; (2) prima build Electron distribuibile unsigned con CI/CD su tag `v*`.
 
@@ -599,13 +599,13 @@ Sprint 19 Wave A **completo**. EP-021 chiuso (`status: done`).
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
 | TSK-162 | CI: electron-builder Linux AppImage | US-104 | EP-006 | infra | agent | P0 | M | done | TSK-055,056 |
-| TSK-163 | CD: GitHub Release workflow tag `v*` | US-104 | EP-006 | infra | agent | P1 | M | todo | TSK-162 |
-| TSK-164 | QA smoke desktop + doc release unsigned | US-104 | EP-006 | qa | agent | P1 | S | todo | TSK-162 |
+| TSK-163 | CD: GitHub Release workflow tag `v*` | US-104 | EP-006 | infra | agent | P1 | M | done | TSK-162 |
+| TSK-164 | QA smoke desktop + doc release unsigned | US-104 | EP-006 | qa | agent | P1 | S | done | TSK-162 |
 
 DAG Sprint 19 Wave B:
 - TSK-162 (radice) → TSK-163 ‖ TSK-164
 
-**Prossimo step agente:** `/dev TSK-163` (GitHub Release workflow) o `/dev TSK-164` (smoke + doc).
+Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: push tag `v*` → workflow `release-desktop.yml`.
 
 
 ## Lookahead — Sprint 20+ (post-Sprint 19)
@@ -643,7 +643,7 @@ DAG Sprint 19 Wave B:
 - **Sprint 16 — Bridge RTC reale (EP-019 follow-up):** 3/3 done (TSK-133..135) — Sprint completo (2026-06-30). `WasmBoyRtcBridge` (GBC, MBC3) + `MgbaRtcBridge` (GBA, S-3511A BCD) consegnati (ADR-009 §4); e2e bridge detection sblocca `test.describe.skip` in `ep019-rtc.e2e.ts`. Test suite: 662/662 unit + 30/30 e2e verdi. **EP-019 chiuso** (`status: done`). Residuo (human gate, NON bloccante): fixture ROM Pokémon proprietarie — `test.fixme` con messaggio esplicito, sblocco previa aggiunta manuale in `public/test-roms/`. Consumer distribution Sprint 16: agent=3, human=0.
 - **Sprint 17 — Graphic Refactoring infra + Design Intelligence (EP-020):** **7/7 done** (TSK-136..142). Tailwind + Solids registry + shadcn CLI installati; design brief `wiki/design/ep020-design-brief.md`; prototipo `output/prototypes/ep020/`; UX/UI review prototipo (TSK-142 conditional → finding mappati in Wave B). Consumer distribution Sprint 17: agent=7, human=0.
 - **Sprint 18 — Graphic Refactoring migration + regression (EP-020):** **15/15 done** (TSK-143..157). Migrazione 4 tab + cross-cutting + CSS cleanup; pipeline FE completa (visual-oracle + a11y + ux-ui-review + code-review). Test suite finale: **671/671 unit** + 30/30 e2e verdi. **EP-020 chiuso** (`status: done`, 22/22 TSK totali). Consumer distribution Sprint 18: agent=15, human=0.
-- **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** EP-021 **4/4 done** (TSK-158..161, retroattivo PR #26). EP-006 US-104 **0/3 todo** (TSK-162..164: CI AppImage + GitHub Release + smoke/doc). **Prossimo agente:** `/dev TSK-162`.
+- **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** **7/7 done**. EP-021 (TSK-158..161) + US-104 (TSK-162..164: CI AppImage, release-desktop.yml, smoke xvfb). **EP-006 chiuso**.
 - **Kanban hygiene 2026-07-02:** EP-001..005, EP-010..017 chiusi (`done`); EP-006/007/008 `in-progress` (gate human o release pipeline); 154/160 TSK done (escl. EP-021 retroattivo già in codice).
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).

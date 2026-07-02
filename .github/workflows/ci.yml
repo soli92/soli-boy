@@ -95,9 +95,17 @@ jobs:
         working-directory: packages/desktop
         run: npm ci
 
-      - name: Build Linux AppImage (unsigned)
+      - name: Build desktop (renderer + main)
         working-directory: packages/desktop
-        run: npm run dist:linux
+        run: npm run build
+
+      - name: Smoke test (headless, xvfb)
+        working-directory: packages/desktop
+        run: xvfb-run -a npm run smoke:ci
+
+      - name: Package Linux AppImage (unsigned)
+        working-directory: packages/desktop
+        run: npx electron-builder --linux AppImage --publish never
 
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v7
