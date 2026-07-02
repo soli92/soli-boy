@@ -10,7 +10,10 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **UX Library/Settings/componenti (EP-016, Sprint 13)** + **a11y manual checks remediation (EP-017, Sprint 13)** +
 **controlli shoulder L/R (EP-018, Sprint 14)** +
 **orologio interno RTC (EP-019, Sprint 15)** +
-**bridge RTC reale GBC+GBA (EP-019 follow-up, Sprint 16)**.
+**bridge RTC reale GBC+GBA (EP-019 follow-up, Sprint 16)** +
+**graphic refactoring Solids migration (EP-020, Sprint 17–18)** +
+**visual fidelity prototipo (EP-021, Sprint 19)** +
+**release desktop unsigned (EP-006, Sprint 19)**.
 
 ---
 
@@ -478,17 +481,141 @@ DAG Sprint 16:
 Sprint 16 **completo**. EP-019 chiuso (`status: done`) per scope corrente — bridge reali consegnati, e2e detection sbloccato.
 
 
-## Lookahead — Sprint 17+ (post-Sprint 16)
+## Sprint 17 — Graphic Refactoring infra + Design Intelligence (EP-020, P0) — 7/7 done · CLOSED
+
+> **Stato:** Sprint 17 **completo** (2026-07-02). Phase 0 infra (Tailwind + Solids registry + shadcn CLI) e Phase 1 Design Intelligence (art-director DSL + prototipo React + UX/UI review) consegnate. Test suite post-infra: 662/662 unit verdi (TSK-139 smoke).
+>
+> **Obiettivo:** preparare `packages/app` per la migrazione UI a componenti `@soli92/solids` e produrre il prototipo interattivo dual-theme (cyberpunk + 90s-party) come riferimento vincolante per le wave di migrazione.
+
+### Phase 0 — Infra Tailwind + Solids (serial)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-136 | npm install Tailwind + config files | US-092 | EP-020 | infra | agent | P0 | S | done | — |
+| TSK-137 | components.json + path alias + utils.ts | US-092 | EP-020 | fe | agent | P0 | S | done | TSK-136 |
+| TSK-138 | shadcn CLI install + main.tsx CSS imports | US-092 | EP-020 | infra | agent | P0 | S | done | TSK-137 |
+| TSK-139 | Infra smoke test: zero regressioni post-install | US-092 | EP-020 | qa | agent | P0 | S | done | TSK-138 |
+
+### Phase 1 — Design Intelligence (parallela a Phase 0 dopo TSK-136)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-140 | Art-Director DSL — EP-020 Design Brief | US-093 | EP-020 | design | agent | P1 | M | done | TSK-136 |
+| TSK-141 | `/prototype EP-020` — Interactive React prototype | US-093 | EP-020 | fe | agent | P1 | L | done | TSK-140 |
+| TSK-142 | UX/UI review del prototipo + gap analysis | US-093 | EP-020 | qa | agent | P1 | M | done | TSK-141 |
+
+DAG Sprint 17:
+- Phase 0: TSK-136 → TSK-137 → TSK-138 → TSK-139
+- Phase 1: TSK-140 → TSK-141 → TSK-142 (radice TSK-136)
+
+Sprint 17 **completo**.
+
+
+## Sprint 18 — Graphic Refactoring migration + regression (EP-020, P0) — 15/15 done · CLOSED
+
+> **Stato:** Sprint 18 **completo** (2026-07-02). Migrazione UI per superficie (App shell, Play, Library, Settings, Info, cross-cutting) + CSS cleanup + regression suite finale. Pipeline per TSK FE: develop → visual-oracle → a11y → ux-ui-review → code-review. Test suite finale: **671/671 unit** + 30/30 e2e verdi. **EP-020 chiuso** (`status: done`).
+>
+> **Obiettivo:** sostituire classi `sb-*`/`sd-*` con componenti React `@soli92/solids` (Radix/Tailwind), mantenendo invarianti game-specific (canvas host, TouchOverlay positioning, override WCAG AA).
+
+### Wave A — App shell (dopo Sprint 17)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-143 | App shell + Tabs navigation migration | US-094 | EP-020 | fe | agent | P0 | M | done | TSK-139, TSK-142 |
+
+### Wave B — Tab surfaces (parallela max 4, dopo TSK-143)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-144 | Player container + HUD + controls → solids Button | US-095 | EP-020 | fe | agent | P1 | M | done | TSK-143 |
+| TSK-145 | FileLoader + idle CTA → solids Button | US-095 | EP-020 | fe | agent | P1 | S | done | TSK-143 |
+| TSK-146 | GameTile grid → Card + Badge + Button | US-096 | EP-020 | fe | agent | P1 | M | done | TSK-143 |
+| TSK-147 | Search input + platform chips → Input + ToggleGroup | US-096 | EP-020 | fe | agent | P1 | S | done | TSK-143 |
+| TSK-148 | RemoveRomConfirmDialog → AlertDialog | US-096 | EP-020 | fe | agent | P1 | S | done | TSK-143 |
+| TSK-149 | Settings sections → solids Accordion | US-097 | EP-020 | fe | agent | P1 | M | done | TSK-143 |
+| TSK-152 | Info tab notices + UpdateBanner → Card + Alert | US-098 | EP-020 | fe | agent | P2 | S | done | TSK-143 |
+
+### Wave B (serial Settings) — dopo TSK-149
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-150 | Form controls → Switch, Select, Slider, Kbd, Input | US-097 | EP-020 | fe | agent | P1 | M | done | TSK-149 |
+| TSK-151 | ThemeSelector → RadioGroup | US-097 | EP-020 | fe | agent | P1 | S | done | TSK-150 |
+
+### Wave C — Cross-cutting (dopo Wave B)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-153 | ConfirmGameChangeDialog → AlertDialog | US-099 | EP-020 | fe | agent | P1 | S | done | TSK-143, TSK-148 |
+| TSK-154 | UpdateBanner → Alert + Button | US-099 | EP-020 | fe | agent | P2 | S | done | TSK-143 |
+| TSK-155 | TouchOverlay visual styling → Tailwind | US-099 | EP-020 | fe | agent | P2 | M | done | TSK-144 |
+
+### Wave D — CSS cleanup + regression (dopo Wave C)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-156 | CSS cleanup: rimozione classi orfane | US-100 | EP-020 | fe | agent | P2 | M | done | TSK-144..155 |
+| TSK-157 | Full regression suite finale EP-020 | US-100 | EP-020 | qa | agent | P1 | M | done | TSK-156 |
+
+DAG Sprint 18:
+- Wave A: TSK-143 (**done**) → TSK-139, TSK-142
+- Wave B: TSK-144 ‖ TSK-145 ‖ TSK-146 ‖ TSK-147 ‖ TSK-148 ‖ TSK-149 ‖ TSK-152 (**done**)
+- Wave B serial: TSK-150 → TSK-149; TSK-151 → TSK-150
+- Wave C: TSK-153 ‖ TSK-154 ‖ TSK-155 (**done**)
+- Wave D: TSK-156 → tutte le superfici; TSK-157 → TSK-156
+
+Sprint 18 **completo**. EP-020 chiuso — 22/22 TSK (TSK-136..157) `done`.
+
+
+## Lookahead — Sprint 19+ (post-Sprint 18)
 
 | Area | Note |
 |------|------|
 | EP-019 — e2e full ROM proprietarie (Pokémon GBC/GBA) | Gate umano: aggiungere ROM a `public/test-roms/`; sblocca `test.fixme` TSK-135 |
 | EP-009 — Arcade (FBNeo/MAME) | Gap aperto `arcade-emulation-engine`; percorso libretro da valutare |
-| EP-006 — Build Electron distribuibile (Win/macOS/Linux) | Dopo chiusura gap `electron-packaging-toolchain` |
-| EP-006 — Auto-update produzione | Dopo chiusura gap `electron-autoupdate-mechanism` |
-| EP-007 — Validazione su device Android fisico | Human, dopo TSK-059 |
-| EP-008 — Submission Google Play e App Store | Human, dopo TSK-071 e TSK-072 |
-| EP-006/US-023 — e2e Electron (TSK-058) | Può partire ora che TSK-054 e TSK-055 sono done |
+| EP-007 — Validazione su device Android fisico | Human, TSK-059 in-progress |
+| EP-008 — Submission Google Play e App Store | Human, dopo TSK-071 e TSK-072 (TSK-072 todo) |
+
+
+## Sprint 19 — Visual fidelity prototipo (EP-021) + Release desktop (EP-006) — 4/7 done · IN PROGRESS
+
+> **Stato:** EP-021 **chiuso** (4/4 TSK done, retroattivo PR #26). EP-006 US-104 **in corso** (0/3 TSK todo: pipeline Linux AppImage + GitHub Release).
+>
+> **Obiettivo:** (1) Formalizzare e chiudere parità visiva produzione↔prototipo EP-020; (2) prima build Electron distribuibile unsigned con CI/CD su tag `v*`.
+
+### Wave A — EP-021 Visual fidelity (retroattivo, done)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-158 | Shell parity: header, ThemeSwitcher, Play idle CTA | US-101 | EP-021 | fe | agent | P0 | M | done | TSK-143 |
+| TSK-159 | InfoTab + LegalNotice card variant | US-102 | EP-021 | fe | agent | P1 | S | done | TSK-152 |
+| TSK-160 | Player save sidebar layout desktop | US-103 | EP-021 | fe | agent | P1 | S | done | TSK-144 |
+| TSK-161 | Visual oracle e2e prototipo vs produzione | US-103 | EP-021 | qa | agent | P0 | M | done | TSK-158,159,160 |
+
+Sprint 19 Wave A **completo**. EP-021 chiuso (`status: done`).
+
+### Wave B — EP-006 Release pipeline unsigned (serial, todo)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-162 | CI: electron-builder Linux AppImage | US-104 | EP-006 | infra | agent | P0 | M | todo | TSK-055,056 |
+| TSK-163 | CD: GitHub Release workflow tag `v*` | US-104 | EP-006 | infra | agent | P1 | M | todo | TSK-162 |
+| TSK-164 | QA smoke desktop + doc release unsigned | US-104 | EP-006 | qa | agent | P1 | S | todo | TSK-162 |
+
+DAG Sprint 19 Wave B:
+- TSK-162 (radice) → TSK-163 ‖ TSK-164
+
+**Prossimo step agente:** `/dev TSK-162` (infra, CI Linux AppImage).
+
+
+## Lookahead — Sprint 20+ (post-Sprint 19)
+
+| Area | Note |
+|------|------|
+| EP-006 — Code signing Win/macOS | Gate umano: segreti `CSC_*` / Apple notarization (ADR-007) |
+| EP-006 — Build Win/macOS in CI | Runner dedicati o build locale post-TSK-162 |
+| EP-007 — Capacitor device validation | TSK-059 human in-progress |
+| EP-008 — iOS WASM benchmark | TSK-072 human todo |
 
 
 ## Note generali
@@ -514,7 +641,10 @@ Sprint 16 **completo**. EP-019 chiuso (`status: done`) per scope corrente — br
 - **Sprint 14 — Controlli shoulder L/R (EP-018):** 5/5 done — Sprint completo (TSK-120..124).
 - **Sprint 15 — Orologio interno RTC (EP-019):** 8/8 done (TSK-125..132). Dominio `RtcService`, UI `Settings → RtcSection`, store `rtcState`, wiring `GameSession ↔ engine ↔ StoragePort`, inclusione RTC nei save state (compat all'indietro), `syncToDevice`, test integrazione/e2e — tutti done. Consumer distribution Sprint 15: agent=8, human=0.
 - **Sprint 16 — Bridge RTC reale (EP-019 follow-up):** 3/3 done (TSK-133..135) — Sprint completo (2026-06-30). `WasmBoyRtcBridge` (GBC, MBC3) + `MgbaRtcBridge` (GBA, S-3511A BCD) consegnati (ADR-009 §4); e2e bridge detection sblocca `test.describe.skip` in `ep019-rtc.e2e.ts`. Test suite: 662/662 unit + 30/30 e2e verdi. **EP-019 chiuso** (`status: done`). Residuo (human gate, NON bloccante): fixture ROM Pokémon proprietarie — `test.fixme` con messaggio esplicito, sblocco previa aggiunta manuale in `public/test-roms/`. Consumer distribution Sprint 16: agent=3, human=0.
-- **Sprint 17 — Graphic Refactoring Phase 0 + Design Intelligence (EP-020):** 6 TSK planned (TSK-136..142). Phase 0 infra: TSK-136 (human: Tailwind install) → TSK-137 (agent: components.json + alias) → TSK-138 (human: shadcn CLI) → TSK-139 (qa: smoke). Phase 1 Design Intelligence (parallela): TSK-140 (art-director DSL) → TSK-141 (/prototype EP-020, dual-theme cyberpunk+90s-party, 4 tab interattive) → TSK-142 (ux-ui-review prototipo). **Primo step: `/dev TSK-136` — l'agente installa Tailwind + crea config files.**
+- **Sprint 17 — Graphic Refactoring infra + Design Intelligence (EP-020):** **7/7 done** (TSK-136..142). Tailwind + Solids registry + shadcn CLI installati; design brief `wiki/design/ep020-design-brief.md`; prototipo `output/prototypes/ep020/`; UX/UI review prototipo (TSK-142 conditional → finding mappati in Wave B). Consumer distribution Sprint 17: agent=7, human=0.
+- **Sprint 18 — Graphic Refactoring migration + regression (EP-020):** **15/15 done** (TSK-143..157). Migrazione 4 tab + cross-cutting + CSS cleanup; pipeline FE completa (visual-oracle + a11y + ux-ui-review + code-review). Test suite finale: **671/671 unit** + 30/30 e2e verdi. **EP-020 chiuso** (`status: done`, 22/22 TSK totali). Consumer distribution Sprint 18: agent=15, human=0.
+- **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** EP-021 **4/4 done** (TSK-158..161, retroattivo PR #26). EP-006 US-104 **0/3 todo** (TSK-162..164: CI AppImage + GitHub Release + smoke/doc). **Prossimo agente:** `/dev TSK-162`.
+- **Kanban hygiene 2026-07-02:** EP-001..005, EP-010..017 chiusi (`done`); EP-006/007/008 `in-progress` (gate human o release pipeline); 154/160 TSK done (escl. EP-021 retroattivo già in codice).
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).

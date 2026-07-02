@@ -2,7 +2,7 @@
 type: roadmap
 status: draft
 created: 2026-06-01
-updated: 2026-06-01T22:00:00+02:00
+updated: 2026-07-02T20:59:00+00:00
 ---
 
 # Roadmap — soli-boy
@@ -86,3 +86,27 @@ moduli già consegnati e abilitano i futuri).
 - Sprint 4/5 (completati): WasmBoy GB/GBC (real), GBA (mGBA), deprecazione
   EmulatorJS, save state, filtri video. TSK-041 done (bugfix canvas WasmBoy).
 - EP-009 (futura): **Supporto arcade** (FBNeo/MAME) via libretro/RetroArch web — rinviato (gap arcade-emulation-engine).
+
+## Release cross-cutting — Graphic Refactoring (completata)
+
+| EP | Titolo | Priorità | Confidence | Dipende da | Sprint |
+|----|--------|----------|-----------|-----------|--------|
+| EP-020 | Graphic Refactoring & Solids Component Migration | high | done | EP-010, EP-012, EP-013 | 17–18 |
+
+- **EP-020** chiusa 2026-07-02: migrazione UI da classi `sb-*`/`sd-*` a componenti React `@soli92/solids` (shadcn/Radix/Tailwind). 9 US (US-092..100), 22 TSK (TSK-136..157) tutti `done`. Prototipo dual-theme in `output/prototypes/ep020/`. Design brief: `wiki/design/ep020-design-brief.md`.
+
+## Release cross-cutting — Visual fidelity prototipo (completata)
+
+| EP | Titolo | Priorità | Confidence | Dipende da | Sprint |
+|----|--------|----------|-----------|-----------|--------|
+| EP-021 | Allineamento visivo produzione ↔ prototipo EP-020 | high | done | EP-020 | 19 |
+
+- **EP-021** chiusa 2026-07-02: parità strutturale shell/Play/Info/Player desktop col prototipo; e2e `ep021-visual-fidelity.e2e.ts`; 3 US, 4 TSK (TSK-158..161) `done`.
+
+## Release 2 — Desktop (in corso)
+
+| EP | Titolo | Priorità | Confidence | Dipende da | Sprint |
+|----|--------|----------|-----------|-----------|--------|
+| EP-006 | Distribuzione desktop | medium | in-progress | EP-003 | 19 (US-104) |
+
+- **EP-006** Sprint 19: US-104 release pipeline unsigned — TSK-162..164 (CI AppImage Linux, GitHub Release, smoke/doc). Epica `in-progress` fino a prima release `v*`.

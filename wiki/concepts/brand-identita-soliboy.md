@@ -41,3 +41,8 @@ Gli SVG usano `shape-rendering="crispEdges"` per bordi netti dei pixel; i PNG fi
 ## Pagine collegate
 [[soliboy-logo]]
 [[solids]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
+  - US-093 Design brief + prototipo interattivo EP-020

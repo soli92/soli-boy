@@ -39,3 +39,8 @@ I valori esadecimali nei mockup sono approssimati; nell'app reale va importato i
 ## Pagine collegate
 [[solids]]
 [[2026-06-01-mockups-ui]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
+  - US-092 Infra — Tailwind + Solids Registry + CSS Bridge
