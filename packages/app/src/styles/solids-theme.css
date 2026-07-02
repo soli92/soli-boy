@@ -64,7 +64,6 @@ body{
 /* ============================================================================
    Soli-boy component classes (sb-*) — solo ciò che resta dopo EP-020 Wave D
    ============================================================================ */
-
 /* app shell — EP-021: full-width proto layout (no max-width cap) */
 .sb-app{max-width:100%;margin:0;padding:0;}
 
