@@ -47,3 +47,5 @@ Le sezioni sono disposte in 1 colonna su mobile, 2 su tablet e 3 su desktop. [^s
 - EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
   - US-097 Settings tab — accordion + form controls + ThemeSelector
   - US-098 Info tab — notices + UpdateBanner
+- EP-021 Allineamento visivo produzione ↔ prototipo EP-020 — `management/kanban/EP-021-visual-fidelity-prototype/`
+  - US-102 Tab Info & Privacy arricchita

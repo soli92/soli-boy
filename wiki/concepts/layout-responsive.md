@@ -33,3 +33,5 @@ I mockup coprono tre fasce di dispositivo — mobile (~390px), tablet (~768px), 
 <!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
 - EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
   - US-094 App shell + Tabs navigation migration
+- EP-021 Allineamento visivo produzione ↔ prototipo EP-020 — `management/kanban/EP-021-visual-fidelity-prototype/`
+  - US-101 Shell + theme switcher + Play idle CTA
