@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 // Logo brand orizzontale: sostituisce il testo "Soli-boy" nell'header.
 // Vite risolve l'import SVG in una URL servibile (asset pipeline).
 import logoUrl from "./assets/soliboy-logo-horizontal.svg";
@@ -12,6 +12,16 @@ import { StoreComplianceNotice } from "./components/StoreComplianceNotice/StoreC
 // TSK-057 (US-025) — Banner in-app per il ciclo di auto-update Electron.
 // No-op su web (nessun bridge window.soliboyDesktop → ritorna null).
 import { UpdateBanner } from "./components/UpdateBanner/UpdateBanner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { makePrivacyAckPort } from "./components/PrivacyNotice/privacy-port";
 import { usePrivacyAck } from "./components/PrivacyNotice/usePrivacyAck";
 // TSK-055 — punto unico di selezione runtime: IndexedDB su web/mobile,
@@ -142,170 +152,6 @@ function StorageInitErrorFallback({ error }: { error: Error }) {
         {error.message}
       </p>
     </main>
-  );
-}
-
-/**
- * TSK-101 (US-053) — Dialog modale "Cambia gioco?" (UX-CF1-02).
- *
- * Renderizzato da `AppContent` quando l'utente tap'a una ROM diversa mentre il
- * Player è `running` o `paused`. Implementazione zero-dep (no portal: rimaniamo
- * dentro l'albero `<main>` esistente — l'overlay copre il viewport via CSS
- * fixed, sufficiente per il modale "blocking" richiesto dall'AC).
- *
- * A11y:
- * - `role="dialog"` + `aria-modal="true"` + `aria-labelledby`/`aria-describedby`.
- * - Focus trap: cattura Tab/Shift+Tab dentro il dialog (handler keydown su
- *   container), focus iniziale sul bottone "Cambia gioco" (azione primaria;
- *   l'utente che ha già tap'ato la tile sta esprimendo intent di switch — il
- *   focus iniziale sull'azione distruttiva è coerente, ma "Annulla" resta
- *   sempre raggiungibile con Esc).
- * - Esc → onCancel (AC5).
- * - Enter su "Cambia gioco" focused → onConfirm (gestito nativo via type="button"
- *   + focus iniziale; il browser invia il click sul button focused).
- *
- * Lo stop dell'engine + lo swap di `selected` sono responsabilità di
- * `confirmGameChange` in `AppContent`: il dialog è puramente UI.
- */
-interface ConfirmGameChangeDialogProps {
-  /** Titolo della ROM in esecuzione (per l'esplicativo). */
-  currentTitle: string | undefined;
-  /** Titolo della ROM target (cosa l'utente vuole avviare). */
-  pendingTitle: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-function ConfirmGameChangeDialog({
-  currentTitle,
-  pendingTitle,
-  onConfirm,
-  onCancel,
-}: ConfirmGameChangeDialogProps) {
-  const confirmRef = useRef<HTMLButtonElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  // Focus iniziale sull'azione primaria (Cambia gioco). L'utente può sempre
-  // premere Esc per annullare (AC5). Setto un microtask per permettere al
-  // browser di completare il mount prima del focus().
-  useEffect(() => {
-    confirmRef.current?.focus();
-  }, []);
-
-  // Esc → Annulla (AC5). Listener a document per intercettare anche quando
-  // il focus uscisse dal dialog per qualche motivo (defensive).
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onCancel]);
-
-  // Focus trap: Tab/Shift+Tab rimbalzano fra i due bottoni (AC5).
-  // Implementazione minimale (2 elementi focusable noti); pattern standard
-  // WAI-ARIA dialog (modal). Niente lib esterne (no react-focus-lock) per
-  // mantenere zero-dep — sufficiente per il contratto qui.
-  function onDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key !== "Tab") return;
-    const focusables = [cancelRef.current, confirmRef.current].filter(
-      (el): el is HTMLButtonElement => el !== null,
-    );
-    if (focusables.length === 0) return;
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    const active = document.activeElement;
-    if (e.shiftKey && active === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
-
-  return (
-    <div
-      className="sb-dialog-backdrop"
-      // Overlay che intercetta click esterni → annulla (UX standard modal
-      // "click outside" = cancel). Mantiene l'utente sull'azione safe.
-      onClick={onCancel}
-      data-testid="confirm-game-change-backdrop"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-game-change-title"
-        aria-describedby="confirm-game-change-desc"
-        className="sb-dialog"
-        // Stop propagation: click sul body del dialog non chiude il modal.
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={onDialogKeyDown}
-        data-testid="confirm-game-change-dialog"
-        style={{
-          background: "var(--sd-color-bg-elevated, #1a1430)",
-          color: "var(--sd-color-text-primary, #f0e9ff)",
-          padding: "1.5rem",
-          borderRadius: "0.5rem",
-          maxWidth: "32rem",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
-        }}
-      >
-        <h2
-          id="confirm-game-change-title"
-          style={{ marginTop: 0, marginBottom: "0.75rem" }}
-        >
-          Cambia gioco?
-        </h2>
-        <p id="confirm-game-change-desc" style={{ marginBottom: "1.25rem" }}>
-          {currentTitle
-            ? `Stai per avviare "${pendingTitle}" mentre "${currentTitle}" è in corso. `
-            : `Stai per avviare "${pendingTitle}" mentre un altro gioco è in corso. `}
-          Lo stato corrente non sarà salvato in autosave: i progressi non
-          salvati andranno persi.
-        </p>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "0.5rem",
-          }}
-        >
-          <button
-            ref={cancelRef}
-            type="button"
-            className="sb-btn"
-            onClick={onCancel}
-            data-action="cancel"
-          >
-            Annulla
-          </button>
-          <button
-            ref={confirmRef}
-            type="button"
-            className="sb-btn sb-btn-primary sb-danger"
-            onClick={onConfirm}
-            data-action="confirm"
-          >
-            Cambia gioco
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -739,19 +585,38 @@ function AppContent({
         </TabsContent>
       </Tabs>
 
-      {/* TSK-101 (US-053) — Dialog modale "Cambia gioco?" (UX-CF1-02).
-          Reso solo quando `pendingRom !== null`: l'utente ha tap'ato una ROM
-          diversa mentre il Player è running/paused (vedi `handleLibrarySelect`).
-          Lo swap effettivo di `selected` + stop engine avvengono in
-          `confirmGameChange`. */}
-      {pendingRom && (
-        <ConfirmGameChangeDialog
-          currentTitle={selected?.title}
-          pendingTitle={pendingRom.title}
-          onConfirm={confirmGameChange}
-          onCancel={cancelGameChange}
-        />
-      )}
+      {/* TSK-101 (US-053) + TSK-153 (EP-020) — AlertDialog Radix per conferma
+          cambio gioco. Portal, focus trap, Esc e backdrop nativi. */}
+      <AlertDialog
+        open={pendingRom !== null}
+        onOpenChange={(open) => {
+          if (!open) cancelGameChange();
+        }}
+      >
+        <AlertDialogContent data-testid="confirm-game-change-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cambia gioco?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRom && selected
+                ? `Stai per avviare "${pendingRom.title}" mentre "${selected.title}" è in corso. `
+                : pendingRom
+                  ? `Stai per avviare "${pendingRom.title}" mentre un altro gioco è in corso. `
+                  : ""}
+              Lo stato corrente non sarà salvato in autosave: i progressi non
+              salvati andranno persi.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-action="cancel">Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              data-action="confirm"
+              onClick={confirmGameChange}
+            >
+              Cambia gioco
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <footer className="sb-app-footer" />
     </main>

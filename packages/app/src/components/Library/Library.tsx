@@ -575,6 +575,4 @@ function GameTile({ rom, isActive = false, onSelect, onCoverChange, onRemove }: 
 // dalla primitiva Radix `AlertDialog` (vedi render principale di `Library`).
 // La primitiva copre nativamente: Portal, focus trap, gestione Esc, overlay
 // backdrop, ruolo ARIA `alertdialog`. Le classi inline `sb-dialog` /
-// `sb-dialog-backdrop` restano usate in `App.tsx` (ConfirmGameChangeDialog) e
-// `SaveStatePanel.tsx`: NON rimosse da `app-extra.css` — sono comunque
-// definite come stile inline nei rispettivi componenti (grep-confirmed).
+// `sb-dialog-backdrop` restano usate in `SaveStatePanel.tsx` (delete save state).

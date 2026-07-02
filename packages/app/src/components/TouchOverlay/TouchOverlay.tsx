@@ -9,6 +9,7 @@
 // Persistenza config via ConfigPort (store `config`, chiave `touch-overlay`).
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import { useHaptics } from "./useHaptics";
 import type { Core } from "../../domain/types";
 import type { InputMapping } from "../../domain/input-mapping";
@@ -19,6 +20,45 @@ import {
   useTouchOverlayConfig,
   type TouchOverlayConfig,
 } from "./useTouchOverlayConfig";
+
+/** TSK-155 (EP-020) — stile visivo D-pad su Tailwind; posizionamento in solids-theme.css */
+const DPAD_BTN_VISUAL =
+  "flex items-center justify-center text-xl cursor-pointer select-none touch-none bg-[var(--sd-color-bg-elevated)] border border-[var(--sd-color-border-strong)] rounded-[var(--sd-radius-sm)] text-[var(--sd-color-text-secondary)] active:opacity-80";
+
+/** TSK-155 — classi visive per pulsanti azione (posizionamento via .ab-* in CSS) */
+function abButtonVisualClass(button: string): string {
+  const base =
+    "flex items-center justify-center cursor-pointer select-none touch-none border-0 font-[family-name:var(--sd-font-heading)] active:opacity-80";
+  switch (button) {
+    case "l":
+    case "r":
+      return cn(
+        base,
+        "rounded-[var(--sd-radius-sm)] bg-[var(--sd-color-bg-elevated)] border border-[var(--sd-color-border-strong)] text-[var(--sd-color-text-secondary)] text-sm font-semibold",
+      );
+    case "a":
+      return cn(
+        base,
+        "rounded-full text-lg font-semibold bg-[var(--sd-color-pad-a-bg)] text-[var(--sd-color-pad-a)]",
+      );
+    case "b":
+      return cn(
+        base,
+        "rounded-full text-lg font-semibold bg-[var(--sd-color-pad-b-bg)] text-[var(--sd-color-pad-b)]",
+      );
+    case "select":
+    case "start":
+      return cn(
+        base,
+        "rounded-[var(--sd-radius-sm)] bg-[var(--sd-color-bg-elevated)] border border-[var(--sd-color-border-strong)] text-[var(--sd-color-text-secondary)] text-[10px] font-semibold",
+      );
+    default:
+      return cn(
+        base,
+        "rounded-full text-lg font-semibold bg-[var(--sd-color-bg-elevated)] text-[var(--sd-color-text-secondary)]",
+      );
+  }
+}
 
 export interface TouchOverlayProps {
   /** Core della sessione corrente: determina il set di pulsanti. */
@@ -332,7 +372,7 @@ function TouchOverlayInner({
           <button
             key={button}
             type="button"
-            className={`dp dp-${button}`}
+            className={cn("dp", `dp-${button}`, DPAD_BTN_VISUAL)}
             aria-hidden="true"
             tabIndex={-1}
             data-testid={`sb-touch-dpad-${button}`}
@@ -345,7 +385,10 @@ function TouchOverlayInner({
             {label}
           </button>
         ))}
-        <div className="dp-center" />
+        <div
+          className="dp-center bg-[var(--sd-color-bg-surface)]"
+          aria-hidden="true"
+        />
       </div>
 
       {/* Pulsanti azione */}
@@ -358,7 +401,7 @@ function TouchOverlayInner({
           <button
             key={button}
             type="button"
-            className={`ab ab-${button}`}
+            className={cn("ab", `ab-${button}`, abButtonVisualClass(button))}
             aria-hidden="true"
             tabIndex={-1}
             data-testid={`sb-touch-btn-${button}`}

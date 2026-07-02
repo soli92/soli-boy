@@ -178,42 +178,31 @@ body{
   font-size:11px;color:var(--sd-color-text-tertiary);font-family:var(--sd-font-mono);
 }
 .sb-dpad{position:relative;width:120px;height:120px;}
+/* TSK-155 (EP-020) — .dp: solo meccanica posizionamento/dimensione; stile visivo in Tailwind (TouchOverlay.tsx). */
 .dp{
-  position:absolute;width:44px;height:44px;background:var(--sd-color-bg-elevated);
-  border:1px solid var(--sd-color-border-strong);border-radius:var(--sd-radius-sm);
-  display:flex;align-items:center;justify-content:center;color:var(--sd-color-text-secondary);
-  font-size:20px;cursor:pointer;
+  position:absolute;width:44px;height:44px;
 }
-/* TSK-067 FINDING#2 — posizionamento a croce dei tasti D-pad. Senza queste regole
-   i 4 .dp si impilano tutti a top/left:0 (sovrapposti) e dp-right intercetta i tap
-   destinati a dp-up (rivelato dall'e2e mobile). Container 120px, tasto 44px → centro a 44px. */
+/* TSK-067 FINDING#2 — posizionamento a croce dei tasti D-pad. */
 .dp-up{top:0;left:44px;}
 .dp-down{top:88px;left:44px;}
 .dp-left{top:44px;left:0;}
 .dp-right{top:44px;left:88px;}
-.dp-center{position:absolute;top:44px;left:44px;width:32px;height:32px;background:var(--sd-color-bg-surface);}
+.dp-center{position:absolute;top:44px;left:44px;width:32px;height:32px;}
 /* TSK-122 / US-063 — altezza extra per shoulder L/R + Select/Start in basso. */
 .sb-ab{position:relative;width:132px;height:156px;}
+/* TSK-155 — .ab: solo posizionamento/dimensione base; stile visivo in Tailwind. */
 .ab{
-  position:absolute;width:50px;height:50px;border-radius:var(--sd-radius-full);
-  font-size:18px;font-weight:600;border:none;cursor:pointer;font-family:var(--sd-font-heading);
+  position:absolute;width:50px;height:50px;
 }
-/* Shoulder GBA (EP-018) — riga superiore, simmetrici. */
 .ab-l,.ab-r{
-  top:0;width:48px;height:40px;border-radius:var(--sd-radius-sm);
-  background:var(--sd-color-bg-elevated);border:1px solid var(--sd-color-border-strong);
-  color:var(--sd-color-text-secondary);font-size:14px;
+  top:0;width:48px;height:40px;
 }
 .ab-l{left:0;}
 .ab-r{right:0;}
-.ab-b{bottom:36px;left:4px;background:var(--sd-color-pad-b-bg);color:var(--sd-color-pad-b);}
-.ab-a{bottom:56px;right:4px;background:var(--sd-color-pad-a-bg);color:var(--sd-color-pad-a);}
-/* Select / Start — fascia inferiore (GBA e GB). */
+.ab-b{bottom:36px;left:4px;}
+.ab-a{bottom:56px;right:4px;}
 .ab-select,.ab-start{
-  bottom:0;width:52px;height:32px;border-radius:var(--sd-radius-sm);
-  font-size:10px;font-weight:600;
-  background:var(--sd-color-bg-elevated);border:1px solid var(--sd-color-border-strong);
-  color:var(--sd-color-text-secondary);
+  bottom:0;width:52px;height:32px;
 }
 .ab-select{left:4px;}
 .ab-start{right:4px;}
