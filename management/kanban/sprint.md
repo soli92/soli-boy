@@ -594,7 +594,7 @@ Sprint 18 **completo**. EP-020 chiuso — 22/22 TSK (TSK-136..157) `done`.
 
 Sprint 19 Wave A **completo**. EP-021 chiuso (`status: done`).
 
-### Wave B — EP-006 Release pipeline unsigned (serial, todo)
+### Wave B — EP-006 Release pipeline unsigned (serial, done)
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
@@ -644,7 +644,7 @@ Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: p
 - **Sprint 17 — Graphic Refactoring infra + Design Intelligence (EP-020):** **7/7 done** (TSK-136..142). Tailwind + Solids registry + shadcn CLI installati; design brief `wiki/design/ep020-design-brief.md`; prototipo `output/prototypes/ep020/`; UX/UI review prototipo (TSK-142 conditional → finding mappati in Wave B). Consumer distribution Sprint 17: agent=7, human=0.
 - **Sprint 18 — Graphic Refactoring migration + regression (EP-020):** **15/15 done** (TSK-143..157). Migrazione 4 tab + cross-cutting + CSS cleanup; pipeline FE completa (visual-oracle + a11y + ux-ui-review + code-review). Test suite finale: **671/671 unit** + 30/30 e2e verdi. **EP-020 chiuso** (`status: done`, 22/22 TSK totali). Consumer distribution Sprint 18: agent=15, human=0.
 - **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** **7/7 done**. EP-021 (TSK-158..161) + US-104 (TSK-162..164: CI AppImage, release-desktop.yml, smoke xvfb). **EP-006 chiuso**.
-- **Kanban hygiene 2026-07-02:** EP-001..005, EP-010..017 chiusi (`done`); EP-006/007/008 `in-progress` (gate human o release pipeline); 154/160 TSK done (escl. EP-021 retroattivo già in codice).
+- **Kanban hygiene 2026-07-02:** EP-001..006, EP-010..017, EP-021 chiusi (`done`); EP-007/008 `in-progress` (gate human); 157/160 TSK done.
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).
