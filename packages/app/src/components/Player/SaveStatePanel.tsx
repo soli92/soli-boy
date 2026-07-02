@@ -33,6 +33,7 @@ import {
 // TSK-144 (EP-020 Wave B P1) — solids Button (shadcn-ui).
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { EmulatorEngine } from "../../core/core-wrapper";
 import type { LoadStateResult } from "../../domain/save-service";
 import type { Core } from "../../domain/types";
@@ -75,6 +76,8 @@ export interface SaveStatePanelProps {
   isRunning: boolean;
   /** Numero di slot esposti dall'UI (default 3, ADR-006 §Decisione p.4 indica "slot"). */
   slots?: number;
+  /** Classi aggiuntive sul wrapper Card (EP-021: sidebar desktop). */
+  className?: string;
 }
 
 const DEFAULT_SLOTS = 3;
@@ -86,6 +89,7 @@ export function SaveStatePanel({
   currentCore,
   isRunning,
   slots = DEFAULT_SLOTS,
+  className,
 }: SaveStatePanelProps) {
   const slotList = useMemo(
     () => Array.from({ length: Math.max(0, slots) }, (_, i) => i),
@@ -234,6 +238,7 @@ export function SaveStatePanel({
 
   return (
     <Card
+      className={cn(className)}
       role="region"
       aria-label="Save state"
       data-supported={String(supported)}

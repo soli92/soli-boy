@@ -22,4 +22,12 @@ describe("LegalNotice", () => {
     expect(note).toHaveClass("text-center");
     expect(note).toHaveClass("extra");
   });
+
+  it("variante card: sezioni Licenza, Trademark e Versione", () => {
+    render(<LegalNotice variant="card" />);
+    expect(screen.getByRole("note", { name: /avviso legale/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /licenza/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /trademark/i })).toBeInTheDocument();
+    expect(screen.getByTestId("sb-app-version")).toHaveTextContent(/v0\.4\.0/);
+  });
 });

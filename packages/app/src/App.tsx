@@ -6,9 +6,8 @@ import { FileLoader } from "./components/FileLoader/FileLoader";
 import { Library } from "./components/Library/Library";
 import { Player } from "./components/Player/Player";
 import { Settings } from "./components/Settings/Settings";
-import { LegalNotice } from "./components/LegalNotice";
+import { InfoTab } from "./components/InfoTab/InfoTab";
 import { PrivacyNotice } from "./components/PrivacyNotice/PrivacyNotice";
-import { StoreComplianceNotice } from "./components/StoreComplianceNotice/StoreComplianceNotice";
 // TSK-057 (US-025) — Banner in-app per il ciclo di auto-update Electron.
 // No-op su web (nessun bridge window.soliboyDesktop → ritorna null).
 import { UpdateBanner } from "./components/UpdateBanner/UpdateBanner";
@@ -71,6 +70,7 @@ import { StubRtcBridge } from "./core/stub-engine"; // StubRtcBridge: e2e-only, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 // TSK-145 (US-095 / EP-020) — CTA "Vai alla Libreria" migrata a Button variant="outline":
 // azione secondaria coerente con il Button primary del FileLoader ("Carica ROM").
+import { ThemeSwitcher } from "./components/ThemeSelector/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
 
 // TSK-025 (ADR-005): selezione engine. Default ENGINE REALE per-piattaforma via
@@ -407,61 +407,42 @@ function AppContent({
   }
 
   return (
-    <main className="sb-app">
-      <header className="flex items-center justify-between">
-        {/* a11y (EP-012 window A): h1 mantenuto per WCAG page-has-heading-one.
-            Il nome accessibile dell'heading è fornito dall'alt dell'immagine
-            del logo brand (sostituisce il testo "Soli-boy"). */}
-        <h1 className="sb-title sb-title--logo">
-          <img className="sb-logo" src={logoUrl} alt="Soli-boy" />
-        </h1>
-      </header>
-
-      {/* TSK-069 (US-033) — Banner privacy on-device al primo avvio.
-          Non bloccante: l'utente può interagire con il resto dell'app.
-          Rimane come overlay/banner sopra la navigazione (indipendente dalle tab). */}
-      {!privacyAck && (
-        <PrivacyNotice variant="banner" onAcknowledge={ackPrivacy} />
-      )}
-
-      {/* TSK-057 (US-025) — Banner auto-update: no-op su web (guard in UpdateBanner).
-          Posizionato dopo il banner privacy per non competere in visibilità. */}
-      <UpdateBanner />
-
-      {/* TSK-143 (US-094 / EP-020) — Navigazione a 4 tab via primitiva Radix
-          Tabs (solids). Radix implementa nativamente il pattern WAI-ARIA APG
-          Tabs: `role="tablist"`/`role="tab"`/`role="tabpanel"`,
-          `aria-selected`, `aria-controls` e keyboard navigation
-          (Arrow/Home/End/Space/Enter). L'`aria-label` sulla lista preserva
-          l'identificatore accessibile "Sezioni app" atteso dai test e2e.
-
-          Panel Play: `forceMount` + `data-[state=inactive]:hidden` per tenere
-          il Player SEMPRE montato (preserva lo stato WasmBoy fra switch tab —
-          A-01 validata: WasmBoyEngine.resume() ha guard `if (!configured)
-          return`, quindi il player montato-ma-mai-avviato è sicuro).
-          Gli altri panel (library/settings/info) usano il default Radix
-          (unmount quando inattivo): nessuno stato di background da preservare.
-
-          `data-testid="panel-*"` sui `TabsContent` per compatibilità con i
-          selettori e2e (`page.locator('[data-testid="panel-library"]')` ecc.).
-          Gli `id` espliciti sono stati rimossi: Radix gestisce internamente la
-          wiring ARIA (`aria-controls`/`aria-labelledby`) con i propri ID generati
-          — sovrascriverli causa violazione `aria-valid-attr-value` (F-01 a11y). */}
+    <div className="proto-root sb-app">
+      {/* TSK-143 (US-094 / EP-020) + EP-021 — Shell prototipo: header con logo,
+          tab inline centrate e quick theme toggle; contenuto scrollabile sotto.
+          Radix Tabs: pattern WAI-ARIA APG completo; `aria-label` "Sezioni app"
+          preservato per e2e. */}
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as Tab)} // Radix emette solo i value dei TabsTrigger registrati
-        className="flex flex-col flex-1"
+        onValueChange={(value) => setActiveTab(value as Tab)}
+        className="flex flex-col flex-1 min-h-0"
       >
-        <TabsList aria-label="Sezioni app" className="w-full rounded-none border-b border-border bg-transparent p-0 overflow-x-auto">
-          {TABS.map((tab) => (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
+        <header className="sb-app-header">
+          <h1 className="sb-title sb-title--logo m-0">
+            <img className="sb-logo" src={logoUrl} alt="Soli-boy" />
+          </h1>
+
+          <nav className="sb-app-header__nav" aria-label="Navigazione principale">
+            <TabsList
+              aria-label="Sezioni app"
+              className="sb-app-header__tabs w-full rounded-none border-0 bg-transparent p-0 overflow-x-auto"
             >
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+              {TABS.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </nav>
+
+          <ThemeSwitcher theme={theme} onThemeChange={setTheme} />
+        </header>
+
+        <main className="sb-app-main">
+          {!privacyAck && (
+            <PrivacyNotice variant="banner" onAcknowledge={ackPrivacy} />
+          )}
+          <UpdateBanner />
 
         {/* Panel Play — SEMPRE montato via `forceMount`. Radix imposta
             `data-state="inactive"` + attributo `hidden` sull'elemento quando
@@ -473,7 +454,7 @@ function AppContent({
           value="play"
           forceMount
           data-testid="panel-play"
-          className="flex flex-col gap-5 data-[state=inactive]:hidden"
+          className="flex flex-col gap-5 data-[state=inactive]:hidden mt-0"
         >
           <Player
             engine={engine}
@@ -497,15 +478,32 @@ function AppContent({
             autoStart={autoStartFromLibrary}
             onStateChange={setPlayerState}
           />
-          {/* TSK-145 — CTA idle (nessuna ROM selezionata) su primitive solids.
-              Layout: colonna centrata, gap/padding via utility Tailwind (nessuna
-              classe custom `.sb-play-idle-cta` residua). Button variant="outline"
-              per differenziarsi visivamente dal primary "Carica ROM" (invito a
-              navigare, non azione principale di importazione). */}
+          {/* EP-021 — CTA idle stile prototipo: drop-zone con invito a Libreria.
+              Il contenitore non è focusabile (no role=button) per evitare
+              nested-interactive con il Button interno (axe WCAG). */}
           {!selected && (
-            <div className="flex flex-col items-center gap-4 p-8 text-center">
-              <p className="text-muted-foreground text-sm">Nessun gioco selezionato</p>
-              <Button variant="outline" onClick={() => setActiveTab("library")}>
+            <div
+              className="drop-zone"
+              onClick={() => setActiveTab("library")}
+              data-testid="play-idle-drop-zone"
+            >
+              <div className="text-3xl mb-2" aria-hidden="true">
+                📁
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">
+                Carica una ROM per iniziare
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Trascina un file .gb · .gbc · .gba oppure vai alla Libreria
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab("library");
+                }}
+              >
                 Vai alla Libreria
               </Button>
             </div>
@@ -515,7 +513,7 @@ function AppContent({
         <TabsContent
           value="library"
           data-testid="panel-library"
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-5 mt-0"
         >
           <Library
             key={refresh}
@@ -524,23 +522,16 @@ function AppContent({
             onSelect={handleLibrarySelect}
             onBeforeRemove={handleBeforeRemoveRom}
           />
-          {/* FileLoader canonico in Libreria per importare nuove ROM. */}
           <FileLoader
             storage={storage}
             onImported={() => setRefresh((n) => n + 1)}
           />
         </TabsContent>
 
-        {/* Panel Impostazioni — la progressive disclosure è ora gestita
-            direttamente dentro `Settings` via solids `Accordion` (Radix)
-            [TSK-149 / EP-020 / US-097]. Il wrapper `.sb-accordion-wrap`
-            legacy è stato rimosso: le regole CSS custom per marker/chevron
-            (`app-extra.css`) sono sostituite dagli attributi Radix
-            (data-state) e dall'icona `ChevronDown` interna al DS. */}
         <TabsContent
           value="settings"
           data-testid="panel-settings"
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-5 mt-0"
         >
           <Settings
             profile={profile}
@@ -558,17 +549,9 @@ function AppContent({
             }}
             autoStartFromLibrary={autoStartPreference}
             onAutoStartChange={async (value) => {
-              // TSK-102 (US-053) — stesso pattern del toggle haptics:
-              // aggiorna lo stato in memoria e poi persiste via ConfigPort
-              // (fire-and-forget con log non bloccante in caso di reject —
-              // vedi `saveAutoStartFromLibrary` in useAutoStartConfig).
               setAutoStartPreference(value);
               await saveAutoStartFromLibrary(value);
             }}
-            // ADR-009 §4 — wiring RTC produzione: platform dal gioco caricato,
-            // bridge dall'engine. RtcSection si nasconde da sola se la cartuccia
-            // non ha RTC (bridge null) o la piattaforma non lo supporta.
-            // In e2e stub mode i fallback E2E_RTC_PLATFORM / stubRtcBridge restano attivi.
             rtcPlatform={selected?.platform ?? E2E_RTC_PLATFORM}
             rtcBridge={engine.rtcBridge ?? stubRtcBridge ?? undefined}
           />
@@ -577,12 +560,11 @@ function AppContent({
         <TabsContent
           value="info"
           data-testid="panel-info"
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-5 mt-0"
         >
-          <PrivacyNotice variant="section" />
-          <StoreComplianceNotice />
-          <LegalNotice />
+          <InfoTab />
         </TabsContent>
+        </main>
       </Tabs>
 
       {/* TSK-101 (US-053) + TSK-153 (EP-020) — AlertDialog Radix per conferma
@@ -609,6 +591,7 @@ function AppContent({
           <AlertDialogFooter>
             <AlertDialogCancel data-action="cancel">Annulla</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-action="confirm"
               onClick={confirmGameChange}
             >
@@ -617,9 +600,7 @@ function AppContent({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <footer className="sb-app-footer" />
-    </main>
+    </div>
   );
 }
 

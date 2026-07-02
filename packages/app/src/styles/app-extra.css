@@ -41,11 +41,147 @@ footer {
    toccarle qui (regola R.8 scope di scrittura chiuso al TSK).
    ============================================================================ */
 
-html, body { margin: 0; }
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
 body {
   background: var(--sd-color-bg-canvas, #140b22);
   color: var(--sd-color-text-primary, #f0e9ff);
   font-family: var(--sd-font-body, system-ui, sans-serif);
+}
+
+/* ============================================================================
+   EP-021 — Prototype shell layout (output/prototypes/ep020)
+   ============================================================================ */
+
+.proto-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.sb-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sd-space-md, 12px);
+  padding: var(--sd-space-md, 12px) var(--sd-space-lg, 20px);
+  border-bottom: 1px solid var(--sd-color-border-muted, #3a2a63);
+  background: var(--sd-color-bg-surface, #1a1028);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.sb-app-header__nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.sb-app-header__tabs {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.sb-app-main {
+  flex: 1;
+  overflow: auto;
+  padding: 0 var(--sd-space-lg, 20px) var(--sd-space-lg, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-lg, 16px);
+}
+
+/* Theme switcher (header quick toggle) */
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-sm, 8px);
+  padding: 6px var(--sd-space-md, 12px);
+  background: var(--sd-color-bg-elevated, #241838);
+  border: 1px solid var(--sd-color-border-default, #4a3570);
+  border-radius: var(--sd-radius-full, 999px);
+  cursor: pointer;
+  font-size: var(--sd-text-xs, 12px);
+  font-family: var(--sd-font-mono, ui-monospace, monospace);
+  color: var(--sd-color-text-primary, #f0e9ff);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.theme-switcher:hover {
+  background: var(--sd-color-bg-hover, #2e1f4a);
+  border-color: var(--sd-color-primary-default, #c026d3);
+}
+
+.theme-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--sd-color-primary-default, #c026d3);
+  flex-shrink: 0;
+}
+
+.theme-switcher-sep {
+  color: var(--sd-color-text-tertiary, #9b8ab8);
+  font-size: 10px;
+}
+
+/* Play tab — idle drop zone CTA */
+.drop-zone {
+  border: 2px dashed var(--sd-color-border-default, #4a3570);
+  border-radius: var(--sd-radius-md, 10px);
+  padding: var(--sd-space-2xl, 40px) var(--sd-space-xl, 28px);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.drop-zone:hover,
+.drop-zone:focus-visible {
+  border-color: var(--sd-color-primary-default, #c026d3);
+  background: var(--sd-color-bg-hover, #2e1f4a);
+  outline: none;
+}
+
+/* Play tab — desktop row: screen + save state sidebar */
+.sb-play-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-lg, 16px);
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .sb-play-row {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.sb-play-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-md, 12px);
+}
+
+.save-panel-desktop {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .save-panel-desktop {
+    width: 14rem;
+  }
 }
 
 /* ============================================================================
@@ -59,12 +195,12 @@ body {
    LANDSCAPE: Player espanso, overlay ai lati (D-pad sinistra, pulsanti destra).
    ============================================================================ */
 
-/* Shell principale: rispetta la safe area su tutti i lati. */
-.sb-app {
-  padding-top:    max(var(--sd-space-lg, 20px), env(safe-area-inset-top));
-  padding-right:  max(var(--sd-space-lg, 20px), env(safe-area-inset-right));
-  padding-bottom: max(var(--sd-space-lg, 20px), env(safe-area-inset-bottom));
-  padding-left:   max(var(--sd-space-lg, 20px), env(safe-area-inset-left));
+/* Shell principale: rispetta la safe area su tutti i lati (EP-021 proto-root). */
+.sb-app.proto-root {
+  padding-top:    max(0px, env(safe-area-inset-top));
+  padding-right:  max(0px, env(safe-area-inset-right));
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+  padding-left:   max(0px, env(safe-area-inset-left));
 }
 
 /* --- TouchOverlay safe-area ---------------------------------------------- */
@@ -154,11 +290,9 @@ body {
 
 /* --- Landscape non-fullscreen: layout 3-colonne --------------------------- */
 @media (orientation: landscape) {
-  /* Nel landscape .sb-app riduce il gap verticale (meno spazio in altezza). */
-  .sb-app {
+  /* Nel landscape il main riduce il gap verticale (meno spazio in altezza). */
+  .sb-app-main {
     gap: var(--sd-space-sm, 8px);
-    padding-top:    max(var(--sd-space-sm, 8px), env(safe-area-inset-top));
-    padding-bottom: max(var(--sd-space-sm, 8px), env(safe-area-inset-bottom));
   }
 
   /* .sb-player-layout landscape: riga con schermo al centro, overlay ai lati.
@@ -209,15 +343,13 @@ body {
   display: contents;
 }
 
-.sb-app {
-  max-width: 920px;
-  margin: 0 auto;
-  padding: var(--sd-space-lg, 16px);
+/* .sb-app shell padding: safe-area only on proto-root (see TSK-064 block above).
+   Layout flex/gap lives on .sb-app-main inside proto-root. */
+.sb-app.proto-root {
   display: flex;
   flex-direction: column;
-  gap: var(--sd-space-lg, 16px);
+  gap: 0;
 }
-.sb-app > header { margin-bottom: var(--sd-space-md, 12px); }
 
 /* FileLoader — TSK-145 (EP-020): .sb-loader e .sb-dropzone rimossi;
    sostituiti da utility Tailwind in FileLoader.tsx. */

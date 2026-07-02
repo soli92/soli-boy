@@ -430,7 +430,9 @@ export function Player({
   const scopeId = screenId.replace(/[^a-zA-Z0-9_-]/g, "");
 
   return (
-    <section className="sb-app">
+    <section className="sb-player">
+      <div className="sb-play-row">
+        <div className="sb-play-main">
       {/* TSK-036 — regola scoped per il <canvas> reso dall'adapter all'interno
           del contenitore `.sb-screen`. width/height a 100% per riempire il
           box, object-fit dipende dall'aspect scelto (contain | fill).
@@ -781,11 +783,11 @@ export function Player({
           {error}
         </p>
       )}
-      {/* TSK-032 — Pannello "Save state" (US-016, ADR-006 §Decisione p.4).
-          Reso solo se la composizione applicativa fornisce un SaveService:
-          test e composizioni legacy che non lo passano restano invariati. */}
+        </div>
+      {/* EP-021 — Save state sidebar su desktop (sotto lo schermo su mobile). */}
       {saveService && (
         <SaveStatePanel
+          className="save-panel-desktop"
           engine={engine}
           saveService={saveService}
           romId={romId}
@@ -793,6 +795,7 @@ export function Player({
           isRunning={running}
         />
       )}
+      </div>
     </section>
   );
 }
