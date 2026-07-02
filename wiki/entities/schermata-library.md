@@ -36,3 +36,8 @@ Riflette la libreria di gioco con griglia titolo/piattaforma e ricerca/filtro, e
 ## Pagine collegate
 [[2026-06-01-mockups-ui]]
 [[solids]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
+  - US-096 Library tab — game grid + search + chips + dialog

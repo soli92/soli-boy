@@ -35,3 +35,8 @@ Nei mockup desktop l'input riporta "Tastiera & gamepad Xbox connesso; i controll
 
 ## Pagine collegate
 [[2026-06-01-mockups-ui]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
+  - US-095 Play tab — Player + HUD + FileLoader migration

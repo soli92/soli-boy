@@ -28,3 +28,8 @@ I mockup coprono tre fasce di dispositivo — mobile (~390px), tablet (~768px), 
 [[schermata-library]]
 [[schermata-player]]
 [[schermata-settings]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
+  - US-094 App shell + Tabs navigation migration

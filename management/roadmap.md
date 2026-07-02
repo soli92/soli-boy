@@ -2,7 +2,7 @@
 type: roadmap
 status: draft
 created: 2026-06-01
-updated: 2026-06-01T22:00:00+02:00
+updated: 2026-07-02T20:59:00+00:00
 ---
 
 # Roadmap — soli-boy
@@ -86,3 +86,11 @@ moduli già consegnati e abilitano i futuri).
 - Sprint 4/5 (completati): WasmBoy GB/GBC (real), GBA (mGBA), deprecazione
   EmulatorJS, save state, filtri video. TSK-041 done (bugfix canvas WasmBoy).
 - EP-009 (futura): **Supporto arcade** (FBNeo/MAME) via libretro/RetroArch web — rinviato (gap arcade-emulation-engine).
+
+## Release cross-cutting — Graphic Refactoring (completata)
+
+| EP | Titolo | Priorità | Confidence | Dipende da | Sprint |
+|----|--------|----------|-----------|-----------|--------|
+| EP-020 | Graphic Refactoring & Solids Component Migration | high | done | EP-010, EP-012, EP-013 | 17–18 |
+
+- **EP-020** chiusa 2026-07-02: migrazione UI da classi `sb-*`/`sd-*` a componenti React `@soli92/solids` (shadcn/Radix/Tailwind). 9 US (US-092..100), 22 TSK (TSK-136..157) tutti `done`. Prototipo dual-theme in `output/prototypes/ep020/`. Design brief: `wiki/design/ep020-design-brief.md`.
