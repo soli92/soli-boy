@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.25"   # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01): upgrade a v2.25 (VCS Branch Awareness Layer EP-034, opt-in). Nota: monorepo → EP-034 degenere (single-HEAD).
+pattern_version: "2.26"   # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01) → 2.26 (2026-07-02): upgrade a v2.26 (Prototype Generation Layer EP-035, opt-in).
 
 owner: soli92
 language: it
@@ -109,6 +109,7 @@ scheduler:
     a11y: true           # v2.18 NEW (EP-007 ADR-016 §C) — parallel cross-TSK, serial same-TSK; composto inline con visual-oracle in Modalità 1
     ux-ui-review: true   # v2.18 NEW (EP-008 ADR-020 §C / ADR-019 §Punto 3) — sub-step di L2 (develop), aspetta visual_status non-pending
     functional-oracle: true  # v2.20 NEW EP-018 (ADR-066) — serial same-app, parallel cross-app; attivato da functional_oracle.enabled: true
+    prototype: false         # v2.26 NEW (EP-035) — opt-in default false (R.P3)
 
 # Code Quality Review Layer (PATTERN §19) — ON.
 code_quality:
@@ -395,3 +396,36 @@ wiki_lint:
     cost_warn_usd: 1.0
     output_report: true
     output_report_path: "code_quality/reports/"
+
+# =============================================================
+# Prototype Generation Layer (v2.26, EP-035, PATTERN §27)
+# Genera prototipi UI/UX partendo da spec o intent in linguaggio naturale.
+# Backend adattativi con cascata di fallback: figma → penpot → react → html.
+# Il backend html (T0) e' il fallback terminale garantito (INV-1).
+# Layer opt-in (R.P3): tutti i flag default false → factory v2.25 identica.
+# =============================================================
+prototyping:
+  enabled: false                    # master switch EP-035 (R.P3 default off)
+  backend: auto                     # auto | html | react | figma | penpot
+  fallback_chain: [figma, penpot, react, html]
+  degrade_policy: notify            # notify (default) | strict
+  fidelity: interactive             # static | interactive | animated
+  design_source: auto               # auto | <path> | none
+  art_director: inherit             # inherit | on | off
+  output_path: "output/prototypes"
+  oracle_handoff: true
+  scheduler_domain: prototype
+  backends:
+    html:
+      css_strategy: tailwind-cdn
+      single_file: true
+    react:
+      component_lib: shadcn
+      storybook: true
+      target: null
+    figma:
+      mcp_server: "figma"
+      file_key: ""
+    penpot:
+      mcp_server: "penpot"
+      instance_url: ""
