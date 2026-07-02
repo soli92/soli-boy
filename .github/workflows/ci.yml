@@ -67,3 +67,50 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  desktop-dist:
+    name: Desktop Linux AppImage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: ci
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: |
+            packages/app/package-lock.json
+            packages/desktop/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: packages/app
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: packages/desktop
+        run: npm ci
+
+      - name: Build desktop (renderer + main)
+        working-directory: packages/desktop
+        run: npm run build
+
+      - name: Smoke test (headless, xvfb)
+        working-directory: packages/desktop
+        run: xvfb-run -a npm run smoke:ci
+
+      - name: Package Linux AppImage (unsigned)
+        working-directory: packages/desktop
+        run: npx electron-builder --linux AppImage --publish never
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: soli-boy-desktop-linux
+          path: packages/desktop/release/*.AppImage
+          retention-days: 7
+          if-no-files-found: error

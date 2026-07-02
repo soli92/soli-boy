@@ -1,0 +1,98 @@
+# Continuous Deployment desktop su GitHub Releases (US-104 / TSK-163).
+#
+# Allineato ad ADR-007/008 e policy CD web (TSK-051): produzione su tag `v*`.
+# Target Sprint 19: Linux AppImage unsigned (CI); Win/macOS = build locale o job futuri.
+#
+# Prerequisiti:
+#   - Tag `v*` su `main` (es. `v0.4.0`).
+#   - `GITHUB_TOKEN` (fornito automaticamente) con `permissions: contents: write`.
+#     electron-builder usa `GH_TOKEN` per creare la GitHub Release e caricare artefatti
+#     + `latest-linux.yml` per electron-updater (ADR-008, solo AppImage Linux).
+#
+# Dry-run locale / senza publish:
+#   workflow_dispatch con `publish=false` → build + artifact, nessuna Release.
+#   Oppure: `npm run dist:linux` in packages/desktop.
+
+name: CD — Desktop GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Ignorato: workflow_dispatch è sempre dry-run (publish solo su tag v*)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release-linux:
+    name: Linux AppImage → GitHub Releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: |
+            packages/app/package-lock.json
+            packages/desktop/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: packages/app
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: packages/desktop
+        run: npm ci
+
+      - name: Build desktop (renderer + main)
+        working-directory: packages/desktop
+        run: npm run build
+
+      - name: Smoke test (headless, xvfb)
+        working-directory: packages/desktop
+        run: xvfb-run -a npm run smoke:ci
+
+      - name: Package Linux AppImage
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npm run dist:linux:publish
+          else
+            npx electron-builder --linux AppImage --publish never
+          fi
+
+      - name: Verify auto-update metadata (latest-linux.yml)
+        if: github.event_name == 'push'
+        working-directory: packages/desktop/release
+        run: |
+          test -f latest-linux.yml || (echo "missing latest-linux.yml" && exit 1)
+          head -5 latest-linux.yml
+
+      - name: Upload build artifacts (workflow_dispatch dry-run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: soli-boy-desktop-release-dry-run
+          path: |
+            packages/desktop/release/*.AppImage
+            packages/desktop/release/latest-linux.yml
+          retention-days: 7
+          if-no-files-found: error
