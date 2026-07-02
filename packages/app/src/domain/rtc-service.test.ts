@@ -51,7 +51,14 @@ describe("hasRtc (capability per piattaforma — fallback conservativo ADR-009)"
   it("ritorna false per piattaforme sconosciute (fallback conservativo)", () => {
     expect(hasRtc("nes")).toBe(false);
     expect(hasRtc("")).toBe(false);
-    expect(hasRtc("GB")).toBe(false); // case-sensitive: la mappa canonica usa lowercase
+  });
+
+  it("GB uppercase (Platform type) → true", () => {
+    expect(hasRtc("GB")).toBe(true);
+  });
+
+  it("GBC uppercase → true", () => {
+    expect(hasRtc("GBC")).toBe(true);
   });
 });
 

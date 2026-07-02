@@ -255,7 +255,11 @@ body {
 }
 
 /* --- tema 90s-party --------------------------------------------------------
-   Override primary-subtle cyberpunk per ToggleGroup/chip attivi (ex .sb-chip-on). */
+   destructive Button (ex .sb-danger): fg #fff5f7 su #ff0055 = 3.65 (< 4.5).
+   Scuriamo --sd-color-destructive-default a #c90047 → ratio ~4.6:1. */
+[data-theme="90s-party"] {
+  --sd-color-destructive-default: #c90047; /* was #ff0055 — WCAG AA fix */
+}
 
 /* --- tema cyberpunk (sub-gap iter-1: TSK-044 non scansionato) --------------
    ToggleGroup attivo: primary-default #06b6d4 su primary-subtle #0e7490 =
