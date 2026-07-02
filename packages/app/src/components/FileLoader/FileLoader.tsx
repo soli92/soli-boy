@@ -161,7 +161,7 @@ export function FileLoader({
       </div>
 
       {error && (
-        <p className="sb-note" role="alert">
+        <p className="text-xs text-muted-foreground" role="alert">
           {error}
         </p>
       )}

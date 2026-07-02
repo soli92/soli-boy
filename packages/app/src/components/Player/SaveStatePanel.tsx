@@ -19,9 +19,20 @@
 //   bottone ha un aria-label esplicito che cita lo slot ("Salva nello slot N",
 //   "Carica slot N", "Elimina slot N") perché il label visibile è breve.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 // TSK-144 (EP-020 Wave B P1) — solids Button (shadcn-ui).
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { EmulatorEngine } from "../../core/core-wrapper";
 import type { LoadStateResult } from "../../domain/save-service";
 import type { Core } from "../../domain/types";
@@ -222,16 +233,20 @@ export function SaveStatePanel({
   }
 
   return (
-    <section
-      className="sd-card sb-sec"
+    <Card
       role="region"
       aria-label="Save state"
       data-supported={String(supported)}
       data-disabled={String(disabled)}
     >
-      <h3 className="sb-lbl">Save state</h3>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          Save state
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
       {disabledReason && (
-        <p className="sb-note" data-testid="sb-savestate-disabled-note">
+        <p className="text-xs text-muted-foreground" data-testid="sb-savestate-disabled-note">
           {disabledReason}
         </p>
       )}
@@ -241,7 +256,7 @@ export function SaveStatePanel({
           const slotLabel = `Slot ${slot + 1}`;
           const occupied = rec !== undefined;
           return (
-            <li key={slot} className="sd-flex sd-items-center sd-gap-sm">
+            <li key={slot} className="flex items-center gap-2">
               <span className="sb-key" aria-hidden="true">
                 {slotLabel}
               </span>
@@ -281,7 +296,10 @@ export function SaveStatePanel({
               >
                 <i className="ti ti-trash" aria-hidden="true" />
               </Button>
-              <span className="sb-mt" data-testid={`sb-savestate-meta-${slot}`}>
+              <span
+                className="text-xs text-muted-foreground"
+                data-testid={`sb-savestate-meta-${slot}`}
+              >
                 {occupied
                   ? new Date(rec!.createdAt).toLocaleString()
                   : "vuoto"}
@@ -292,130 +310,37 @@ export function SaveStatePanel({
       </ul>
       {message && (
         <p
-          className="sb-note"
+          className="text-xs text-muted-foreground"
           role={message.kind === "error" ? "alert" : "status"}
           data-testid="sb-savestate-message"
         >
           {message.text}
         </p>
       )}
-      {pendingDelete && (
-        <DeleteSaveStateDialog
-          slotLabel={`Slot ${pendingDelete.slot + 1}`}
-          createdAtLabel={new Date(pendingDelete.createdAt).toLocaleString()}
-          onConfirm={() => void confirmDelete()}
-          onCancel={cancelDelete}
-        />
-      )}
-    </section>
-  );
-}
-
-interface DeleteSaveStateDialogProps {
-  slotLabel: string;
-  createdAtLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-/** TSK-111 — Dialog di conferma eliminazione save state. */
-function DeleteSaveStateDialog({
-  slotLabel,
-  createdAtLabel,
-  onConfirm,
-  onCancel,
-}: DeleteSaveStateDialogProps) {
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  const confirmRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    cancelRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onCancel]);
-
-  function onDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key !== "Tab") return;
-    const focusables = [cancelRef.current, confirmRef.current].filter(
-      (el): el is HTMLButtonElement => el !== null,
-    );
-    if (focusables.length === 0) return;
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    const active = document.activeElement;
-    if (e.shiftKey && active === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
-
-  return (
-    <div
-      className="sb-dialog-backdrop"
-      onClick={onCancel}
-      data-testid="delete-savestate-backdrop"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-savestate-title"
-        aria-describedby="delete-savestate-desc"
-        className="sb-dialog"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={onDialogKeyDown}
-        data-testid="delete-savestate-dialog"
-        style={{
-          background: "var(--sd-color-bg-elevated, #1a1430)",
-          color: "var(--sd-color-text-primary, #f0e9ff)",
-          borderRadius: "var(--sd-radius-md, 8px)",
-          padding: "1.25rem",
-          maxWidth: "24rem",
-          width: "calc(100% - 2rem)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
+      </CardContent>
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) cancelDelete();
         }}
       >
-        <h2 id="delete-savestate-title" className="sb-lbl" style={{ marginTop: 0 }}>
-          Eliminare save state?
-        </h2>
-        <p id="delete-savestate-desc" className="sb-note" style={{ marginBottom: "1.25rem" }}>
-          {slotLabel} — salvato il {createdAtLabel}
-        </p>
-        <div className="sd-flex sd-gap-sm" style={{ justifyContent: "flex-end" }}>
-          {/* TSK-144 — Dialog Annulla = outline, Elimina = destructive. */}
-          <Button ref={cancelRef} type="button" variant="outline" onClick={onCancel}>
-            Annulla
-          </Button>
-          <Button
-            ref={confirmRef}
-            type="button"
-            variant="destructive"
-            onClick={onConfirm}
-          >
-            Elimina
-          </Button>
-        </div>
-      </div>
-    </div>
+        <AlertDialogContent data-testid="delete-savestate-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare save state?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete
+                ? `Slot ${pendingDelete.slot + 1} — salvato il ${new Date(pendingDelete.createdAt).toLocaleString()}`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void confirmDelete()}>
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
   );
 }

@@ -12,6 +12,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InputMapping } from "../../domain/input-mapping";
@@ -369,14 +370,28 @@ describe("TouchOverlay config panel", () => {
     expect(panel).toHaveAttribute("aria-labelledby", "sb-touch-config-heading");
   });
 
+function sliderThumb(testId: string): HTMLElement {
+  return within(screen.getByTestId(testId)).getByRole("slider");
+}
+
+function configFocusTarget(testId: string): HTMLElement {
+  if (testId === "sb-touch-config-save" || testId === "sb-touch-config-close") {
+    return screen.getByTestId(testId);
+  }
+  return sliderThumb(testId);
+}
+
   it("TSK-114: slider opacità focusabile via Tab", () => {
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);
     fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
-    const opacity = screen.getByTestId("sb-touch-config-opacity");
+    const opacity = sliderThumb("sb-touch-config-opacity");
     opacity.focus();
     expect(opacity).toHaveFocus();
-    expect(opacity).toHaveAttribute("aria-label", "Opacità overlay");
+    expect(screen.getByTestId("sb-touch-config-opacity")).toHaveAttribute(
+      "aria-label",
+      "Opacità overlay",
+    );
   });
 
   it("TSK-119: tutti gli slider hanno aria-label e ruolo slider", () => {
@@ -394,10 +409,8 @@ describe("TouchOverlay config panel", () => {
     ];
 
     for (const { testId, label } of sliders) {
-      const el = screen.getByTestId(testId);
-      expect(el).toHaveAttribute("type", "range");
-      expect(el).toHaveAttribute("aria-label", label);
-      expect(el).toHaveAccessibleName(label);
+      expect(screen.getByTestId(testId)).toHaveAttribute("aria-label", label);
+      expect(sliderThumb(testId)).toBeInTheDocument();
     }
   });
 
@@ -417,11 +430,10 @@ describe("TouchOverlay config panel", () => {
       "sb-touch-config-close",
     ];
 
-    screen.getByTestId(order[0]!).focus();
+    sliderThumb(order[0]!).focus();
     for (let i = 1; i < order.length; i++) {
       fireEvent.keyDown(document.activeElement!, { key: "Tab", code: "Tab" });
-      // jsdom: simula focus sul prossimo elemento focusabile in ordine DOM
-      const next = screen.getByTestId(order[i]!);
+      const next = configFocusTarget(order[i]!);
       next.focus();
       expect(document.activeElement).toBe(next);
     }
@@ -431,21 +443,24 @@ describe("TouchOverlay config panel", () => {
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);
     fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
-    const slider = screen.getByTestId("sb-touch-config-opacity") as HTMLInputElement;
-    const before = parseFloat(slider.value);
+    const slider = sliderThumb("sb-touch-config-opacity");
+    const before = Number(slider.getAttribute("aria-valuenow"));
     slider.focus();
     fireEvent.keyDown(slider, { key: "ArrowRight" });
-    fireEvent.change(slider, { target: { value: String(before + 0.05) } });
-    expect(parseFloat(slider.value)).toBeGreaterThanOrEqual(before);
+    const after = Number(slider.getAttribute("aria-valuenow"));
+    expect(after).toBeGreaterThanOrEqual(before);
   });
 
   it("cambio opacità aggiorna stato in real-time (CSS custom property)", async () => {
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} />);
     fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
-    const slider = screen.getByTestId("sb-touch-config-opacity");
-    fireEvent.change(slider, { target: { value: "0.4" } });
-    // Verifica che il valore sia stato applicato (il pannello mostra "40%").
+    const slider = sliderThumb("sb-touch-config-opacity");
+    slider.focus();
+    fireEvent.keyDown(slider, { key: "Home" });
+    for (let i = 0; i < 4; i++) {
+      fireEvent.keyDown(slider, { key: "ArrowRight" });
+    }
     expect(screen.getByText(/40%/)).toBeInTheDocument();
   });
 
@@ -453,11 +468,13 @@ describe("TouchOverlay config panel", () => {
     const port = fakeConfigPort();
     const im = fakeInputMapping();
     render(<TouchOverlay core="gambatte" inputMapping={im} storage={port} />);
-    // Attende che il loading sia finito.
     await waitFor(() => expect(port.getConfigMock).toHaveBeenCalled());
     fireEvent.click(screen.getByTestId("sb-touch-config-toggle"));
-    const slider = screen.getByTestId("sb-touch-config-opacity");
-    fireEvent.change(slider, { target: { value: "0.3" } });
+    const slider = sliderThumb("sb-touch-config-opacity");
+    slider.focus();
+    fireEvent.keyDown(slider, { key: "Home" });
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
     await act(async () => {
       fireEvent.click(screen.getByTestId("sb-touch-config-save"));
     });

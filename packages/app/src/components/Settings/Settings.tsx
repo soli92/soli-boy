@@ -80,6 +80,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+// TSK-150 (EP-020) — Form controls migrati a primitive solids/shadcn.
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Kbd } from "@/components/ui/kbd";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 // TSK-121 / US-064 — L e R rimappabili come gli altri comandi (EP-018).
 const BUTTONS: GameButton[] = [
@@ -372,7 +386,8 @@ export function Settings({
   // apre singolarmente. `type="multiple"` consente più sezioni aperte insieme
   // (parità pre-migrazione: ogni <details> era indipendente).
   return (
-    <section className="sd-card sb-sec" aria-label="Impostazioni controlli">
+    <Card aria-label="Impostazioni controlli">
+      <CardContent className="pt-6">
       <Accordion
         type="multiple"
         defaultValue={["video"]}
@@ -380,43 +395,49 @@ export function Settings({
       >
         {/* === Accordion 1: Controlli — rimappatura (chiuso di default) === */}
         <AccordionItem value="controls">
-          <AccordionTrigger>
-            <span className="sb-lbl">Controlli — rimappatura</span>
-          </AccordionTrigger>
+          <AccordionTrigger>Controlli — rimappatura</AccordionTrigger>
           <AccordionContent>
-            <ul className="sb-keymap">
+            <ul className="flex flex-col gap-1 list-none p-0 m-0">
               {Object.entries(profile).map(([key, button]) => (
-                <li key={key} className="sb-row">
-                  <span className="sb-key">{key}</span>
-                  <select
-                    className="sb-sel"
-                    aria-label={`Pulsante per ${key}`}
-                    value={button}
-                    onChange={(e) =>
-                      onRemap(key, e.target.value as GameButton)
-                    }
-                  >
-                    {BUTTONS.map((b) => (
-                      <option key={b} value={b}>
-                        {buttonOptionLabel(b)}
-                      </option>
-                    ))}
-                  </select>
+                <li key={key}>
+                  <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                    <Kbd>{key}</Kbd>
+                    <Select
+                      value={button}
+                      onValueChange={(value) =>
+                        onRemap(key, value as GameButton)
+                      }
+                    >
+                      <SelectTrigger
+                        className="w-[120px]"
+                        aria-label={`Pulsante per ${key}`}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BUTTONS.map((b) => (
+                          <SelectItem key={b} value={b}>
+                            {buttonOptionLabel(b)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </li>
               ))}
             </ul>
-            <button
+            <Button
               type="button"
-              className="sb-btn sb-full"
+              className="w-full mt-3"
               onClick={() => {
                 onSaveProfile?.();
                 setSaved(true);
               }}
             >
               Salva profilo
-            </button>
+            </Button>
             {saved && (
-              <p className="sb-note" role="status">
+              <p className="text-xs text-muted-foreground" role="status">
                 Profilo salvato.
               </p>
             )}
@@ -428,59 +449,84 @@ export function Settings({
             `videoConfigPort` (opzionale); stessa porta consumata da Player.
             TSK-110 — aperto di default (UX-028) — su Accordion via defaultValue. */}
         <AccordionItem value="video">
-          <AccordionTrigger>
-            <span className="sb-lbl">Resa video — scala e proporzioni</span>
-          </AccordionTrigger>
+          <AccordionTrigger>Resa video — scala e proporzioni</AccordionTrigger>
           <AccordionContent>
-            <ul className="sb-keymap" aria-label="Impostazioni resa video">
-              <li className="sb-row">
-                <span className="sb-key">Fattore di scala</span>
-                <select
-                  className="sb-sel"
-                  aria-label="Fattore di scala"
-                  value={String(effective.scale)}
-                  onChange={(e) => handleScaleChange(e.target.value)}
-                >
-                  <option value="auto">{scaleLabel("auto")}</option>
-                  {SCALE_FACTORS.map((s) => (
-                    <option key={s} value={String(s)}>
-                      {scaleLabel(s)}
-                    </option>
-                  ))}
-                </select>
+            <ul
+              className="flex flex-col gap-1 list-none p-0 m-0"
+              aria-label="Impostazioni resa video"
+            >
+              <li>
+                <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                  <Label htmlFor="video-scale">Fattore di scala</Label>
+                  <Select
+                    value={String(effective.scale)}
+                    onValueChange={handleScaleChange}
+                  >
+                    <SelectTrigger
+                      id="video-scale"
+                      className="w-[120px]"
+                      aria-label="Fattore di scala"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">{scaleLabel("auto")}</SelectItem>
+                      {SCALE_FACTORS.map((s) => (
+                        <SelectItem key={s} value={String(s)}>
+                          {scaleLabel(s)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </li>
-              <li className="sb-row">
-                <span className="sb-key">Aspect ratio</span>
-                <select
-                  className="sb-sel"
-                  aria-label="Aspect ratio"
-                  value={effective.aspect}
-                  onChange={(e) => handleAspectChange(e.target.value)}
-                >
-                  {ASPECT_RATIOS.map((a) => (
-                    <option key={a} value={a}>
-                      {aspectLabel(a)}
-                    </option>
-                  ))}
-                </select>
+              <li>
+                <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                  <Label htmlFor="video-aspect">Aspect ratio</Label>
+                  <Select
+                    value={effective.aspect}
+                    onValueChange={handleAspectChange}
+                  >
+                    <SelectTrigger
+                      id="video-aspect"
+                      className="w-[120px]"
+                      aria-label="Aspect ratio"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ASPECT_RATIOS.map((a) => (
+                        <SelectItem key={a} value={a}>
+                          {aspectLabel(a)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </li>
-              {/* TSK-037 — Filtro (US-022): nearest/smoothing/scanline. Stesso
-                  `VideoSettings`, stessa porta, persistenza già coperta dal
-                  wiring App.tsx introdotto in TSK-036. */}
-              <li className="sb-row">
-                <span className="sb-key">Filtro</span>
-                <select
-                  className="sb-sel"
-                  aria-label="Filtro video"
-                  value={effective.filter}
-                  onChange={(e) => handleFilterChange(e.target.value)}
-                >
-                  {VIDEO_FILTERS.map((f) => (
-                    <option key={f} value={f}>
-                      {filterLabel(f)}
-                    </option>
-                  ))}
-                </select>
+              <li>
+                <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                  <Label htmlFor="video-filter">Filtro</Label>
+                  <Select
+                    value={effective.filter}
+                    onValueChange={handleFilterChange}
+                  >
+                    <SelectTrigger
+                      id="video-filter"
+                      className="w-[120px]"
+                      aria-label="Filtro video"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VIDEO_FILTERS.map((f) => (
+                        <SelectItem key={f} value={f}>
+                          {filterLabel(f)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </li>
             </ul>
           </AccordionContent>
@@ -494,13 +540,9 @@ export function Settings({
             lo stesso markup di prima — niente regressioni. */}
         {theme !== undefined && onThemeChange !== undefined && (
           <AccordionItem value="aspect">
-            <AccordionTrigger>
-              <span className="sb-lbl">Aspetto — tema UI</span>
-            </AccordionTrigger>
+            <AccordionTrigger>Aspetto — tema UI</AccordionTrigger>
             <AccordionContent>
-              <ul className="sb-keymap" aria-label="Impostazioni aspetto">
-                <ThemeSelector theme={theme} onThemeChange={onThemeChange} />
-              </ul>
+              <ThemeSelector theme={theme} onThemeChange={onThemeChange} />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -512,26 +554,18 @@ export function Settings({
             queste prop non vedono la sezione. */}
         {hapticsEnabled !== undefined && onHapticsChange !== undefined && (
           <AccordionItem value="mobile">
-            <AccordionTrigger>
-              <span className="sb-lbl">Mobile — feedback aptico</span>
-            </AccordionTrigger>
+            <AccordionTrigger>Mobile — feedback aptico</AccordionTrigger>
             <AccordionContent>
-              <ul className="sb-keymap" aria-label="Impostazioni mobile">
-                <li className="sb-row">
-                  <span className="sb-key">Vibrazione ai controlli</span>
-                  <button
-                    type="button"
-                    className={`sb-tog${hapticsEnabled ? " on" : ""}`}
-                    role="switch"
-                    aria-checked={hapticsEnabled}
-                    aria-label="Feedback aptico"
-                    data-testid="sb-haptics-toggle"
-                    onClick={() => onHapticsChange(!hapticsEnabled)}
-                  >
-                    <span className="knob" />
-                  </button>
-                </li>
-              </ul>
+              <div className="flex items-center justify-between py-1.5">
+                <Label htmlFor="haptics-toggle">Vibrazione ai controlli</Label>
+                <Switch
+                  id="haptics-toggle"
+                  checked={hapticsEnabled}
+                  onCheckedChange={onHapticsChange}
+                  data-testid="sb-haptics-toggle"
+                  aria-label="Feedback aptico"
+                />
+              </div>
             </AccordionContent>
           </AccordionItem>
         )}
@@ -548,30 +582,20 @@ export function Settings({
         {autoStartFromLibrary !== undefined &&
           onAutoStartChange !== undefined && (
             <AccordionItem value="autostart">
-              <AccordionTrigger>
-                <span className="sb-lbl">Avvio — automatico dalla libreria</span>
-              </AccordionTrigger>
+              <AccordionTrigger>Avvio — automatico dalla libreria</AccordionTrigger>
               <AccordionContent>
-                <ul className="sb-keymap" aria-label="Impostazioni avvio">
-                  <li className="sb-row">
-                    <span className="sb-key">
-                      Avvio automatico dalla libreria
-                    </span>
-                    <button
-                      type="button"
-                      className={`sb-tog${
-                        autoStartFromLibrary ? " on" : ""
-                      }`}
-                      role="switch"
-                      aria-checked={autoStartFromLibrary}
-                      aria-label="Avvio automatico dalla libreria"
-                      data-testid="sb-auto-start-toggle"
-                      onClick={() => onAutoStartChange(!autoStartFromLibrary)}
-                    >
-                      <span className="knob" />
-                    </button>
-                  </li>
-                </ul>
+                <div className="flex items-center justify-between py-1.5">
+                  <Label htmlFor="auto-start-toggle">
+                    Avvio automatico dalla libreria
+                  </Label>
+                  <Switch
+                    id="auto-start-toggle"
+                    checked={autoStartFromLibrary}
+                    onCheckedChange={onAutoStartChange}
+                    data-testid="sb-auto-start-toggle"
+                    aria-label="Avvio automatico dalla libreria"
+                  />
+                </div>
               </AccordionContent>
             </AccordionItem>
           )}
@@ -582,69 +606,72 @@ export function Settings({
             se manca `saveService` (es. test legacy senza wiring) o non ci sono
             save state per la ROM selezionata. */}
         <AccordionItem value="data">
-          <AccordionTrigger>
-            <span className="sb-lbl">Dati — salvataggi (export/import)</span>
-          </AccordionTrigger>
+          <AccordionTrigger>Dati — salvataggi (export/import)</AccordionTrigger>
           <AccordionContent>
             <div
-              className="sd-flex sd-items-center sd-gap-sm"
+              className="flex items-center gap-2 mb-3"
               role="group"
               aria-label="Esporta e importa salvataggi"
               data-testid="sb-data-section"
             >
-              {/* Etichetta di contesto: la ROM corrente è quella selezionata nel
-                  Player (App-level state). Non rendiamo un selettore ROM dedicato:
-                  (a) la Library lo è già; (b) duplicare il titolo qui collide con
-                  gli e2e che usano `getByText(title)` in modalità strict. L'utente
-                  che vuole esportare i save di un'altra ROM la seleziona dalla
-                  Library, poi torna in Settings (workflow esistente).
-                  Per la stessa ragione, indichiamo la ROM tramite id corto (non il
-                  titolo): il titolo resta univoco nella DOM (Library tile + Player). */}
-              <span className="sb-key" data-testid="sb-data-rom-context">
+              <span className="text-sm font-mono" data-testid="sb-data-rom-context">
                 {currentRom
                   ? `Gioco corrente: ${currentRom.title}`
                   : "Nessun gioco corrente"}
               </span>
             </div>
-            <div className="sd-flex sd-items-center sd-gap-sm">
-              <span className="sb-key">Salvataggio</span>
-              <select
-                className="sb-sel"
-                aria-label="Salvataggio da esportare"
-                value={selectedSaveStateId}
-                onChange={(e) => setSelectedSaveStateId(e.target.value)}
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <Label htmlFor="save-state-export" className="shrink-0">
+                Salvataggio
+              </Label>
+              <Select
+                value={selectedSaveStateId || undefined}
+                onValueChange={setSelectedSaveStateId}
                 disabled={!dataSectionAvailable || saveStates.length === 0}
               >
-                {saveStates.length === 0 && (
-                  <option value="">(nessun salvataggio)</option>
-                )}
-                {saveStates.map((rec) => (
-                  <option key={rec.id} value={rec.id}>
-                    {saveStateLabel(rec)}
-                  </option>
-                ))}
-              </select>
-              <button
+                <SelectTrigger
+                  id="save-state-export"
+                  className="w-[220px]"
+                  aria-label="Salvataggio da esportare"
+                >
+                  <SelectValue
+                    placeholder={
+                      saveStates.length === 0
+                        ? "(nessun salvataggio)"
+                        : undefined
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {saveStates.map((rec) => (
+                    <SelectItem key={rec.id} value={rec.id}>
+                      {saveStateLabel(rec)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
                 type="button"
-                className="sb-btn sb-btn-primary"
                 onClick={handleExport}
                 disabled={exportDisabled}
                 aria-label="Esporta salvataggio selezionato"
               >
                 Esporta
-              </button>
+              </Button>
             </div>
-            <div className="sd-flex sd-items-center sd-gap-sm">
-              <span className="sb-key">Importa file</span>
-              <input
+            <div className="flex flex-wrap items-center gap-3">
+              <Label htmlFor="save-state-import" className="shrink-0">
+                Importa file
+              </Label>
+              <Input
                 ref={importInputRef}
+                id="save-state-import"
                 type="file"
                 aria-label="Importa file di salvataggio"
-                // application/json + estensione di courtesy: il dialog non filtra a
-                // schermo (US-019 menziona "file"), ma offre un hint al browser.
                 accept="application/json,.json"
                 onChange={handleImportChange}
                 disabled={!dataSectionAvailable || dataBusy}
+                className="max-w-xs"
               />
             </div>
             {!dataSectionAvailable && (
@@ -652,13 +679,13 @@ export function Settings({
               // quando manca il SaveService, non un feedback contestuale. Mantenere
               // un role="status" qui creerebbe ambiguità con il messaggio "Profilo
               // salvato" (anch'esso role="status"): l'AT leggerebbe entrambi.
-              <p className="sb-note" data-testid="sb-data-unavailable">
+              <p className="text-xs text-muted-foreground" data-testid="sb-data-unavailable">
                 La gestione dei salvataggi non è disponibile.
               </p>
             )}
             {dataMessage && (
               <p
-                className="sb-note"
+                className="text-xs text-muted-foreground"
                 role={dataMessage.kind === "error" ? "alert" : "status"}
                 data-testid="sb-data-message"
               >
@@ -687,9 +714,7 @@ export function Settings({
             è coerente (vedi StoreComplianceNotice.tsx). Avviso esplicito
             no-ROM protette per conformità store. */}
         <AccordionItem value="legal">
-          <AccordionTrigger>
-            <span className="sb-lbl">Legale</span>
-          </AccordionTrigger>
+          <AccordionTrigger>Legale</AccordionTrigger>
           <AccordionContent>
             {/* headingHidden=true: il trigger sopra funge già da titolo —
                 sopprimiamo l'intestazione interna di StoreComplianceNotice
@@ -704,9 +729,7 @@ export function Settings({
             riflette il modello on-device dell'app (ADR-002 §Conseguenze).
             Variante `section`: layout coerente, non dismissibile. */}
         <AccordionItem value="privacy">
-          <AccordionTrigger>
-            <span className="sb-lbl">Privacy</span>
-          </AccordionTrigger>
+          <AccordionTrigger>Privacy</AccordionTrigger>
           <AccordionContent>
             {/* headingHidden=true: il trigger sopra funge già da titolo —
                 sopprimiamo l'intestazione interna di PrivacyNotice
@@ -715,6 +738,7 @@ export function Settings({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-    </section>
+      </CardContent>
+    </Card>
   );
 }

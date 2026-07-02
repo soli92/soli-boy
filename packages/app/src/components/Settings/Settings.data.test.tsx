@@ -1,12 +1,5 @@
 // TSK-033 — Test Settings: sezione "Dati" (US-019).
-// Copre:
-//  - presenza dei controlli (Gioco/Salvataggio/Esporta/Importa) in stato base;
-//  - export con mock di `URL.createObjectURL`/anchor `.click()`;
-//  - import KO con file invalido → role="alert" comprensibile (US-019 AC3);
-//  - import OK con file valido → role="status" e refresh della lista entry.
-//
-// Mock: la sezione consuma un'interfaccia segregata `SaveDataPort`, quindi
-// niente fake-indexeddb e niente engine. Coerente con SaveStatePanel.test.tsx.
+// TSK-150 (EP-020) — Select Radix al posto del <select> nativo per export.
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,18 +11,11 @@ import type {
 import type { SaveStateRecord } from "../../storage/types";
 import { Settings, type SaveDataPort } from "./Settings";
 
-// TSK-149 (EP-020 / US-097) — La sezione "Dati" è ora un `AccordionItem`
-// (Radix) chiuso di default: il contenuto è smontato finché il trigger non è
-// attivato. `openDataSection` clicca il trigger per portare la sezione allo
-// stato "aperta" e mettere i controlli nel DOM — parità con `<details open>`
-// pre-migrazione (dove il DOM era popolato in ogni caso).
 function openDataSection(): void {
   fireEvent.click(
     screen.getByRole("button", { name: /dati — salvataggi/i }),
   );
 }
-
-// --- Helpers fake ------------------------------------------------------------
 
 function makeSaveState(over: Partial<SaveStateRecord> = {}): SaveStateRecord {
   return {
@@ -53,10 +39,6 @@ function makePort(opts: {
   importSave: ReturnType<typeof vi.fn>;
 } {
   const list = opts.list ?? [];
-  // Annotazione esplicita del return type: senza, TS allarga `ok: true` a
-  // `boolean` (cfr. literal type widening in inference su oggetti) e i mock
-  // non sono più assegnabili a `SaveDataPort`. Coerente con il pattern dei
-  // makePort/Port mock di SaveStatePanel.test.tsx.
   const exportRes: ExportSaveStateResult =
     opts.exportRes ?? { ok: true, blob: new Blob(["{}"]), filename: "x.json" };
   const importRes: ImportSaveResult =
@@ -70,9 +52,6 @@ function makePort(opts: {
   };
 }
 
-// jsdom non implementa URL.createObjectURL/revokeObjectURL: stub per i test.
-// Coerente con Library.test.tsx (linea 37 ss.). Riportato anche su anchor.click
-// per intercettare l'invocazione senza side-effect (nessun download reale).
 const originalCreate = URL.createObjectURL;
 const originalRevoke = URL.revokeObjectURL;
 let createSpy: ReturnType<typeof vi.fn>;
@@ -84,7 +63,6 @@ beforeEach(() => {
   revokeSpy = vi.fn();
   URL.createObjectURL = createSpy as unknown as typeof URL.createObjectURL;
   URL.revokeObjectURL = revokeSpy as unknown as typeof URL.revokeObjectURL;
-  // Spy su HTMLAnchorElement.prototype.click → niente navigazione in jsdom.
   clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 });
 
@@ -93,8 +71,6 @@ afterEach(() => {
   URL.revokeObjectURL = originalRevoke;
   clickSpy.mockRestore();
 });
-
-// --- Tests -------------------------------------------------------------------
 
 describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
   it("renderizza i controlli della sezione 'Dati' (contesto ROM / Salvataggio / Esporta / Importa file)", async () => {
@@ -108,18 +84,15 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
       />,
     );
     openDataSection();
-    // Group region con label "Esporta e importa salvataggi"
     expect(screen.getByRole("group", { name: /esporta e importa salvataggi/i })).toBeInTheDocument();
-    // Etichetta contesto ROM (no selettore — UX semplice; ROM definita dal Player).
     expect(screen.getByTestId("sb-data-rom-context")).toHaveTextContent(/gioco corrente/i);
-    // Controlli presenti
     expect(screen.getByLabelText("Salvataggio da esportare")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /esporta/i })).toBeInTheDocument();
     expect(screen.getByLabelText("Importa file di salvataggio")).toBeInTheDocument();
-    // Attesa idratazione dei save state
     await waitFor(() => {
-      const sel = screen.getByLabelText("Salvataggio da esportare") as HTMLSelectElement;
-      expect(sel.options.length).toBeGreaterThan(0);
+      expect(screen.getByLabelText("Salvataggio da esportare")).not.toHaveTextContent(
+        /nessun salvataggio/i,
+      );
     });
   });
 
@@ -137,9 +110,9 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
     await waitFor(() => expect(port.listSaveStates).toHaveBeenCalled());
     const exportBtn = screen.getByRole("button", { name: /esporta/i }) as HTMLButtonElement;
     expect(exportBtn.disabled).toBe(true);
-    const saveSel = screen.getByLabelText("Salvataggio da esportare") as HTMLSelectElement;
-    // Includes the placeholder "(nessun salvataggio)"
-    expect(saveSel.options[0].textContent).toMatch(/nessun salvataggio/i);
+    expect(screen.getByLabelText("Salvataggio da esportare")).toHaveTextContent(
+      /nessun salvataggio/i,
+    );
   });
 
   it("Esporta: invoca exportSaveState, crea object URL e clicca l'anchor (download)", async () => {
@@ -158,26 +131,18 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
     openDataSection();
 
     await waitFor(() => expect(port.listSaveStates).toHaveBeenCalled());
-    // Attendi che il re-render post-load popoli la select con "ss-a" selezionato:
-    // senza questa attesa il click può precedere lo state update (flaky in CI).
     await waitFor(() =>
-      expect((screen.getByLabelText("Salvataggio da esportare") as HTMLSelectElement).value).toBe("ss-a"),
+      expect(screen.getByLabelText("Salvataggio da esportare")).toHaveTextContent(/slot 1/i),
     );
-    // Attendi esplicitamente che il bottone Esporta sia abilitato: in CI il
-    // re-render che aggiorna `selectedSaveStateId` (e quindi `exportDisabled`)
-    // può essere in volo tra il `waitFor` precedente e il click. Un bottone
-    // disabled in React non invoca onClick. Timeout a 3 s per CI lento.
     const exportBtn = screen.getByRole("button", { name: /esporta/i });
     await waitFor(() => expect(exportBtn).not.toBeDisabled(), { timeout: 3_000 });
 
     fireEvent.click(exportBtn);
 
     await waitFor(() => expect(port.exportSaveState).toHaveBeenCalledWith("ss-a"), { timeout: 3_000 });
-    // URL allocato sul blob, anchor cliccato, URL revocato.
     expect(createSpy).toHaveBeenCalledTimes(1);
     expect(clickSpy).toHaveBeenCalledTimes(1);
     expect(revokeSpy).toHaveBeenCalledWith("blob:mock/1");
-    // Feedback positivo come status (no alert).
     const msg = await screen.findByRole("status");
     expect(msg).toHaveTextContent(/esportato/i);
   });
@@ -252,7 +217,6 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
 
     const status = await screen.findByRole("status");
     expect(status).toHaveTextContent(/importato/i);
-    // Refresh atteso: lista interrogata di nuovo per la ROM corrente.
     await waitFor(() => expect(port.listSaveStates).toHaveBeenCalledTimes(2));
   });
 
@@ -261,15 +225,11 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
       <Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} />,
     );
     openDataSection();
-    // Sezione presente per UX prevedibile.
     expect(screen.getByRole("group", { name: /esporta e importa salvataggi/i })).toBeInTheDocument();
-    // Nota "non disponibile" (statica, non role=status: vedi commento in Settings.tsx).
     expect(screen.getByTestId("sb-data-unavailable")).toHaveTextContent(
       /gestione dei salvataggi non è disponibile/i,
     );
-    // Esporta disabilitato.
     expect((screen.getByRole("button", { name: /esporta/i }) as HTMLButtonElement).disabled).toBe(true);
-    // Senza currentRom: il contesto invita a selezionare una ROM.
     expect(screen.getByTestId("sb-data-rom-context")).toHaveTextContent(
       /nessun gioco corrente/i,
     );

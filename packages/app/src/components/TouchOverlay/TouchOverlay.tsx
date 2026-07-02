@@ -9,6 +9,10 @@
 // Persistenza config via ConfigPort (store `config`, chiave `touch-overlay`).
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 import { useHaptics } from "./useHaptics";
 import type { Core } from "../../domain/types";
 import type { InputMapping } from "../../domain/input-mapping";
@@ -19,6 +23,45 @@ import {
   useTouchOverlayConfig,
   type TouchOverlayConfig,
 } from "./useTouchOverlayConfig";
+
+/** TSK-155 (EP-020) — stile visivo D-pad su Tailwind; posizionamento in solids-theme.css */
+const DPAD_BTN_VISUAL =
+  "flex items-center justify-center text-xl cursor-pointer select-none touch-none bg-[var(--sd-color-bg-elevated)] border border-[var(--sd-color-border-strong)] rounded-[var(--sd-radius-sm)] text-[var(--sd-color-text-secondary)] active:opacity-80";
+
+/** TSK-155 — classi visive per pulsanti azione (posizionamento via .ab-* in CSS) */
+function abButtonVisualClass(button: string): string {
+  const base =
+    "flex items-center justify-center cursor-pointer select-none touch-none border-0 font-[family-name:var(--sd-font-heading)] active:opacity-80";
+  switch (button) {
+    case "l":
+    case "r":
+      return cn(
+        base,
+        "rounded-[var(--sd-radius-sm)] bg-[var(--sd-color-bg-elevated)] border border-[var(--sd-color-border-strong)] text-[var(--sd-color-text-secondary)] text-sm font-semibold",
+      );
+    case "a":
+      return cn(
+        base,
+        "rounded-full text-lg font-semibold bg-[var(--sd-color-pad-a-bg)] text-[var(--sd-color-pad-a)]",
+      );
+    case "b":
+      return cn(
+        base,
+        "rounded-full text-lg font-semibold bg-[var(--sd-color-pad-b-bg)] text-[var(--sd-color-pad-b)]",
+      );
+    case "select":
+    case "start":
+      return cn(
+        base,
+        "rounded-[var(--sd-radius-sm)] bg-[var(--sd-color-bg-elevated)] border border-[var(--sd-color-border-strong)] text-[var(--sd-color-text-secondary)] text-[10px] font-semibold",
+      );
+    default:
+      return cn(
+        base,
+        "rounded-full text-lg font-semibold bg-[var(--sd-color-bg-elevated)] text-[var(--sd-color-text-secondary)]",
+      );
+  }
+}
 
 export interface TouchOverlayProps {
   /** Core della sessione corrente: determina il set di pulsanti. */
@@ -332,7 +375,7 @@ function TouchOverlayInner({
           <button
             key={button}
             type="button"
-            className={`dp dp-${button}`}
+            className={cn("dp", `dp-${button}`, DPAD_BTN_VISUAL)}
             aria-hidden="true"
             tabIndex={-1}
             data-testid={`sb-touch-dpad-${button}`}
@@ -345,7 +388,10 @@ function TouchOverlayInner({
             {label}
           </button>
         ))}
-        <div className="dp-center" />
+        <div
+          className="dp-center bg-[var(--sd-color-bg-surface)]"
+          aria-hidden="true"
+        />
       </div>
 
       {/* Pulsanti azione */}
@@ -358,7 +404,7 @@ function TouchOverlayInner({
           <button
             key={button}
             type="button"
-            className={`ab ab-${button}`}
+            className={cn("ab", `ab-${button}`, abButtonVisualClass(button))}
             aria-hidden="true"
             tabIndex={-1}
             data-testid={`sb-touch-btn-${button}`}
@@ -428,13 +474,6 @@ function TouchOverlayConfigPanel({
     width: 260,
     zIndex: 12,
     pointerEvents: "auto",
-    padding: "var(--sd-space-md, 12px)",
-    background: "var(--sd-color-bg-surface)",
-    border: "1px solid var(--sd-color-border-muted)",
-    borderRadius: "var(--sd-radius-lg, 14px)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "var(--sd-space-sm, 8px)",
   };
 
   // TSK-114 — id stabile per aria-labelledby del wrapper.
@@ -443,7 +482,7 @@ function TouchOverlayConfigPanel({
   return (
     <div
       ref={panelRef}
-      className="sd-card"
+      className="rounded-lg border bg-card text-card-foreground shadow-sm flex flex-col gap-2 p-3"
       style={panelStyle}
       data-testid="sb-touch-config-panel"
       role="region"
@@ -452,136 +491,118 @@ function TouchOverlayConfigPanel({
       <h3
         id={panelHeadingId}
         ref={headingRef}
-        className="sb-lbl"
+        className="text-sm font-medium text-muted-foreground m-0 outline-none"
         tabIndex={-1}
-        style={{ margin: 0, outline: "none" }}
       >
         Configurazione overlay touch
       </h3>
 
-      {/* Opacità */}
-      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-        <span className="sb-key">
-          Opacità: {Math.round(config.opacity * 100)}%
-        </span>
-        <input
-          type="range"
-          className="sb-range"
-          min={0.2}
-          max={1}
-          step={0.05}
-          value={config.opacity}
-          data-testid="sb-touch-config-opacity"
-          aria-label="Opacità overlay"
-          onChange={(e) => onChange({ opacity: parseFloat(e.target.value) })}
-        />
-      </label>
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <Label>
+            Opacità: {Math.round(config.opacity * 100)}%
+          </Label>
+          <Slider
+            min={0.2}
+            max={1}
+            step={0.05}
+            value={[config.opacity]}
+            data-testid="sb-touch-config-opacity"
+            aria-label="Opacità overlay"
+            onValueChange={([v]) => onChange({ opacity: v })}
+          />
+        </div>
 
-      {/* Dimensione */}
-      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-        <span className="sb-key">
-          Dimensione: {Math.round(config.scale * 100)}%
-        </span>
-        <input
-          type="range"
-          className="sb-range"
-          min={0.5}
-          max={1.5}
-          step={0.05}
-          value={config.scale}
-          data-testid="sb-touch-config-scale"
-          aria-label="Dimensione overlay"
-          onChange={(e) => onChange({ scale: parseFloat(e.target.value) })}
-        />
-      </label>
+        <div className="space-y-1">
+          <Label>
+            Dimensione: {Math.round(config.scale * 100)}%
+          </Label>
+          <Slider
+            min={0.5}
+            max={1.5}
+            step={0.05}
+            value={[config.scale]}
+            data-testid="sb-touch-config-scale"
+            aria-label="Dimensione overlay"
+            onValueChange={([v]) => onChange({ scale: v })}
+          />
+        </div>
 
-      {/* Posizione D-pad (X) */}
-      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-        <span className="sb-key">D-pad sinistra: {config.dpadOffsetX}%</span>
-        <input
-          type="range"
-          className="sb-range"
-          min={0}
-          max={40}
-          step={1}
-          value={config.dpadOffsetX}
-          data-testid="sb-touch-config-dpad-x"
-          aria-label="Posizione D-pad orizzontale"
-          onChange={(e) => onChange({ dpadOffsetX: parseInt(e.target.value, 10) })}
-        />
-      </label>
+        <div className="space-y-1">
+          <Label>D-pad sinistra: {config.dpadOffsetX}%</Label>
+          <Slider
+            min={0}
+            max={40}
+            step={1}
+            value={[config.dpadOffsetX]}
+            data-testid="sb-touch-config-dpad-x"
+            aria-label="Posizione D-pad orizzontale"
+            onValueChange={([v]) => onChange({ dpadOffsetX: v })}
+          />
+        </div>
 
-      {/* Posizione D-pad (Y) */}
-      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-        <span className="sb-key">D-pad basso: {config.dpadOffsetY}%</span>
-        <input
-          type="range"
-          className="sb-range"
-          min={0}
-          max={40}
-          step={1}
-          value={config.dpadOffsetY}
-          data-testid="sb-touch-config-dpad-y"
-          aria-label="Posizione D-pad verticale"
-          onChange={(e) => onChange({ dpadOffsetY: parseInt(e.target.value, 10) })}
-        />
-      </label>
+        <div className="space-y-1">
+          <Label>D-pad basso: {config.dpadOffsetY}%</Label>
+          <Slider
+            min={0}
+            max={40}
+            step={1}
+            value={[config.dpadOffsetY]}
+            data-testid="sb-touch-config-dpad-y"
+            aria-label="Posizione D-pad verticale"
+            onValueChange={([v]) => onChange({ dpadOffsetY: v })}
+          />
+        </div>
 
-      {/* Posizione pulsanti (X) */}
-      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-        <span className="sb-key">Pulsanti destra: {config.buttonsOffsetX}%</span>
-        <input
-          type="range"
-          className="sb-range"
-          min={0}
-          max={40}
-          step={1}
-          value={config.buttonsOffsetX}
-          data-testid="sb-touch-config-btns-x"
-          aria-label="Posizione pulsanti orizzontale"
-          onChange={(e) => onChange({ buttonsOffsetX: parseInt(e.target.value, 10) })}
-        />
-      </label>
+        <div className="space-y-1">
+          <Label>Pulsanti destra: {config.buttonsOffsetX}%</Label>
+          <Slider
+            min={0}
+            max={40}
+            step={1}
+            value={[config.buttonsOffsetX]}
+            data-testid="sb-touch-config-btns-x"
+            aria-label="Posizione pulsanti orizzontale"
+            onValueChange={([v]) => onChange({ buttonsOffsetX: v })}
+          />
+        </div>
 
-      {/* Posizione pulsanti (Y) */}
-      <label className="sb-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-        <span className="sb-key">Pulsanti basso: {config.buttonsOffsetY}%</span>
-        <input
-          type="range"
-          className="sb-range"
-          min={0}
-          max={40}
-          step={1}
-          value={config.buttonsOffsetY}
-          data-testid="sb-touch-config-btns-y"
-          aria-label="Posizione pulsanti verticale"
-          onChange={(e) => onChange({ buttonsOffsetY: parseInt(e.target.value, 10) })}
-        />
-      </label>
+        <div className="space-y-1">
+          <Label>Pulsanti basso: {config.buttonsOffsetY}%</Label>
+          <Slider
+            min={0}
+            max={40}
+            step={1}
+            value={[config.buttonsOffsetY]}
+            data-testid="sb-touch-config-btns-y"
+            aria-label="Posizione pulsanti verticale"
+            onValueChange={([v]) => onChange({ buttonsOffsetY: v })}
+          />
+        </div>
+      </div>
 
-      <div className="sd-flex sd-gap-sm">
-        <button
+      <div className="flex gap-2">
+        <Button
           type="button"
-          className="sb-btn sb-btn-primary"
-          style={{ flex: 1, justifyContent: "center" }}
+          className="flex-1"
           onClick={handleSave}
           disabled={saving}
           data-testid="sb-touch-config-save"
         >
           {saving ? "Salvataggio…" : "Salva"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="sb-btn"
+          variant="outline"
           onClick={onClose}
           data-testid="sb-touch-config-close"
         >
           Chiudi
-        </button>
+        </Button>
       </div>
 
       {saved && (
-        <p className="sb-note" role="status" data-testid="sb-touch-config-saved">
+        <p className="text-xs text-muted-foreground" role="status" data-testid="sb-touch-config-saved">
           Config salvata.
         </p>
       )}

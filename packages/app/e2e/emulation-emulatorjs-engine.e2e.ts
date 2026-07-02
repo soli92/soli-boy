@@ -106,7 +106,7 @@ test.describe("TSK-024 — e2e engine reale (WasmBoyEngine/GB) ciclo completo @s
       });
       // TSK-103: "In pausa" è ora nell'HUD (.sb-hud, role="status"), non dentro
       // .sb-screen. Lo schermo contiene solo il canvas host + overlay "⏸".
-      await expect(page.locator(".sb-hud")).toContainText("In pausa");
+      await expect(page.getByTestId("sb-hud")).toContainText("In pausa");
       // Il bottone Riprendi deve essere visibile; Pausa non deve esserlo.
       await expect(
         page.getByRole("button", { name: /riprendi/i }),

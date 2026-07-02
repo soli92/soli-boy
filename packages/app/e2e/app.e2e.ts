@@ -53,7 +53,7 @@ test("carica una ROM GB → compare in libreria → avvia → pausa", async ({ p
   // schermo (.sb-screen). Verifichiamo stato running via data-state sul viewport.
   const screen = page.locator(".sb-screen");
   await expect(screen).toHaveAttribute("data-state", "running", { timeout: 10_000 });
-  const hud = page.locator(".sb-hud");
+  const hud = page.getByTestId("sb-hud");
   await expect(hud).toContainText("tetris");
 
   // controlli (US-011): pausa → ripresa
@@ -83,8 +83,9 @@ test("file non supportato mostra errore e non entra in libreria", async ({ page 
 test("Settings: rimappatura comando (US-013)", async ({ page }) => {
   await openSettingsTab(page);
   await openControlsRemapAccordion(page);
-  const sel = page.getByLabel("Pulsante per ArrowUp");
-  await expect(sel).toHaveValue("up");
-  await sel.selectOption("a");
-  await expect(sel).toHaveValue("a");
+  const trigger = page.getByLabel("Pulsante per ArrowUp");
+  await expect(trigger).toContainText("UP");
+  await trigger.click();
+  await page.getByRole("option", { name: "A", exact: true }).click();
+  await expect(trigger).toContainText("A");
 });

@@ -1,12 +1,6 @@
 // TSK-044 (US-036) — Test di wiring per ThemeSelector + useTheme (smoke + estesi).
-//
-// Scope: copertura della pipa
-//   ThemeSelector (UI) ↔ useTheme (stato + DOM + porta)
-//
-// TSK-047 (US-036) estende la copertura con test aggiuntivi:
-// - render con theme="dark" → select mostra "Dark" selezionato
-// - cambio selezione verso "90s-party"
-// La copertura hook estesa (parseTheme, save-reject) è in useTheme.test.ts.
+// TSK-151 (EP-020) — ThemeSelector migrato a RadioGroup: i test usano
+// role="radiogroup" / role="radio" invece di <select>.
 
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -27,61 +21,40 @@ function makePort(initial: string | null = null): ThemePort & {
 describe("ThemeSelector (TSK-044 / US-036)", () => {
   it("renderizza le tre opzioni canoniche con label user-facing", () => {
     render(<ThemeSelector theme="90s-party" onThemeChange={vi.fn()} />);
-    const sel = screen.getByLabelText(
-      "Tema dell'interfaccia",
-    ) as HTMLSelectElement;
-    expect(sel.value).toBe("90s-party");
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual([
-      "90s-party",
-      "dark",
-      "cyberpunk",
-    ]);
-    expect(Array.from(sel.options).map((o) => o.textContent)).toEqual([
-      "90's Party",
-      "Dark",
-      "Cyberpunk",
-    ]);
+    const group = screen.getByRole("radiogroup", {
+      name: "Tema dell'interfaccia",
+    });
+    expect(group).toHaveAttribute("data-testid", "sb-theme-select");
+    expect(screen.getByRole("radio", { name: "90's Party" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Dark" })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "Cyberpunk" })).not.toBeChecked();
   });
 
-  it("change su <select> invoca onThemeChange col nuovo valore", () => {
+  it("change su radio invoca onThemeChange col nuovo valore", () => {
     const onThemeChange = vi.fn();
     render(<ThemeSelector theme="90s-party" onThemeChange={onThemeChange} />);
-    fireEvent.change(screen.getByLabelText("Tema dell'interfaccia"), {
-      target: { value: "cyberpunk" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "Cyberpunk" }));
     expect(onThemeChange).toHaveBeenCalledWith("cyberpunk");
   });
 
-  // TSK-047 — test aggiuntivi componente (US-036 AC: selezione tema)
-
-  it("render con theme='dark' → select mostra 'Dark' come valore selezionato", () => {
+  it("render con theme='dark' → radio 'Dark' selezionato", () => {
     render(<ThemeSelector theme="dark" onThemeChange={vi.fn()} />);
-    const sel = screen.getByLabelText(
-      "Tema dell'interfaccia",
-    ) as HTMLSelectElement;
-    expect(sel.value).toBe("dark");
-    // Verifica che le opzioni 90s-party, dark, cyberpunk siano presenti
-    const optionValues = Array.from(sel.options).map((o) => o.value);
-    expect(optionValues).toContain("90s-party");
-    expect(optionValues).toContain("dark");
-    expect(optionValues).toContain("cyberpunk");
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "90's Party" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Cyberpunk" })).toBeInTheDocument();
   });
 
   it("cambio selezione verso '90s-party' → onThemeChange chiamato con '90s-party'", () => {
     const onThemeChange = vi.fn();
     render(<ThemeSelector theme="dark" onThemeChange={onThemeChange} />);
-    fireEvent.change(screen.getByLabelText("Tema dell'interfaccia"), {
-      target: { value: "90s-party" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "90's Party" }));
     expect(onThemeChange).toHaveBeenCalledWith("90s-party");
   });
 
   it("cambio selezione verso 'cyberpunk' da 'dark' → onThemeChange chiamato con 'cyberpunk'", () => {
     const onThemeChange = vi.fn();
     render(<ThemeSelector theme="dark" onThemeChange={onThemeChange} />);
-    fireEvent.change(screen.getByLabelText("Tema dell'interfaccia"), {
-      target: { value: "cyberpunk" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "Cyberpunk" }));
     expect(onThemeChange).toHaveBeenCalledWith("cyberpunk");
   });
 });
@@ -112,7 +85,6 @@ describe("useTheme (TSK-044 / US-036)", () => {
   it("setTheme aggiorna data-theme E invoca port.save", async () => {
     const port = makePort(null);
     const { result } = renderHook(() => useTheme(port));
-    // mount + load(null) → default canonico applicato
     await waitFor(() => expect(port.load).toHaveBeenCalled());
 
     await act(async () => {

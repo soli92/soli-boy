@@ -1,13 +1,14 @@
-// TSK-044 (US-036) — ThemeSelector: <select> controllato per scegliere il tema UI.
+// TSK-044 (US-036) — ThemeSelector: scelta tema UI.
+// TSK-151 (EP-020) — Migrato da <select> a RadioGroup (Radix): le 3 opzioni
+// mutualmente esclusive sono tutte visibili contemporaneamente (semantica
+// corretta). `data-testid="sb-theme-select"` sul RadioGroup root; contratto
+// hook `useTheme` invariato (theme + setTheme).
 //
-// Componente "puro": riceve `theme` corrente e una `onThemeChange` callback.
-// La persistenza (IndexedDB `config` store, chiave `"ui-theme"`) è gestita
-// fuori da qui — tipicamente da `useTheme(makeThemePort(indexedDbConfig))`
-// in `App.tsx`. Stesso pattern controllato delle `Resa video` (Settings.tsx).
-//
-// Opzioni canoniche (US-036 §Acceptance Criteria): `90s-party`, `dark`,
-// `cyberpunk`. Le label user-facing sono "90's Party", "Dark", "Cyberpunk".
+// La persistenza (IndexedDB `config`, chiave `"ui-theme"`) è gestita fuori da
+// qui — tipicamente da `useTheme(makeThemePort(indexedDbConfig))` in App.tsx.
 
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UI_THEMES, type UiTheme } from "./useTheme";
 
 export interface ThemeSelectorProps {
@@ -30,32 +31,26 @@ function themeLabel(t: UiTheme): string {
 }
 
 /**
- * Renderizza la riga `Tema` con una `<select>` controllata. Riusa le stesse
- * classi del `Resa video` (sb-row / sb-key / sb-sel) per coerenza visiva nella
- * sezione "Aspetto" di Settings.
- *
- * NB: il `<select>` è un'unica fonte di verità per il tema corrente; il
- * `data-theme` sul `<html>` viene aggiornato dall'hook `useTheme` (App-level),
- * non da questo componente — questo evita doppia applicazione e mantiene il
- * componente facilmente testabile senza side-effect sul DOM globale.
+ * RadioGroup controllato per la scelta del tema. Il `data-theme` su `<html>`
+ * viene aggiornato dall'hook `useTheme` (App-level), non da questo componente.
  */
 export function ThemeSelector({ theme, onThemeChange }: ThemeSelectorProps) {
   return (
-    <li className="sb-row">
-      <span className="sb-key">Tema</span>
-      <select
-        className="sb-sel"
-        aria-label="Tema dell'interfaccia"
-        value={theme}
-        onChange={(e) => onThemeChange(e.target.value)}
-        data-testid="sb-theme-select"
-      >
-        {UI_THEMES.map((t) => (
-          <option key={t} value={t}>
+    <RadioGroup
+      value={theme}
+      onValueChange={onThemeChange}
+      className="flex flex-col gap-2"
+      aria-label="Tema dell'interfaccia"
+      data-testid="sb-theme-select"
+    >
+      {UI_THEMES.map((t) => (
+        <div key={t} className="flex items-center gap-2">
+          <RadioGroupItem value={t} id={`theme-${t}`} />
+          <Label htmlFor={`theme-${t}`} className="cursor-pointer font-normal">
             {themeLabel(t)}
-          </option>
-        ))}
-      </select>
-    </li>
+          </Label>
+        </div>
+      ))}
+    </RadioGroup>
   );
 }

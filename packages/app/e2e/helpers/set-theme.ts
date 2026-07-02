@@ -46,6 +46,17 @@ export const DATA_THEME_ATTR = "data-theme";
 export const VALID_THEMES = UI_THEMES;
 export type UiTheme = (typeof VALID_THEMES)[number];
 
+function themeLabel(theme: UiTheme): string {
+  switch (theme) {
+    case "90s-party":
+      return "90's Party";
+    case "dark":
+      return "Dark";
+    case "cyberpunk":
+      return "Cyberpunk";
+  }
+}
+
 // ---- Strategia 1: IndexedDB + reload (preferita) ---------------------------------
 
 /**
@@ -223,16 +234,16 @@ export async function setThemeViaSelector(page: Page, theme: UiTheme): Promise<v
     }
   }
 
-  const select = page.getByLabel("Tema dell'interfaccia");
-  const count = await select.count();
+  const group = page.getByTestId("sb-theme-select");
+  const count = await group.count();
   if (count === 0) {
     throw new Error(
-      `[set-theme] FAIL-LOUD: ThemeSelector non trovato (aria-label "Tema dell'interfaccia"). ` +
+      `[set-theme] FAIL-LOUD: ThemeSelector non trovato (data-testid "sb-theme-select"). ` +
         `La UI del tema è cambiata — aggiornare set-theme.ts o verificare il componente ThemeSelector.`,
     );
   }
 
-  await select.selectOption(theme);
+  await page.getByRole("radio", { name: themeLabel(theme) }).click();
 
   // Fail-loud post-selezione: verifica che il DOM rifletta il tema atteso.
   await assertThemeApplied(page, theme);

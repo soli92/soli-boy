@@ -656,7 +656,8 @@ export function Player({
           per lo stato (semantica invariante: role="status", aria-live, aria-atomic
           preservati sul Badge esterno — vedi Player.hud.test.tsx). */}
       <div
-        className="sb-hud flex items-center justify-between text-xs text-muted-foreground font-mono px-2 py-1"
+        className="flex items-center justify-between text-xs text-muted-foreground font-mono px-2 py-1"
+        data-testid="sb-hud"
         aria-label="Stato giocatore"
       >
         <span>{title ?? HUD_TITLE_IDLE}</span>
@@ -776,7 +777,7 @@ export function Player({
         </div>
       </div>
       {error && (
-        <p className="sb-note" role="alert">
+        <p className="text-xs text-muted-foreground" role="alert">
           {error}
         </p>
       )}

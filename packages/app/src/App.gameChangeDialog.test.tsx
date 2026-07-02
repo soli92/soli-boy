@@ -168,7 +168,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
       screen.queryByTestId("confirm-game-change-dialog"),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("dialog", { name: /cambia gioco\?/i }),
+      screen.queryByRole("alertdialog", { name: /cambia gioco\?/i }),
     ).not.toBeInTheDocument();
 
     // Il Player resta in "running" sulla ROM A.
@@ -196,10 +196,9 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
       fireEvent.click(tileB);
     });
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: /cambia gioco\?/i,
     });
-    expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveTextContent("Pokemon Red");
 
     // Click "Annulla" → dialog chiuso, ROM originale ancora attiva.
@@ -210,7 +209,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     await waitFor(() => {
       expect(
-        screen.queryByRole("dialog", { name: /cambia gioco\?/i }),
+        screen.queryByRole("alertdialog", { name: /cambia gioco\?/i }),
       ).not.toBeInTheDocument();
     });
 
@@ -247,7 +246,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     await act(async () => {
       fireEvent.click(tileB);
     });
-    await screen.findByRole("dialog", { name: /cambia gioco\?/i });
+    await screen.findByRole("alertdialog", { name: /cambia gioco\?/i });
 
     // Click "Cambia gioco" → swap + auto-start nuova ROM.
     const confirmBtn = screen.getByRole("button", { name: /^cambia gioco$/i });
@@ -258,7 +257,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     // Dialog chiuso.
     await waitFor(() => {
       expect(
-        screen.queryByRole("dialog", { name: /cambia gioco\?/i }),
+        screen.queryByRole("alertdialog", { name: /cambia gioco\?/i }),
       ).not.toBeInTheDocument();
     });
 
@@ -289,7 +288,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     await act(async () => {
       fireEvent.click(tileB);
     });
-    await screen.findByRole("dialog", { name: /cambia gioco\?/i });
+    await screen.findByRole("alertdialog", { name: /cambia gioco\?/i });
 
     // Premi Esc.
     await act(async () => {
@@ -298,7 +297,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
 
     await waitFor(() => {
       expect(
-        screen.queryByRole("dialog", { name: /cambia gioco\?/i }),
+        screen.queryByRole("alertdialog", { name: /cambia gioco\?/i }),
       ).not.toBeInTheDocument();
     });
 
@@ -323,11 +322,10 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     expect(screen.getByTestId("panel-play")).toBeInTheDocument();
   });
 
-  it("AC5: focus iniziale sul bottone 'Cambia gioco' (azione primaria)", async () => {
+  it("AC5: focus iniziale sul bottone 'Annulla' (Radix AlertDialog, TSK-153)", async () => {
     const { App } = await import("./App");
     render(<App />);
 
-    // Avvia ROM_A e apri dialog su ROM_B.
     clickTab(/libreria/i);
     const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
@@ -340,11 +338,11 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     await act(async () => {
       fireEvent.click(tileB);
     });
-    await screen.findByRole("dialog", { name: /cambia gioco\?/i });
+    await screen.findByRole("alertdialog", { name: /cambia gioco\?/i });
 
-    const confirmBtn = screen.getByRole("button", { name: /^cambia gioco$/i });
+    const cancelBtn = screen.getByRole("button", { name: /^annulla$/i });
     await waitFor(() => {
-      expect(document.activeElement).toBe(confirmBtn);
+      expect(document.activeElement).toBe(cancelBtn);
     });
   });
 });

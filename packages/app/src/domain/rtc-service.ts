@@ -86,8 +86,11 @@ export interface RtcBridge {
  */
 export function hasRtc(platform: string): boolean {
   // ADR-009: fallback conservativo — detection runtime canonica via
-  // RtcBridge.hasRtc() nei bridge Sprint 16
-  return platform === "gb" || platform === "gbc";
+  // RtcBridge.hasRtc() nei bridge Sprint 16.
+  // Case-insensitive: `recognizePlatform` espone Platform uppercase ("GB"),
+  // mentre gli e2e URL param usano lowercase ("gbc").
+  const p = platform.toLowerCase();
+  return p === "gb" || p === "gbc";
 }
 
 /**
