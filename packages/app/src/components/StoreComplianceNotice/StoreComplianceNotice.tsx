@@ -19,6 +19,7 @@
 
 import type { ReactElement } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 const HEADING = "Legale: nessuna ROM protetta";
 
@@ -48,6 +49,8 @@ export interface StoreComplianceNoticeProps {
    * fornisce il titolo "Legale" — evita il doppio header.
    */
   headingHidden?: boolean;
+  /** Tono visivo: `destructive` (Settings) o `warning` (tab Info, prototipo). */
+  tone?: "destructive" | "warning";
 }
 
 /**
@@ -58,15 +61,20 @@ export interface StoreComplianceNoticeProps {
 export function StoreComplianceNotice({
   className,
   headingHidden = false,
+  tone = "destructive",
 }: StoreComplianceNoticeProps): ReactElement {
   const headingId = "sb-store-compliance-heading";
   return (
     <Alert
-      variant="destructive"
+      variant={tone === "destructive" ? "destructive" : "default"}
       role="region"
       aria-labelledby={headingHidden ? undefined : headingId}
       data-testid="sb-store-compliance-section"
-      className={className}
+      className={cn(
+        tone === "warning" &&
+          "border-amber-500/60 bg-amber-500/10 text-foreground [&>svg]:text-amber-600",
+        className,
+      )}
     >
       {!headingHidden && (
         <AlertTitle id={headingId}>{HEADING}</AlertTitle>

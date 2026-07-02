@@ -6,9 +6,8 @@ import { FileLoader } from "./components/FileLoader/FileLoader";
 import { Library } from "./components/Library/Library";
 import { Player } from "./components/Player/Player";
 import { Settings } from "./components/Settings/Settings";
-import { LegalNotice } from "./components/LegalNotice";
+import { InfoTab } from "./components/InfoTab/InfoTab";
 import { PrivacyNotice } from "./components/PrivacyNotice/PrivacyNotice";
-import { StoreComplianceNotice } from "./components/StoreComplianceNotice/StoreComplianceNotice";
 // TSK-057 (US-025) — Banner in-app per il ciclo di auto-update Electron.
 // No-op su web (nessun bridge window.soliboyDesktop → ritorna null).
 import { UpdateBanner } from "./components/UpdateBanner/UpdateBanner";
@@ -563,9 +562,7 @@ function AppContent({
           data-testid="panel-info"
           className="flex flex-col gap-5 mt-0"
         >
-          <PrivacyNotice variant="section" />
-          <StoreComplianceNotice />
-          <LegalNotice />
+          <InfoTab />
         </TabsContent>
         </main>
       </Tabs>
@@ -594,6 +591,7 @@ function AppContent({
           <AlertDialogFooter>
             <AlertDialogCancel data-action="cancel">Annulla</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-action="confirm"
               onClick={confirmGameChange}
             >

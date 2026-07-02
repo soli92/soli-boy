@@ -248,8 +248,11 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     });
     await screen.findByRole("alertdialog", { name: /cambia gioco\?/i });
 
-    // Click "Cambia gioco" → swap + auto-start nuova ROM.
+    // EP-021 / UX-EP020-M04 — conferma distruttiva (parità prototipo).
     const confirmBtn = screen.getByRole("button", { name: /^cambia gioco$/i });
+    expect(confirmBtn).toHaveClass("bg-destructive");
+
+    // Click "Cambia gioco" → swap + auto-start nuova ROM.
     await act(async () => {
       fireEvent.click(confirmBtn);
     });
