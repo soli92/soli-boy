@@ -1,0 +1,51 @@
+{
+  "tsk_id": "TSK-143",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version_min": "18",
+    "confidence": "high",
+    "note": "Stack guided (factory.config.yaml stack_mode: guided). Rilevato: Vite 5, React 18, Radix UI Tabs (@radix-ui/react-tabs), shadcn/ui wrapper, Vitest, Playwright e2e. Blast-radius pre-check: skip (.graphify-state/code_paths/app/ assente). Iter-2: passata di verifica — tutti i finding iter-1 dichiarati chiusi."
+  },
+  "iter": 2,
+  "findings": [],
+  "verdict": "pass",
+  "summary": "0 finding. Tutti e 3 i finding iter-1 verificati chiusi senza regressioni. F-2 (TS-IDIOM-002 low): TABS ora `as const`, type Tab derivato con `(typeof TABS)[number][\"id\"]` — singola sorgente di verita', stessa union prodotta, nessuna regressione runtime. F-1 (TS-IDIOM-002 low): commento inline `// Radix emette solo i value dei TabsTrigger registrati` aggiunto su `onValueChange`, cast `value as Tab` giustificato — closure completa. F-3 (QA-TEST-001 medium): test `panel Play rimane montato nel DOM quando tab Library e' attiva (forceMount)` aggiunto in App.gameChangeDialog.test.tsx (righe 314-324), pattern corretto (clickTab + getByTestId sincrono, invariante forceMount non dipendente da stato asincrono). Nessun nuovo finding introdotto dai fix. No-progress: false (finding set vuoto, non identico all'iter precedente). Regression: false (nessun file di produzione toccato dalla fix F-3; F-1/F-2 modifiche puramente additive). Verdict: pass.",
+  "prev_findings_status": [
+    {
+      "id": "F-1",
+      "iter_opened": 1,
+      "rule_id": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "severity": "low",
+      "status": "closed",
+      "verified_at": "packages/app/src/App.tsx:603",
+      "note": "Commento `// Radix emette solo i value dei TabsTrigger registrati` aggiunto inline. Cast giustificato."
+    },
+    {
+      "id": "F-2",
+      "iter_opened": 1,
+      "rule_id": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "severity": "low",
+      "status": "closed",
+      "verified_at": "packages/app/src/App.tsx:115-122",
+      "note": "TABS ora array `as const`. `type Tab = (typeof TABS)[number][\"id\"]` — singola sorgente di verita'. Union prodotta identica: nessuna regressione."
+    },
+    {
+      "id": "F-3",
+      "iter_opened": 1,
+      "rule_id": "code_quality/rules/canonical/QA-TEST-001.md",
+      "severity": "medium",
+      "status": "closed",
+      "verified_at": "packages/app/src/App.gameChangeDialog.test.tsx:314-324",
+      "note": "Test `panel Play rimane montato nel DOM quando tab Library e' attiva (forceMount)` presente. Pattern: clickTab(/libreria/i) + getByTestId('panel-play').toBeInTheDocument(). Copre l'invariante architetturale."
+    }
+  ],
+  "loop_status": {
+    "current_iter": 2,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "generated_at": "2026-07-02T22:15:00+02:00",
+  "reviewer_version": "2.26"
+}

@@ -148,16 +148,23 @@ async function setupStubPageNoRtc(
   await gotoStubApp(page);
 }
 
-/** Apre Settings e torna al details accordion della RtcSection (aprendola se chiusa). */
+/** Apre Settings e torna al testid della RtcSection (aprendola se chiusa).
+ *
+ * TSK-149 (EP-020 / US-097) — RtcSection ora è un `AccordionItem` (Radix).
+ * Il gate su "aperto/chiuso" usa `data-state=open|closed` sul trigger (Radix)
+ * invece di `HTMLDetailsElement.open`. Il testid `sb-rtc-section` è sul
+ * container `AccordionItem`. */
 async function openRtcSection(
   page: import("@playwright/test").Page,
 ): Promise<import("@playwright/test").Locator> {
   await openSettingsTab(page);
   const section = page.getByTestId("sb-rtc-section");
-  // L'elemento è un <details>: lo apriamo se chiuso.
-  const isOpen = await section.evaluate((el) => (el as HTMLDetailsElement).open);
-  if (!isOpen) {
-    await section.locator("summary").click();
+  const trigger = section.getByRole("button", {
+    name: /orologio interno/i,
+  });
+  const state = await trigger.getAttribute("data-state");
+  if (state !== "open") {
+    await trigger.click();
   }
   return section;
 }

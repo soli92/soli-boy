@@ -1,0 +1,125 @@
+{
+  "review_id": "TSK-143-uxui-review-iter-1",
+  "tsk_id": "TSK-143",
+  "iter": 1,
+  "date": "2026-07-02",
+  "reviewer": "ux-ui-reviewer",
+  "rubric_mode": "strict",
+  "mode": "visual",
+  "skip_a11y": true,
+  "a11y_reference": "TSK-143-a11y-iter-2 → pass (0 automated findings)",
+  "target": {
+    "url": "http://localhost:4173/?engine=stub",
+    "code_paths": [
+      "packages/app/src/App.tsx",
+      "packages/app/src/styles/app-extra.css",
+      "packages/app/src/components/ui/tabs.tsx"
+    ],
+    "screenshots": [
+      "code_quality/reports/TSK-143-visual-iter-1/desktop-light.png",
+      "code_quality/reports/TSK-143-visual-iter-1/desktop-dark.png",
+      "code_quality/reports/TSK-143-visual-iter-1/mobile-light.png",
+      "code_quality/reports/TSK-143-visual-iter-1/mobile-dark.png",
+      "code_quality/reports/TSK-143-visual-iter-1/desktop-light-library.png",
+      "code_quality/reports/TSK-143-visual-iter-1/mobile-light-library.png"
+    ],
+    "design_brief": "wiki/design/ep020-design-brief.md"
+  },
+  "verdict": "conditional",
+  "rubric_violations_count": 4,
+  "findings": [
+    {
+      "id": "F-01",
+      "severity": "minor",
+      "type": "objective",
+      "title": "Tab bar mobile: 4 etichette eccedono il budget di larghezza a 375px — rischio overflow su viewport stretti",
+      "description": "A 375px i 4 TabsTrigger (Play, Libreria, Impostazioni, Info & Privacy) con whitespace-nowrap + px-3 (24px padding totale per trigger) + p-1 (8px padding lista) producono un'occupazione orizzontale di ~350px — a ridosso del limite ma senza margine di sicurezza. 'Info & Privacy' (etichetta più lunga: ~14 caratteri a text-sm) si allinea al bordo destro del viewport senza clearance. A 320px (iPhone SE, viewport minimo comune) l'overflow è quasi certo: whitespace-nowrap impedisce il wrapping e TabsList non ha overflow-x:auto, quindi i trigger fuoriescono senza scrolling.",
+      "rubric_ref": ["UI6", "N1"],
+      "ui6_rationale": "Il layout a 4 trigger fissi non degrada in modo controllato su viewport stretti: assenza di strategie responsive (font-size ridotto su <sm, overflow-x scroll, label abbreviate, icon-only fallback).",
+      "n1_rationale": "L'etichetta del 4° tab deve essere completamente leggibile per indicare all'utente la destinazione (visibility of system status).",
+      "evidence": [
+        "code_quality/reports/TSK-143-visual-iter-1/mobile-light.png",
+        "code_quality/reports/TSK-143-visual-iter-1/mobile-dark.png",
+        "code_quality/reports/TSK-143-visual-iter-1/mobile-light-library.png"
+      ],
+      "code_ref": "packages/app/src/components/ui/tabs.tsx:30 (whitespace-nowrap px-3), packages/app/src/components/ui/tabs.tsx:14 (p-1 TabsList)"
+    },
+    {
+      "id": "F-02",
+      "severity": "minor",
+      "type": "objective",
+      "title": "Library panel: logo Soli-boy appare nel contenuto del panel in co-presenza con il messaggio empty-state",
+      "description": "Negli screenshot desktop-light-library.png e mobile-light-library.png, all'interno del TabsContent 'library' appare un badge/pill con il logo Soli-boy orizzontale, posizionato immediatamente sopra il testo 'Nessun gioco. Carica una ROM per iniziare.' I due elementi coesistono: se la libreria è vuota (empty state) non dovrebbe comparire alcun elemento ROM; se il badge rappresenta una ROM reale, il messaggio 'Nessun gioco' non dovrebbe essere mostrato simultaneamente. La coesistenza crea ambiguità percettiva: l'utente non sa se il logo indica un gioco salvato o è un artefatto dell'interfaccia.",
+      "rubric_ref": ["N8", "F4"],
+      "n8_rationale": "Aesthetic minimalism: un elemento visivo che non apporta informazione utile (o la cui semantica è ambigua) appesantisce l'interfaccia senza beneficio.",
+      "f4_rationale": "Cognitive load: la compresenza di un elemento branding e di un empty-state message richiede all'utente uno sforzo interpretativo non necessario.",
+      "evidence": [
+        "code_quality/reports/TSK-143-visual-iter-1/desktop-light-library.png",
+        "code_quality/reports/TSK-143-visual-iter-1/mobile-light-library.png"
+      ],
+      "code_ref": "packages/app/src/App.tsx:666-683 (TabsContent value='library') — Library component non analizzato in questo TSK",
+      "scope_note": "TSK-143 non ha modificato il componente Library. Questo finding potrebbe derivare da comportamento pre-esistente del componente Library o da dati di test in storage. Richiede indagine sul componente Library."
+    },
+    {
+      "id": "F-03",
+      "severity": "trivial",
+      "type": "objective",
+      "title": "TabsList: classi base shadcn bg-muted + p-1 non neutralizzate creano visual 'pill container' invece di flush nav bar",
+      "description": "tabs.tsx (riga 14) applica a TabsList le classi base shadcn: 'inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground'. L'override in App.tsx ('w-full rounded-none border-b border-border') neutralizza rounded-lg e aggiunge border-b, ma non annulla bg-muted né p-1. Il risultato visivo è un'area grigio-muted full-width con 4px di padding interno, dentro cui i trigger galleggiano come pill su sfondo. Questo pattern shadcn standard diverge da un nav bar flush (dove i trigger siedono direttamente sopra il border-b, senza contenitore colorato). Non è errato, ma introduce un'inconsistenza visiva rispetto al pattern navigation bar comune e al brief EP-020 (che specifica w-full border-b senza menzionare bg-muted come intenzionale).",
+      "rubric_ref": ["N4", "UI1"],
+      "n4_rationale": "Consistency: il pattern 'tabs in contenitore muted' diverge dalla convenzione nav bar (border-b flush) senza motivazione esplicita nel brief.",
+      "ui1_rationale": "Visual hierarchy: il contenitore muted crea una banda visiva separata che compete con il contenuto della pagina per l'attenzione, invece di fungere da separatore neutro.",
+      "evidence": [
+        "code_quality/reports/TSK-143-visual-iter-1/desktop-light.png",
+        "code_quality/reports/TSK-143-visual-iter-1/desktop-dark.png"
+      ],
+      "code_ref": "packages/app/src/components/ui/tabs.tsx:14-15"
+    },
+    {
+      "id": "F-04",
+      "severity": "trivial",
+      "type": "objective",
+      "title": "AppContent header usa classi legacy sd-flex/sd-items-center/sd-between invece di Tailwind utilities",
+      "description": "App.tsx riga 562: '<header className=\"sd-flex sd-items-center sd-between\">'. Le classi sd-* sono utility del DS @soli92/solids (pre-Tailwind) ancora attive, ma il brief EP-020 §3 fissa la cascade CSS e §5 implica migrazione a Tailwind utilities per le superfici shell. Il TSK-143 non aveva scope sull'header (scope: navigazione tabs), quindi questo non è un difetto del TSK corrente. Documentato per il roadmap EP-020 Phase 2.",
+      "rubric_ref": ["N4"],
+      "n4_rationale": "Consistency: convivenza di classi sd-* legacy e classi Tailwind nel medesimo componente App introduce incoerenza stilistica nel codebase.",
+      "evidence": [],
+      "code_ref": "packages/app/src/App.tsx:562",
+      "scope_note": "Out of scope per TSK-143. Questo finding è informativo per la pianificazione EP-020 Phase 2. Non blocca il verdict di TSK-143."
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "OQ-01",
+      "question": "Qual è l'origine del logo Soli-boy nel panel Library? È una ROM con artwork logo presente nello storage di test, un header interno del componente Library, o un artefatto di layout? La risposta determina se F-02 è un bug del componente Library o un effetto di dati di test.",
+      "context_needed": "Codice sorgente del componente Library (packages/app/src/components/Library/Library.tsx) e contenuto dello storage IndexedDB durante il visual-oracle run.",
+      "rubric_ref": ["N8", "F4"]
+    },
+    {
+      "id": "OQ-02",
+      "question": "Il label 'Info & Privacy' è l'etichetta definitiva per il 4° tab? Su viewport stretti (320px) causerà overflow. Se l'etichetta è negoziabile, 'Info' o 'Info & Priv.' ridurrebbero il rischio senza perdita di chiarezza. Questa è una decisione UX/contenuto che richiede approvazione del product owner.",
+      "context_needed": "Decision authority su tab labels e breakpoint minimi supportati.",
+      "rubric_ref": ["UI6", "N1"]
+    },
+    {
+      "id": "OQ-03",
+      "question": "Il ConfirmGameChangeDialog usa inline styles e non il componente Radix AlertDialog con Portal. Tracciato come TSK-153. Confermato out of scope per TSK-143, ma rilevante per la conformance al brief EP-020 §5 (Dialogs & Overlays: Radix AlertDialog obbligatorio). Quando TSK-153 è schedulato?",
+      "context_needed": "Sprint planning TSK-153.",
+      "rubric_ref": ["N4"]
+    }
+  ],
+  "design_brief_compliance": {
+    "token_contract": "pass — tutti i colori leggono da --sd-* CSS variables; cascade order in main.tsx conforme al brief §3",
+    "radix_tabs_primitive": "pass — Radix Tabs con keyboard Arrow/Home/End, ARIA tablist semantics, nessuna reimplementazione custom",
+    "focus_visible": "pass — ring-2 ring-ring focus-visible su tutti i TabsTrigger (tabs.tsx:30); WCAG 2.4.11 soddisfatto",
+    "forceMount_play": "pass — TabsContent value='play' con forceMount + data-[state=inactive]:hidden mantiene Player montato tra switch tab",
+    "layout_fill": "pass — <Tabs className='flex flex-col flex-1'> + <main className='sb-app'> con flex-direction:column consentono al tab container di espandersi"
+  },
+  "summary": {
+    "total_findings": 4,
+    "by_severity": { "major": 0, "minor": 2, "trivial": 2 },
+    "open_questions": 3,
+    "verdict": "conditional",
+    "verdict_rationale": "Nessun finding major o critical. Due finding minor azionabili (F-01 responsive mobile, F-02 library artifact investigazione). Due triviali fuori scope o estetici. Il flusso primario (navigazione tab, switch panel, Play/Library/Settings/Info) funziona correttamente su tutti i viewport testati. La migrazione alle primitive Radix è conforme al brief EP-020. Il verdict conditional richiede: (a) verifica/risoluzione F-02 (origine logo Library) e (b) strategia responsive per F-01 su viewport <375px prima del merge in produzione."
+  }
+}

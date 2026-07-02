@@ -76,11 +76,12 @@ describe("PrivacyNotice — banner variant (TSK-069, US-033)", () => {
     expect(heading?.textContent).toMatch(/privacy/i);
   });
 
-  it("applica le classi solids e quelle aggiuntive", () => {
+  it("applica le classi aggiuntive del chiamante (className passthrough)", () => {
+    // TSK-152 (US-098, EP-020): migrazione a shadcn Alert — le vecchie classi
+    // solids `sd-card`/`sb-sec` non sono più presenti. Il contratto pubblico
+    // resta il passthrough `className` dal chiamante.
     render(<PrivacyNotice variant="banner" className="extra-banner" />);
     const banner = screen.getByTestId("sb-privacy-banner");
-    expect(banner).toHaveClass("sd-card");
-    expect(banner).toHaveClass("sb-sec");
     expect(banner).toHaveClass("extra-banner");
   });
 });
@@ -131,10 +132,12 @@ describe("PrivacyNotice — section variant (TSK-069, sempre disponibile)", () =
     expect(bannerLabel).not.toBe(sectionLabel);
   });
 
-  it("applica le classi solids di base (sd-card, sb-sec)", () => {
-    render(<PrivacyNotice variant="section" />);
+  it("applica le classi aggiuntive del chiamante (className passthrough)", () => {
+    // TSK-152 (US-098, EP-020): migrazione a shadcn Card — le vecchie classi
+    // solids `sd-card`/`sb-sec` non sono più presenti. Assertion sul solo
+    // contratto pubblico stabile: passthrough `className`.
+    render(<PrivacyNotice variant="section" className="extra-section" />);
     const section = screen.getByTestId("sb-privacy-section");
-    expect(section).toHaveClass("sd-card");
-    expect(section).toHaveClass("sb-sec");
+    expect(section).toHaveClass("extra-section");
   });
 });

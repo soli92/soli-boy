@@ -1,0 +1,358 @@
+/* EP-020 Prototype — CSS cascade
+ * Order mandated by ep020-design-brief.md §3 (R.D1)
+ * 1. solids tokens (variables + themes + shadcn bridge + base + utilities)
+ * 2. invariant gaming tokens
+ * 3. prototype-specific overrides
+ */
+
+@import '@soli92/solids/css/index.css';
+
+/* ── Invariant gaming tokens (not provided by solids DS) ─────────────── */
+:root {
+  --sd-screen-bg: #000813;
+  --sd-screen-accent: #001a33;
+  --sd-color-pad-a: #06b6d4;
+  --sd-color-pad-b: #e879f9;
+  --sd-color-accent-1: #06b6d4;
+  --sd-color-accent-2: #7c3aed;
+  --sd-color-accent-3: #e879f9;
+  --sd-color-accent-4: #22d3ee;
+  --sd-color-accent-5: #a78bfa;
+  --sd-font-body: var(--sd-font-family-sans);
+  --sd-font-heading: var(--sd-font-family-sans);
+  --sd-font-mono: var(--sd-font-family-mono);
+}
+
+/* ── Base reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--sd-color-bg-canvas);
+  color: var(--sd-color-text-primary);
+  font-family: var(--sd-font-body);
+  font-size: var(--sd-font-size-sm);
+  line-height: var(--sd-font-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Prototype layout ────────────────────────────────────────────────── */
+.proto-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+/* ── HUD — font-mono invariante ──────────────────────────────────────── */
+.hud-mono {
+  font-family: var(--sd-font-mono);
+  font-size: var(--sd-font-size-xs);
+  letter-spacing: var(--sd-font-tracking-wider);
+}
+
+/* ── Screen placeholder ──────────────────────────────────────────────── */
+.sb-screen {
+  aspect-ratio: 16 / 10;
+  background-color: var(--sd-screen-bg);
+  border: 1px solid var(--sd-color-border-default);
+  border-radius: var(--sd-radius-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.sb-screen-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--sd-space-3);
+  color: var(--sd-screen-accent);
+}
+
+/* ── Drop zone ───────────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--sd-color-border-default);
+  border-radius: var(--sd-radius-md);
+  padding: var(--sd-space-10) var(--sd-space-8);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--sd-duration-fast) var(--sd-easing-ease);
+}
+.drop-zone:hover {
+  border-color: var(--sd-color-primary-default);
+  background: var(--sd-color-bg-hover);
+}
+
+/* ── TouchOverlay (mobile, CSS-only positioning) ─────────────────────── */
+.touch-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: none;
+}
+@media (max-width: 640px) {
+  .touch-overlay {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: var(--sd-space-3);
+    background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%);
+  }
+}
+
+.dpad {
+  display: grid;
+  grid-template-areas:
+    ". up ."
+    "left center right"
+    ". down .";
+  grid-template-columns: repeat(3, 2.5rem);
+  grid-template-rows: repeat(3, 2.5rem);
+  gap: 2px;
+  pointer-events: auto;
+}
+.dpad-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--sd-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  color: rgba(255,255,255,0.8);
+  user-select: none;
+}
+.dpad-btn:active { background: rgba(255,255,255,0.25); }
+.dpad-up    { grid-area: up; }
+.dpad-left  { grid-area: left; }
+.dpad-center { grid-area: center; }
+.dpad-right { grid-area: right; }
+.dpad-down  { grid-area: down; }
+
+.ab-buttons {
+  display: grid;
+  grid-template-areas:
+    ". b"
+    "a .";
+  grid-template-columns: repeat(2, 2.5rem);
+  grid-template-rows: repeat(2, 2.5rem);
+  gap: 4px;
+  pointer-events: auto;
+}
+.btn-a {
+  grid-area: a;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background: var(--sd-color-pad-a);
+  border: none;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-b {
+  grid-area: b;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background: var(--sd-color-pad-b);
+  border: none;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Shoulder buttons L / R ──────────────────────────────────────────── */
+.btn-shoulder {
+  position: absolute;
+  top: var(--sd-space-2);
+  width: 3.5rem;
+  height: 2rem;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--sd-radius-full);
+  color: rgba(255,255,255,0.8);
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: var(--sd-font-mono);
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-shoulder:active { background: rgba(255,255,255,0.25); }
+.btn-l { left: var(--sd-space-3); }
+.btn-r { right: var(--sd-space-3); }
+
+.start-select {
+  display: flex;
+  gap: var(--sd-space-2);
+  pointer-events: auto;
+  position: absolute;
+  bottom: var(--sd-space-3);
+  left: 50%;
+  transform: translateX(-50%);
+}
+.ss-btn {
+  padding: 0.25rem 0.75rem;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--sd-radius-full);
+  color: rgba(255,255,255,0.8);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+/* ── Game tile card ──────────────────────────────────────────────────── */
+.game-tile {
+  position: relative;
+  border-radius: var(--sd-radius-md);
+  border: 1px solid var(--sd-color-border-default);
+  background: var(--sd-color-bg-surface);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow var(--sd-duration-fast) var(--sd-easing-ease);
+}
+.game-tile:hover {
+  box-shadow: var(--sd-shadow-md);
+}
+.game-tile.active {
+  border-color: var(--sd-color-primary-default);
+  box-shadow: var(--sd-shadow-md);
+}
+.game-tile-art {
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(135deg, var(--sd-color-accent-1), var(--sd-color-accent-2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+.game-tile-info {
+  padding: var(--sd-space-2) var(--sd-space-3);
+}
+
+/* ── Keymap table ────────────────────────────────────────────────────── */
+.keymap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--sd-font-size-sm);
+}
+.keymap-table th {
+  text-align: left;
+  padding: var(--sd-space-1) var(--sd-space-2);
+  color: var(--sd-color-text-secondary);
+  font-weight: var(--sd-font-weight-medium);
+  border-bottom: 1px solid var(--sd-color-border-muted);
+}
+.keymap-table td {
+  padding: var(--sd-space-2) var(--sd-space-2);
+  border-bottom: 1px solid var(--sd-color-border-muted);
+}
+
+/* ── Theme switcher floating button ──────────────────────────────────── */
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-2);
+  padding: var(--sd-space-1-5) var(--sd-space-3);
+  background: var(--sd-color-bg-elevated);
+  border: 1px solid var(--sd-color-border-default);
+  border-radius: var(--sd-radius-full);
+  cursor: pointer;
+  font-size: var(--sd-font-size-xs);
+  font-family: var(--sd-font-mono);
+  color: var(--sd-color-text-primary);
+  transition: all var(--sd-duration-fast) var(--sd-easing-ease);
+  user-select: none;
+  white-space: nowrap;
+}
+.theme-switcher:hover {
+  background: var(--sd-color-bg-hover);
+  border-color: var(--sd-color-primary-default);
+}
+.theme-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--sd-color-primary-default);
+  flex-shrink: 0;
+}
+
+/* ── Save state slot ─────────────────────────────────────────────────── */
+.save-slot {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-2);
+  padding: var(--sd-space-2) var(--sd-space-3);
+  border: 1px solid var(--sd-color-border-muted);
+  border-radius: var(--sd-radius-md);
+  background: var(--sd-color-bg-surface);
+}
+.save-slot-num {
+  font-family: var(--sd-font-mono);
+  font-size: var(--sd-font-size-xs);
+  color: var(--sd-color-text-secondary);
+  min-width: 1.5rem;
+}
+
+/* ── Platform chip active state ──────────────────────────────────────── */
+[data-state="on"].platform-chip {
+  background: var(--sd-color-primary-default);
+  color: var(--sd-color-primary-foreground);
+  border-color: var(--sd-color-primary-default);
+}
+
+/* ── Accordion content animation ─────────────────────────────────────── */
+@keyframes accordion-down {
+  from { height: 0; opacity: 0; }
+  to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to { height: 0; opacity: 0; }
+}
+.accordion-content[data-state="open"] {
+  animation: accordion-down var(--sd-duration-normal) var(--sd-easing-ease-out);
+}
+.accordion-content[data-state="closed"] {
+  animation: accordion-up var(--sd-duration-normal) var(--sd-easing-ease-in);
+  overflow: hidden;
+}
+
+/* ── Focus visible ring ──────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--sd-color-primary-default);
+  outline-offset: 2px;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--sd-color-border-strong); border-radius: 3px; }

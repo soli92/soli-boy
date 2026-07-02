@@ -1,0 +1,70 @@
+{
+  "target": "TSK-143 (http://localhost:4173/?engine=stub)",
+  "standard": "wcag22aa",
+  "summary": {
+    "critical": 0,
+    "major": 0,
+    "minor": 0,
+    "manual_checks": 9
+  },
+  "automated_findings": [],
+  "manual_checks": [
+    {
+      "wcag": "1.3.1",
+      "item": "Verify semantic structure end-to-end: h1 in header, tablist/tab/tabpanel roles from Radix, main landmark, footer as structural element (no contentinfo role after F-02 fix).",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.3",
+      "item": "Verify color is not the only means of conveying information (e.g. active tab state uses visual indicator beyond color alone).",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.1.1",
+      "item": "Verify all functionality is operable via keyboard only (tab into tablist, navigate triggers, open panels, interact with panel content).",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.4.3",
+      "item": "Verify focus order is logical and predictable: header → tablist → active panel content → footer.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.10",
+      "item": "Verify content reflows without loss at 320px width (Tailwind responsive layout, TabsList w-full, no horizontal scroll).",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.1.1",
+      "item": "TSK-143 specific — Radix keyboard delegation (now unblocked after F-01 fix): Tab key reaches the tablist; within the tablist ArrowLeft/ArrowRight navigate between triggers; Home moves to first trigger; End moves to last trigger. Verify ARIA wiring is correct for all 4 tab/panel pairs.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "4.1.2",
+      "item": "TSK-143 specific — After F-01 fix (id props removed): verify aria-controls on each TabsTrigger correctly points to its TabsContent panel (Radix-generated IDs), and aria-labelledby on each panel correctly points back to its trigger. All 4 tab/panel pairs must be wired. Verify with screen reader or manual DOM inspection.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.3.1",
+      "item": "TSK-143 specific — Panel Play forceMount + data-[state=inactive]:hidden: verify that when Play is not the active tab, the panel is not perceivable by assistive technologies. Radix sets the HTML hidden attribute on inactive TabsContent (removing from a11y tree); the Tailwind data-[state=inactive]:hidden rule provides a defensive CSS layer.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.3",
+      "item": "TSK-143 specific — Color contrast of TabsTrigger active/inactive states in light and dark themes: active state uses data-[state=active]:bg-background + data-[state=active]:text-foreground; inactive uses text-muted-foreground on bg-muted. Verify contrast ratios >= 4.5:1 for normal text in both themes.",
+      "status": "to_verify"
+    }
+  ],
+  "positive_findings": [
+    "F-01 CLOSED (iter-2): aria-valid-attr-value Critical resolved — explicit id props removed from all TabsTrigger and TabsContent elements; Radix now manages ARIA IDs and aria-controls/aria-labelledby wiring internally without conflicts.",
+    "F-02 CLOSED (iter-2): landmark-contentinfo-is-top-level Minor resolved — role='contentinfo' and aria-label removed from the footer in App.tsx; footer is now a structural element, no landmark nesting violation.",
+    "Radix Tabs manages role='tablist', role='tab', role='tabpanel' and aria-selected natively — no manual ARIA role maintenance required.",
+    "TabsList has aria-label='Sezioni app' — provides accessible name for the tablist landmark.",
+    "TabsTrigger has focus-visible ring styles (focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2) — WCAG 2.4.7 / 2.4.11 focus visibility satisfied.",
+    "<h1> in header wraps logo img with alt='Soli-boy' — WCAG 1.1.1 and page-has-heading-one landmark both satisfied.",
+    "ConfirmGameChangeDialog implements role='dialog' + aria-modal='true' + aria-labelledby + aria-describedby + Esc handler + Tab/Shift+Tab focus trap — robust WAI-ARIA modal implementation.",
+    "Color contrast overrides in app-extra.css (TSK-084) pre-empt known contrast failures for dark, 90s-party, cyberpunk themes.",
+    "Keyboard navigation (Arrow/Home/End) delegated to Radix — no manual handler drift risk.",
+    "forceMount on panel Play with Radix-managed hidden attribute: Player stays mounted without exposing a11y items in inactive state."
+  ]
+}

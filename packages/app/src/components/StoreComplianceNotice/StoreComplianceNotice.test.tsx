@@ -91,11 +91,12 @@ describe("StoreComplianceNotice (TSK-070, US-034)", () => {
     expect(heading?.textContent).toMatch(/legale/i);
   });
 
-  it("applica le classi solids e quelle aggiuntive (allineato a PrivacyNotice)", () => {
+  it("applica le classi aggiuntive del chiamante (className passthrough)", () => {
+    // TSK-152 (US-098, EP-020): migrazione a shadcn Alert `destructive` — le
+    // vecchie classi solids `sd-card`/`sb-sec` non sono più presenti. Assertion
+    // sul solo contratto pubblico stabile: passthrough `className`.
     render(<StoreComplianceNotice className="extra-store" />);
     const section = screen.getByTestId("sb-store-compliance-section");
-    expect(section).toHaveClass("sd-card");
-    expect(section).toHaveClass("sb-sec");
     expect(section).toHaveClass("extra-store");
   });
 });

@@ -25,6 +25,9 @@
 // L'EmulatorEngine (EmulatorJS in runtime) è iniettato → componente testabile.
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+// TSK-144 (EP-020 Wave B P1) — solids components: Button/Badge shadcn-ui.
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 // TSK-062 — Gamepad detection: auto-hide TouchOverlay quando un controller BT è connesso.
 import { useGamepadDetection } from "../../domain/useGamepadDetection";
 // TSK-065 — App lifecycle: pausa/ripresa emulazione in background via Capacitor + visibility API.
@@ -524,9 +527,9 @@ export function Player({
         .sb-player-controls > .sb-slot-primary { grid-area: primary; }
         .sb-player-controls > .sb-slot-secondary { grid-area: secondary; }
         .sb-player-controls > .sb-slot-fullscreen { grid-area: fullscreen; }
-        .sb-player-controls .sb-btn[data-slot-placeholder="true"] {
-          visibility: hidden;
-        }
+        /* TSK-144 — placeholder invisibile ora via utility Tailwind "invisible"
+           (applicata inline sull'elemento). Selettore CSS legacy rimosso perche
+           i bottoni sono ora componenti Button shadcn (no piu .sb-btn class). */
       `}</style>
       {/*
         Variante B — .sb-player-layout: wrapper che gestisce i tre layout:
@@ -546,7 +549,11 @@ export function Player({
       >
         <div
           ref={screenRef}
-          className="sb-screen"
+          // TSK-144 — invarianti game (position:relative, aspect-ratio 16/10,
+          // overflow:hidden) espressi via Tailwind utilities; classe `.sb-screen`
+          // preservata per compat con CSS scoped runtime (data-video-scope) e
+          // test selettori (e2e `.sb-screen canvas`, videoSettings, filter).
+          className="sb-screen relative overflow-hidden rounded-md border border-border bg-[var(--sd-screen-bg)] flex items-center justify-center"
           role="img"
           aria-label="Schermo di gioco"
           data-state={state}
@@ -644,12 +651,24 @@ export function Player({
       </div>
       {/* TSK-103 / TSK-116 — HUD user-facing (UX-018): titolo ROM + stato in
           italiano. aria-live sul solo span stato (complementare al canvas status
-          che annuncia il contesto completo "Gioco corrente: …"). */}
-      <div className="sb-hud" aria-label="Stato giocatore">
+          che annuncia il contesto completo "Gioco corrente: …").
+          TSK-144 (EP-020) — layout HUD via Tailwind utilities + Badge solids
+          per lo stato (semantica invariante: role="status", aria-live, aria-atomic
+          preservati sul Badge esterno — vedi Player.hud.test.tsx). */}
+      <div
+        className="sb-hud flex items-center justify-between text-xs text-muted-foreground font-mono px-2 py-1"
+        aria-label="Stato giocatore"
+      >
         <span>{title ?? HUD_TITLE_IDLE}</span>
-        <span role="status" aria-live="polite" aria-atomic="true">
+        <Badge
+          variant="outline"
+          className="font-mono text-xs"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {HUD_STATE_LABELS[state]}
-        </span>
+        </Badge>
       </div>
       {/* TSK-106 — Container dei controlli con layout a slot fissi (US-055 AC1).
           3 slot grid stabili: primary (Avvia/Pausa/Riprendi), secondary
@@ -671,32 +690,34 @@ export function Player({
             SEMPRE renderizzato come un singolo <button> reale (mai placeholder),
             così la sua posizione fisica nel grid è invariante tra gli stati. */}
         <div className="sb-slot sb-slot-primary" data-slot="primary">
+          {/* TSK-144 — mapping variant: Avvia/Riprendi = default (primary CTA),
+              Pausa = outline (azione secondaria durante running). */}
           {idle && (
-            <button
-              className="sb-btn sb-btn-primary"
+            <Button
+              variant="default"
               onClick={handlePlay}
               data-action="play"
             >
               Avvia
-            </button>
+            </Button>
           )}
           {running && (
-            <button
-              className="sb-btn"
+            <Button
+              variant="outline"
               onClick={handlePause}
               data-action="pause"
             >
               Pausa
-            </button>
+            </Button>
           )}
           {paused && (
-            <button
-              className="sb-btn sb-btn-primary"
+            <Button
+              variant="default"
               onClick={handleResume}
               data-action="resume"
             >
               Riprendi
-            </button>
+            </Button>
           )}
         </div>
         {/* Slot 2 — secondary: Arresta (running/paused) | placeholder (idle).
@@ -707,33 +728,38 @@ export function Player({
             OK perché in idle il placeholder ha aria-hidden=true (e in
             running/paused il bottone reale è renderizzato normalmente). */}
         <div className="sb-slot sb-slot-secondary" data-slot="secondary">
+          {/* TSK-144 — Arresta = destructive; placeholder in idle usa la utility
+              Tailwind `invisible` (preserva lo spazio grid, vedi TSK-106 AC),
+              aria-hidden + tabIndex=-1 per escluderlo dall'a11y tree. */}
           {!idle ? (
-            <button
-              className="sb-btn sb-danger"
+            <Button
+              variant="destructive"
               onClick={handleStop}
               data-action="stop"
             >
               Arresta
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               type="button"
-              className="sb-btn sb-danger"
+              variant="destructive"
+              className="invisible"
               data-slot-placeholder="true"
               aria-hidden="true"
               tabIndex={-1}
               disabled
             >
               Arresta
-            </button>
+            </Button>
           )}
         </div>
         {/* Slot 3 — fullscreen: TSK-035 (US-020) sempre visibile come controllo
             essenziale; disabilitato se l'API non è supportata. */}
         <div className="sb-slot sb-slot-fullscreen" data-slot="fullscreen">
-          <button
+          {/* TSK-144 — Fullscreen toggle = outline (azione secondaria). */}
+          <Button
             type="button"
-            className="sb-btn"
+            variant="outline"
             onClick={handleFullscreenToggle}
             disabled={!fullscreen.supported}
             aria-label={fsLabel}
@@ -746,7 +772,7 @@ export function Player({
             data-action="fullscreen"
           >
             {fsLabel}
-          </button>
+          </Button>
         </div>
       </div>
       {error && (

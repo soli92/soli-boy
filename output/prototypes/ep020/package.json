@@ -1,0 +1,12 @@
+{
+  "name": "@soli-boy/prototype-ep020",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "EP-020 — Interactive React prototype (soli-boy Agentic Factory v2.26, TSK-141)",
+  "scripts": {
+    "dev": "bash start.sh",
+    "build": "bash start.sh build",
+    "typecheck": "bash -c 'ln -sf ../../packages/app/node_modules node_modules 2>/dev/null || true && node_modules/.bin/tsc --noEmit'"
+  }
+}

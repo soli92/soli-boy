@@ -19,6 +19,12 @@ import {
   filenameFromUri,
   type CapacitorFilesystemApi,
 } from "./useCapacitorFilePicker";
+// TSK-145 (US-095 / EP-020) — Migrazione CTA "Carica ROM" alla primitive Button
+// (solids/shadcn). Il pattern `asChild` monta il <label> come Slot Radix con gli
+// stili del Button (variant="default"), evitando wrapper HTML extra e preservando
+// l'associazione nativa label↔input file (click sul label apre il picker).
+// L'input è sibling (non figlio) del label, linkato via `htmlFor="file-input"`.
+import { Button } from "@/components/ui/button";
 
 export interface FileLoaderProps {
   storage: StoragePort;
@@ -103,23 +109,37 @@ export function FileLoader({
   }, [registerUriHandler]);
 
   return (
-    <div className="sb-loader">
-      <label className="sb-btn sb-btn-primary">
-        Carica ROM
-        <input
-          ref={inputRef}
-          type="file"
-          aria-label="Carica ROM"
-          style={{ display: "none" }}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void handleFile(f);
-          }}
-        />
-      </label>
+    <div className="flex flex-wrap items-center gap-3">
+      {/* TSK-145 — CTA "Carica ROM": Button asChild monta il <label> come Slot
+          Radix con gli stili del Button (variant="default"). Il click sul label
+          apre nativamente il picker file grazie all'attributo `htmlFor` che punta
+          all'`id` dell'input sibling (WAI-ARIA labelling standard). L'input è
+          `sr-only` (screen-reader only): invisibile visualmente ma raggiungibile
+          da AT e testabile tramite `getByLabelText("Carica ROM")` (l'aria-label
+          esplicito è preservato come fallback + doc a11y). */}
+      <Button asChild variant="default">
+        <label htmlFor="file-input">Carica ROM</label>
+      </Button>
+      <input
+        id="file-input"
+        ref={inputRef}
+        type="file"
+        aria-label="Carica ROM"
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+        }}
+      />
 
+      {/* TSK-145 — Dropzone: utility Tailwind sostituiscono `.sb-dropzone`.
+          `border-2 border-dashed border-border` = bordo tratteggiato con token
+          semantico solids; `focus-visible:ring-2 focus-visible:ring-ring` =
+          anello focus coerente col design system (equivalente all'outline
+          precedente). `role="button"`/`tabIndex`/`aria-label`/keyboard handler
+          preservati (invariante a11y: Enter/Space → apre picker, TSK-020). */}
       <div
-        className="sb-dropzone"
+        className="flex-1 min-h-16 flex items-center justify-center border-2 border-dashed border-border rounded-lg text-sm text-muted-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         role="button"
         tabIndex={0}
         aria-label="Trascina qui una ROM"

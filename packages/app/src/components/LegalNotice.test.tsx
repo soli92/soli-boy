@@ -11,10 +11,15 @@ describe("LegalNotice", () => {
     expect(note).toHaveTextContent(/file forniti dall'utente/i);
   });
 
-  it("applica le classi solids e quelle aggiuntive", () => {
+  it("applica le utility di tipografia + la className del chiamante", () => {
+    // TSK-152 (US-098, EP-020): migrazione a Tailwind — la vecchia classe
+    // solids `sb-note` è sostituita da `text-xs text-muted-foreground
+    // text-center`. Il passthrough `className` del chiamante resta.
     render(<LegalNotice className="extra" />);
     const note = screen.getByRole("note");
-    expect(note).toHaveClass("sb-note");
+    expect(note).toHaveClass("text-xs");
+    expect(note).toHaveClass("text-muted-foreground");
+    expect(note).toHaveClass("text-center");
     expect(note).toHaveClass("extra");
   });
 });

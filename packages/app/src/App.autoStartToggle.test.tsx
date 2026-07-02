@@ -20,6 +20,16 @@ import type { StoragePort, ConfigPort, CoverPort } from "./storage/port";
 import type { RomRecord } from "./storage/types";
 import { AUTO_START_CONFIG_KEY } from "./components/Settings/useAutoStartConfig";
 
+// TSK-143 (US-094 / EP-020) — La primitiva Radix Tabs (solids) attiva le tab
+// via `onMouseDown` (non `onClick`), per allineamento al pattern WAI-ARIA APG.
+// `fireEvent.click` sintetizza solo l'evento `click` finale: usiamo
+// `fireEvent.mouseDown` per innescare l'activation path della primitive.
+function clickTab(name: RegExp | string) {
+  const tab = screen.getByRole("tab", { name });
+  fireEvent.mouseDown(tab);
+  return tab;
+}
+
 // jsdom non implementa matchMedia (vedi App.gameChangeDialog.test.tsx).
 beforeAll(() => {
   if (typeof window !== "undefined" && !window.matchMedia) {
@@ -117,7 +127,7 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     const { App } = await import("./App");
     render(<App />);
 
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tile = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tile);
@@ -135,7 +145,7 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     const { App } = await import("./App");
     render(<App />);
 
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tile = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tile);
@@ -161,7 +171,18 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     render(<App />);
 
     // Vai in Settings.
-    fireEvent.click(screen.getByRole("tab", { name: /impostazioni/i }));
+    clickTab(/impostazioni/i);
+
+    // TSK-149 (EP-020 / US-097) — Settings usa solids `Accordion` (Radix): la
+    // sezione "Avvio" è chiusa di default (contenuto smontato). Apriamo il
+    // trigger prima di trovare il toggle interno.
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: /avvio — automatico dalla libreria/i,
+        }),
+      );
+    });
 
     // Trova il toggle (data-testid canonico) e cliccalo: default ON → OFF.
     const toggle = await screen.findByTestId("sb-auto-start-toggle");
@@ -190,7 +211,16 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     render(<App />);
 
     // Disattiva il toggle in Settings.
-    fireEvent.click(screen.getByRole("tab", { name: /impostazioni/i }));
+    clickTab(/impostazioni/i);
+    // TSK-149 (EP-020 / US-097) — sezione "Avvio" (Accordion Radix) chiusa
+    // di default: apri prima di cercare il toggle interno.
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: /avvio — automatico dalla libreria/i,
+        }),
+      );
+    });
     const toggle = await screen.findByTestId("sb-auto-start-toggle");
     await act(async () => {
       fireEvent.click(toggle);
@@ -200,7 +230,7 @@ describe("App — TSK-102 (US-053) Toggle 'Avvio automatico dalla libreria'", ()
     );
 
     // Vai in Library e tap'a una ROM.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tile = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tile);

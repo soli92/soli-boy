@@ -96,6 +96,14 @@ body{
 .sb-logo{display:block;height:40px;width:auto;max-width:200px;}
 
 /* buttons */
+/* TSK-144 (EP-020 Wave B P1) — rimozione DIFFERITA di .sb-btn / .sb-btn-primary
+   / .sb-icon / .sb-danger. Il TSK-144 prescrive la rimozione condizionata a
+   "grep-confirm che non siano usati altrove": la grep del 2026-07-02 ha rilevato
+   uso attivo in App.tsx, Settings.tsx, RtcSection.tsx, TouchOverlay.tsx,
+   FileLoader.tsx, Library.tsx, PrivacyNotice.tsx, UpdateBanner.tsx, e override
+   WCAG in app-extra.css. Player/SaveStatePanel migrati a Button shadcn; la
+   rimozione delle classi legacy avverrà in un TSK successivo di EP-020 quando
+   tutti i consumer saranno migrati (non è scope atomico di TSK-144). */
 .sb-btn{
   font-family:var(--sd-font-body);font-size:14px;min-height:var(--sd-layout-touch-target-min);
   padding:0 14px;border-radius:var(--sd-radius-md);
@@ -132,19 +140,15 @@ body{
   color:var(--sd-color-primary-default)!important;
 }
 
-/* game grid + tiles */
-.sb-grid{display:grid;gap:var(--sd-space-md);}
-.sb-tile{
-  background:var(--sd-color-bg-elevated);border:1px solid var(--sd-color-border-muted);
-  border-radius:var(--sd-radius-md);padding:10px;
-}
+/* game grid + tiles — TSK-146 (EP-020): .sb-grid, .sb-tile e .sb-tt rimossi;
+   grid → utility Tailwind in Library.tsx; tile → Card primitive (solids/shadcn).
+   .sb-art e .a-1..a-5 mantenuti: accent color ramps app-specific non forniti dal DS. */
 .sb-art{height:88px;border-radius:var(--sd-radius-sm);display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:30px;}
 .a-1{background:var(--sd-color-accent-1-bg);color:var(--sd-color-accent-1);}
 .a-2{background:var(--sd-color-accent-2-bg);color:var(--sd-color-accent-2);}
 .a-3{background:var(--sd-color-accent-3-bg);color:var(--sd-color-accent-3);}
 .a-4{background:var(--sd-color-accent-4-bg);color:var(--sd-color-accent-4);}
 .a-5{background:var(--sd-color-accent-5-bg);color:var(--sd-color-accent-5);}
-.sb-tt{font-size:14px;font-weight:500;margin:0;color:var(--sd-color-text-primary);}
 .sb-mt{font-size:12px;color:var(--sd-color-text-secondary);margin:2px 0 0;}
 .sb-add{
   border-style:dashed;border-color:var(--sd-color-border-strong);

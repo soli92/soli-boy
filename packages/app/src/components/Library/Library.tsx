@@ -16,7 +16,43 @@
 // zero-dep — niente nuove dipendenze npm). Vedi gap svg-react-import-strategy.
 
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+// TSK-147 (US-096 / EP-020) — search input + platform chips migrati alle
+// primitive solids/shadcn: Input + Label per la ricerca, ToggleGroup (Radix)
+// per il filtro piattaforma. Nota semantica ARIA: Radix ToggleGroup Root
+// espone role="group" (non "radiogroup") e gli items sono toggle button con
+// `aria-pressed` (non radio). L'`aria-label` "Filtra per piattaforma" resta
+// invariato e l'accessible name di ciascun item mappa 1:1 al PLATFORM_LABELS
+// preesistente. Vedi Library.test.tsx per la coerenza dei query getByRole.
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+// TSK-146 (EP-020 Wave B partition 1) — migrazione GameTile grid → primitive solids
+// (Card + Badge + Button) e grid container su utility Tailwind. Le classi
+// `.sb-art` + `.a-1..a-5` restano (accent color ramps app-specific, non in solids).
+// Vedi wiki/design/ep020-design-brief.md.
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+// TSK-148 (US-096 / EP-020) — RemoveRomConfirmDialog migrato a Radix AlertDialog:
+// Portal, focus trap, gestione Esc, backdrop overlay e ruolo ARIA `alertdialog`
+// sono forniti nativamente dalla primitiva (elimina la gestione manuale di
+// useRef+useEffect e le classi inline .sb-dialog / .sb-dialog-backdrop).
+// Il ruolo ARIA passa da "dialog" a "alertdialog": più corretto per una
+// conferma distruttiva (l'utente deve confermare prima di procedere) — coerente
+// con il pattern EP-020. Vedi Library.test.tsx per la coerenza dei query
+// getByRole (aggiornati a "alertdialog").
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 import logoUrl from "../../assets/soliboy-logo-horizontal.svg";
 import type { Platform } from "../../domain/types";
 import type { CoverPort, StoragePort } from "../../storage/port";
@@ -247,39 +283,47 @@ export function Library({ storage, onSelect, activeRomId, onBeforeRemove }: Libr
   return (
     <section aria-label="Libreria giochi" className="sd-flex sd-flex-col sd-gap-md">
       {header}
-      <div className="sd-flex sd-items-center sd-gap-md sd-wrap">
-        <label className="sb-search" htmlFor="library-search">
-          <span className="sr-only">Cerca per titolo</span>
-          <input
+      {/* TSK-147 — search + filter migrati a Input/Label + ToggleGroup Radix */}
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex flex-col gap-1 min-w-[220px] flex-1">
+          <Label htmlFor="library-search" className="sr-only">
+            Cerca per titolo
+          </Label>
+          <Input
             id="library-search"
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cerca per titolo…"
           />
-        </label>
-
-        <div
-          role="radiogroup"
-          aria-label="Filtra per piattaforma"
-          className="sd-flex sd-items-center sd-gap-sm sd-wrap"
-        >
-          <PlatformChip
-            value={ALL}
-            current={platform}
-            onSelect={setPlatform}
-            label={PLATFORM_LABELS.ALL}
-          />
-          {availablePlatforms.map((p) => (
-            <PlatformChip
-              key={p}
-              value={p}
-              current={platform}
-              onSelect={setPlatform}
-              label={PLATFORM_LABELS[p]}
-            />
-          ))}
         </div>
+
+        {/*
+          Radix ToggleGroup type="single": onValueChange riceve "" quando
+          l'utente clicca l'item attivo (deselect). Preserviamo la semantica
+          radiogroup precedente (esattamente uno selezionato) ignorando i
+          valori vuoti — così "Tutte" resta sempre l'idle state canonico e
+          non si scopre uno stato "nessun filtro esplicito" non gestito da
+          `filtered` (che presume PlatformFilter valido).
+        */}
+        <ToggleGroup
+          type="single"
+          value={platform}
+          onValueChange={(v) => {
+            if (v) setPlatform(v as PlatformFilter);
+          }}
+          aria-label="Filtra per piattaforma"
+          className="flex-wrap justify-start gap-2"
+        >
+          <ToggleGroupItem value={ALL} aria-label={PLATFORM_LABELS.ALL}>
+            {PLATFORM_LABELS.ALL}
+          </ToggleGroupItem>
+          {availablePlatforms.map((p) => (
+            <ToggleGroupItem key={p} value={p} aria-label={PLATFORM_LABELS[p]}>
+              {PLATFORM_LABELS[p]}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {coverError !== null && (
@@ -293,7 +337,11 @@ export function Library({ storage, onSelect, activeRomId, onBeforeRemove }: Libr
           Nessun risultato per i filtri selezionati.
         </p>
       ) : (
-        <ul className="sb-grid" aria-label="Risultati libreria">
+        // TSK-146 — grid su utility Tailwind (era .sb-grid)
+        <ul
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 list-none p-0 m-0"
+          aria-label="Risultati libreria"
+        >
           {filtered.map((rom) => (
             <li key={rom.id}>
               <GameTile
@@ -307,53 +355,81 @@ export function Library({ storage, onSelect, activeRomId, onBeforeRemove }: Libr
           ))}
         </ul>
       )}
-      {pendingRemove && (
-        <RemoveRomConfirmDialog
-          title={pendingRemove.title}
-          isActiveRom={activeRomId !== undefined && pendingRemove.id === activeRomId}
-          onConfirm={() => void handleRemoveConfirm()}
-          onCancel={handleRemoveCancel}
-        />
-      )}
+      {/*
+        TSK-148 — AlertDialog Radix (portal + focus trap + Esc + overlay nativi).
+        Sempre montato; visibilità pilotata da `open`. `onOpenChange(false)` è
+        invocato da Radix su: click backdrop, tasto Esc, click Cancel/Action —
+        centralizza la reset di `pendingRemove` senza handler custom onClick sui
+        pulsanti (l'onClick di AlertDialogAction resta necessario per invocare
+        il side-effect di conferma prima della chiusura).
+      */}
+      <AlertDialog
+        open={pendingRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) handleRemoveCancel();
+        }}
+      >
+        <AlertDialogContent
+          data-testid="remove-rom-dialog"
+          aria-describedby="remove-rom-desc"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Rimuovere {pendingRemove?.title} dalla libreria?
+            </AlertDialogTitle>
+            <AlertDialogDescription id="remove-rom-desc">
+              {pendingRemove &&
+              activeRomId !== undefined &&
+              pendingRemove.id === activeRomId
+                ? "Stai rimuovendo il gioco attualmente in esecuzione. Verrà fermato."
+                : "La ROM verrà eliminata dal dispositivo. I save state associati potrebbero restare orfani."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void handleRemoveConfirm()}
+            >
+              Rimuovi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
 
-interface PlatformChipProps {
-  value: PlatformFilter;
-  current: PlatformFilter;
-  onSelect: (v: PlatformFilter) => void;
-  label: string;
-}
-
-function PlatformChip({ value, current, onSelect, label }: PlatformChipProps) {
-  const active = value === current;
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      className={"sd-badge sb-chip" + (active ? " sb-chip-on" : "")}
-      onClick={() => onSelect(value)}
-    >
-      {label}
-    </button>
-  );
-}
+// TSK-147 (US-096 / EP-020) — PlatformChip rimosso: sostituito da
+// <ToggleGroupItem> di Radix (semantica group + aria-pressed).
 
 // TSK-039 — tile gioco con copertina (US-009).
-// Struttura: `<article>.sb-tile` contiene
+// TSK-146 (EP-020) — migrazione a primitive solids (Card + Badge + Button).
+// Struttura: `<Card>` (era `<article>.sd-card.sb-tile`) contiene
 //   1. uno `<span>.sb-art` con <img> (coverBlob presente) o segnaposto
-//      (iniziale del titolo, .sb-art a-1: design system),
-//   2. il `<button>.sb-game` di selezione (accessible name "title platform",
-//      compatibile con e2e/TSK-011),
-//   3. un `<label>` con file input image/* per caricare una nuova copertina.
+//      (iniziale del titolo, .sb-art a-1..a-5: accent color ramps app-specific
+//      MANTENUTE — non forniti dal DS solids);
+//   2. un `<Button variant="ghost">` di selezione (era `<button>.sb-game`).
+//      L'accessible name deve restare "titolo platform" (es. "tetris GB")
+//      per compat con gli e2e (player-hud-oracle.e2e.ts, privacy-audit.e2e.ts,
+//      mobile-touch.e2e.ts, ep017/ep019 e2e). Il testo visibile è il solo
+//      titolo; l'accessible name viene forzato via `aria-label` per riprodurre
+//      il contract precedente senza esporre il badge platform dentro il button
+//      (che sarebbe HTML non conforme — Badge è un <div>, flow content). Il
+//      Badge platform vive OUTSIDE del button (design pattern del brief EP-020).
+//   3. un `<Badge variant="outline">` per la piattaforma;
+//   4. se attiva, un `<Badge variant="default">` "In gioco";
+//   5. un `<Button variant="destructive">` di rimozione (era `.sb-btn.sb-danger.sb-tile-remove`);
+//   6. un `<label>` con file input image/* per caricare una nuova copertina.
 //
 // A11y:
 // - L'immagine ha `alt={rom.title}` quando informativa (TSK-039).
 // - Il placeholder ha `aria-hidden="true"`: l'iniziale è puramente decorativa,
-//   il titolo è già esposto come testo nel button.
+//   il titolo è già esposto come testo nel button + `aria-label`.
 // - L'input file è etichettato con "Cambia copertina di <titolo>".
+// - Bordo attivo: `ring-2 ring-primary ring-offset-2` (Tailwind, sostituisce
+//   la vecchia regola `.sb-tile.sb-tile-active` di app-extra.css). L'attributo
+//   `data-active` è mantenuto per test/observability.
 
 interface GameTileProps {
   rom: RomMeta;
@@ -395,192 +471,110 @@ function GameTile({ rom, isActive = false, onSelect, onCoverChange, onRemove }: 
   const initial = (rom.title.trim()[0] ?? "?").toUpperCase();
 
   return (
-    <article
-      className={"sd-card sb-tile" + (isActive ? " sb-tile-active" : "")}
+    <Card
+      className={cn(
+        "transition-shadow hover:shadow-md",
+        isActive && "ring-2 ring-primary ring-offset-2",
+      )}
       data-active={isActive ? "true" : "false"}
+      data-testid={`sb-tile-${rom.id}`}
     >
-      <span className="sb-art a-1">
-        {rom.coverBlob && coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={rom.title}
-            className="sb-cover-img"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              borderRadius: "inherit",
+      <CardContent className="p-0 flex flex-col">
+        <span className="sb-art a-1">
+          {rom.coverBlob && coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={rom.title}
+              className="sb-cover-img"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: "inherit",
+              }}
+            />
+          ) : (
+            <span aria-hidden="true">{initial}</span>
+          )}
+        </span>
+
+        <div className="flex flex-col gap-1 p-3">
+          <Button
+            variant="ghost"
+            className="text-left justify-start h-auto p-0 font-semibold text-sm whitespace-normal"
+            onClick={onSelect}
+            data-testid={`sb-select-rom-${rom.id}`}
+            // TSK-146: l'accessible name è forzato via `aria-label` perché il
+            // Badge platform vive fuori dal button (design EP-020) — gli e2e
+            // esistenti fanno `getByRole("button", { name: "<titolo> <platform>" })`
+            // (es. player-hud-oracle.e2e.ts:87 "tetris GB",
+            // ep019-rtc.e2e.ts:520 "synthetic-mbc3-rtc GB",
+            // mobile-touch.e2e.ts:42 "test GB"). aria-label sovrascrive il
+            // testo del figlio ai fini dell'accessible name.
+            aria-label={`${rom.title} ${rom.platform}`}
+          >
+            {rom.title}
+          </Button>
+
+          <div className="flex items-center gap-1.5">
+            <Badge variant="outline" className="text-xs">
+              {rom.platform}
+            </Badge>
+            {isActive && (
+              <Badge
+                variant="default"
+                className="text-xs"
+                data-testid="sb-tile-in-game-badge"
+              >
+                In gioco
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <Button
+          variant="destructive"
+          size="sm"
+          className="m-2 mt-0"
+          onClick={onRemove}
+          aria-label={`Rimuovi ${rom.title} dalla libreria`}
+          data-testid={`sb-remove-rom-${rom.id}`}
+        >
+          Rimuovi
+        </Button>
+
+        {/*
+          Controllo upload: l'accessible name è fornito esclusivamente via
+          `aria-label` per evitare di duplicare il testo del titolo nel DOM (che
+          romperebbe gli e2e basati su `getByText(title)` con strict mode).
+          Il label visibile generico "Copertina" è sufficiente: il contesto
+          della tile fornisce l'associazione visuale alla ROM specifica.
+        */}
+        <label className="sb-cover-upload">
+          <input
+            type="file"
+            accept="image/*"
+            aria-label={`Cambia copertina di ${rom.title}`}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onCoverChange(f);
+              // Reset value così re-selezionare lo stesso file rilancia onChange.
+              e.target.value = "";
             }}
           />
-        ) : (
-          <span aria-hidden="true">{initial}</span>
-        )}
-      </span>
-
-      <button
-        type="button"
-        className="sb-game"
-        onClick={onSelect}
-        data-testid={`sb-select-rom-${rom.id}`}
-      >
-        {/* Spazio esplicito fra titolo e badge: l'accessible name deve restare
-            "titolo platform" (es. "tetris GB"). Senza il nodo whitespace, il
-            calcolo accname di dom-accessibility-api concatena senza spazio
-            ("tetrisGB"), divergendo dal browser reale su cui poggiano gli e2e
-            (app.e2e.ts → getByRole button name "tetris GB"). */}
-        <span className="sb-game-title">{rom.title}</span>{" "}
-        <span className="sd-badge">{rom.platform}</span>
-      </button>
-
-      {isActive && (
-        <span className="sb-tile-active-badge" data-testid="sb-tile-in-game-badge">
-          In gioco
-        </span>
-      )}
-
-      <button
-        type="button"
-        className="sb-btn sb-danger sb-tile-remove"
-        onClick={onRemove}
-        aria-label={`Rimuovi ${rom.title} dalla libreria`}
-        data-testid={`sb-remove-rom-${rom.id}`}
-      >
-        Rimuovi
-      </button>
-
-      {/*
-        Controllo upload: l'accessible name è fornito esclusivamente via
-        `aria-label` per evitare di duplicare il testo del titolo nel DOM (che
-        romperebbe gli e2e basati su `getByText(title)` con strict mode).
-        Il label visibile generico "Copertina" è sufficiente: il contesto
-        della tile fornisce l'associazione visuale alla ROM specifica.
-      */}
-      <label className="sb-cover-upload">
-        <input
-          type="file"
-          accept="image/*"
-          aria-label={`Cambia copertina di ${rom.title}`}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onCoverChange(f);
-            // Reset value così re-selezionare lo stesso file rilancia onChange.
-            e.target.value = "";
-          }}
-        />
-        <span className="sb-cover-upload-label" aria-hidden="true">
-          Copertina
-        </span>
-      </label>
-    </article>
+          <span className="sb-cover-upload-label" aria-hidden="true">
+            Copertina
+          </span>
+        </label>
+      </CardContent>
+    </Card>
   );
 }
 
-interface RemoveRomConfirmDialogProps {
-  title: string;
-  isActiveRom: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-/** TSK-108 — Dialog modale di conferma rimozione ROM (pattern TSK-101). */
-function RemoveRomConfirmDialog({
-  title,
-  isActiveRom,
-  onConfirm,
-  onCancel,
-}: RemoveRomConfirmDialogProps) {
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  const confirmRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    cancelRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onCancel]);
-
-  function onDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key !== "Tab") return;
-    const focusables = [cancelRef.current, confirmRef.current].filter(
-      (el): el is HTMLButtonElement => el !== null,
-    );
-    if (focusables.length === 0) return;
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    const active = document.activeElement;
-    if (e.shiftKey && active === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
-
-  return (
-    <div
-      className="sb-dialog-backdrop"
-      onClick={onCancel}
-      data-testid="remove-rom-backdrop"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="remove-rom-title"
-        aria-describedby="remove-rom-desc"
-        className="sb-dialog"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={onDialogKeyDown}
-        data-testid="remove-rom-dialog"
-        style={{
-          background: "var(--sd-color-bg-elevated, #1a1430)",
-          color: "var(--sd-color-text-primary, #f0e9ff)",
-          borderRadius: "var(--sd-radius-md, 8px)",
-          padding: "1.25rem",
-          maxWidth: "24rem",
-          width: "calc(100% - 2rem)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
-        }}
-      >
-        <h2 id="remove-rom-title" className="sb-lbl" style={{ marginTop: 0 }}>
-          Rimuovere {title} dalla libreria?
-        </h2>
-        <p id="remove-rom-desc" className="sb-note" style={{ marginBottom: "1.25rem" }}>
-          {isActiveRom
-            ? "Stai rimuovendo il gioco attualmente in esecuzione. Verrà fermato."
-            : "La ROM verrà eliminata dal dispositivo. I save state associati potrebbero restare orfani."}
-        </p>
-        <div className="sd-flex sd-gap-sm" style={{ justifyContent: "flex-end" }}>
-          <button ref={cancelRef} type="button" className="sb-btn" onClick={onCancel}>
-            Annulla
-          </button>
-          <button
-            ref={confirmRef}
-            type="button"
-            className="sb-btn sb-danger"
-            onClick={onConfirm}
-          >
-            Rimuovi
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// TSK-148 (US-096 / EP-020) — `RemoveRomConfirmDialog` rimosso: sostituito
+// dalla primitiva Radix `AlertDialog` (vedi render principale di `Library`).
+// La primitiva copre nativamente: Portal, focus trap, gestione Esc, overlay
+// backdrop, ruolo ARIA `alertdialog`. Le classi inline `sb-dialog` /
+// `sb-dialog-backdrop` restano usate in `App.tsx` (ConfirmGameChangeDialog) e
+// `SaveStatePanel.tsx`: NON rimosse da `app-extra.css` — sono comunque
+// definite come stile inline nei rispettivi componenti (grep-confirmed).

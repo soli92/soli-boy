@@ -180,6 +180,8 @@ describe("Library", () => {
       );
       expect(await screen.findByText("Tetris")).toBeInTheDocument();
 
+      // Radix ToggleGroup type="single" espone role="radiogroup" e items role="radio"
+      // (con aria-checked). Invariante inalterata rispetto al vecchio PlatformChip.
       const group = screen.getByRole("radiogroup", { name: /filtra per piattaforma/i });
       fireEvent.click(within(group).getByRole("radio", { name: "GBA" }));
 
@@ -200,6 +202,7 @@ describe("Library", () => {
       );
       expect(await screen.findByText("Mario Bros")).toBeInTheDocument();
 
+      // Radix ToggleGroup type="single": role="radiogroup" + role="radio".
       const group = screen.getByRole("radiogroup", { name: /filtra per piattaforma/i });
       fireEvent.click(within(group).getByRole("radio", { name: "GBA" }));
       const search = screen.getByLabelText(/cerca per titolo/i);
@@ -234,6 +237,7 @@ describe("Library", () => {
       );
       expect(await screen.findByText("Tetris")).toBeInTheDocument();
 
+      // Radix ToggleGroup type="single": role="radiogroup" + role="radio".
       const group = screen.getByRole("radiogroup", { name: /filtra per piattaforma/i });
       const chips = within(group).getAllByRole("radio");
       const labels = chips.map((c) => c.textContent);
@@ -360,10 +364,11 @@ describe("Library", () => {
       expect(screen.getByTestId("sb-tile-in-game-badge")).toHaveTextContent(
         /in gioco/i,
       );
-      expect(screen.getByText("Tetris").closest(".sb-tile")).toHaveAttribute(
-        "data-active",
-        "true",
-      );
+      // TSK-146 — il wrapper della tile è ora <Card data-testid="sb-tile-<id>">;
+      // non più <article className="sb-tile">.
+      expect(
+        screen.getByText("Tetris").closest('[data-testid^="sb-tile-"]'),
+      ).toHaveAttribute("data-active", "true");
     });
 
     it("senza activeRomId nessun badge attivo", async () => {
@@ -383,7 +388,9 @@ describe("Library", () => {
       await screen.findByText("Tetris");
 
       fireEvent.click(screen.getByRole("button", { name: /rimuovi tetris/i }));
-      await screen.findByRole("dialog", { name: /rimuovere tetris/i });
+      // TSK-148: Radix AlertDialog espone role="alertdialog" (specializzazione
+      // ARIA di dialog per conferme distruttive), non "dialog".
+      await screen.findByRole("alertdialog", { name: /rimuovere tetris/i });
       fireEvent.click(screen.getByRole("button", { name: /annulla/i }));
 
       expect(storage.removeRom).not.toHaveBeenCalled();
@@ -400,7 +407,8 @@ describe("Library", () => {
       await screen.findByText("Tetris");
 
       fireEvent.click(screen.getByRole("button", { name: /rimuovi tetris/i }));
-      await screen.findByRole("dialog", { name: /rimuovere tetris/i });
+      // TSK-148: Radix AlertDialog espone role="alertdialog".
+      await screen.findByRole("alertdialog", { name: /rimuovere tetris/i });
       expect(
         screen.getByText(/gioco attualmente in esecuzione/i),
       ).toBeInTheDocument();

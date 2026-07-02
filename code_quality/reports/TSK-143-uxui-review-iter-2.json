@@ -1,0 +1,94 @@
+{
+  "review_id": "TSK-143-uxui-review-iter-2",
+  "tsk_id": "TSK-143",
+  "iter": 2,
+  "date": "2026-07-02",
+  "reviewer": "ux-ui-reviewer",
+  "rubric_mode": "strict",
+  "mode": "visual",
+  "skip_a11y": true,
+  "a11y_reference": "TSK-143-a11y-iter-2 → pass (0 automated findings)",
+  "previous_iter": "TSK-143-uxui-review-iter-1",
+  "target": {
+    "code_paths": [
+      "packages/app/src/App.tsx",
+      "packages/app/src/styles/app-extra.css",
+      "packages/app/src/components/ui/tabs.tsx"
+    ],
+    "screenshots": [
+      "code_quality/reports/TSK-143-visual-iter-1/desktop-light.png",
+      "code_quality/reports/TSK-143-visual-iter-1/desktop-dark.png",
+      "code_quality/reports/TSK-143-visual-iter-1/mobile-light.png",
+      "code_quality/reports/TSK-143-visual-iter-1/mobile-dark.png",
+      "code_quality/reports/TSK-143-visual-iter-1/desktop-light-library.png",
+      "code_quality/reports/TSK-143-visual-iter-1/mobile-light-library.png"
+    ],
+    "design_brief": "wiki/design/ep020-design-brief.md"
+  },
+  "verdict": "pass",
+  "rubric_violations_count": 0,
+  "iter1_findings_closure": [
+    {
+      "id": "F-01",
+      "iter1_severity": "minor",
+      "status": "closed",
+      "closure_evidence": "App.tsx:606 — TabsList className now includes overflow-x-auto. On viewports <375px (e.g. 320px iPhone SE) the tab bar scrolls horizontally instead of overflowing/clipping. Verified via grep.",
+      "rubric_ref": ["UI6", "N1"]
+    },
+    {
+      "id": "F-02",
+      "iter1_severity": "minor",
+      "status": "wontfix-preexisting",
+      "closure_evidence": "Library.tsx:213-220 — TSK-046 intentionally renders a branding header (logo img) in all Library states (error/loading/empty/populated) for brand consistency. Explicit comment: 'Renderizzato in tutti gli stati (error/loading/empty/populated) per coerenza branding.' Not introduced by TSK-143. Out of scope.",
+      "rubric_ref": ["N8", "F4"]
+    },
+    {
+      "id": "F-03",
+      "iter1_severity": "trivial",
+      "status": "closed",
+      "closure_evidence": "App.tsx:606 — TabsList className now includes bg-transparent p-0. These override the shadcn base classes bg-muted and p-1 from tabs.tsx:14-15. Tab bar is now flush: no muted container background, no inner padding. Triggers sit directly on the border-b separator. Verified via grep.",
+      "rubric_ref": ["N4", "UI1"]
+    },
+    {
+      "id": "F-04",
+      "iter1_severity": "trivial",
+      "status": "skipped-out-of-scope",
+      "closure_evidence": "Header legacy sd-* classes are outside TSK-143 scope. Documented for EP-020 Phase 2. No action required for this TSK.",
+      "rubric_ref": ["N4"]
+    }
+  ],
+  "new_findings": [],
+  "open_questions_update": [
+    {
+      "id": "OQ-01",
+      "status": "resolved",
+      "resolution": "F-02 confirmed pre-existing (TSK-046). Library branding header is intentional."
+    },
+    {
+      "id": "OQ-02",
+      "status": "resolved",
+      "resolution": "Label 'Info & Privacy' retained per TSK-143 spec and product decision. F-01 mitigated by overflow-x-auto rather than label truncation."
+    },
+    {
+      "id": "OQ-03",
+      "status": "open-carry-forward",
+      "resolution": "TSK-153 (ConfirmGameChangeDialog → Radix AlertDialog) still pending scheduling. Carry forward to TSK-153 review."
+    }
+  ],
+  "design_brief_compliance": {
+    "token_contract": "pass",
+    "radix_tabs_primitive": "pass",
+    "focus_visible": "pass",
+    "forceMount_play": "pass",
+    "layout_fill": "pass",
+    "tab_bar_flush": "pass — bg-transparent p-0 override confirmed",
+    "mobile_responsive": "pass — overflow-x-auto confirmed"
+  },
+  "summary": {
+    "total_findings": 0,
+    "by_severity": { "major": 0, "minor": 0, "trivial": 0 },
+    "open_questions": 1,
+    "verdict": "pass",
+    "verdict_rationale": "All iter-1 findings addressed: F-01 closed (overflow-x-auto), F-03 closed (bg-transparent p-0), F-02 confirmed pre-existing out-of-scope (TSK-046), F-04 skipped out-of-scope. No new findings introduced. Design brief EP-020 compliance full. The Radix Tabs migration for TSK-143 is approved. Single carry-forward open question (OQ-03 / TSK-153) does not block this TSK."
+  }
+}

@@ -203,20 +203,23 @@ export async function setThemeViaSelector(page: Page, theme: UiTheme): Promise<v
   assertValidTheme(theme);
 
   // IA a 4 tab (increment 2): il ThemeSelector vive nella sezione "Aspetto"
-  // della tab Impostazioni, dentro un <details> chiuso di default. Navighiamo
-  // alla tab e apriamo l'accordion prima di localizzare il <select>. Idempotente:
-  // se tab/accordion non esistono (UI legacy single-screen) prosegue invariato.
+  // della tab Impostazioni, dentro un accordion item chiuso di default.
+  // Navighiamo alla tab e apriamo l'accordion prima di localizzare il <select>.
+  // Idempotente: se tab/accordion non esistono (UI legacy single-screen)
+  // prosegue invariato.
+  //
+  // TSK-149 (EP-020 / US-097) — Migrata da `<details>/<summary>` nativo a solids
+  // `Accordion` (Radix): il trigger è un `<button>` con `data-state=open|closed`.
+  // Riformulato il gate su `data-state` invece di `HTMLDetailsElement.open`.
   const settingsTab = page.getByRole("tab", { name: "Impostazioni" });
   if ((await settingsTab.count()) > 0) {
     await settingsTab.click();
-    const aspetto = page.locator("details", {
-      has: page.getByText("Aspetto — tema UI"),
+    const aspettoTrigger = page.getByRole("button", {
+      name: /^Aspetto — tema UI$/i,
     });
-    if ((await aspetto.count()) > 0) {
-      const isOpen = await aspetto.evaluate(
-        (d) => (d as HTMLDetailsElement).open,
-      );
-      if (!isOpen) await aspetto.locator("summary").click();
+    if ((await aspettoTrigger.count()) > 0) {
+      const state = await aspettoTrigger.getAttribute("data-state");
+      if (state !== "open") await aspettoTrigger.click();
     }
   }
 

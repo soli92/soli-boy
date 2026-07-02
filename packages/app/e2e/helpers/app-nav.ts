@@ -31,7 +31,7 @@ export async function waitForAppBoot(page: Page): Promise<void> {
 
 export async function openInfoPrivacyTab(page: Page): Promise<void> {
   await page.getByRole("tab", { name: INFO_PRIVACY_TAB }).click();
-  await expect(page.locator("#panel-info")).toBeVisible();
+  await expect(page.locator('[data-testid="panel-info"]')).toBeVisible();
 }
 
 export async function expectLegalNotice(page: Page): Promise<void> {
@@ -61,7 +61,7 @@ export async function gotoStubApp(page: Page, path = "/?engine=stub"): Promise<v
 export async function openLibraryTab(page: Page): Promise<void> {
   await waitForAppBoot(page);
   await page.getByRole("tab", { name: "Libreria" }).click();
-  await expect(page.locator("#panel-library")).toBeVisible();
+  await expect(page.locator('[data-testid="panel-library"]')).toBeVisible();
   await expect(page.getByLabel("Carica ROM")).toBeAttached();
 }
 
@@ -73,17 +73,23 @@ export async function uploadRom(page: Page, files: RomUpload): Promise<void> {
 
 export async function openSettingsTab(page: Page): Promise<void> {
   await page.getByRole("tab", { name: "Impostazioni" }).click();
-  await expect(page.locator("#panel-settings")).toBeVisible();
+  await expect(page.locator('[data-testid="panel-settings"]')).toBeVisible();
 }
 
-/** Apre l'accordion "Controlli — rimappatura" (chiuso di default in Settings). */
+/** Apre l'accordion "Controlli — rimappatura" (chiuso di default in Settings).
+ *
+ * TSK-149 (EP-020 / US-097) — Settings ora usa solids `Accordion` (Radix): il
+ * trigger è un `<button>` con `aria-expanded` e `data-state=open|closed`. Il
+ * click è idempotente (Radix ignora doppi click quando già open) ma leggiamo
+ * `data-state` per evitare toggle non necessari (parità con il vecchio guard
+ * su `HTMLDetailsElement.open`). Il testo del trigger è invariato. */
 export async function openControlsRemapAccordion(page: Page): Promise<void> {
-  const controls = page.locator("details", {
-    has: page.getByText("Controlli — rimappatura"),
+  const trigger = page.getByRole("button", {
+    name: /^Controlli — rimappatura$/i,
   });
-  const isOpen = await controls.evaluate((d) => (d as HTMLDetailsElement).open);
-  if (!isOpen) {
-    await controls.locator("summary").click();
+  const state = await trigger.getAttribute("data-state");
+  if (state !== "open") {
+    await trigger.click();
   }
   await expect(page.getByLabel("Pulsante per ArrowUp")).toBeVisible();
 }

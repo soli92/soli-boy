@@ -20,6 +20,8 @@
 //   "Carica slot N", "Elimina slot N") perché il label visibile è breve.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// TSK-144 (EP-020 Wave B P1) — solids Button (shadcn-ui).
+import { Button } from "@/components/ui/button";
 import type { EmulatorEngine } from "../../core/core-wrapper";
 import type { LoadStateResult } from "../../domain/save-service";
 import type { Core } from "../../domain/types";
@@ -243,36 +245,42 @@ export function SaveStatePanel({
               <span className="sb-key" aria-hidden="true">
                 {slotLabel}
               </span>
-              <button
+              {/* TSK-144 — Slot Save/Load = outline sm; Delete = ghost icon
+                  con icona Tabler ti-trash (aria-label preserva l'etichetta
+                  descrittiva per AT, l'icona è puramente decorativa). */}
+              <Button
                 type="button"
-                className="sb-btn"
+                variant="outline"
+                size="sm"
                 onClick={() => handleSave(slot)}
                 disabled={disabled || busy}
                 aria-label={`Salva nello slot ${slot + 1}`}
                 data-testid={`sb-savestate-save-${slot}`}
               >
                 Salva
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="sb-btn sb-btn-primary"
+                variant="outline"
+                size="sm"
                 onClick={() => (rec ? handleLoad(rec) : undefined)}
                 disabled={disabled || busy || !occupied || !currentCore}
                 aria-label={`Carica slot ${slot + 1}`}
                 data-testid={`sb-savestate-load-${slot}`}
               >
                 Carica
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="sb-btn sb-danger"
+                variant="ghost"
+                size="icon"
                 onClick={() => (rec ? requestDelete(rec) : undefined)}
                 disabled={disabled || busy || !occupied}
                 aria-label={`Elimina slot ${slot + 1}`}
                 data-testid={`sb-savestate-delete-${slot}`}
               >
-                Elimina
-              </button>
+                <i className="ti ti-trash" aria-hidden="true" />
+              </Button>
               <span className="sb-mt" data-testid={`sb-savestate-meta-${slot}`}>
                 {occupied
                   ? new Date(rec!.createdAt).toLocaleString()
@@ -394,17 +402,18 @@ function DeleteSaveStateDialog({
           {slotLabel} — salvato il {createdAtLabel}
         </p>
         <div className="sd-flex sd-gap-sm" style={{ justifyContent: "flex-end" }}>
-          <button ref={cancelRef} type="button" className="sb-btn" onClick={onCancel}>
+          {/* TSK-144 — Dialog Annulla = outline, Elimina = destructive. */}
+          <Button ref={cancelRef} type="button" variant="outline" onClick={onCancel}>
             Annulla
-          </button>
-          <button
+          </Button>
+          <Button
             ref={confirmRef}
             type="button"
-            className="sb-btn sb-danger"
+            variant="destructive"
             onClick={onConfirm}
           >
             Elimina
-          </button>
+          </Button>
         </div>
       </div>
     </div>

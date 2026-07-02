@@ -18,6 +18,17 @@ import type {
 import type { SaveStateRecord } from "../../storage/types";
 import { Settings, type SaveDataPort } from "./Settings";
 
+// TSK-149 (EP-020 / US-097) — La sezione "Dati" è ora un `AccordionItem`
+// (Radix) chiuso di default: il contenuto è smontato finché il trigger non è
+// attivato. `openDataSection` clicca il trigger per portare la sezione allo
+// stato "aperta" e mettere i controlli nel DOM — parità con `<details open>`
+// pre-migrazione (dove il DOM era popolato in ogni caso).
+function openDataSection(): void {
+  fireEvent.click(
+    screen.getByRole("button", { name: /dati — salvataggi/i }),
+  );
+}
+
 // --- Helpers fake ------------------------------------------------------------
 
 function makeSaveState(over: Partial<SaveStateRecord> = {}): SaveStateRecord {
@@ -96,6 +107,7 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
         currentRom={{ id: "rom-1", title: "Tetris" }}
       />,
     );
+    openDataSection();
     // Group region con label "Esporta e importa salvataggi"
     expect(screen.getByRole("group", { name: /esporta e importa salvataggi/i })).toBeInTheDocument();
     // Etichetta contesto ROM (no selettore — UX semplice; ROM definita dal Player).
@@ -121,6 +133,7 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
         currentRom={{ id: "rom-1", title: "Tetris" }}
       />,
     );
+    openDataSection();
     await waitFor(() => expect(port.listSaveStates).toHaveBeenCalled());
     const exportBtn = screen.getByRole("button", { name: /esporta/i }) as HTMLButtonElement;
     expect(exportBtn.disabled).toBe(true);
@@ -142,6 +155,7 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
         currentRom={{ id: "rom-1", title: "Tetris" }}
       />,
     );
+    openDataSection();
 
     await waitFor(() => expect(port.listSaveStates).toHaveBeenCalled());
     // Attendi che il re-render post-load popoli la select con "ss-a" selezionato:
@@ -181,6 +195,7 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
         currentRom={{ id: "rom-1", title: "Tetris" }}
       />,
     );
+    openDataSection();
 
     const fileInput = screen.getByLabelText("Importa file di salvataggio") as HTMLInputElement;
     const bogus = new File(["not-json"], "save.txt", { type: "text/plain" });
@@ -204,6 +219,7 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
         currentRom={{ id: "rom-1", title: "Tetris" }}
       />,
     );
+    openDataSection();
     const file = new File(["{}"], "save.json", { type: "application/json" });
     fireEvent.change(screen.getByLabelText("Importa file di salvataggio"), {
       target: { files: [file] },
@@ -225,6 +241,7 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
         currentRom={{ id: "rom-1", title: "Tetris" }}
       />,
     );
+    openDataSection();
 
     await waitFor(() => expect(port.listSaveStates).toHaveBeenCalledTimes(1));
 
@@ -243,6 +260,7 @@ describe("Settings — sezione Dati (TSK-033 / US-019)", () => {
     render(
       <Settings profile={DEFAULT_KEY_PROFILE} onRemap={vi.fn()} />,
     );
+    openDataSection();
     // Sezione presente per UX prevedibile.
     expect(screen.getByRole("group", { name: /esporta e importa salvataggi/i })).toBeInTheDocument();
     // Nota "non disponibile" (statica, non role=status: vedi commento in Settings.tsx).

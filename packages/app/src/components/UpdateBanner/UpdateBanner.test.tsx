@@ -282,12 +282,29 @@ describe("UpdateBanner — rendering per fase (TSK-057)", () => {
     spy.mockRestore();
   });
 
-  it("applica le classi solids sd-card e sb-sec", () => {
+  it("è posizionato come overlay fisso in cima allo schermo (fixed top)", () => {
+    // TSK-152 (US-098, EP-020): migrazione a shadcn Alert — le vecchie classi
+    // solids `sd-card`/`sb-sec` sono sostituite da utility Tailwind. Assertion
+    // sul posizionamento visivo (fixed/top/inset-x-0) che è il contratto reale
+    // del banner di aggiornamento.
     const spy = spyUpdater({ phase: "available", quitAndInstall: vi.fn() });
     render(<UpdateBanner />);
     const banner = screen.getByTestId("sb-update-banner");
-    expect(banner).toHaveClass("sd-card");
-    expect(banner).toHaveClass("sb-sec");
+    expect(banner).toHaveClass("fixed");
+    expect(banner).toHaveClass("top-0");
+    expect(banner).toHaveClass("inset-x-0");
+    spy.mockRestore();
+  });
+
+  it("in fase 'downloaded' offre un pulsante 'Più tardi' che nasconde il banner", () => {
+    // TSK-152: nuovo affordance ghost "Più tardi" (UPDATE_LABELS.laterCta).
+    // Il click nasconde localmente il banner (nessuna persistenza — riappare
+    // alla prossima sessione se lo stato downloaded si ripresenta).
+    const spy = spyUpdater({ phase: "downloaded", quitAndInstall: vi.fn() });
+    render(<UpdateBanner />);
+    expect(screen.getByTestId("sb-update-banner")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: UPDATE_LABELS.laterCta }));
+    expect(screen.queryByTestId("sb-update-banner")).toBeNull();
     spy.mockRestore();
   });
 });

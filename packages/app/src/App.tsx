@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 // Logo brand orizzontale: sostituisce il testo "Soli-boy" nell'header.
 // Vite risolve l'import SVG in una URL servibile (asset pipeline).
 import logoUrl from "./assets/soliboy-logo-horizontal.svg";
@@ -53,6 +53,15 @@ import { useAutoStartConfig } from "./components/Settings/useAutoStartConfig";
 // TSK-132 (ADR-009 §4) — StubRtcBridge per e2e EP-019: bridge RTC deterministico
 // usato quando il URL param ?rtcPlatform è presente in stub mode.
 import { StubRtcBridge } from "./core/stub-engine"; // StubRtcBridge: e2e-only, see stub-engine.ts
+// TSK-143 (US-094 / EP-020) — Migrazione app shell alle primitive solids/Radix.
+// I componenti Tabs (Radix) sostituiscono l'implementazione manuale di tablist +
+// keyboard navigation: Arrow/Home/End/Space/Enter sono gestiti internamente dalla
+// primitive, così come `role="tab"`/`role="tablist"`/`role="tabpanel"` e la
+// gestione di `aria-selected`/`aria-controls`/`tabindex` (WAI-ARIA APG pattern).
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
+// TSK-145 (US-095 / EP-020) — CTA "Vai alla Libreria" migrata a Button variant="outline":
+// azione secondaria coerente con il Button primary del FileLoader ("Carica ROM").
+import { Button } from "@/components/ui/button";
 
 // TSK-025 (ADR-005): selezione engine. Default ENGINE REALE per-piattaforma via
 // registry (l'utente che apre la webapp vuole emulare davvero). Lo StubEngine
@@ -106,14 +115,14 @@ export const STORAGE_INIT_ERROR_MESSAGE =
   "Impossibile inizializzare lo storage — ricaricare l'app";
 
 /** Le 4 destinazioni funzionali dell'app. */
-type Tab = "play" | "library" | "settings" | "info";
-
-const TABS: { id: Tab; label: string }[] = [
+const TABS = [
   { id: "play", label: "Play" },
   { id: "library", label: "Libreria" },
   { id: "settings", label: "Impostazioni" },
   { id: "info", label: "Info & Privacy" },
-];
+] as const;
+
+type Tab = (typeof TABS)[number]["id"];
 
 /**
  * TSK-096 (US-051) — Fallback di emergenza quando `selectAdapter()` ha
@@ -357,10 +366,9 @@ function AppContent({
   const [pendingRom, setPendingRom] = useState<RomRecord | null>(null);
 
   // INCREMENT 2 — navigazione a tab. Default "play" (emulator-first).
+  // TSK-143 (US-094) — La keyboard navigation (Arrow/Home/End) è ora
+  // interamente gestita da Radix Tabs (WAI-ARIA APG). Nessun handler manuale.
   const [activeTab, setActiveTab] = useState<Tab>("play");
-
-  // Ref per il contenitore tablist (keyboard navigation con frecce).
-  const tablistRef = useRef<HTMLDivElement>(null);
 
   // TSK-033 (US-019) — riassunto ROM corrente per la sezione "Dati" di Settings.
   // La ROM "corrente" è quella selezionata nel Player (`selected`); proiettiamo
@@ -476,38 +484,6 @@ function AppContent({
   // CoreWrapper — basta `selected` come prova "il gioco è in sessione".
   useTabPause(engine, activeTab, selected, "play");
 
-  // Gestione keyboard navigation sulla tablist (WAI-ARIA pattern:
-  // ArrowLeft/ArrowRight per spostarsi, Home/End per i bordi).
-  const handleTablistKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const tabIds = TABS.map((t) => t.id);
-      const currentIndex = tabIds.indexOf(activeTab);
-
-      let nextIndex = currentIndex;
-      if (e.key === "ArrowRight") {
-        nextIndex = (currentIndex + 1) % tabIds.length;
-      } else if (e.key === "ArrowLeft") {
-        nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
-      } else if (e.key === "Home") {
-        nextIndex = 0;
-      } else if (e.key === "End") {
-        nextIndex = tabIds.length - 1;
-      } else {
-        return;
-      }
-
-      e.preventDefault();
-      const nextTab = tabIds[nextIndex];
-      setActiveTab(nextTab);
-      // Sposta il focus sul button della tab attivata via tastiera.
-      const btn = tablistRef.current?.querySelector<HTMLButtonElement>(
-        `[data-tab-id="${nextTab}"]`,
-      );
-      btn?.focus();
-    },
-    [activeTab],
-  );
-
   // Handler selezione ROM dalla Library: seleziona la ROM e porta l'utente
   // sulla tab Play (OQ-02: auto-switch preferibile per nielsen-1 / flow-ux-1).
   // TSK-100 (US-053) — imposta `autoStartFromLibrary=true` così il Player avvia
@@ -606,98 +582,94 @@ function AppContent({
           Posizionato dopo il banner privacy per non competere in visibilità. */}
       <UpdateBanner />
 
-      {/* INCREMENT 2 — Navigazione a 4 tab (WAI-ARIA tablist pattern).
-          Pattern: nav landmark + tablist con role="tab", aria-selected, aria-controls.
-          Keyboard: ArrowLeft/ArrowRight per navigare, Home/End per i bordi.
-          Player panel usa `hidden` attribute (mai smontato, preserva stato gioco).
-          Altri panel usano conditional render (unmount accettabile, no stato BG). */}
-      <nav aria-label="Navigazione principale">
-        <div
-          role="tablist"
-          aria-label="Sezioni app"
-          className="sb-tab-bar"
-          ref={tablistRef}
-          onKeyDown={handleTablistKeyDown}
-        >
+      {/* TSK-143 (US-094 / EP-020) — Navigazione a 4 tab via primitiva Radix
+          Tabs (solids). Radix implementa nativamente il pattern WAI-ARIA APG
+          Tabs: `role="tablist"`/`role="tab"`/`role="tabpanel"`,
+          `aria-selected`, `aria-controls` e keyboard navigation
+          (Arrow/Home/End/Space/Enter). L'`aria-label` sulla lista preserva
+          l'identificatore accessibile "Sezioni app" atteso dai test e2e.
+
+          Panel Play: `forceMount` + `data-[state=inactive]:hidden` per tenere
+          il Player SEMPRE montato (preserva lo stato WasmBoy fra switch tab —
+          A-01 validata: WasmBoyEngine.resume() ha guard `if (!configured)
+          return`, quindi il player montato-ma-mai-avviato è sicuro).
+          Gli altri panel (library/settings/info) usano il default Radix
+          (unmount quando inattivo): nessuno stato di background da preservare.
+
+          `data-testid="panel-*"` sui `TabsContent` per compatibilità con i
+          selettori e2e (`page.locator('[data-testid="panel-library"]')` ecc.).
+          Gli `id` espliciti sono stati rimossi: Radix gestisce internamente la
+          wiring ARIA (`aria-controls`/`aria-labelledby`) con i propri ID generati
+          — sovrascriverli causa violazione `aria-valid-attr-value` (F-01 a11y). */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as Tab)} // Radix emette solo i value dei TabsTrigger registrati
+        className="flex flex-col flex-1"
+      >
+        <TabsList aria-label="Sezioni app" className="w-full rounded-none border-b border-border bg-transparent p-0 overflow-x-auto">
           {TABS.map((tab) => (
-            <button
+            <TabsTrigger
               key={tab.id}
-              role="tab"
-              id={`tab-${tab.id}`}
-              aria-selected={activeTab === tab.id}
-              aria-controls={`panel-${tab.id}`}
-              data-tab-id={tab.id}
-              tabIndex={activeTab === tab.id ? 0 : -1}
-              className={[
-                "sb-tab-btn",
-                activeTab === tab.id ? "sb-tab-btn--active" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => setActiveTab(tab.id)}
+              value={tab.id}
             >
               {tab.label}
-            </button>
+            </TabsTrigger>
           ))}
-        </div>
-      </nav>
+        </TabsList>
 
-      {/* Panel Play — Player SEMPRE montato (always-mounted, mai smontato).
-          Usa hidden attribute invece di conditional render per preservare lo
-          stato WasmBoy. La visibilità CSS è gestita via hidden + sb-panel hidden.
-          A-01 validata: WasmBoyEngine.resume() ha guard `if (!configured) return`
-          (wasmboy-engine.ts:77-84), quindi il player montato-ma-mai-avviato è sicuro. */}
-      <div
-        id="panel-play"
-        role="tabpanel"
-        aria-labelledby="tab-play"
-        className="sb-tab-panel"
-        hidden={activeTab !== "play"}
-      >
-        <Player
-          engine={engine}
-          rom={
-            selected
-              ? { rom: selected.fileBlob, core: selected.core }
-              : // ROM placeholder per stato idle (Player sempre montato):
-                // fileBlob vuoto, core gb — il Player non avvierà nulla
-                // finché l'utente non preme "Avvia" (wrapper.load è chiamato
-                // solo in handlePlay, non al mount).
-                { rom: new Blob(), core: "gambatte" }
-          }
-          title={selected?.title}
-          videoSettings={videoSettings}
-          saveService={selected ? saveService : undefined}
-          romId={selected?.id}
-          currentCore={selected?.core}
-          hapticsEnabled={hapticsEnabled}
-          inputMapping={input}
-          touchConfigStorage={config}
-          autoStart={autoStartFromLibrary}
-          onStateChange={setPlayerState}
-        />
-        {/* CTA FileLoader in stato idle (nessuna ROM selezionata) */}
-        {!selected && (
-          <div className="sb-play-idle-cta">
-            <p className="sb-note">Nessun gioco selezionato</p>
-            <button
-              type="button"
-              className="sb-btn"
-              onClick={() => setActiveTab("library")}
-            >
-              Vai alla Libreria
-            </button>
-          </div>
-        )}
-      </div>
+        {/* Panel Play — SEMPRE montato via `forceMount`. Radix imposta
+            `data-state="inactive"` + attributo `hidden` sull'elemento quando
+            la tab non è attiva; la utility Tailwind
+            `data-[state=inactive]:hidden` è ridondante ma difensiva
+            (garantisce `display:none` anche se `hidden` HTML fosse sovrascritto
+            da un `display` esplicito). */}
+        <TabsContent
+          value="play"
+          forceMount
+          data-testid="panel-play"
+          className="flex flex-col gap-5 data-[state=inactive]:hidden"
+        >
+          <Player
+            engine={engine}
+            rom={
+              selected
+                ? { rom: selected.fileBlob, core: selected.core }
+                : // ROM placeholder per stato idle (Player sempre montato):
+                  // fileBlob vuoto, core gb — il Player non avvierà nulla
+                  // finché l'utente non preme "Avvia" (wrapper.load è chiamato
+                  // solo in handlePlay, non al mount).
+                  { rom: new Blob(), core: "gambatte" }
+            }
+            title={selected?.title}
+            videoSettings={videoSettings}
+            saveService={selected ? saveService : undefined}
+            romId={selected?.id}
+            currentCore={selected?.core}
+            hapticsEnabled={hapticsEnabled}
+            inputMapping={input}
+            touchConfigStorage={config}
+            autoStart={autoStartFromLibrary}
+            onStateChange={setPlayerState}
+          />
+          {/* TSK-145 — CTA idle (nessuna ROM selezionata) su primitive solids.
+              Layout: colonna centrata, gap/padding via utility Tailwind (nessuna
+              classe custom `.sb-play-idle-cta` residua). Button variant="outline"
+              per differenziarsi visivamente dal primary "Carica ROM" (invito a
+              navigare, non azione principale di importazione). */}
+          {!selected && (
+            <div className="flex flex-col items-center gap-4 p-8 text-center">
+              <p className="text-muted-foreground text-sm">Nessun gioco selezionato</p>
+              <Button variant="outline" onClick={() => setActiveTab("library")}>
+                Vai alla Libreria
+              </Button>
+            </div>
+          )}
+        </TabsContent>
 
-      {/* Panel Libreria — conditional render (nessuno stato background da preservare). */}
-      {activeTab === "library" && (
-        <div
-          id="panel-library"
-          role="tabpanel"
-          aria-labelledby="tab-library"
-          className="sb-tab-panel"
+        <TabsContent
+          value="library"
+          data-testid="panel-library"
+          className="flex flex-col gap-5"
         >
           <Library
             key={refresh}
@@ -711,68 +683,61 @@ function AppContent({
             storage={storage}
             onImported={() => setRefresh((n) => n + 1)}
           />
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Panel Impostazioni — conditional render.
-          Le sotto-sezioni di Settings sono sempre espanse: l'accordion
-          (progressive disclosure) è implementato tramite <details>/<summary>
-          semantici qui nel wrapper, non modificando Settings.tsx (no-rewrite). */}
-      {activeTab === "settings" && (
-        <div
-          id="panel-settings"
-          role="tabpanel"
-          aria-labelledby="tab-settings"
-          className="sb-tab-panel"
+        {/* Panel Impostazioni — la progressive disclosure è ora gestita
+            direttamente dentro `Settings` via solids `Accordion` (Radix)
+            [TSK-149 / EP-020 / US-097]. Il wrapper `.sb-accordion-wrap`
+            legacy è stato rimosso: le regole CSS custom per marker/chevron
+            (`app-extra.css`) sono sostituite dagli attributi Radix
+            (data-state) e dall'icona `ChevronDown` interna al DS. */}
+        <TabsContent
+          value="settings"
+          data-testid="panel-settings"
+          className="flex flex-col gap-5"
         >
-          <div className="sb-accordion-wrap">
-            <Settings
-              profile={profile}
-              onRemap={remap}
-              videoSettings={videoSettings}
-              onVideoSettingsChange={setVideoSettings}
-              saveService={saveService}
-              currentRom={currentRomSummary}
-              theme={theme}
-              onThemeChange={setTheme}
-              hapticsEnabled={hapticsEnabled}
-              onHapticsChange={async (value) => {
-                setHapticsEnabled(value);
-                await saveHapticsEnabled(value);
-              }}
-              autoStartFromLibrary={autoStartPreference}
-              onAutoStartChange={async (value) => {
-                // TSK-102 (US-053) — stesso pattern del toggle haptics:
-                // aggiorna lo stato in memoria e poi persiste via ConfigPort
-                // (fire-and-forget con log non bloccante in caso di reject —
-                // vedi `saveAutoStartFromLibrary` in useAutoStartConfig).
-                setAutoStartPreference(value);
-                await saveAutoStartFromLibrary(value);
-              }}
-              // ADR-009 §4 — wiring RTC produzione: platform dal gioco caricato,
-              // bridge dall'engine. RtcSection si nasconde da sola se la cartuccia
-              // non ha RTC (bridge null) o la piattaforma non lo supporta.
-              // In e2e stub mode i fallback E2E_RTC_PLATFORM / stubRtcBridge restano attivi.
-              rtcPlatform={selected?.platform ?? E2E_RTC_PLATFORM}
-              rtcBridge={engine.rtcBridge ?? stubRtcBridge ?? undefined}
-            />
-          </div>
-        </div>
-      )}
+          <Settings
+            profile={profile}
+            onRemap={remap}
+            videoSettings={videoSettings}
+            onVideoSettingsChange={setVideoSettings}
+            saveService={saveService}
+            currentRom={currentRomSummary}
+            theme={theme}
+            onThemeChange={setTheme}
+            hapticsEnabled={hapticsEnabled}
+            onHapticsChange={async (value) => {
+              setHapticsEnabled(value);
+              await saveHapticsEnabled(value);
+            }}
+            autoStartFromLibrary={autoStartPreference}
+            onAutoStartChange={async (value) => {
+              // TSK-102 (US-053) — stesso pattern del toggle haptics:
+              // aggiorna lo stato in memoria e poi persiste via ConfigPort
+              // (fire-and-forget con log non bloccante in caso di reject —
+              // vedi `saveAutoStartFromLibrary` in useAutoStartConfig).
+              setAutoStartPreference(value);
+              await saveAutoStartFromLibrary(value);
+            }}
+            // ADR-009 §4 — wiring RTC produzione: platform dal gioco caricato,
+            // bridge dall'engine. RtcSection si nasconde da sola se la cartuccia
+            // non ha RTC (bridge null) o la piattaforma non lo supporta.
+            // In e2e stub mode i fallback E2E_RTC_PLATFORM / stubRtcBridge restano attivi.
+            rtcPlatform={selected?.platform ?? E2E_RTC_PLATFORM}
+            rtcBridge={engine.rtcBridge ?? stubRtcBridge ?? undefined}
+          />
+        </TabsContent>
 
-      {/* Panel Info & Privacy — conditional render. Sempre accessibile (compliance). */}
-      {activeTab === "info" && (
-        <div
-          id="panel-info"
-          role="tabpanel"
-          aria-labelledby="tab-info"
-          className="sb-tab-panel"
+        <TabsContent
+          value="info"
+          data-testid="panel-info"
+          className="flex flex-col gap-5"
         >
           <PrivacyNotice variant="section" />
           <StoreComplianceNotice />
           <LegalNotice />
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* TSK-101 (US-053) — Dialog modale "Cambia gioco?" (UX-CF1-02).
           Reso solo quando `pendingRom !== null`: l'utente ha tap'ato una ROM
@@ -788,7 +753,7 @@ function AppContent({
         />
       )}
 
-      <footer className="sb-app-footer" role="contentinfo" aria-label="Informazioni app" />
+      <footer className="sb-app-footer" />
     </main>
   );
 }

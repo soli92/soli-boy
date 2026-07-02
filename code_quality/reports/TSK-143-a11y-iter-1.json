@@ -1,0 +1,85 @@
+{
+  "target": "TSK-143 (http://localhost:4173/?engine=stub)",
+  "standard": "wcag22aa",
+  "summary": {
+    "critical": 1,
+    "major": 0,
+    "minor": 1,
+    "manual_checks": 9
+  },
+  "automated_findings": [
+    {
+      "id": "aria-valid-attr-value",
+      "severity": "Critical",
+      "wcag": "4.1.2",
+      "location": "#tab-play",
+      "description": "ARIA attribute value invalid. TabsTrigger for 'play' has aria-controls pointing to a Radix-generated panel ID (e.g. radix-:r0:-content-play) that does not exist in the DOM. Root cause: the explicit id='panel-play' passed to TabsContent overrides Radix's internally generated DOM id, but Radix's aria-controls wiring on the trigger still references the original generated id — creating a dangling aria-controls reference. Symmetrically, the panel's aria-labelledby references a Radix-generated trigger id that was overridden by the explicit id='tab-play' on TabsTrigger.",
+      "suggested_fix": "Remove explicit id props from all TabsTrigger and TabsContent elements. Let Radix manage ARIA IDs and their cross-references internally. Update e2e selectors from page.locator('#panel-library') to role-based queries (getByRole('tabpanel', { name: '...' })) or add data-testid attributes instead. See: https://dequeuniversity.com/rules/axe/4.12/aria-valid-attr-value?application=axeAPI"
+    },
+    {
+      "id": "landmark-contentinfo-is-top-level",
+      "severity": "Minor",
+      "wcag": "n/a",
+      "location": "footer[role='contentinfo']",
+      "description": "The <footer role='contentinfo'> is nested inside <main> (implicit role='main'). The contentinfo landmark must be a direct descendant of the page root, not nested inside another landmark. This violates ARIA landmark best practices (not a strict WCAG 2.2 AA criterion but an axe best-practice rule).",
+      "suggested_fix": "Move the <footer role='contentinfo' ...> outside of <main className='sb-app'> so it is a top-level landmark. Alternatively, if the footer is intentionally scoped to the main content, remove role='contentinfo' (a plain <footer> inside <main> is valid HTML without the explicit role). See: https://dequeuniversity.com/rules/axe/4.12/landmark-contentinfo-is-top-level?application=axeAPI"
+    }
+  ],
+  "manual_checks": [
+    {
+      "wcag": "1.3.1",
+      "item": "Verify semantic structure end-to-end: h1 in header, tablist/tab/tabpanel roles from Radix, main landmark, footer landmark placement.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.3",
+      "item": "Verify color is not the only means of conveying information (e.g. active tab state uses visual indicator beyond color alone).",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.1.1",
+      "item": "Verify all functionality is operable via keyboard only (tab into tablist, navigate triggers, open panels, interact with panel content).",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.4.3",
+      "item": "Verify focus order is logical and predictable: header → tablist → active panel content → footer.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.10",
+      "item": "Verify content reflows without loss at 320px width (Tailwind responsive layout, TabsList w-full, no horizontal scroll).",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "2.1.1",
+      "item": "TSK-143 specific — Radix keyboard delegation: Tab key reaches the tablist; within the tablist ArrowLeft/ArrowRight (and ArrowUp/ArrowDown for vertical) navigate between triggers; Home moves to first trigger; End moves to last trigger. Verify these work after the aria-controls id fix.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "4.1.2",
+      "item": "TSK-143 specific — After id conflict fix: verify aria-controls on each TabsTrigger correctly points to its TabsContent panel, and aria-labelledby on each panel correctly points back to its trigger. All 4 tab/panel pairs must be wired.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.3.1",
+      "item": "TSK-143 specific — Panel Play forceMount + data-[state=inactive]:hidden: verify that when Play is not the active tab, the panel is not perceivable by assistive technologies. Radix sets the HTML hidden attribute on inactive TabsContent (removing from a11y tree); the Tailwind data-[state=inactive]:hidden rule is a defensive CSS-only layer. Both mechanisms must coexist without exposing hidden content.",
+      "status": "to_verify"
+    },
+    {
+      "wcag": "1.4.3",
+      "item": "TSK-143 specific — Color contrast of TabsTrigger active/inactive states in light and dark themes: active state uses data-[state=active]:bg-background + data-[state=active]:text-foreground; inactive uses text-muted-foreground on bg-muted. Verify contrast ratios >= 4.5:1 for normal text in both themes.",
+      "status": "to_verify"
+    }
+  ],
+  "positive_findings": [
+    "Radix Tabs manages role='tablist', role='tab', role='tabpanel' and aria-selected natively — no manual ARIA role maintenance required after migration.",
+    "TabsList has aria-label='Sezioni app' — provides accessible name for the tablist landmark; compatible with e2e selectors getByRole('tablist', { name: 'Sezioni app' }).",
+    "TabsTrigger has focus-visible ring styles (focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2) — WCAG 2.4.7 / 2.4.11 focus visibility satisfied.",
+    "<h1> in header wraps logo img with alt='Soli-boy' — WCAG 1.1.1 (non-text content) and page-has-heading-one landmark both satisfied.",
+    "ConfirmGameChangeDialog implements role='dialog' + aria-modal='true' + aria-labelledby + aria-describedby + Esc handler + focus trap (Tab/Shift+Tab bounded to two buttons) — robust WAI-ARIA modal implementation.",
+    "Color contrast overrides in app-extra.css (TSK-084) pre-empt known insufficient-contrast findings for dark, 90s-party and cyberpunk themes on chip-on and danger button states.",
+    "Keyboard navigation (Arrow/Home/End/Space/Enter) is delegated to Radix — eliminates drift risk vs WAI-ARIA APG tab pattern that affected the previous manual onKeyDown handler.",
+    "forceMount on panel Play combined with Radix-managed hidden attribute: Player component stays mounted across tab switches (preserving WasmBoy state) without exposing a11y items — hidden attribute removes panel from accessibility tree when inactive."
+  ]
+}

@@ -2,82 +2,19 @@
    Provvisori: da consolidare quando si integra il pacchetto reale @soli92/solids. */
 
 /* ============================================================================
-   INCREMENT 2 — Tab navigation (sb-tab-bar, sb-tab-btn, sb-tab-panel)
+   TSK-143 (US-094 / EP-020) — Tab navigation via primitiva Radix Tabs (solids).
    ----------------------------------------------------------------------------
-   Pattern: WAI-ARIA tablist, nessun sd-tab nel design system → classi sb-
-   coerenti con nomenclatura esistente (sb-btn, sb-sel, sd-card).
-   Keyboard: ArrowLeft/ArrowRight gestiti in App.tsx (handleTablistKeyDown).
-   Responsive: label intere ≥ 480px; abbreviate < 480px via data-short.
+   Le classi legacy .sb-tab-bar / .sb-tab-btn / .sb-tab-btn--active /
+   .sb-tab-panel sono state RIMOSSE: la nuova implementazione consuma le
+   utility Tailwind e i data-attribute Radix (`data-state=active|inactive`).
+   Gli stili di trigger/list sono forniti dal wrapper `components/ui/tabs.tsx`
+   (px-3/py-1 + ring focus-visible + data-[state=active]:bg-background),
+   l'`aria-label` sulla lista è preservato per compatibilità con l'audit e2e
+   che cerca `getByRole("tablist", { name: "Sezioni app" })`.
    ============================================================================ */
 
-.sb-tab-bar {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--sd-color-border-muted, #3a2a63);
-  margin-bottom: var(--sd-space-lg, 20px);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Firefox */
-}
-.sb-tab-bar::-webkit-scrollbar { display: none; }
-
-.sb-tab-btn {
-  flex: 1 0 auto;
-  min-height: var(--sd-layout-touch-target-min, 44px);
-  padding: 0 var(--sd-space-md, 12px);
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px; /* si sovrappone al border-bottom del bar */
-  color: var(--sd-color-text-secondary, #b9a9e0);
-  font-family: var(--sd-font-body, system-ui, sans-serif);
-  font-size: var(--sd-text-sm, 13px);
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
-}
-.sb-tab-btn:hover {
-  color: var(--sd-color-text-primary, #f0e9ff);
-}
-.sb-tab-btn--active {
-  color: var(--sd-color-primary-default, #00e5ff);
-  border-bottom-color: var(--sd-color-primary-default, #00e5ff);
-  font-weight: 600;
-}
-.sb-tab-btn:focus-visible {
-  outline: 2px solid var(--sd-color-primary-default, #00e5ff);
-  outline-offset: -2px;
-  border-radius: var(--sd-radius-sm, 6px) var(--sd-radius-sm, 6px) 0 0;
-}
-
-/* Truncation strategy sotto 480px: mostriamo solo le prime 4 lettere + "..." */
-@media (max-width: 479px) {
-  .sb-tab-btn {
-    font-size: var(--sd-text-xs, 12px);
-    padding: 0 var(--sd-space-sm, 8px);
-  }
-}
-
-/* Panel: gestione hidden attribute + aspetto visivo */
-.sb-tab-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sd-space-lg, 20px);
-}
-.sb-tab-panel[hidden] {
-  display: none;
-}
-
-/* CTA stato idle nella tab Play */
-.sb-play-idle-cta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sd-space-md, 12px);
-  padding: var(--sd-space-lg, 20px);
-  text-align: center;
-}
+/* CTA stato idle nella tab Play — TSK-145 (EP-020): .sb-play-idle-cta rimossa;
+   sostituita da utility Tailwind in App.tsx (flex flex-col items-center gap-4 p-8). */
 
 /* Footer */
 footer {
@@ -87,95 +24,22 @@ footer {
 }
 
 /* ============================================================================
-   TSK-??? — Accordion Settings: stile marker <details>/<summary> (Residuo B)
+   TSK-149 (EP-020 / US-097) — Accordion Settings migrato a solids `Accordion`
    ----------------------------------------------------------------------------
-   Il triangolo disclosure nativo non è stilizzato col design system. Strategia:
-   - Nasconde il marker nativo (cross-browser: ::webkit-details-marker + ::marker).
-   - Aggiunge un chevron custom via ::after con rotazione su [open] per indicare
-     stato aperto/chiuso in modo chiaro.
-   - cursor:pointer, hover/focus-visible coerenti con sb-tab-btn (sb-* tokens).
-   - L'accessibilità nativa di <details> è PRESERVATA: Space/Enter su <summary>
-     funzionano invariati (il marker visivo non tocca il behaviour nativo). Gli
-     screen reader annunciano ancora "collapsed/expanded" dal role="group" nativo.
-   Scope: <summary> dentro .sd-card.sb-sec (Settings), con o senza .sb-lbl
-   direttamente sul summary (TSK-115: heading h3 annidato).
+   Le regole CSS custom per stilizzare `<details>/<summary>` (marker nativo
+   nascosto, chevron `::after` rotante, hover/focus, border-bottom) sono state
+   RIMOSSE. La sezione Impostazioni usa ora `Accordion` (Radix) via wrapper
+   `components/ui/accordion.tsx`:
+   - Chevron fornito da `ChevronDown` (lucide-react) dentro `AccordionTrigger`,
+     rotato via `data-[state=open]:rotate-180` (Tailwind utility).
+   - Hover/focus gestiti dal DS shadcn (`hover:underline`, ring `focus-visible`).
+   - Border-bottom fra item gestito dal wrapper `AccordionItem` (`border-b`).
+   - Il wrapper legacy `.sb-accordion-wrap` in App.tsx è stato rimosso.
+   Le classi `.sb-sec` / `.sb-lbl` restano definite in `solids-theme.css` e
+   sono consumate da altri componenti (StoreComplianceNotice, PrivacyNotice,
+   UpdateBanner, SaveStatePanel, Library, RtcSection, TouchOverlay): NON
+   toccarle qui (regola R.8 scope di scrittura chiuso al TSK).
    ============================================================================ */
-
-/* Nascondi il triangolo nativo (WebKit + Firefox/standard) */
-.sd-card.sb-sec details > summary::-webkit-details-marker,
-.sd-card.sb-sec details > summary.sb-lbl::-webkit-details-marker {
-  display: none;
-}
-.sd-card.sb-sec details > summary::marker,
-.sd-card.sb-sec details > summary.sb-lbl::marker {
-  content: "";
-}
-
-/* Layout dell'header accordion */
-.sd-card.sb-sec details > summary,
-.sd-card.sb-sec details > summary.sb-lbl {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  list-style: none;
-  padding: var(--sd-space-sm, 8px) 0;
-  color: var(--sd-color-text-primary, #f0e9ff);
-  font-family: var(--sd-font-body, system-ui, sans-serif);
-  user-select: none;
-  border-bottom: 1px solid var(--sd-color-border-muted, #3a2a63);
-  transition: color 0.15s;
-}
-
-.sd-card.sb-sec details > summary > h3.sb-lbl {
-  margin: 0;
-  font: inherit;
-  font-weight: 600;
-  flex: 1;
-}
-
-/* Hover: evidenzia il label con il colore primario */
-.sd-card.sb-sec details > summary:hover,
-.sd-card.sb-sec details > summary.sb-lbl:hover {
-  color: var(--sd-color-primary-default, #00e5ff);
-}
-
-/* Focus visibile da tastiera (coerente con sb-tab-btn:focus-visible) */
-.sd-card.sb-sec details > summary:focus-visible,
-.sd-card.sb-sec details > summary.sb-lbl:focus-visible {
-  outline: 2px solid var(--sd-color-primary-default, #00e5ff);
-  outline-offset: 2px;
-  border-radius: var(--sd-radius-sm, 6px);
-}
-
-/* Chevron custom: freccia rotante che indica aperto (su) / chiuso (giù) */
-.sd-card.sb-sec details > summary::after,
-.sd-card.sb-sec details > summary.sb-lbl::after {
-  content: "";
-  display: inline-block;
-  width: 0.55em;
-  height: 0.55em;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);   /* punta in basso = chiuso */
-  transition: transform 0.2s ease, color 0.15s;
-  flex-shrink: 0;
-  margin-left: var(--sd-space-sm, 8px);
-}
-
-/* Quando aperto: ruota il chevron verso l'alto */
-.sd-card.sb-sec details[open] > summary::after,
-.sd-card.sb-sec details[open] > summary.sb-lbl::after {
-  transform: rotate(-135deg);  /* punta in alto = aperto */
-}
-
-/* Quando aperto: rimuovi la linea separatrice (il contenuto si espande sotto) */
-.sd-card.sb-sec details[open] > summary,
-.sd-card.sb-sec details[open] > summary.sb-lbl {
-  border-bottom-color: transparent;
-}
-
-/* ============================================================================ */
 
 html, body { margin: 0; }
 body {
@@ -355,35 +219,11 @@ body {
 }
 .sb-app > header { margin-bottom: var(--sd-space-md, 12px); }
 
-/* FileLoader */
-.sb-loader { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sd-space-md, 12px); }
-.sb-dropzone {
-  flex: 1 1 220px;
-  min-height: 64px;
-  display: flex; align-items: center; justify-content: center;
-  border: 2px dashed var(--sd-color-border-default, #5a35a0);
-  border-radius: var(--sd-radius-lg, 10px);
-  color: var(--sd-color-text-secondary, #b9a9e0);
-  cursor: pointer;
-}
-.sb-dropzone:focus-visible { outline: 2px solid var(--sd-color-primary-default, #00e5ff); }
+/* FileLoader — TSK-145 (EP-020): .sb-loader e .sb-dropzone rimossi;
+   sostituiti da utility Tailwind in FileLoader.tsx. */
 
-/* Library */
-.sb-grid {
-  list-style: none; padding: 0; margin: 0;
-  display: grid; gap: var(--sd-space-md, 12px);
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-}
-.sb-game {
-  width: 100%; text-align: left; cursor: pointer;
-  display: flex; flex-direction: column; gap: var(--sd-space-sm, 8px);
-  padding: var(--sd-space-md, 12px);
-  background: var(--sd-color-bg-surface, #1d1233);
-  border: 1px solid var(--sd-color-border-muted, #3a2a63);
-  border-radius: var(--sd-radius-lg, 10px);
-  color: inherit;
-}
-.sb-game-title { font-weight: 600; }
+/* Library — TSK-146 (EP-020): .sb-grid, .sb-game, .sb-game-title rimossi;
+   grid → utility Tailwind in Library.tsx; tile → Card primitive (solids/shadcn). */
 
 /* Settings — keymap */
 .sb-keymap { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
@@ -435,29 +275,10 @@ body {
    #251447 → ratio 4.24. Schiariamo il rosa neon di danger a #ff8fb8 →
    ratio 7.78 vs #251447. Limitiamo l'override al solo .sb-danger (lo
    sfondo danger di altre superfici non cambia). */
-/* TSK-107 — tile ROM correntemente in esecuzione (badge + bordo accent). */
-.sb-tile.sb-tile-active {
-  border: 2px solid var(--sd-color-primary-default, var(--sd-color-accent));
-  box-shadow: 0 0 0 1px var(--sd-color-primary-subtle, transparent);
-}
-.sb-tile-active-badge {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  border-radius: var(--sd-radius-sm, 4px);
-  background: var(--sd-color-primary-subtle);
-  color: var(--sd-color-primary-default);
-  border: 1px solid var(--sd-color-primary-default);
-}
-.sb-tile-remove {
-  margin-top: 8px;
-  width: 100%;
-  font-size: 12px;
-  padding: 4px 8px;
-}
+/* TSK-107 tile-active rules — TSK-146 (EP-020): .sb-tile.sb-tile-active,
+   .sb-tile-active-badge, .sb-tile-remove rimossi; attivo → ring-2 ring-primary
+   ring-offset-2 Tailwind su <Card>; badge → <Badge variant="default">; remove →
+   <Button variant="destructive">. */
 
 [data-theme="90s-party"] .sb-danger {
   color: #ff8fb8 !important;        /* was var(--sd-color-intent-danger) #ff0055 — WCAG AA fix (7.78:1) */

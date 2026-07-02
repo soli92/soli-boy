@@ -5,7 +5,9 @@ import { App } from "./App";
 // Ordine: skin app (classi sb-* + scale fallback) → solids reale (vince su token/temi) → layout app.
 import "./styles/solids-theme.css";
 import "@soli92/solids/css/index.css";
+import "@soli92/solids/css/shadcn.css";
 import "./styles/app-extra.css";
+import "./styles/tailwind.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

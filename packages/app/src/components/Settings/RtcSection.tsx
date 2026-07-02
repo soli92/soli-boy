@@ -10,9 +10,14 @@
 // in-form (`RtcService.validateRtcState`): pulsante "Imposta" disabilitato se
 // almeno un campo è fuori range; campo fuori range marcato `aria-invalid="true"`.
 //
-// Convenzioni UI: stesso pattern delle altre sezioni di `Settings.tsx`
-// (accordion `<details>`, classi SoliDS `sb-*`, label accessibili, aria-live
-// non intrusivo per i messaggi). Vedi anche TSK-066 (toggle), TSK-033 (Dati).
+// Convenzioni UI: stesso pattern delle altre sezioni di `Settings.tsx`.
+// TSK-149 (EP-020 / US-097) — Migrata da `<details>/<summary>` nativi a solids
+// `Accordion` (Radix): il componente ritorna un `AccordionItem value="rtc"`
+// che DEVE essere renderizzato all'interno di un `<Accordion>` parent (fornito
+// da `Settings.tsx`; i test standalone wrappano in un Accordion locale). Il
+// gating (`return null` se piattaforma senza RTC / bridge null) resta identico.
+// Classi SoliDS `sb-*`, label accessibili, aria-live non intrusivo per i
+// messaggi conservati. Vedi anche TSK-066 (toggle), TSK-033 (Dati).
 //
 // Note ADR-009 §5 (timezone): l'`RtcState` canonico è UTC, ma l'UI presenta i
 // campi nel timezone locale del dispositivo (più naturale per l'utente). In
@@ -32,6 +37,12 @@ import {
   type RtcBridge,
   type RtcState,
 } from "../../domain/rtc-service";
+// TSK-149 (EP-020) — Accordion primitive Radix via wrapper solids/shadcn.
+import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export interface RtcSectionProps {
   /** Piattaforma corrente (es. "gb", "gbc", "gba"). Determina la visibilità. */
@@ -243,10 +254,11 @@ export function RtcSection({ platform, bridge }: RtcSectionProps) {
   }
 
   return (
-    <details data-testid="sb-rtc-section">
-      <summary>
-        <h3 className="sb-lbl">Orologio interno (RTC) — data e ora</h3>
-      </summary>
+    <AccordionItem value="rtc" data-testid="sb-rtc-section">
+      <AccordionTrigger>
+        <span className="sb-lbl">Orologio interno (RTC) — data e ora</span>
+      </AccordionTrigger>
+      <AccordionContent>
       <p className="sb-note">
         Imposta l'orologio interno della cartuccia. Valori espressi nel
         fuso orario locale del dispositivo.
@@ -339,6 +351,7 @@ export function RtcSection({ platform, bridge }: RtcSectionProps) {
           {syncNotice}
         </p>
       )}
-    </details>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

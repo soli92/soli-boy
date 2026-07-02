@@ -12,9 +12,26 @@
 // anche su piattaforma con RTC (fail-safe — niente azione senza engine attivo).
 
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { RtcBridge, RtcState } from "../../domain/rtc-service";
 import { RtcSection } from "./RtcSection";
+import { Accordion } from "@/components/ui/accordion";
+
+// TSK-149 (EP-020 / US-097) — RtcSection ora ritorna un `AccordionItem` che
+// DEVE essere renderizzato all'interno di un `<Accordion>` parent (Radix
+// context provider). L'helper wrappa il render dei test standalone
+// mantenendo la sezione APERTA di default (`defaultValue={["rtc"]}`) così i
+// `getByTestId` per i campi/pulsanti annidati continuano a funzionare come
+// pre-migrazione (`<details open>`). Nessuna modifica alle asserzioni di
+// visibilità: la sezione mostra sempre `sb-rtc-section` come testid sull'item.
+function renderInAccordion(ui: ReactElement): ReturnType<typeof render> {
+  return render(
+    <Accordion type="multiple" defaultValue={["rtc"]}>
+      {ui}
+    </Accordion>,
+  );
+}
 
 function makeBridge(initial: RtcState | null = null): RtcBridge & {
   getRtcState: ReturnType<typeof vi.fn>;
@@ -68,7 +85,7 @@ describe("RtcSection — visibilità condizionale (TSK-126 / US-065 / ADR-009)",
 
   it("renderizza la sezione su piattaforma con RTC ('gbc') e bridge attivo", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     expect(screen.getByTestId("sb-rtc-section")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /imposta data e ora/i }),
@@ -78,7 +95,7 @@ describe("RtcSection — visibilità condizionale (TSK-126 / US-065 / ADR-009)",
   it("renderizza la sezione anche per piattaforma 'gb'", () => {
     // hasRtc("gb") = true secondo il fallback conservativo del rtc-service.
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gb" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gb" bridge={bridge} />);
     expect(screen.getByTestId("sb-rtc-section")).toBeInTheDocument();
   });
 });
@@ -86,7 +103,7 @@ describe("RtcSection — visibilità condizionale (TSK-126 / US-065 / ADR-009)",
 describe("RtcSection — popolamento iniziale (TSK-126 §Implementation Steps)", () => {
   it("popola i sei campi dai valori del bridge al mount", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     expect((screen.getByTestId("sb-rtc-year") as HTMLInputElement).value).toBe(
       "2026",
     );
@@ -110,7 +127,7 @@ describe("RtcSection — popolamento iniziale (TSK-126 §Implementation Steps)",
 
   it("usa lo stato di default se il bridge ritorna null (es. RTC non latched)", () => {
     const bridge = makeBridge(null);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     // DEFAULT_STATE in RtcSection.tsx: 2026-01-01 00:00:00.
     expect((screen.getByTestId("sb-rtc-year") as HTMLInputElement).value).toBe(
       "2026",
@@ -124,7 +141,7 @@ describe("RtcSection — popolamento iniziale (TSK-126 §Implementation Steps)",
 describe("RtcSection — validazione range (TSK-126 §DoD)", () => {
   it("disabilita 'Imposta' quando mese=13 (fuori range)", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
     const monthInput = screen.getByTestId("sb-rtc-month") as HTMLInputElement;
     fireEvent.change(monthInput, { target: { value: "13" } });
@@ -141,7 +158,7 @@ describe("RtcSection — validazione range (TSK-126 §DoD)", () => {
 
   it("disabilita 'Imposta' quando anno=1999 (sanity post-Y2K)", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     fireEvent.change(screen.getByTestId("sb-rtc-year"), {
       target: { value: "1999" },
     });
@@ -155,7 +172,7 @@ describe("RtcSection — validazione range (TSK-126 §DoD)", () => {
 
   it("disabilita 'Imposta' quando un campo è vuoto (NaN)", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     fireEvent.change(screen.getByTestId("sb-rtc-hour"), {
       target: { value: "" },
     });
@@ -166,7 +183,7 @@ describe("RtcSection — validazione range (TSK-126 §DoD)", () => {
 
   it("mantiene 'Imposta' abilitato con stato valido (no errori)", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     const submit = screen.getByTestId("sb-rtc-submit") as HTMLButtonElement;
     expect(submit.disabled).toBe(false);
     // F-01 / review-iter-1: quando il campo è valido NON emettiamo
@@ -184,7 +201,7 @@ describe("RtcSection — validazione range (TSK-126 §DoD)", () => {
 describe("RtcSection — pulsante Imposta (TSK-126 §DoD)", () => {
   it("click su 'Imposta' invoca bridge.setRtcState con i valori del form", () => {
     const bridge = makeBridge(null); // mount con default DEFAULT_STATE
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
     // L'utente modifica anno+mese+giorno (gli altri restano default 0).
     fireEvent.change(screen.getByTestId("sb-rtc-year"), {
@@ -212,7 +229,7 @@ describe("RtcSection — pulsante Imposta (TSK-126 §DoD)", () => {
 
   it("mostra messaggio di conferma dopo l'impostazione", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     fireEvent.click(screen.getByTestId("sb-rtc-submit"));
     expect(screen.getByTestId("sb-rtc-confirmed")).toHaveTextContent(
       /orologio interno impostato/i,
@@ -221,7 +238,7 @@ describe("RtcSection — pulsante Imposta (TSK-126 §DoD)", () => {
 
   it("nasconde la conferma se l'utente modifica un campo dopo aver impostato", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     fireEvent.click(screen.getByTestId("sb-rtc-submit"));
     expect(screen.queryByTestId("sb-rtc-confirmed")).toBeInTheDocument();
     fireEvent.change(screen.getByTestId("sb-rtc-hour"), {
@@ -232,7 +249,7 @@ describe("RtcSection — pulsante Imposta (TSK-126 §DoD)", () => {
 
   it("non chiama setRtcState se lo stato è invalido (double-check pre-call)", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     fireEvent.change(screen.getByTestId("sb-rtc-month"), {
       target: { value: "13" },
     });
@@ -263,18 +280,18 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
 
   it("non renderizza il pulsante sync se la sezione è nascosta (piattaforma senza RTC)", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gba" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gba" bridge={bridge} />);
     expect(screen.queryByTestId("sb-rtc-sync-device")).toBeNull();
   });
 
   it("non renderizza il pulsante sync se bridge=null", () => {
-    render(<RtcSection platform="gbc" bridge={null} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={null} />);
     expect(screen.queryByTestId("sb-rtc-sync-device")).toBeNull();
   });
 
   it("renderizza il pulsante 'Usa ora del dispositivo' quando la sezione è visibile", () => {
     const bridge = makeBridge(VALID_STATE);
-    render(<RtcSection platform="gbc" bridge={bridge} />);
+    renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
     const syncBtn = screen.getByTestId("sb-rtc-sync-device");
     expect(syncBtn).toBeInTheDocument();
     expect(syncBtn).toHaveAttribute("type", "button");
@@ -288,7 +305,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
     vi.setSystemTime(FROZEN_UTC);
     try {
       const bridge = makeBridge(VALID_STATE);
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
 
@@ -312,7 +329,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
     vi.setSystemTime(FROZEN_UTC);
     try {
       const bridge = makeBridge(VALID_STATE);
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
 
@@ -344,7 +361,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
     vi.setSystemTime(FROZEN_UTC);
     try {
       const bridge = makeBridge(VALID_STATE);
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
       // L'utente edita l'anno dopo il sync — il form deve permetterlo.
@@ -371,7 +388,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
     vi.setSystemTime(FROZEN_UTC);
     try {
       const bridge = makeBridge(VALID_STATE);
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
       // Dopo il solo sync: NO conferma visualizzata.
@@ -390,7 +407,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
     vi.setSystemTime(FROZEN_UTC);
     try {
       const bridge = makeBridge(VALID_STATE);
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
       // 1° call: syncToDevice scrive UTC sul bridge.
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
@@ -426,7 +443,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
     globalThis.XMLHttpRequest = xhrSpy;
     try {
       const bridge = makeBridge(VALID_STATE);
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(xhrSpy).not.toHaveBeenCalled();
@@ -456,7 +473,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
         setRtcState: vi.fn<(s: RtcState) => void>(),
       };
 
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
 
       // Pre-sync: lo stato è il DEFAULT_STATE (2026-01-01 00:00:00) perché
       // il bridge ritorna null anche al mount. Verifichiamo i valori.
@@ -502,7 +519,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
         getRtcState: vi.fn(() => null),
         setRtcState: vi.fn<(s: RtcState) => void>(),
       };
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
       expect(screen.getByTestId("sb-rtc-sync-notice")).toBeInTheDocument();
 
@@ -529,7 +546,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
         getRtcState: vi.fn(() => null),
         setRtcState: vi.fn<(s: RtcState) => void>(),
       };
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
       fireEvent.click(screen.getByTestId("sb-rtc-sync-device"));
       expect(screen.getByTestId("sb-rtc-sync-notice")).toBeInTheDocument();
 
@@ -555,7 +572,7 @@ describe("RtcSection — pulsante 'Usa ora del dispositivo' (TSK-131 / US-068 / 
     vi.setSystemTime(FROZEN_UTC);
     try {
       const bridge = makeBridge(VALID_STATE);
-      render(<RtcSection platform="gbc" bridge={bridge} />);
+      renderInAccordion(<RtcSection platform="gbc" bridge={bridge} />);
       const syncBtn = screen.getByTestId("sb-rtc-sync-device") as HTMLButtonElement;
       expect(syncBtn.disabled).toBe(false);
       expect(syncBtn.tabIndex).toBeGreaterThanOrEqual(0);

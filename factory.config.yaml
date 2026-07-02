@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.26"   # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01) → 2.26 (2026-07-02): upgrade a v2.26 (Prototype Generation Layer EP-035, opt-in).
+pattern_version: "2.26" # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01) → 2.26 (2026-07-02): upgrade a v2.26 (Prototype Generation Layer EP-035, opt-in).
 
 owner: soli92
 language: it
@@ -38,8 +38,8 @@ code_paths:
       branch_awareness:
         enabled: false
         preflight: false
-        dispatch_gate: off      # off | warn | block
-        auto_align: off         # off | propose (mai checkout silente, R.B8)
+        dispatch_gate: off # off | warn | block
+        auto_align: off # off | propose (mai checkout silente, R.B8)
         drift_check: false
 
 # Legacy single-repo (non usato — code_paths valorizzato)
@@ -96,20 +96,20 @@ scheduler:
   code_path_conflict: strict
   empty_code_path_policy: serial
   domains:
-    ingest:  true
+    ingest: true
     develop: true
-    lint:    true
-    query:   true
-    plan:    false
-    design:  false
+    lint: true
+    query: true
+    plan: false
+    design: false
     publish: false
-    sync:    true
-    review:  true
-    visual-oracle: true  # v2.17 — sub-step di L2 (develop); attivo perché fe_correctness.enabled: true
-    a11y: true           # v2.18 NEW (EP-007 ADR-016 §C) — parallel cross-TSK, serial same-TSK; composto inline con visual-oracle in Modalità 1
-    ux-ui-review: true   # v2.18 NEW (EP-008 ADR-020 §C / ADR-019 §Punto 3) — sub-step di L2 (develop), aspetta visual_status non-pending
-    functional-oracle: true  # v2.20 NEW EP-018 (ADR-066) — serial same-app, parallel cross-app; attivato da functional_oracle.enabled: true
-    prototype: false         # v2.26 NEW (EP-035) — opt-in default false (R.P3)
+    sync: true
+    review: true
+    visual-oracle: true # v2.17 — sub-step di L2 (develop); attivo perché fe_correctness.enabled: true
+    a11y: true # v2.18 NEW (EP-007 ADR-016 §C) — parallel cross-TSK, serial same-TSK; composto inline con visual-oracle in Modalità 1
+    ux-ui-review: true # v2.18 NEW (EP-008 ADR-020 §C / ADR-019 §Punto 3) — sub-step di L2 (develop), aspetta visual_status non-pending
+    functional-oracle: true # v2.20 NEW EP-018 (ADR-066) — serial same-app, parallel cross-app; attivato da functional_oracle.enabled: true
+    prototype: false # v2.26 NEW (EP-035) — opt-in default false (R.P3)
 
 # Code Quality Review Layer (PATTERN §19) — ON.
 code_quality:
@@ -124,7 +124,7 @@ code_quality:
     idiomaticity: true
     design: true
     robustness: true
-    accessibility: false          # v2.18 NEW — 4° pass opzionale (invoca run_a11y_scan); indipendente dal dominio scheduler a11y
+    accessibility: false # v2.18 NEW — 4° pass opzionale (invoca run_a11y_scan); indipendente dal dominio scheduler a11y
   router:
     strategy: severity-tiered
     max_diff_lines: 80
@@ -156,7 +156,7 @@ fe_correctness:
   enabled: true
   max_iterations: 3
   viewports:
-    - { name: mobile,  width: 375  }
+    - { name: mobile, width: 375 }
     - { name: desktop, width: 1280 }
   themes:
     - light
@@ -177,9 +177,9 @@ fe_correctness:
   # asserzioni, critic LLM solo advisory. Dominio scheduler: serial same-app (ADR-066).
   # Acceptance-spec: code_quality/acceptance/*.acceptance.yaml (progetto, non framework).
   functional_oracle:
-    enabled: true                 # master switch EP-018
-    max_iterations: 3             # loop bound (ADR-067 §C)
-    critic: advisory              # advisory (default) | off — mai nel path pass/fail
+    enabled: true # master switch EP-018
+    max_iterations: 3 # loop bound (ADR-067 §C)
+    critic: advisory # advisory (default) | off — mai nel path pass/fail
     acceptance_spec_glob: "code_quality/acceptance/*.acceptance.yaml"
 
 # === Accessibility Testing (v2.18, EP-007, PATTERN §3 operazione Accessibility Scan,
@@ -197,13 +197,13 @@ fe_correctness:
 # fallback_non_web     : snippet-inline (default, ADR-015)
 a11y:
   enabled: true
-  agent: true                       # a11y-specialist attivo (scelta owner 2026-06-05)
+  agent: true # a11y-specialist attivo (scelta owner 2026-06-05)
   standard: "wcag22aa"
-  severity_threshold: critical      # critical|major|minor|none
-  required_on_fe_done: true         # → Lint Check 4o WARNING-only ATTIVO (ADR-016 §A) — gate owner 2026-06-05
-  fail_ci_on: critical              # critical|critical,major|any|none
-  include_interactive: false
-  fallback_non_web: snippet-inline  # ADR-015
+  severity_threshold: critical # critical|major|minor|none
+  required_on_fe_done: true # → Lint Check 4o WARNING-only ATTIVO (ADR-016 §A) — gate owner 2026-06-05
+  fail_ci_on: critical # critical|critical,major|any|none
+  include_interactive: true
+  fallback_non_web: snippet-inline # ADR-015
 
 # === UX/UI Review & Design (v2.18, EP-008, PATTERN §3 UX/UI Review + UX/UI Design,
 # ADR-019/ADR-020 §B) — ON. Critica usabilità su rubrica anti-soggettività (10 euristiche
@@ -226,13 +226,13 @@ ux_ui:
   rubric_strict: true
   design_system_path: ""
   default_viewports:
-    - { name: mobile,  width: 375  }
+    - { name: mobile, width: 375 }
     - { name: desktop, width: 1280 }
   agents:
-    reviewer: true                  # ux-ui-reviewer attivo (scelta owner 2026-06-05)
-    designer: true                  # ui-designer attivo (scelta owner 2026-06-05)
-  required_on_fe_done: true         # → Lint Check 4p WARNING-only ATTIVO (ADR-020 §G) — gate owner 2026-06-05
-  delegate_a11y_to_ep007: true      # ux-ui-reviewer invoca run_a11y_scan (ADR-014)
+    reviewer: true # ux-ui-reviewer attivo (scelta owner 2026-06-05)
+    designer: true # ui-designer attivo (scelta owner 2026-06-05)
+  required_on_fe_done: true # → Lint Check 4p WARNING-only ATTIVO (ADR-020 §G) — gate owner 2026-06-05
+  delegate_a11y_to_ep007: true # ux-ui-reviewer invoca run_a11y_scan (ADR-014)
 
 # === Design Intelligence Layer (v2.21, EP-019, PATTERN §24) — ON ================
 # Estende EP-008 (UX/UI) con coordinamento tematico centralizzato.
@@ -246,10 +246,10 @@ ux_ui:
 # rubric_intention_economy: asse Intention Economy (ADR-070 §E)
 design_intelligence:
   enabled: true
-  art_director: true              # art-director-coordination-protocol attivo (ADR-068)
-  generator_tool: none            # none | plop | yeoman (installa prima il generatore)
-  critic_enabled: true            # Critic/Judge Design 6 principi (ADR-070)
-  rubric_intention_economy: true  # Intention Economy axis (ADR-070 §E)
+  art_director: true # art-director-coordination-protocol attivo (ADR-068)
+  generator_tool: none # none | plop | yeoman (installa prima il generatore)
+  critic_enabled: true # Critic/Judge Design 6 principi (ADR-070)
+  rubric_intention_economy: true # Intention Economy axis (ADR-070 §E)
 
 # === Compression Layer (PATTERN §20) — ENTRAMBI gli assi ON =======================
 compression:
@@ -258,12 +258,12 @@ compression:
     provider: caveman
     enabled: true
     install_command: "curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash"
-    policy_profile: conservative   # topology full-stack → conservative (R.C3 chain-depth ceiling attivo)
-    invariants:                    # R.C1 — non overridabili neppure in custom
+    policy_profile: conservative # topology full-stack → conservative (R.C3 chain-depth ceiling attivo)
+    invariants: # R.C1 — non overridabili neppure in custom
       to_user: off
       to_artifact: off
       propagate_resolution: off
-    channels:                      # usato SOLO se policy_profile == custom
+    channels: # usato SOLO se policy_profile == custom
       orchestrator_to_subagent: full
       subagent_to_tool: ultra
       tool_to_subagent: lite
@@ -272,8 +272,8 @@ compression:
       feedback_router_to_devagent: full
     chain_depth_downgrade: true
     chain_depth_threshold: 3
-    cross_factory: off             # R.C4
-    drift_fallback:                # R.C5
+    cross_factory: off # R.C4
+    drift_fallback: # R.C5
       enabled: true
       markers: [AMBIGUOUS_HANDOFF, REQUEST_CLARIFY]
     audit_trail_for:
@@ -282,7 +282,7 @@ compression:
 
   # --- Asse CONTEXT (Fase 2 CCL — Graphify) ---
   context:
-    provider: graphify-cloud       # graphify-cloud (default) | graphify-ollama | none
+    provider: graphify-cloud # graphify-cloud (default) | graphify-ollama | none
     enabled: true
     package: graphifyy
     install_command: "pip install graphifyy"
@@ -296,23 +296,23 @@ compression:
           - "*.env"
           - "secrets/**"
     update_strategy: incremental
-    full_rebuild_cron: "0 0 * * 0"  # weekly (R.G4 drift mitigation)
+    full_rebuild_cron: "0 0 * * 0" # weekly (R.G4 drift mitigation)
     drift_alert_days: 7
-    full_rebuild_cost_warn: 5       # USD
+    full_rebuild_cost_warn: 5 # USD
     ghost_duplicates_warn: 10
     ci_strategy:
-      mode: cache-with-fallback     # R.G4
+      mode: cache-with-fallback # R.G4
       cache_provider: actions
       cache_key_prefix: graphify-state
-      stale_threshold_hours: 168    # 7 giorni
+      stale_threshold_hours: 168 # 7 giorni
       full_rebuild_on_demand: true
-    confidence_gating:              # R.G2 — per ruolo agent
-      executor: [EXTRACTED]                          # be/fe/db/qa-dev
-      explorer: [EXTRACTED, INFERRED]                # lead-architect / wiki-query
-      reviewer: [EXTRACTED, INFERRED, AMBIGUOUS]     # code-reviewer
+    confidence_gating: # R.G2 — per ruolo agent
+      executor: [EXTRACTED] # be/fe/db/qa-dev
+      explorer: [EXTRACTED, INFERRED] # lead-architect / wiki-query
+      reviewer: [EXTRACTED, INFERRED, AMBIGUOUS] # code-reviewer
     mcp_server:
-      enabled: false                # opt-in se runtime MCP disponibile
-      topology: per-agent           # per-agent (isolato) | shared
+      enabled: false # opt-in se runtime MCP disponibile
+      topology: per-agent # per-agent (isolato) | shared
       crg_tools_max: 8
 
 notes: |
@@ -349,20 +349,20 @@ notes: |
 # importato (fuori scope v2.18)" superata da questo upgrade.
 analytics:
   measurement:
-    enabled: true                               # master switch EP-009 (ADR-021/022)
-    agent: true                                 # analytics-reporter + /analytics
+    enabled: true # master switch EP-009 (ADR-021/022)
+    agent: true # analytics-reporter + /analytics
     store: jsonl
     rotation: monthly
-    event_store_path: analytics/events          # side-channel gitignored (ADR-021 §A)
+    event_store_path: analytics/events # side-channel gitignored (ADR-021 §A)
     pricing_table_path: analytics/pricing.yaml
     rate_card_path: analytics/rates.yaml
     rate_basis: fully-loaded
   dogfooding:
-    enabled: true                               # EP-013: harvest token usage su SessionEnd (hook in .claude/settings.json)
-    privacy_policy_path: analytics/PRIVACY.md   # ADR-040 §G
-    lock_strategy: flock-advisory               # ADR-039 §A
+    enabled: true # EP-013: harvest token usage su SessionEnd (hook in .claude/settings.json)
+    privacy_policy_path: analytics/PRIVACY.md # ADR-040 §G
+    lock_strategy: flock-advisory # ADR-039 §A
     lock_timeout_seconds: 5
-    idempotency_strategy: hash-compound         # ADR-039 §C
+    idempotency_strategy: hash-compound # ADR-039 §C
 
   # --- Token Ledger (v2.21, EP-022) — visibilità economica inline dopo ogni operazione.
   #     Legge i token REALI dal transcript JSONL (message.usage), non stime.
@@ -370,17 +370,17 @@ analytics:
   #     Complementa harvest-session-tokens.py (batch writer EP-013) con display real-time.
   #     Non scrive nell'event store (display-only, nessuna duplicazione eventi EP-013).
   token_ledger:
-    enabled: true                 # master switch — hook Stop attivo in settings.json
-    display_mode: compact         # compact (one-liner) | full (box con breakdown)
-    show_cache_savings: true      # mostra risparmio cache nel one-liner
-    auto_call_on_wave_close: true  # orchestrator: --full a fine wave (parallel-scheduling Fase 6)
+    enabled: true # master switch — hook Stop attivo in settings.json
+    display_mode: compact # compact (one-liner) | full (box con breakdown)
+    show_cache_savings: true # mostra risparmio cache nel one-liner
+    auto_call_on_wave_close: true # orchestrator: --full a fine wave (parallel-scheduling Fase 6)
     pricing_fallback: prefix-based # fallback se pricing.yaml assente
     # Adapter Cursor / Cloud Agent (EP-022)
     cursor:
-      agent_id_env: CURSOR_CONVERSATION_ID   # fallback: JWT broker cloudAgentId
-      api_key_env: CURSOR_API_KEY            # alternativa: TOKEN_LEDGER_API_KEY
+      agent_id_env: CURSOR_CONVERSATION_ID # fallback: JWT broker cloudAgentId
+      api_key_env: CURSOR_API_KEY # alternativa: TOKEN_LEDGER_API_KEY
       state_file: .cursor/.token-ledger-state.json
-      always_print: true                     # mai uscita silenziosa in Cloud Agent
+      always_print: true # mai uscita silenziosa in Cloud Agent
 
 # === Semantic Drift Detection (v2.23, EP-031, PATTERN §25) — opt-in ================
 # Monitora la deriva semantica tra pagine wiki e le sezioni PATTERN.md referenziate
@@ -390,7 +390,7 @@ analytics:
 # Check 4ag (staleness) è SEMPRE attivo indipendentemente da enabled.
 wiki_lint:
   semantic_check:
-    enabled: false              # opt-in R.P3 — EP-031 research sprint
+    enabled: false # opt-in R.P3 — EP-031 research sprint
     similarity_threshold: 0.75
     embedding_model: voyage-3
     cost_warn_usd: 1.0
@@ -405,13 +405,13 @@ wiki_lint:
 # Layer opt-in (R.P3): tutti i flag default false → factory v2.25 identica.
 # =============================================================
 prototyping:
-  enabled: false                    # master switch EP-035 (R.P3 default off)
-  backend: auto                     # auto | html | react | figma | penpot
+  enabled: true # master switch EP-035 (R.P3 default off)
+  backend: auto # auto | html | react | figma | penpot
   fallback_chain: [figma, penpot, react, html]
-  degrade_policy: notify            # notify (default) | strict
-  fidelity: interactive             # static | interactive | animated
-  design_source: auto               # auto | <path> | none
-  art_director: inherit             # inherit | on | off
+  degrade_policy: notify # notify (default) | strict
+  fidelity: interactive # static | interactive | animated
+  design_source: auto # auto | <path> | none
+  art_director: inherit # inherit | on | off
   output_path: "output/prototypes"
   oracle_handoff: true
   scheduler_domain: prototype

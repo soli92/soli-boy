@@ -23,6 +23,18 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { StoragePort, ConfigPort, CoverPort } from "./storage/port";
 import type { RomRecord } from "./storage/types";
 
+// TSK-143 (US-094 / EP-020) — La primitiva Radix Tabs (solids) attiva le tab
+// via `onMouseDown` (non `onClick`), per allineamento al pattern WAI-ARIA APG.
+// `fireEvent.click` sintetizza solo l'evento `click` finale: nei test unitari
+// dobbiamo perciò simulare esplicitamente mouseDown per innescare l'activation
+// path della primitive. Un helper locale evita di ripetere l'invocazione
+// composta e mantiene i test leggibili come "clicca la tab X".
+function clickTab(name: RegExp | string) {
+  const tab = screen.getByRole("tab", { name });
+  fireEvent.mouseDown(tab);
+  return tab;
+}
+
 // jsdom non implementa `window.matchMedia` (usato da TouchOverlay
 // `isTouchDevice` per rilevare touch pointer). Mock no-op: nei test desktop
 // vogliamo l'overlay reso ma non interattivo (la suite non interagisce con
@@ -133,7 +145,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     render(<App />);
 
     // Naviga in Libreria e avvia ROM_A.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileA = await screen.findByRole("button", {
       name: /^tetris gb$/i,
     });
@@ -145,7 +157,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     await screen.findByRole("button", { name: /pausa/i });
 
     // Torna in Libreria e ri-tap'a la stessa ROM.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileAagain = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileAagain);
@@ -170,7 +182,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     render(<App />);
 
     // Avvia ROM_A.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
@@ -178,7 +190,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     await screen.findByRole("button", { name: /pausa/i });
 
     // Tap'a ROM_B (diversa) → deve apparire il dialog.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
@@ -206,7 +218,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     // in Library — `hidden` rimuove dal a11y tree, e `getByRole` non lo
     // troverebbe). Il Player non è smontato (always-mounted), continua a
     // mantenere lo stato running.
-    fireEvent.click(screen.getByRole("tab", { name: /play/i }));
+    clickTab(/play/i);
 
     // HUD del Player mostra ancora "Tetris" (ROM A) e "In esecuzione".
     const hud = await screen.findByLabelText("Stato giocatore");
@@ -219,7 +231,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     render(<App />);
 
     // Avvia ROM_A.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
@@ -230,7 +242,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     ).toHaveTextContent("Tetris");
 
     // Tap'a ROM_B → dialog.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
@@ -264,7 +276,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     render(<App />);
 
     // Avvia ROM_A.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
@@ -272,7 +284,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     await screen.findByRole("button", { name: /pausa/i });
 
     // Tap'a ROM_B → dialog.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);
@@ -291,7 +303,7 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     });
 
     // Torna a Play per ispezionare l'HUD (vedi nota su `hidden` sopra).
-    fireEvent.click(screen.getByRole("tab", { name: /play/i }));
+    clickTab(/play/i);
 
     // ROM A ancora attiva.
     const hud = await screen.findByLabelText("Stato giocatore");
@@ -299,19 +311,31 @@ describe("App — TSK-101 (US-053) Gate conferma cambio gioco (UX-CF1-02)", () =
     expect(hud).toHaveTextContent("In esecuzione");
   });
 
+  it("panel Play rimane montato nel DOM quando tab Library è attiva (forceMount)", async () => {
+    // TSK-143: `<TabsContent value="play" forceMount>` deve restare nel DOM
+    // anche quando si naviga ad altre tab. Senza `forceMount` il panel verrebbe
+    // smontato e getByTestId lancerebbe.
+    const { App } = await import("./App");
+    render(<App />);
+
+    clickTab(/libreria/i);
+
+    expect(screen.getByTestId("panel-play")).toBeInTheDocument();
+  });
+
   it("AC5: focus iniziale sul bottone 'Cambia gioco' (azione primaria)", async () => {
     const { App } = await import("./App");
     render(<App />);
 
     // Avvia ROM_A e apri dialog su ROM_B.
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileA = await screen.findByTestId("sb-select-rom-rom-a");
     await act(async () => {
       fireEvent.click(tileA);
     });
     await screen.findByRole("button", { name: /pausa/i });
 
-    fireEvent.click(screen.getByRole("tab", { name: /libreria/i }));
+    clickTab(/libreria/i);
     const tileB = await screen.findByTestId("sb-select-rom-rom-b");
     await act(async () => {
       fireEvent.click(tileB);

@@ -1,0 +1,93 @@
+{
+  "tsk_id": "TSK-143",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version_min": "18",
+    "confidence": "high",
+    "note": "Stack guided (factory.config.yaml stack_mode: guided). Rilevato: Vite 5, React 18, Radix UI Tabs (@radix-ui/react-tabs), shadcn/ui wrapper, Vitest, Playwright e2e. Blast-radius pre-check: skip (.graphify-state/code_paths/app/ assente)."
+  },
+  "iter": 1,
+  "findings": [
+    {
+      "id": "F-1",
+      "rule_id": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "confidence": 0.72,
+      "title": "Type assertion `value as Tab` in onValueChange senza commento giustificativo",
+      "description": "Il callback `onValueChange` di Radix Tabs riceve `value: string`. Il cast `value as Tab` (riga 603) bypassa la verifica di tipo senza commento che ne documenti la sicurezza dell'invariante. Il comportamento e' de facto sicuro — Radix emette `onValueChange` solo con i valori dei `TabsTrigger` renderizzati dall'array `TABS` — ma questo invariante non e' documentato inline. TS-IDIOM-002 richiede un commento o alternativa che giustifichi qualunque type assertion non ovvia.",
+      "location": {
+        "file": "packages/app/src/App.tsx",
+        "line": 603,
+        "snippet": "onValueChange={(value) => setActiveTab(value as Tab)}"
+      },
+      "suggestion": "Opzione A (minima): aggiungere un commento inline — `// Safe: Radix emits only values from TABS.map(t => t.id)`. Opzione B (idiomatica): risolvere in conjunction con F-2 derivando Tab da TABS con `as const`, eliminando la necessita' del cast.",
+      "blocking": false,
+      "assignee": "fe-dev"
+    },
+    {
+      "id": "F-2",
+      "rule_id": "code_quality/rules/canonical/TS-IDIOM-002.md",
+      "pass": "design",
+      "severity": "low",
+      "confidence": 0.76,
+      "title": "`Tab` type e `TABS` array — doppia sorgente di verita', tipo non derivato",
+      "description": "Il tipo `Tab` (riga 115) e' una string union manuale con 4 letterali. `TABS` (righe 117-122) e' tipizzato `{ id: Tab; label: string }[]`, il che vincola le tab dichiarate ma non previene l'aggiunta di letterali a `Tab` senza corrispondente entry in TABS. Esempio: aggiungere `| 'debug'` a Tab e' silenziosamente valido in TypeScript anche se non esiste un TabsTrigger corrispondente. Il pattern idiomatico TypeScript e' derivare il tipo dall'array costante: `const TABS = [...] as const; type Tab = (typeof TABS)[number]['id']`. Questo rende TABS la singola sorgente di verita' e allinea automaticamente il tipo alle tab reali.",
+      "location": {
+        "file": "packages/app/src/App.tsx",
+        "line": 115,
+        "snippet": "type Tab = \"play\" | \"library\" | \"settings\" | \"info\";"
+      },
+      "suggestion": "Convertire TABS a array `as const` e derivare Tab: `const TABS = [{ id: 'play', label: 'Play' }, ...] as const; type Tab = (typeof TABS)[number]['id'];`. Risolve anche la necessita' del cast in F-1.",
+      "blocking": false,
+      "assignee": "fe-dev"
+    },
+    {
+      "id": "F-3",
+      "rule_id": "code_quality/rules/canonical/QA-TEST-001.md",
+      "pass": "robustness",
+      "severity": "medium",
+      "confidence": 0.78,
+      "title": "Manca test unitario per l'invariante `forceMount` — panel Play deve restare montato al cambio tab",
+      "description": "`forceMount` su `<TabsContent value=\"play\">` e' l'invariante architetturale piu' critica introdotta da TSK-143: garantisce che il Player (e lo stato WasmBoy interno) non venga smontato quando l'utente cambia tab. I test unitari esistenti (App.gameChangeDialog.test.tsx, App.autoStartToggle.test.tsx) verificano correttamente la navigazione tra tab e i flussi Library→Player, ma nessun caso testa esplicitamente che `[data-testid='panel-play']` rimanga nel DOM quando la tab attiva e' Library, Settings o Info. Una regressione per rimozione accidentale di `forceMount` non sarebbe intercettata dai test unitari. QA-TEST-001: logica non banale con invariante di montaggio deve avere copertura test. Delegato a qa-dev — non scrivere test direttamente.",
+      "location": {
+        "file": "packages/app/src/App.gameChangeDialog.test.tsx",
+        "line": null,
+        "note": "Missing test case — non un bug nel codice esistente"
+      },
+      "suggestion": "qa-dev: aggiungere in un test file App un caso che verifica l'invariante forceMount. Esempio: `clickTab(/libreria/i); expect(screen.getByTestId('panel-play')).toBeInTheDocument();` — panel Play deve essere nel DOM anche quando la tab attiva non e' Play. Lo stesso pattern per Settings e Info tab.",
+      "blocking": false,
+      "assignee": "qa-dev"
+    }
+  ],
+  "verdict": "conditional",
+  "summary": "3 finding (0 high, 1 medium, 2 low). Nessun finding bloccante sulla logica di produzione. F-1 e F-2 sono advisory low per fe-dev: entrambi riguardano type safety idiomatica (type assertion non commentata e doppia sorgente Tab/TABS) — nessun bug attuale, refactoring consigliato. F-3 e' medium QA-TEST-001 delegato a qa-dev: aggiungere test unitario per l'invariante forceMount del panel Play. La migrazione Radix Tabs e' idiomaticamente corretta — ARIA wiring, keyboard navigation, forceMount, data-testid migration, overflow-x-auto sono tutti pattern validati dalla pipeline precedente (visual-oracle iter-2 pass, a11y iter-2 pass, ux-ui iter-2 pass, 662/662 unit test pass, 30/30 e2e pass). Nessun finding di sicurezza. Verdict conditional per presenza di F-3 medium (QA-TEST-001) in attesa di companion qa-dev.",
+  "task_package": {
+    "assignee": "qa-dev",
+    "tsk_id": "TSK-143",
+    "iter": 1,
+    "constraint": {
+      "scope": "add forceMount invariant test only; no opportunistic refactor",
+      "max_diff_lines": 20,
+      "blast_radius_warning": [],
+      "blast_radius_note": "Modifica test-only — nessun impatto su codice di produzione"
+    },
+    "findings": ["F-3"]
+  },
+  "advisory_package": {
+    "assignee": "fe-dev",
+    "tsk_id": "TSK-143",
+    "iter": 1,
+    "note": "F-1 e F-2 sono low advisory — non bloccanti. Fix facoltativi ma raccomandati per ridurre il debito di type safety.",
+    "findings": ["F-1", "F-2"]
+  },
+  "loop_status": {
+    "current_iter": 1,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "generated_at": "2026-07-02T21:00:00+02:00",
+  "reviewer_version": "2.26"
+}

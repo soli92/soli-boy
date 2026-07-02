@@ -1,0 +1,42 @@
+{
+  "tsk_id": "TSK-143",
+  "iter": 1,
+  "verdict": "conditional",
+  "screenshots": [
+    { "viewport": "mobile",  "theme": "light", "path": "code_quality/reports/TSK-143-visual-iter-1/mobile-light.png" },
+    { "viewport": "mobile",  "theme": "dark",  "path": "code_quality/reports/TSK-143-visual-iter-1/mobile-dark.png" },
+    { "viewport": "desktop", "theme": "light", "path": "code_quality/reports/TSK-143-visual-iter-1/desktop-light.png" },
+    { "viewport": "desktop", "theme": "dark",  "path": "code_quality/reports/TSK-143-visual-iter-1/desktop-dark.png" },
+    { "viewport": "mobile",  "theme": "light", "path": "code_quality/reports/TSK-143-visual-iter-1/mobile-light-library.png" },
+    { "viewport": "desktop", "theme": "light", "path": "code_quality/reports/TSK-143-visual-iter-1/desktop-light-library.png" }
+  ],
+  "checks": {
+    "visual_regression": { "status": "skip", "diff_pixels": 0, "baseline_path": "" },
+    "axe_a11y":          { "status": "skip", "violations": [] },
+    "interaction_test":  { "status": "skip", "scenarios": [] }
+  },
+  "critic_findings": [
+    {
+      "description": "TabsList usa className='sb-tab-bar' (classe dead: il CSS corrispondente è stato rimosso da app-extra.css). La spec richiede 'w-full rounded-none border-b border-border'. Il rendering mostra un compact inline pill-group (bg-muted, rounded-lg, p-1 di default tabs.tsx) invece del full-width navigation bar con separatore border-bottom atteso. Su mobile 375px il testo 'Info & Privacy' risulta parzialmente cropped.",
+      "viewport": "all",
+      "theme": "all",
+      "severity": "minor",
+      "fix_hint": "In App.tsx, TabsList: sostituire className='sb-tab-bar' con className='w-full rounded-none border-b border-border'. La classe legacy sb-tab-bar non ha più effetto (CSS rimosso)."
+    },
+    {
+      "description": "Il componente <Tabs> non ha className. La spec specifica 'className=\"flex flex-col flex-1\"' per espandere il tab container a fill della restante altezza nel flex container .sb-app. Senza flex-1, il tab panel non espande a viewport height: visibile nei screenshot (la tab-content non occupa l'altezza rimanente).",
+      "viewport": "all",
+      "theme": "all",
+      "severity": "minor",
+      "fix_hint": "In App.tsx, aggiungere className='flex flex-col flex-1' sul componente <Tabs>."
+    },
+    {
+      "description": "Le classi legacy sb-tab-bar (su TabsList) e sb-tab-btn (su TabsTrigger) sono ancora presenti nel JSX come dead code. Il CSS corrispondente è stato rimosso da app-extra.css (come documentato nel commento TSK-143). Non causano errori visuali ma inquinano il markup.",
+      "viewport": "all",
+      "theme": "all",
+      "severity": "trivial",
+      "fix_hint": "Rimuovere className='sb-tab-bar' da TabsList (sostituire con le classi Tailwind del finding #1) e className='sb-tab-btn' da TabsTrigger (il default di tabs.tsx è sufficiente, nessuna classe custom necessaria)."
+    }
+  ],
+  "next_action": "loop"
+}
