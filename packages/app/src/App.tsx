@@ -474,7 +474,7 @@ function AppContent({
               corrente (WCAG 4.1.2 name/role/value). */}
           <button
             type="button"
-            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full shrink-0"
+            className="sm:hidden flex items-center justify-center min-w-[44px] min-h-[44px] shrink-0"
             onClick={() => setActiveTab("settings")}
             aria-label={`Tema attuale: ${theme}. Vai a Impostazioni per cambiare tema`}
             title={theme}

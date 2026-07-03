@@ -111,7 +111,10 @@ async function navigateTab(page: Page, tab: TabDef): Promise<void> {
     ).toBeVisible({ timeout: 5_000 });
     return;
   }
-  await page.getByRole("tab", { name: tab.label }).click();
+  // Info tab: su mobile l'accessible name è "Info" (sm:hidden span); su desktop "Info & Privacy".
+  // Il regex /^Info/ cattura entrambi i casi.
+  const locatorName = tab.id === "info" ? /^Info/ : tab.label;
+  await page.getByRole("tab", { name: locatorName }).click();
   await expect(
     page.locator(`[data-testid="${tab.panel}"]`),
     `Panel "${tab.panel}" deve essere visibile`,
@@ -136,7 +139,9 @@ for (const vp of VIEWPORTS) {
       await expect(tablist, "tablist[aria-label='Sezioni app'] deve essere visibile").toBeVisible();
 
       for (const tab of TABS) {
-        const tabEl = page.getByRole("tab", { name: tab.label });
+        // Info tab: mobile → "Info", desktop → "Info & Privacy" (dual-span TSK-166)
+        const locatorName = tab.id === "info" ? /^Info/ : tab.label;
+        const tabEl = page.getByRole("tab", { name: locatorName });
         await expect(tabEl, `Tab "${tab.label}" deve essere visibile`).toBeVisible();
         await expect(tabEl, `Tab "${tab.label}" deve essere abilitato`).toBeEnabled();
       }
