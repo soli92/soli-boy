@@ -35,3 +35,10 @@ I mockup coprono tre fasce di dispositivo — mobile (~390px), tablet (~768px), 
   - US-094 App shell + Tabs navigation migration
 - EP-021 Allineamento visivo produzione ↔ prototipo EP-020 — `management/kanban/EP-021-visual-fidelity-prototype/`
   - US-101 Shell + theme switcher + Play idle CTA
+- EP-022 Mobile-first Responsive & Visual Fidelity Overhaul — `management/kanban/EP-022-mobile-responsive-fidelity/`
+  - US-104 Audit sistematico fedeltà grafica prototipo↔produzione sui 4 viewport
+  - US-105 Fix mobile portrait — navbar overlay e Play tab nascosto sotto il logo
+  - US-107 Mobile landscape — audit e fix layout
+  - US-108 Tablet — audit e fix layout
+  - US-109 Desktop — audit e fix residui fidelity post EP-021
+  - US-110 Regression e2e multi-viewport

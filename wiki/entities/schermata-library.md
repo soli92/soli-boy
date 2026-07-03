@@ -41,3 +41,6 @@ Riflette la libreria di gioco con griglia titolo/piattaforma e ricerca/filtro, e
 <!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
 - EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
   - US-096 Library tab — game grid + search + chips + dialog
+- EP-022 Mobile-first Responsive & Visual Fidelity Overhaul — `management/kanban/EP-022-mobile-responsive-fidelity/`
+  - US-108 Tablet — audit e fix layout (Library 3 colonne)
+  - US-109 Desktop — audit e fix residui fidelity (Library 5 colonne)

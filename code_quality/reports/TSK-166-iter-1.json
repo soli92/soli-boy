@@ -1,0 +1,72 @@
+{
+  "tsk_id": "TSK-166",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version_min": "18",
+    "css": "tailwind+custom",
+    "build": "vite",
+    "design_system": "@soli92/solids@1.14.1",
+    "qa": "playwright",
+    "confidence": "high",
+    "detection_mode": "guided",
+    "source": "raw/tech_stack.md"
+  },
+  "iter": 1,
+  "findings": [
+    {
+      "id": "F-1",
+      "rule_id": "canonical/CSS-DESIGN-001",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "file": "packages/app/src/App.tsx",
+      "line": 488,
+      "summary": "Token CSS `--sd-color-accent-default` usato in inline style senza contratto documentato nel DS",
+      "detail": "Il dot-indicator tema (sb-theme-dot-mobile) usa `var(--sd-color-accent-default, #e040fb)` come backgroundColor in inline style per i temi non-cyberpunk (riga 488). Il token `--sd-color-accent-default` non è definito né in solids-theme.css né in app-extra.css né nello scope locale dell'app; il fallback hardcoded `#e040fb` è de facto il valore effettivo per tutti i temi non-cyberpunk. Manca la documentazione del contratto: da quale versione di @soli92/solids il token è esportato (se mai), oppure il fallback va promosso a valore esplicito con commento che ne giustifichi l'uso. In linea con CSS-DESIGN-001 §Rationale: CSS var() senza contratto degrada silenziosamente.",
+      "citation": "[^rule: code_quality/rules/canonical/CSS-DESIGN-001.md §Rationale][^src5: packages/app/src/App.tsx:488]",
+      "auto_fixable": false,
+      "task_package": null
+    },
+    {
+      "id": "F-2",
+      "rule_id": "canonical/REACT-IDIOM-001",
+      "pass": "idiomaticity",
+      "severity": "low",
+      "file": "packages/app/src/App.tsx",
+      "line": 483,
+      "summary": "Logica colore tema del dot-indicator espressa come ternario JS anziché via CSS per `[data-theme]`",
+      "detail": "Il colore dello span nel dot-indicator è determinato da `theme === 'cyberpunk' ? 'var(--sd-color-primary-default)' : 'var(--sd-color-accent-default, #e040fb)'` (righe 487-490). Il design system già usa `[data-theme='X']` in CSS per variazioni per tema (vedi solids-theme.css e app-extra.css). Il ternario JS accoppia il componente all'enumerazione corrente dei temi: l'aggiunta di un terzo tema (es. 'dark-contrast') richiederebbe modificare questo JSX. Pattern idiomatico preferibile: aggiungere una classe CSS dedicata al dot (es. `.sb-theme-dot`) e gestire il colore in `app-extra.css` via `[data-theme='cyberpunk'] .sb-theme-dot { background-color: var(--sd-color-primary-default); }`. Severity low: lo scope è contenuto e il codebase ha solo 3 temi stabili.",
+      "citation": "[^rule: code_quality/rules/canonical/REACT-IDIOM-001.md §Rationale][^src5: packages/app/src/App.tsx:483]",
+      "auto_fixable": false,
+      "task_package": null
+    },
+    {
+      "id": "F-3",
+      "rule_id": "canonical/QA-TEST-001",
+      "pass": "robustness",
+      "severity": "low",
+      "file": "packages/app/e2e/ep022-portrait-navbar.e2e.ts",
+      "line": 181,
+      "summary": "Selettore e2e `{ name: 'Tema', exact: true }` non corrisponde al testo del trigger accordion 'Tema — cambio rapido' in Settings.tsx",
+      "detail": "Il test 4 usa `page.getByRole('button', { name: 'Tema', exact: true })` (riga 181) per trovare il trigger dell'accordion mobile tema. Il trigger in Settings.tsx:421 ha testo 'Tema — cambio rapido'. Con `exact: true` Playwright richiede che il nome accessibile sia esattamente 'Tema': la discrepanza è silente (il test è verde ma l'accoppiamento implicito è non documentato). Possibili spiegazioni: (a) Radix AccordionTrigger normalizza il nome accessibile in modo non ovvio; (b) il test trova un altro button con testo esatto 'Tema'. In entrambi i casi, se il testo del trigger viene modificato o Radix cambia il calcolo dell'accessible name, il test si rompe senza messaggio chiaro. Delegare indagine e allineamento selettore al qa-dev.",
+      "citation": "[^rule: code_quality/rules/canonical/QA-TEST-001.md §Rationale][^src5: packages/app/e2e/ep022-portrait-navbar.e2e.ts:181][^src5: packages/app/src/components/Settings/Settings.tsx:421]",
+      "auto_fixable": false,
+      "task_package": {
+        "assignee": "qa-dev",
+        "action": "Verificare perché `getByRole('button', { name: 'Tema', exact: true })` trova il trigger 'Tema — cambio rapido'. Se il nome accessibile del trigger Radix è effettivamente 'Tema — cambio rapido', allineare il selettore: usare `{ name: /^Tema/ }` (regex prefix-safe, già adottato per 'Info' nello stesso file, riga 99) oppure `{ name: 'Tema — cambio rapido' }`. Aggiungere un commento che documenta il comportamento atteso.",
+        "scope": "fix only the test selector; no opportunistic refactor",
+        "max_diff_lines": 10
+      }
+    }
+  ],
+  "verdict": "pass",
+  "summary": "Fix P0 mobile portrait navbar (TSK-166/US-105) corretto, idiomatico e robusto. Il wrapper `hidden sm:block` sul ThemeSwitcher e il blocco CSS difensivo `@media (max-width:639px)` eliminano il root cause documentato (ThemeSwitcher ~198px che saturava lo spazio orizzontale dell'header su iPhone 375-430px). L'AccordionItem 'theme-mobile' in Settings è coerente con i pattern esistenti (prop gating, Radix, type cast documentato). La deduplicazione di .sb-logo in solids-theme.css rimuove proprietà zombie. Il dot-indicator usa `<button type='button'>` nativo (REACT-A11Y-001 soddisfatta). 3 finding LOW: token CSS non contrattualizzato nel dot-indicator (F-1 CSS-DESIGN-001), logica colore tema inline invece di CSS per [data-theme] (F-2 REACT-IDIOM-001), selettore e2e con discrepanza testo trigger accordion (F-3 QA-TEST-001 → qa-dev). Nessun finding HIGH/MEDIUM. Pipeline completa verde (visual pass iter-2, a11y conditional 0 critical/major, ux-ui conditional resolved, 671 unit test, 20/20 e2e portrait).",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "generated_at": "2026-07-03",
+  "reviewer_version": "code-reviewer v2.26"
+}

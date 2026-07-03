@@ -29,3 +29,8 @@ Gli SVG usano `shape-rendering="crispEdges"`; il wordmark usa i font di SoliDS (
 ## Pagine collegate
 [[2026-06-01-brand-kit]]
 [[solids]]
+
+## Storie collegate
+<!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
+- EP-022 Mobile-first Responsive & Visual Fidelity Overhaul — `management/kanban/EP-022-mobile-responsive-fidelity/`
+  - US-106 Logo revision nel design system Solids dual-theme

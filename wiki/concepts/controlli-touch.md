@@ -33,3 +33,6 @@ L'interfaccia è responsiva e ottimizzata per orientamento verticale e orizzonta
 <!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
 - EP-018 Controlli shoulder L e R in tutte le modalità e versioni — `management/kanban/EP-018-controlli-shoulder-l-r/`
   - US-063 Controlli touch L/R per le piattaforme che li espongono
+- EP-022 Mobile-first Responsive & Visual Fidelity Overhaul — `management/kanban/EP-022-mobile-responsive-fidelity/`
+  - US-105 Fix mobile portrait — navbar overlay e Play tab nascosto sotto il logo
+  - US-107 Mobile landscape — audit e fix layout

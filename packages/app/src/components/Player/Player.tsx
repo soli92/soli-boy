@@ -522,6 +522,29 @@ export function Player({
           justify-content: start;
           align-items: center;
         }
+        /* TSK-174 (US-109 / EP-022) — P2-09 audit finding: su desktop wide
+           (>= lg, 1024px) il .sb-player-layout centra la .sb-screen
+           (align-items:center) mentre i controlli restavano justify-start,
+           creando disallineamento visivo tra HUD / screen (centrati) e la
+           barra controlli (ancorata a sinistra della .sb-play-main). Override
+           justify-content:center limitato al viewport desktop lg per:
+           - preservare il layout mobile portrait (controls a sinistra della
+             colonna, comportamento invariato — nessuna regressione TSK-167);
+           - preservare il layout landscape non-fullscreen (nessuna media query
+             specifica: la regola base resta attiva finche la viewport e
+             sotto 1024px, coerente con landscape su mobile/tablet piccolo);
+           - non alterare marker DOM stabili (proto-root, theme-switcher,
+             sb-privacy-section, sb-legal-card) → ep021-visual-fidelity.e2e.ts
+             resta verde (nessuna modifica JSX).
+           NB: NON usare backtick attorno a token CSS in questo commento — il
+           blocco vive dentro un template literal JS (tag style con
+           interpolazione tagged), i backtick chiuderebbero prematuramente
+           la template string TS. */
+        @media (min-width: 1024px) {
+          .sb-player-controls {
+            justify-content: center;
+          }
+        }
         .sb-player-controls > .sb-slot {
           display: flex;
           align-items: center;

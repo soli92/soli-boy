@@ -55,6 +55,13 @@ import {
 // la sezione non viene renderizzata — preserva i test legacy che istanziano
 // `<Settings>` senza wiring tema.
 import { ThemeSelector } from "../ThemeSelector/ThemeSelector";
+// TSK-166 (US-105 / EP-022) — ThemeSwitcher (quick-toggle a pillola) qui in
+// Settings è VISIBILE SOLO su mobile (≤639px) dove esce dall'header per
+// evitare l'overlay P0 sulle TabsList (vedi App.tsx). Su desktop il quick
+// toggle vive nell'header e la sezione "Aspetto — tema UI" con
+// `ThemeSelector` (selettore esteso) resta invariata per tutti i breakpoint.
+import { ThemeSwitcher } from "../ThemeSelector/ThemeSwitcher";
+import type { UiTheme } from "../ThemeSelector/useTheme";
 // TSK-069 (US-033) — Sezione "Privacy" SEMPRE disponibile in Settings:
 // nessuna prop richiesta, il componente è UI puro (testo statico). La
 // presenza è incondizionata per soddisfare il requisito del TSK-069
@@ -393,6 +400,40 @@ export function Settings({
         defaultValue={["video"]}
         className="flex flex-col"
       >
+        {/* === Accordion 0: Tema (mobile-only, ≤639px) ===================== */}
+        {/* TSK-166 (US-105 / EP-022) — Fix P0 mobile portrait: su ≤640px il
+            `ThemeSwitcher` esce dall'header per liberare spazio ai tab
+            (Play/Library/Settings/Info) — vedi App.tsx. Qui in Settings è
+            reintrodotto come voce dedicata "Tema" con `className="block
+            sm:hidden"` (visibile solo <640px). Il breakpoint Tailwind `sm`
+            coincide con quello scelto in App.tsx (sm = 640px), garantendo
+            simmetria e nessuna "zona morta" viewport dove il toggle non esiste.
+            Su desktop (≥640px) questa voce è nascosta perché il quick toggle
+            è già nell'header; la sezione "Aspetto — tema UI" più sotto (con
+            `ThemeSelector`) resta visibile su TUTTI i breakpoint per selezione
+            estesa. Prop gating identico a "Aspetto" per parità di comportamento
+            (test legacy senza wiring tema non vedono la sezione). */}
+        {theme !== undefined && onThemeChange !== undefined && (
+          <AccordionItem value="theme-mobile" className="block sm:hidden">
+            {/* TSK-166 follow-up (F4 UX/UI review) — Pattern naming allineato
+                agli altri accordion "Sezione — dettaglio" (es. "Controlli —
+                rimappatura", "Resa video — scala e proporzioni"). */}
+            <AccordionTrigger>Tema — cambio rapido</AccordionTrigger>
+            <AccordionContent>
+              {/* Cast a `UiTheme`: `SettingsProps.theme` è tipato `string` per
+                  retro-compatibilità con test legacy che istanziano <Settings/>
+                  senza wiring tema. In produzione App.tsx passa sempre l'output
+                  di `useTheme()` che è già `UiTheme`; se un valore non canonico
+                  arrivasse, `toQuickToggleTheme` in ThemeSwitcher lo normalizza
+                  a `cyberpunk` (default safe). */}
+              <ThemeSwitcher
+                theme={theme as UiTheme}
+                onThemeChange={onThemeChange}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
         {/* === Accordion 1: Controlli — rimappatura (chiuso di default) === */}
         <AccordionItem value="controls">
           <AccordionTrigger>Controlli — rimappatura</AccordionTrigger>

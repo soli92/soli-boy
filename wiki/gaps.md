@@ -199,3 +199,21 @@ Re-scan iter-2 (axe-playwright, 3 temi × 2 viewport + scope sintetico): **0 fin
 **Sospetta fonte:** raw/2026-06-01-specifiche-funzionali.txt §1.3 + tabelle hardware delle piattaforme citate (eventualmente nuovo raw di riferimento hardware per piattaforma).
 **Impatto:** non-bloccante. EP-018 e le sue US-062/063/064 sono in `status: ready` e citano i requisiti esistenti più la pagina piattaforme. Una pagina futura (es. `wiki/concepts/comandi-hardware-per-piattaforma.md`) consoliderebbe la mappa pulsanti↔piattaforma e chiuderebbe il gap senza retrofit sulle US già scritte.
 
+## 2026-07-03 — wcag255-touch-target-tab-buttons
+**Origine:** qa-dev @ TSK-167 / ep022-fidelity-audit.e2e.ts S5
+**Gap / Bug:** 8 elementi interattivi con height < 44px rilevati da ep022-fidelity-audit.e2e.ts S5 su TUTTI i viewport (mobile-portrait, mobile-landscape, tablet, desktop). Dettaglio: 4 tab buttons (Play/Libreria/Impostazioni/Info & Privacy) = 28px; ThemeSwitcher header = 32px; Avvia = 36px; Schermo intero = 36px; Vai alla Libreria = 32px. La soglia S5 è ≤3 violazioni; le attuali sono 8. WCAG 2.5.5 richiede touch target minimo 44×44 CSS px.
+**Causa root:** Radix TabsTrigger/shadcn default height `h-9` (36px) è sotto soglia. In App.tsx le classi passate a TabsTrigger non includono un override `min-h-[44px]`. Gli altri pulsanti (Avvia, Schermo intero, ThemeSwitcher) usano altezze hard-coded < 44px nei rispettivi componenti.
+**Impatto:** medio-alto per mobile UX. Tapping accuracy ridotta su touchscreen. S5 è un gate nel test di fidelity audit (ep022-fidelity-audit.e2e.ts) — blocca `npm run e2e:ci` verde.
+**Azione richiesta (TPM):** aprire TSK fe layer, P1: (1) `min-h-[44px]` su TabsTrigger in App.tsx; (2) `min-h-[44px]` su ThemeSwitcher button; (3) revisione Avvia/Schermo intero/Vai alla Libreria buttons. Fix separato dal centering bug (gap tablist-play-tab-overflow-centering-bug).
+**File di riferimento:** `packages/app/e2e/ep022-fidelity-audit.e2e.ts:229` (S5), `packages/app/src/App.tsx` (TabsTrigger), `packages/app/src/components/ThemeSwitcher/`.
+
+## 2026-07-03 — tablist-play-tab-overflow-centering-bug
+**Origine:** qa-dev @ TSK-167 (e2e portrait navbar)
+**Gap / Bug:** `TabsList` in `packages/app/src/components/ui/tabs.tsx` include `justify-content: center` nel set di classi di default (shadcn preset). Combinato con `overflow-x: auto` applicato via App.tsx, quando i 4 tab totalizano ~272px su un nav di ~213px (viewport 390px), il centering posiziona il tab "Play" (primo, leftmost) a x≈94px nel viewport — parzialmente sotto il logo (img.sb-logo, x≈24–137px). Il logo img (non pointer-events:none) intercetta i click Playwright a quella coordinata. L'effetto è che il tab "Play" non è visibile/cliccabile via pointer events standard su mobile portrait al di fuori del fix TSK-166 (è un bug pre-esistente, separato dal fix ThemeSwitcher).
+**Riproduzione:** `test.use({ viewport: { width: 390, height: 844 } })` → navigare su Libreria → tentare `page.getByRole('tab', { name: 'Play' }).click()` → intercepted by logo. `getBoundingClientRect()` del tab Play: `{ x: 93.625, y: 22, width: 49, height: 28 }`. Logo: `{ x: 24, width: ~113 }` → overlap.
+**Causa root:** `justify-content: center` in `packages/app/src/components/ui/tabs.tsx` (linea ~8) non viene overridden dalla classe `bg-transparent` aggiunta in App.tsx; `justify-content` va overridden esplicitamente (es. `justify-start` o `justify-content: flex-start`).
+**Workaround in TSK-167:** uso di keyboard navigation (`press('ArrowLeft')` su Libreria → attiva Play via Radix rover) per testare il cambio di stato Tabs indipendentemente dall'occlusione visiva.
+**Sospetta fonte:** `packages/app/src/components/ui/tabs.tsx` default classes; fix = aggiungere `justify-start` alle classi di override in `App.tsx` `TabsList` o rimuovere `justify-center` dalla primitiva.
+**Impatto:** medio. Il tab Play NON è cliccabile con tap a centro-schermo su iPhone 14 Pro portrait quando si trova alla sinistra del nav overflowed con centering. Impatta l'UX reale (tap touch). Va aperto TSK separato (layer: fe, priority: P1).
+**Azione richiesta (TPM):** aprire TSK fe layer, P1, fix `justify-content` su TabsList in App.tsx o tabs.tsx; US-105 o nuova US.
+

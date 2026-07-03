@@ -49,3 +49,6 @@ Le sezioni sono disposte in 1 colonna su mobile, 2 su tablet e 3 su desktop. [^s
   - US-098 Info tab — notices + UpdateBanner
 - EP-021 Allineamento visivo produzione ↔ prototipo EP-020 — `management/kanban/EP-021-visual-fidelity-prototype/`
   - US-102 Tab Info & Privacy arricchita
+- EP-022 Mobile-first Responsive & Visual Fidelity Overhaul — `management/kanban/EP-022-mobile-responsive-fidelity/`
+  - US-108 Tablet — audit e fix layout (Settings 2 colonne)
+  - US-109 Desktop — audit e fix residui fidelity (Settings 3 colonne)

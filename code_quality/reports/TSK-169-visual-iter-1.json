@@ -1,0 +1,31 @@
+{
+  "tsk_id": "TSK-169",
+  "iter": 1,
+  "verdict": "pass",
+  "screenshots": [
+    { "viewport": "mobile",  "theme": "cyberpunk",  "path": "code_quality/reports/TSK-169-visual-iter-1/header-mobile-cyberpunk.png" },
+    { "viewport": "mobile",  "theme": "90s-party",  "path": "code_quality/reports/TSK-169-visual-iter-1/header-mobile-90s-party.png" },
+    { "viewport": "desktop", "theme": "cyberpunk",  "path": "code_quality/reports/TSK-169-visual-iter-1/header-desktop-cyberpunk.png" },
+    { "viewport": "desktop", "theme": "90s-party",  "path": "code_quality/reports/TSK-169-visual-iter-1/header-desktop-90s-party.png" },
+    { "viewport": "mobile",  "theme": "cyberpunk",  "path": "code_quality/reports/TSK-169-visual-iter-1/mobile-cyberpunk.png" },
+    { "viewport": "mobile",  "theme": "90s-party",  "path": "code_quality/reports/TSK-169-visual-iter-1/mobile-90s-party.png" },
+    { "viewport": "desktop", "theme": "cyberpunk",  "path": "code_quality/reports/TSK-169-visual-iter-1/desktop-cyberpunk.png" },
+    { "viewport": "desktop", "theme": "90s-party",  "path": "code_quality/reports/TSK-169-visual-iter-1/desktop-90s-party.png" }
+  ],
+  "checks": {
+    "visual_regression": { "status": "skip" },
+    "axe_a11y":          { "status": "skip" },
+    "interaction_test":  { "status": "skip" }
+  },
+  "critic_findings": [
+    {
+      "description": "Il font del wordmark nel test headless potrebbe ricadere su fallback (Google Fonts non caricato in sandbox Playwright senza accesso internet). In produzione il font DM Sans è già caricato globalmente dall'app.",
+      "viewport": "all",
+      "theme": "all",
+      "severity": "trivial",
+      "fix_hint": "Nessun fix necessario — il @import Google Fonts è stato correttamente rimosso dal file SVG (non funziona in context <img>); il font è gestito dalla app-level CSS."
+    }
+  ],
+  "xml_fix_applied": "Rimosso <style>@import url('...')</style> da soliboy-logo-horizontal.svg e soliboy-logo-mono.svg: & non escaped in XML causava broken image.",
+  "next_action": "done"
+}

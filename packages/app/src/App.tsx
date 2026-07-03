@@ -124,12 +124,18 @@ try {
 export const STORAGE_INIT_ERROR_MESSAGE =
   "Impossibile inizializzare lo storage — ricaricare l'app";
 
-/** Le 4 destinazioni funzionali dell'app. */
+/** Le 4 destinazioni funzionali dell'app.
+ *
+ * TSK-166 follow-up (F3 UX/UI review) — `mobileLabel` opzionale: su ≤639px la
+ * TabsList è vincolata a `flex:1` per non overfloware il viewport (vedi
+ * app-extra.css blocco @media max-width:639px). "Info & Privacy" viene
+ * abbreviato in "Info" sotto sm per non troncarsi con ellipsis; gli altri
+ * label sono già abbastanza corti da starci con ellipsis di sicurezza. */
 const TABS = [
   { id: "play", label: "Play" },
   { id: "library", label: "Libreria" },
   { id: "settings", label: "Impostazioni" },
-  { id: "info", label: "Info & Privacy" },
+  { id: "info", label: "Info & Privacy", mobileLabel: "Info" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -429,13 +435,62 @@ function AppContent({
             >
               {TABS.map((tab) => (
                 <TabsTrigger key={tab.id} value={tab.id}>
-                  {tab.label}
+                  {"mobileLabel" in tab && tab.mobileLabel ? (
+                    <>
+                      {/* Label lungo su ≥640px, abbreviato su mobile per non
+                          troncarsi (TSK-166 follow-up F3). */}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">{tab.mobileLabel}</span>
+                    </>
+                  ) : (
+                    tab.label
+                  )}
                 </TabsTrigger>
               ))}
             </TabsList>
           </nav>
 
-          <ThemeSwitcher theme={theme} onThemeChange={setTheme} />
+          {/* TSK-166 (US-105 / EP-022) — Fix P0 mobile portrait:
+              su ≤640px il ThemeSwitcher esce dall'header (saturava lo spazio
+              orizzontale su iPhone 375–430px insieme al logo, azzerando la
+              larghezza residua per la TabsList Play/Library/Settings/Info).
+              Su mobile lo switcher si trova nel tab Settings → sezione "Tema"
+              (AccordionItem con `className="block sm:hidden"`).
+              `hidden sm:block` = display:none <640px, display:block ≥640px. */}
+          <div className="hidden sm:block">
+            <ThemeSwitcher theme={theme} onThemeChange={setTheme} />
+          </div>
+
+          {/* TSK-166 follow-up (F1 discoverability UX/UI review) —
+              Dot-indicator tema visibile solo su mobile (`sm:hidden`).
+              Su desktop il quick-toggle è già nell'header e mostra il nome del
+              tema; su mobile lo switcher è stato spostato in Settings (fix P0
+              overlay) e l'utente perdeva il segnale visivo di quale tema è
+              attivo → aggiungiamo un dot colorato tappabile che porta al tab
+              Settings, dove trova la voce "Tema — cambio rapido". Il colore
+              varia per tema (var(--sd-color-primary-default) per cyberpunk,
+              accent per gli altri) così è un signifier del tema attivo, non
+              solo una CTA di navigazione. `aria-label` verboso include il tema
+              corrente (WCAG 4.1.2 name/role/value). */}
+          <button
+            type="button"
+            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full shrink-0"
+            onClick={() => setActiveTab("settings")}
+            aria-label={`Tema attuale: ${theme}. Vai a Impostazioni per cambiare tema`}
+            title={theme}
+            data-testid="sb-theme-dot-mobile"
+          >
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{
+                backgroundColor:
+                  theme === "cyberpunk"
+                    ? "var(--sd-color-primary-default)"
+                    : "var(--sd-color-accent-default, #e040fb)",
+              }}
+              aria-hidden="true"
+            />
+          </button>
         </header>
 
         <main className="sb-app-main">

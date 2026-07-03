@@ -336,8 +336,12 @@ export function Library({ storage, onSelect, activeRomId, onBeforeRemove }: Libr
         </p>
       ) : (
         // TSK-146 — grid su utility Tailwind (era .sb-grid)
+        // TSK-172 (US-108 / EP-022) — aggiunto step intermedio `md:grid-cols-4`
+        // per eliminare il salto brusco 3→5 colonne a 1024px sui viewport tablet
+        // (768–1023px). Progressione: 2 (mobile) → 3 (sm ≥640) → 4 (md ≥768) →
+        // 5 (lg ≥1024). Vedi audit EP-022 finding P2-07.
         <ul
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 list-none p-0 m-0"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 list-none p-0 m-0"
           aria-label="Risultati libreria"
         >
           {filtered.map((rom) => (

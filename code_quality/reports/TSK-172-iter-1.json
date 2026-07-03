@@ -1,0 +1,66 @@
+{
+  "tsk_id": "TSK-172",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "css": "tailwind",
+    "bundler": "vite",
+    "confidence": 0.95
+  },
+  "iter": 1,
+  "passes_run": ["idiomaticity", "design", "robustness"],
+  "findings": [
+    {
+      "id": "F-001",
+      "rule_id": "emergent/FE-DESIGN-001 (candidate — non ancora attiva)",
+      "file": "packages/app/src/components/Library/Library.tsx",
+      "lines": "339-344",
+      "severity": "low",
+      "detected_by": ["design"],
+      "rationale": "wiki/concepts/layout-responsive.md §Adattamenti per sezione specifica 3 colonne al tablet; il DoD TSK-172 L88 specifica 'Library mostra griglia a 3 colonne su viewport 768px'. L'implementazione introduce md:grid-cols-4, che consegna 4 colonne a ≥768px. Il codice e idiomaticamente corretto, il commento inline documenta il rationale (audit P2-07: eliminare il salto 3→5), il visual oracle ha validato (24/24 pass). Gap: wiki/concepts/layout-responsive.md e il DoD non riflettono la decisione aggiornata. Action: aggiornare wiki con la nuova progressione (sm:3, md:4, lg:5) oppure aprire un wikigap per ratifica owner.",
+      "fix_complexity": "trivial",
+      "auto_fixable": false,
+      "fix_target": "wiki/concepts/layout-responsive.md"
+    },
+    {
+      "id": "F-002",
+      "rule_id": "CSS-DESIGN-001",
+      "file": "packages/app/src/styles/app-extra.css",
+      "lines": "97-98",
+      "severity": "low",
+      "detected_by": ["idiomaticity"],
+      "rationale": "Il commento cita 'WCAG 2.2 AA §2.5.5 (Target Size - Enhanced)': §2.5.5 e livello AAA, non AA. Il livello AA in WCAG 2.2 e §2.5.8 (Target Size - Minimum, 24x24px). L'implementazione a 44px soddisfa entrambi (AAA §2.5.5 + AA §2.5.8). Imprecisione documentale, non codice. Action opzionale: aggiornare il commento a 'soddisfa §2.5.5 AAA (44px) e supera §2.5.8 AA (24px)' per evitare confusione in future a11y review.",
+      "fix_complexity": "trivial",
+      "auto_fixable": false,
+      "fix_target": "packages/app/src/styles/app-extra.css"
+    }
+  ],
+  "cascade_check": {
+    "selector": ".sb-app-header__tabs [role=\"tab\"]",
+    "global_rule_line": 105,
+    "media_query_block_lines": "125-156",
+    "conflict": false,
+    "note": "La @media (max-width:639px) imposta flex/padding/font-size/overflow sullo stesso selettore ma NON imposta min-height. La proprieta' min-height:44px e' ereditata dalla regola globale cross-viewport. Nessun conflitto di cascade."
+  },
+  "wcag_check": {
+    "criterion_height": "WCAG 2.5.5 AAA (44px) e WCAG 2.5.8 AA (24px) — entrambi soddisfatti dalla sola min-height:44px",
+    "width_note": "min-width non vincolato via CSS; la larghezza effettiva dei tab (~83px su 375px mobile / 4 tab) supera la soglia 44px WCAG 2.5.5 empiricamente. Non e' necessario aggiungere min-width:44px per questi tab navigazionali.",
+    "verdict": "conforme"
+  },
+  "verdict": "pass",
+  "verdict_rationale": "2 finding LOW, 0 MEDIUM/HIGH. F-001: gap documentale wiki/DoD non aggiornati post-decisione 4 col; codice corretto, visual oracle 24/24 pass, Playwright assertion aggiornata. F-002: imprecisione terminologica WCAG nel commento; implementazione 44px corretta e conservativa. Nessuna regressione (671/671 test, typecheck verde).",
+  "summary": "Modifica minimale e a basso rischio: una classe Tailwind e una regola CSS globale. Classe grid Library: progressione mobile-first 2→3→4→5 col idiomatica e ordinata correttamente (base→sm→md→lg). Cascade regola min-height:44px: non sovrascritta dal blocco media portrait (confermato per analisi del foglio). WCAG 2.5.5 soddisfatto in altezza (44px); larghezza tab soddisfatta empiricamente. Gap unico (low): wiki/DoD non aggiornati a riflettere 4 col su md. Fix raccomandato: aggiornare wiki/concepts/layout-responsive.md.",
+  "markers": {
+    "no_progress": false,
+    "regression": false,
+    "loop_exhausted": false,
+    "degraded": false
+  },
+  "files_modified_by_tsk": [
+    "packages/app/src/components/Library/Library.tsx",
+    "packages/app/src/styles/app-extra.css"
+  ],
+  "generated_at": "2026-07-03T12:30:00+02:00",
+  "reviewer_version": "code-reviewer@2.26.0"
+}

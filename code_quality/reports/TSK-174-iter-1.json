@@ -1,0 +1,47 @@
+{
+  "tsk_id": "TSK-174",
+  "stack_descriptor": {
+    "language": "typescript",
+    "framework": "react",
+    "framework_version": "18",
+    "css_strategy": "tailwind + inline style template literal",
+    "confidence": "high",
+    "confidence_note": "Stack rilevato senza ambiguita: Player.tsx React 18 FC, template literal inline <style>, Tailwind breakpoints lg: documentati"
+  },
+  "iter": 1,
+  "findings": [
+    {
+      "id": "F-001",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_ref": "code_quality/rules/canonical/CSS-DESIGN-001.md",
+      "tier": "canonical",
+      "severity": "low",
+      "blocking": false,
+      "carry_forward": false,
+      "file": "packages/app/src/components/Player/Player.tsx",
+      "line_range": [511, 557],
+      "description": "L'inline <style> block contiene sia selettori scoped al componente (.sb-screen[data-video-scope]) sia selettori globali non-scoped (.sb-player-controls). La media query override TSK-174 (linee 543-547) segue correttamente il pattern pre-esistente (TSK-106), ma l'inconsistenza tra regole scoped e non-scoped nel medesimo blocco crea un rischio teorico di side-effect in caso di istanze multiple del componente. Debt pre-esistente non introdotto da TSK-174; classificato come informativo.",
+      "source_tsk_debt": "TSK-106",
+      "pre_existing": true
+    }
+  ],
+  "verdict": "pass",
+  "summary": {
+    "pass_1_idiomaticity": "PASS — il template literal TSK-174 non introduce backtick né interpolazioni anomale nelle aggiunte alle linee 525-547. Il commento CSS documenta esplicitamente il vincolo (linea 539-542). Il pattern inline <style> è pre-esistente (TSK-036/037/106); TSK-174 lo estende correttamente.",
+    "pass_2_design": "PASS — il cascade è corretto: @media (min-width: 1024px) { .sb-player-controls { justify-content: center; } } ha stessa specificità 0-1-0 del base rule e posizione successiva nel medesimo stylesheet → vince quando la media condition è soddisfatta. La scelta di non usare app-extra.css è architetturalmente fondata: <style> in body ha posizione di cascata successiva a <link> in head, quindi un override in app-extra.css perderebbe la cascade rispetto alla regola base inline. Il breakpoint 1024px è coerente con il breakpoint lg: Tailwind e con le decisioni TSK-170/172.",
+    "pass_3_robustness": "PASS — nessun backtick né ${...} nelle aggiunte TSK-174 (linee 525-547 verificate character-by-character); template literal correttamente aperto a linea 443 e chiuso a linea 558; nested template literal linee 489-510 correttamente bilanciato. Il guard min-width: 1024px preserva layout mobile (375px) e tablet portrait. 671/671 test pass; visual oracle TSK-175 tutte le assertion pass; ep021-visual-fidelity.e2e.ts 4/4 chromium pass.",
+    "blocking_findings": 0,
+    "medium_findings": 0,
+    "low_findings": 1,
+    "pre_existing_debt_findings": 1,
+    "new_findings_in_untouched_files": 0
+  },
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_risk": false,
+    "regression_risk": false
+  },
+  "generated_at": "2026-07-03T00:00:00Z",
+  "reviewer_version": "CQRL v2.14 (PATTERN §19)"
+}

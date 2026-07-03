@@ -1,0 +1,40 @@
+{
+  "tsk_id": "TSK-170",
+  "stack_descriptor": {
+    "language": "css",
+    "framework": "tailwind-css",
+    "runtime": "vite",
+    "confidence": 0.95,
+    "mode": "stack-aware"
+  },
+  "iter": 1,
+  "generated_at": "2026-07-03T00:00:00Z",
+  "reviewer_version": "code-reviewer v2.14 (claude-sonnet-4-6)",
+  "scope": {
+    "files": ["packages/app/src/styles/app-extra.css"],
+    "change_summary": "nuovo blocco @media (orientation:landscape) and (max-width:900px) per compact header; breakpoint .sb-play-row innalzato 768px→1024px; NOTE cross-ref TSK-172"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "pass": "design",
+      "severity": "low",
+      "rule_id": "CSS-DESIGN-001",
+      "rule_path": "code_quality/rules/canonical/CSS-DESIGN-001.md",
+      "title": "Cascade ordering: blocco specifico landscape prima del blocco generale landscape",
+      "location": "packages/app/src/styles/app-extra.css:173",
+      "description": "Il nuovo blocco @media (orientation:landscape) and (max-width:900px) (riga 173) è posizionato PRIMA del blocco generale @media (orientation:landscape) (riga 391). I due blocchi attualmente agiscono su proprietà disgiunte (padding vs. gap/player-layout), quindi non c'è conflitto. Tuttavia, l'ordine inverte il pattern convenzionale CSS 'generale → specifico': se in futuro venisse aggiunta una regola padding al blocco generale (riga 391+), essa avrebbe source-order successivo e vincerebbe silenziosamente sull'override mobile-landscape, annullando il compact header senza errori visibili.",
+      "impact": "nessun impatto corrente; rischio manutenzione futuro",
+      "action": "informational — nessuna fix richiesta in questa iterazione; considerare di aggiungere un commento di guardia nel blocco generale (riga 391) che riferisca l'esistenza del blocco TSK-170 a riga 173",
+      "auto_fixable": false
+    }
+  ],
+  "verdict": "pass",
+  "summary": "Fix CSS puramente landscape corretto e ben documentato. Cascade funzionale, invarianti preservate (portrait, fullscreen, WCAG 2.5.5 min-height delegato a TSK-172). Un solo finding low-severity su ordering dei blocchi media query, attualmente non-breaking. 671/671 test pass, visual oracle 24/24 pass.",
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  }
+}

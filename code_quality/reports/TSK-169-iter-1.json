@@ -1,0 +1,65 @@
+{
+  "tsk_id": "TSK-169",
+  "stack_descriptor": {
+    "language": "svg",
+    "framework": "none",
+    "framework_version_min": "1.1",
+    "css": "none",
+    "build": "vite",
+    "design_system": "@soli92/solids@1.14.1",
+    "qa": "playwright",
+    "confidence": "high",
+    "detection_mode": "guided",
+    "source": "raw/tech_stack.md",
+    "note": "Review scope: 6 SVG asset files only (no TypeScript/React modified). Project stack is TypeScript+React+Vite; rules applied are SVG/W3C-applicable subsets of canonical tier."
+  },
+  "iter": 1,
+  "findings": [],
+  "verdict": "pass",
+  "summary": "I 6 file SVG prodotti da TSK-169 sono idiomatici, robusti e accessibili. Zero finding contro regole canonical esistenti. Pass 1 idiomaticità: W3C SVG 1.1 conventions corrette — xmlns, nessun xlink: deprecated, shape-rendering=crispEdges su pixel rects, currentColor root su variante mono, textLength+lengthAdjust per wordmark font-independent. Pass 2 design: palette brand coerente (magenta #ff2bd6/#ff53c9 → cyan #26c8ec/#00e5ff) su tutti i full-color SVG; pixel block size scalato appropriatamente (8px/14px/30px per canvas 64/240h/512px); variante mono usa fill=currentColor correttamente per ereditare dal CSS del contesto. Pass 3 robustezza: nessun <script>, nessun href esterno, nessun event handler, nessun <foreignObject>; fix XML (& non escaped) verificato corretto in tutti i file; tutti e 6 gli SVG hanno role=img + aria-label + <title> (WCAG 1.1.1); font stack termina con sans-serif; tutti gli elementi dentro viewBox. Una nota informativa senza finding (nessuna regola canonical applicabile): soliboy-logo-horizontal.svg e soliboy-favicon.svg esistono con contenuto identico in due path distinti (src/assets/ e public/icons/; public/favicon.svg e public/icons/soliboy-favicon.svg) — rischio di divergenza futura senza meccanismo di sincronizzazione automatica. Pattern documentato in emergent candidate SVG-ASSET-001 (gate umano per attivazione, non applicato in questa run).",
+  "informative_notes": [
+    {
+      "id": "N-1",
+      "category": "maintenance",
+      "severity": "informative",
+      "files": [
+        "packages/app/src/assets/soliboy-logo-horizontal.svg",
+        "packages/app/public/icons/soliboy-logo-horizontal.svg"
+      ],
+      "description": "I due file hanno contenuto SVG identico ma risiedono in path distinti: src/assets/ (importato da App.tsx via Vite) e public/icons/ (servito staticamente). TSK-169 li ha aggiornati contestualmente, ma non esiste un meccanismo automatico che impedisca la divergenza in future modifiche. Il fix XML del visual-oracle era stato applicato correttamente a entrambi.",
+      "emergent_candidate": "code_quality/rules/emergent/SVG-ASSET-001.md",
+      "no_finding_reason": "Nessuna regola canonical copre la strategia di deduplicazione SVG asset. Emergent candidate scritta per gate umano (PATTERN §19.5 step 3-4)."
+    },
+    {
+      "id": "N-2",
+      "category": "maintenance",
+      "severity": "informative",
+      "files": [
+        "packages/app/public/favicon.svg",
+        "packages/app/public/icons/soliboy-favicon.svg"
+      ],
+      "description": "Stesso pattern N-1: public/favicon.svg (URL /favicon.svg, browser tab) e public/icons/soliboy-favicon.svg (URL /icons/soliboy-favicon.svg, manifest/altri) hanno contenuto identico. Rischio di divergenza futura.",
+      "emergent_candidate": "code_quality/rules/emergent/SVG-ASSET-001.md",
+      "no_finding_reason": "Come N-1."
+    },
+    {
+      "id": "N-3",
+      "category": "idiom",
+      "severity": "informative",
+      "files": [
+        "packages/app/public/icons/soliboy-logo-mono.svg"
+      ],
+      "description": "Blocco <defs></defs> vuoto presente nel file mono. Non invalido XML, ma ridondante. Nessuna regola canonical applicabile.",
+      "emergent_candidate": null,
+      "no_finding_reason": "Livello triviale, nessuna regola canonical copre gli elementi SVG strutturalmente vuoti."
+    }
+  ],
+  "loop_status": {
+    "iter": 1,
+    "max_iterations": 3,
+    "no_progress_detected": false,
+    "regression_detected": false
+  },
+  "generated_at": "2026-07-03",
+  "reviewer_version": "code-reviewer v2.26"
+}

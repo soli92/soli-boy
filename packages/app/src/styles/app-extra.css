@@ -88,6 +88,98 @@ body {
   max-width: 28rem;
 }
 
+/* ============================================================================
+   TSK-172 (US-108 / EP-022) — WCAG 2.5.5 touch target minimum (44×44px)
+   ----------------------------------------------------------------------------
+   Regola globale sui trigger della TabsList applicativa: garantisce un tap
+   target di almeno 44px in altezza su TUTTI i viewport (mobile portrait,
+   mobile landscape, tablet, desktop). Il DS solids/shadcn fornisce un padding
+   verticale ridotto sui TabsTrigger (py-1 → ~28px totali con font-size di
+   default), che risulta sotto la soglia WCAG 2.2 AA §2.5.5 (Target Size —
+   Enhanced) e §2.5.8 (Target Size — Minimum, AA in WCAG 2.2). Il min-height
+   qui applicato è cross-viewport perché il gap è indipendente dall'orientamento.
+   L'override mobile ≤639px sotto NON tocca min-height (solo flex/padding
+   orizzontale/font-size/ellipsis), quindi eredita i 44px. Vedi audit EP-022
+   finding P2-06 (tablet grey-zone) e coordinamento con TSK-170 (landscape).
+   ============================================================================ */
+.sb-app-header__tabs [role="tab"] {
+  min-height: 44px;
+}
+
+/* ============================================================================
+   TSK-166 (US-105 / EP-022) — Defensive rule mobile portrait ≤639px
+   ----------------------------------------------------------------------------
+   Con `flex-wrap: wrap` sopra (regola base .sb-app-header) su iPhone 375–430px
+   il ThemeSwitcher (~198px, `white-space: nowrap`) sommato al logo (~120px) +
+   2× gap + padding saturava la riga → la TabsList Play/Library/Settings/Info
+   veniva spinta a wrap sotto il logo con overlay (bug P0).
+   Fix primario: il ThemeSwitcher viene rimosso dall'header su ≤640px via
+   Tailwind (`hidden sm:block`, vedi App.tsx). Questa regola difensiva serve a
+   prevenire future regressioni se qualcuno aggiungesse altri elementi
+   all'header senza gating mobile: `flex-wrap: nowrap` impedisce il wrap,
+   `overflow-x: auto` sulla nav consente lo scroll orizzontale dei tab come
+   fallback se lo spazio dovesse comunque essere insufficiente (mai auspicabile,
+   ma preferibile a un overlay invisibile). Breakpoint 639px (max) simmetrico
+   con il breakpoint Tailwind `sm` (min-width: 640px) usato in App.tsx.
+   ============================================================================ */
+@media (max-width: 639px) {
+  .sb-app-header {
+    flex-wrap: nowrap;
+  }
+  .sb-app-header__nav {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+  .sb-app-header__tabs {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  /* TSK-166 follow-up (F3 UX/UI review) — Tab bar no-scroll ≤639px.
+     Su viewport 375–390px i 4 tab (Play, Libreria, Impostazioni, Info)
+     traboccavano dallo spazio residuo dopo logo + dot-indicator (~210px in
+     375px). Rendendo ogni tab `flex: 1` con padding ridotto e text-xs,
+     ciascuno occupa quota uguale e il testo lungo (es. "Impostazioni") viene
+     troncato con ellipsis: preferibile allo scroll orizzontale nascosto
+     (Nielsen H6 recognition — se il tab non è visibile l'utente non lo
+     scopre). L'`overflow-x: auto` sopra resta come fallback difensivo. */
+  .sb-app-header__tabs [role="tab"] {
+    flex: 1;
+    min-width: 0;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 0.75rem; /* text-xs, WCAG-safe con line-height DS default */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* NOTE (TSK-170 US-107): la regola WCAG 2.5.5 min-height:44px sui TabsTrigger,
+   originariamente prevista da questo TSK, è stata consolidata sopra sotto TSK-172
+   (US-108) come regola globale cross-viewport (coordinamento landscape+tablet). */
+
+/* ============================================================================
+   TSK-170 (US-107 / EP-022) — Header compatto in mobile landscape
+   ----------------------------------------------------------------------------
+   Audit TSK-165 P1-02: su mobile landscape (~844×390) l'header occupava ~16%
+   dell'altezza schermo (64px su 390px). Riduciamo il padding verticale del
+   header (12px → 6px) e il padding orizzontale del main (20px → 12px) per
+   massimizzare l'area utile del viewport di gioco. Media query specifica
+   (orientation:landscape AND max-width:900px) per NON impattare tablet
+   landscape (≥1024px) né desktop, coerente con il breakpoint 1024px del
+   sidebar layout .sb-play-row sotto (coordinato con TSK-172).
+   ============================================================================ */
+@media (orientation: landscape) and (max-width: 900px) {
+  .sb-app-header {
+    padding: 6px var(--sd-space-lg, 20px);
+  }
+  .sb-app-main {
+    padding-left: var(--sd-space-md, 12px);
+    padding-right: var(--sd-space-md, 12px);
+  }
+}
+
 .sb-app-main {
   flex: 1;
   overflow: auto;
@@ -150,7 +242,14 @@ body {
   outline: none;
 }
 
-/* Play tab — desktop row: screen + save state sidebar */
+/* Play tab — desktop row: screen + save state sidebar.
+   TSK-170 (US-107): breakpoint innalzato da 768px → 1024px per escludere
+   mobile landscape (iPhone landscape 844×390 supera 768 ma non 1024). La
+   sidebar (Player affiancato al SaveStatePanel) è pensata per schermi larghi
+   con altezza sufficiente: su mobile landscape (390px height) il Player ha
+   già poco spazio verticale e la sidebar deteriora il layout. 1024px riserva
+   il layout a tablet landscape (iPad 1024/1180 wide) e desktop. Coordinato
+   con TSK-172 (fix tablet layout). */
 .sb-play-row {
   display: flex;
   flex-direction: column;
@@ -158,7 +257,7 @@ body {
   align-items: stretch;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .sb-play-row {
     flex-direction: row;
     align-items: flex-start;
@@ -178,7 +277,7 @@ body {
   flex-shrink: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .save-panel-desktop {
     width: 14rem;
   }

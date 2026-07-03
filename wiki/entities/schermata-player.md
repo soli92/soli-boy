@@ -42,3 +42,7 @@ Nei mockup desktop l'input riporta "Tastiera & gamepad Xbox connesso; i controll
   - US-095 Play tab — Player + HUD + FileLoader migration
 - EP-021 Allineamento visivo produzione ↔ prototipo EP-020 — `management/kanban/EP-021-visual-fidelity-prototype/`
   - US-103 Layout Player desktop + visual oracle e2e
+- EP-022 Mobile-first Responsive & Visual Fidelity Overhaul — `management/kanban/EP-022-mobile-responsive-fidelity/`
+  - US-107 Mobile landscape — audit e fix layout (Player, TouchOverlay)
+  - US-108 Tablet — audit e fix layout (player sizing)
+  - US-109 Desktop — audit e fix residui fidelity post EP-021

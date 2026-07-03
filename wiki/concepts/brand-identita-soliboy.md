@@ -46,3 +46,5 @@ Gli SVG usano `shape-rendering="crispEdges"` per bordi netti dei pixel; i PNG fi
 <!-- Sezione gestita dal product-manager — non modificare se sei wiki-keeper -->
 - EP-020 Graphic Refactoring & Solids Component Migration — `management/kanban/EP-020-graphic-refactoring/`
   - US-093 Design brief + prototipo interattivo EP-020
+- EP-022 Mobile-first Responsive & Visual Fidelity Overhaul — `management/kanban/EP-022-mobile-responsive-fidelity/`
+  - US-106 Logo revision nel design system Solids dual-theme

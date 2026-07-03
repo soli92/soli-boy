@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="240" viewBox="0 0 680 240" role="img" aria-label="Soli-boy" fill="currentColor">
+  <title>Soli-boy</title>
+  <defs>
+</defs>
+
+  <!-- mark as single-colour line-art -->
+  <path d="M50 24 H156 A22 22 0 0 1 178 46 V158 A58 58 0 0 1 120 216 H50 A22 22 0 0 1 28 194 V46 A22 22 0 0 1 50 24 Z" fill="none" stroke="currentColor" stroke-width="5"/>
+  <rect x="47" y="48" width="112" height="112" rx="10" fill="none" stroke="currentColor" stroke-width="3.5"/>
+  <g shape-rendering="crispEdges">
+    <rect x="82" y="55" width="14" height="14" fill="currentColor"/>
+    <rect x="96" y="55" width="14" height="14" fill="currentColor"/>
+    <rect x="110" y="55" width="14" height="14" fill="currentColor"/>
+    <rect x="124" y="55" width="14" height="14" fill="currentColor"/>
+    <rect x="68" y="69" width="14" height="14" fill="currentColor"/>
+    <rect x="82" y="69" width="14" height="14" fill="currentColor"/>
+    <rect x="68" y="83" width="14" height="14" fill="currentColor"/>
+    <rect x="82" y="83" width="14" height="14" fill="currentColor"/>
+    <rect x="82" y="97" width="14" height="14" fill="currentColor"/>
+    <rect x="96" y="97" width="14" height="14" fill="currentColor"/>
+    <rect x="110" y="97" width="14" height="14" fill="currentColor"/>
+    <rect x="110" y="111" width="14" height="14" fill="currentColor"/>
+    <rect x="124" y="111" width="14" height="14" fill="currentColor"/>
+    <rect x="110" y="125" width="14" height="14" fill="currentColor"/>
+    <rect x="124" y="125" width="14" height="14" fill="currentColor"/>
+    <rect x="68" y="139" width="14" height="14" fill="currentColor"/>
+    <rect x="82" y="139" width="14" height="14" fill="currentColor"/>
+    <rect x="96" y="139" width="14" height="14" fill="currentColor"/>
+    <rect x="110" y="139" width="14" height="14" fill="currentColor"/>
+  </g>
+  <circle cx="86" cy="182" r="8" fill="currentColor"/>
+  <circle cx="120" cy="174" r="8" fill="none" stroke="currentColor" stroke-width="3"/>
+
+  <!-- wordmark -->
+  <text x="205" y="150" font-family="'DM Sans','Orbitron','Segoe UI',system-ui,-apple-system,Roboto,sans-serif" font-weight="700" font-size="104" textLength="430" lengthAdjust="spacingAndGlyphs" fill="currentColor">Soli-boy</text>
+</svg>

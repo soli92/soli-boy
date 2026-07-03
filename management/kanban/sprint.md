@@ -1,11 +1,12 @@
 <!-- generated, do not edit -->
 # Sprint board — soli-boy
 
-View aggregata generata dal `tpm`. Scope: Core web MVP (EP-001 + EP-003) +
+View aggregata generata dal `tpm`. Generata: 2026-07-03. Scope: Core web MVP (EP-001 + EP-003) +
 emulazione reale (EP-003 ADR-004/005) + post-MVP backlog (EP-002/004/005) +
 identità di brand (EP-010) + CI/CD (EP-011) + desktop (EP-006) + mobile (EP-007) +
 conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **fix color-contrast WCAG AA (EP-012/US-049, Sprint 10)** +
+**Design Intelligence UX (EP-013, Sprint 11)** +
 **robustezza codice (EP-014, Sprint 12)** + **UX Player flusso principale (EP-015, Sprint 12)** +
 **UX Library/Settings/componenti (EP-016, Sprint 13)** + **a11y manual checks remediation (EP-017, Sprint 13)** +
 **controlli shoulder L/R (EP-018, Sprint 14)** +
@@ -13,7 +14,74 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **bridge RTC reale GBC+GBA (EP-019 follow-up, Sprint 16)** +
 **graphic refactoring Solids migration (EP-020, Sprint 17–18)** +
 **visual fidelity prototipo (EP-021, Sprint 19)** +
-**release desktop unsigned (EP-006, Sprint 19)**.
+**release desktop unsigned (EP-006, Sprint 19)** +
+**mobile-first responsive & fidelity overhaul (EP-022, Sprint 20)**.
+
+**Stato globale (2026-07-03): 161/163 TSK done · 1 in-progress (TSK-059, human) · 1 todo (TSK-072, human) · 12 todo Sprint 20 (EP-022, TSK-165..176)**
+
+---
+
+## Sprint 20 — Mobile-first Responsive & Visual Fidelity Overhaul (EP-022) — 0/12 todo
+
+> **Obiettivo:** Portare la produzione in parità visiva col prototipo EP-020 su tutti e quattro
+> i viewport (mobile portrait, mobile landscape, tablet, desktop), sanare il bug bloccante P0
+> mobile portrait (navbar overlay che nasconde il tab Play) e riprogettare il logo nel contesto
+> del design system Solids dual-theme.
+>
+> **DAG:**
+> - Wave A (parallelo): TSK-165 (audit) ‖ TSK-166+167 (portrait fix P0) ‖ TSK-168 (logo design human)
+> - Wave B (parallelo, dopo Wave A): TSK-169 (logo impl) ‖ TSK-170+171 (landscape) ‖ TSK-172+173 (tablet) ‖ TSK-174+175 (desktop)
+> - Wave C (dopo Wave B): TSK-176 (regression e2e multi-viewport)
+>
+> **Note:** TSK-168 è `consumer: human` (gate grafico). Tutti gli altri sono `consumer: agent`.
+> Pipeline FE per ogni TSK fe: `develop → visual-oracle → a11y → ux-ui-review → code-review`.
+
+### Wave A — Audit + interventi critici (parallelo)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-165 | Audit visivo 4 viewport × 4 tab × 2 temi — report EP-022-fidelity-audit.md | US-104 | qa | agent | P1 | M | todo | — |
+| TSK-166 | Fix P0 portrait — nascondi ThemeSwitcher header mobile + aggiungi in Settings | US-105 | fe | agent | P0 | M | todo | — |
+| TSK-167 | e2e Playwright portrait — visibilità + cliccabilità 4 tab + ThemeSwitcher in Settings | US-105 | qa | agent | P0 | S | todo | TSK-166 |
+| TSK-168 | Design SVG dual-theme — 4 varianti logo (horizontal, mono, icon, favicon) [HUMAN] | US-106 | fe | human | P1 | L | todo | — |
+
+### Wave B — Fix per viewport + logo implementation (parallelo max 4, dopo Wave A)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-169 | Implementazione SVG logo in packages/app/public/logo + aggiorna import App.tsx | US-106 | fe | agent | P1 | M | todo | TSK-168 |
+| TSK-170 | Fix layout mobile landscape — Tab bar, TouchOverlay safe-area, Player proporzionato | US-107 | fe | agent | P1 | M | todo | TSK-165, TSK-167 |
+| TSK-171 | Visual oracle landscape × 2 temi → EP-022-mobile-landscape/ | US-107 | qa | agent | P1 | S | todo | TSK-170 |
+| TSK-172 | Fix layout tablet — Library 3 col, Settings 2 col, Player portrait | US-108 | fe | agent | P1 | M | todo | TSK-165, TSK-167 |
+| TSK-173 | Visual oracle tablet × 2 temi → EP-022-tablet/ | US-108 | qa | agent | P1 | S | todo | TSK-172 |
+| TSK-174 | Fix delta desktop residui — Library 5 col, Player sidebar, Settings 3 col | US-109 | fe | agent | P2 | M | todo | TSK-165, TSK-167 |
+| TSK-175 | Visual oracle desktop + verifica marker EP-021 → EP-022-desktop/ | US-109 | qa | agent | P2 | S | todo | TSK-174 |
+
+### Wave C — Regression guard finale (dopo Wave B)
+
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-176 | Suite Playwright ep022-multi-viewport.e2e.ts — 4 viewport × 4 tab + doc operativa | US-110 | qa | agent | P1 | L | todo | TSK-167, TSK-171, TSK-173, TSK-175 |
+
+DAG Sprint 20:
+- Wave A (parallelo): TSK-165 ‖ TSK-166→TSK-167 ‖ TSK-168 (human gate)
+- Wave B (parallelo max 4): TSK-169→TSK-168; TSK-170→TSK-167,165; TSK-171→TSK-170; TSK-172→TSK-167,165; TSK-173→TSK-172; TSK-174→TSK-167,165; TSK-175→TSK-174
+- Wave C: TSK-176→TSK-167,171,173,175
+
+Consumer distribution Sprint 20: agent=11, human=1 (TSK-168).
+
+---
+
+## Lookahead — Sprint 21+ (post-Sprint 20)
+
+| Area | Note |
+|------|------|
+| EP-022 — Verifica device reale (iOS/Android) | Post-fix landscape/tablet: validazione su device fisico (gate umano) |
+| EP-022 — Logo review ux-ui | TSK-168 gate umano sblocca TSK-169; review `ux-ui-reviewer` post implementazione |
+| EP-006 — Code signing Win/macOS | Gate umano: segreti `CSC_*` / Apple notarization (ADR-007) |
+| EP-007 — Capacitor device validation | TSK-059 human in-progress (Android Studio + Xcode gate) |
+| EP-008 — iOS WASM benchmark | TSK-072 human todo (dipende da TSK-059 + device fisico) |
+| EP-019 — e2e full ROM proprietarie (Pokémon GBC/GBA) | Gate umano: aggiungere ROM a `public/test-roms/`; sblocca `test.fixme` TSK-135 |
 
 ---
 
@@ -189,7 +257,7 @@ Wave C spawna 4 task — il scheduler li dispatcha per dipendenza soddisfatta.
 > - Store metadata e iOS benchmark → gate umano (account developer, device fisico).
 > - TSK-073: Visual Oracle v2.17 — render harness per copertura dark (done).
 > - TSK-074–TSK-077: estensioni IPC filesystem Electron + allineamento spec storage-port (tutti done).
-> - TSK-078: fix jsdom ERR_REQUIRE_ESM (qa, P1, todo).
+> - TSK-078: fix jsdom ERR_REQUIRE_ESM (qa, P1, done).
 
 ### Wave A — Privacy e conformità (parallelo)
 
@@ -235,7 +303,7 @@ DAG Sprint 9:
 - Wave E (parallelo, EP-011): TSK-073 (done) ‖ TSK-078 (done)
 
 
-## Sprint 10 — Remediation a11y & UX/UI (EP-012) — 5 scan todo · 1 fix todo
+## Sprint 10 — Remediation a11y & UX/UI (EP-012) — 6/6 done · CLOSED
 
 > **Obiettivo:** smaltire il debito v2.18. 21 TSK FE `done` pregressi senza
 > `a11y_status`/`ux_ui_status` → scansioni retroattive per chiudere WARNING 4o/4p.
@@ -278,8 +346,49 @@ I seguenti 6 TSK FE `done` hanno ricevuto skip motivato direttamente nel frontma
 | TSK-050 | Branch protection main | gh API config, no DOM | configurazione VCS, no UI |
 | TSK-051 | CD Vercel cd-vercel.yml | YAML infra, no DOM | pipeline CD, no interazione utente |
 
+Sprint 10 **completo**.
 
-## Sprint 12 — Robustezza codice (EP-014, P0) + UX Player flusso principale (EP-015, P0)
+
+## Sprint 11 — Design Intelligence UX (EP-013) — 7/7 done · CLOSED
+
+> **Obiettivo:** applicare il pattern EP-019 (Design Intelligence Layer v2.21) a soli-boy: art-director
+> statement formale, fix UX emulator-first (canvas collassato, TouchOverlay portrait, footer cleanup),
+> audit token design system, critic pass globale, e re-verifica Functional Oracle EP-018.
+> EP-022 Token Ledger attivato in questo sprint come side-effect.
+>
+> **Stato:** Sprint 11 **completo**. 7/7 TSK done (TSK-085..091). Consumer distribution: agent=7, human=0.
+
+### Wave 1 — Art-director statement (radice)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-085 | Design audit EP-019: art-director statement UX emulator-first | US-091 | EP-013 | docs | agent | P0 | S | done | — |
+
+### Wave 2 — Fix UX + audit (parallelo, dopo TSK-085)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-086 | Emulator size default: aumenta visibilità default emulatore (scale auto, maxWidth 480px) | US-091 | EP-013 | fe | agent | P0 | S | done | TSK-085 |
+| TSK-087 | TouchOverlay positioning: verifica e documenta il fix portrait-flow | US-091 | EP-013 | fe | agent | P1 | S | done | TSK-085 |
+| TSK-088 | Info/About section: rimuovi LegalNotice duplicata dal footer | US-091 | EP-013 | fe | agent | P1 | S | done | TSK-085 |
+| TSK-089 | Design token audit: verifica usage SoliDS in soli-boy | US-091 | EP-013 | docs | agent | P2 | S | done | TSK-085 |
+| TSK-091 | EP-018 Functional Oracle re-verification: saldo debito v2.20 | US-091 | EP-013 | qa | agent | P0 | S | done | — |
+
+### Wave 3 — Critic pass globale (dopo Wave 2)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-090 | Critic pass globale UX EP-019: sintesi finding e lessons learned | US-091 | EP-013 | docs | agent | P2 | S | done | TSK-085,086,087,088,089 |
+
+DAG Sprint 11:
+- Wave 1: TSK-085 (radice)
+- Wave 2: TSK-086 ‖ TSK-087 ‖ TSK-088 ‖ TSK-089 → TSK-085; TSK-091 (indipendente)
+- Wave 3: TSK-090 → TSK-085..089
+
+Sprint 11 **completo**. EP-022 Token Ledger attivato (hook Stop + display inline).
+
+
+## Sprint 12 — Robustezza codice (EP-014, P0) + UX Player flusso principale (EP-015, P0) — 15/15 done · CLOSED
 
 > **Obiettivo:** chiudere i finding P0 del deep code review (EP-014) e del deep UX review
 > sul flusso Player (EP-015). EP-014 è prerequisito di stabilità per qualunque US successiva.
@@ -330,8 +439,10 @@ DAG Sprint 12:
 - Wave 3 (dopo Wave 2): TSK-104 → TSK-103; TSK-106 → TSK-105; TSK-100 → TSK-104
 - Wave 4 (dopo Wave 3): TSK-101 → TSK-100; TSK-102 → TSK-100; TSK-098 indipendente; TSK-099 → TSK-098
 
+Sprint 12 **completo**.
 
-## Sprint 13 — UX Library/Settings/componenti (EP-016, P1) + A11y manual checks (EP-017, P1) — 13/13 done
+
+## Sprint 13 — UX Library/Settings/componenti (EP-016, P1) + A11y manual checks (EP-017, P1) — 13/13 done · CLOSED
 
 > **Obiettivo:** polish UX su Library, Settings e Player SaveState (EP-016) + remediation
 > dei 5 manual check a11y (EP-017). EP-016/US-059 (TouchOverlay aria-hidden removal) è
@@ -378,7 +489,7 @@ DAG Sprint 13:
 Sprint 13 **completo**.
 
 
-## Sprint 14 — Controlli shoulder L/R (EP-018, P0) — 5/5 done ✓
+## Sprint 14 — Controlli shoulder L/R (EP-018, P0) — 5/5 done · CLOSED
 
 > **Obiettivo:** completare il supporto ai pulsanti shoulder L e R su tastiera, gamepad e touch, per tutti i core emulati (gambatte, mgba, fbneo, mame). WasmBoy GB mantiene no-op documentato (hardware senza shoulder). Sprint corto (5 TSK atomici), tutti P0, DAG a due livelli.
 >
@@ -451,6 +562,8 @@ DAG Sprint 15:
 - Wave 1: TSK-125 (radice) ‖ TSK-127 → TSK-125
 - Wave 2: TSK-126 → TSK-125; TSK-128 → TSK-125,127; TSK-129 → TSK-125,127; TSK-130 → TSK-125
 - Wave 3: TSK-131 → TSK-126,130; TSK-132 → tutti (chiusura wave)
+
+Sprint 15 **completo**.
 
 
 ## Sprint 16 — Bridge RTC reale (EP-019, follow-up) — 3/3 done · CLOSED
@@ -567,16 +680,6 @@ DAG Sprint 18:
 Sprint 18 **completo**. EP-020 chiuso — 22/22 TSK (TSK-136..157) `done`.
 
 
-## Lookahead — Sprint 19+ (post-Sprint 18)
-
-| Area | Note |
-|------|------|
-| EP-019 — e2e full ROM proprietarie (Pokémon GBC/GBA) | Gate umano: aggiungere ROM a `public/test-roms/`; sblocca `test.fixme` TSK-135 |
-| EP-009 — Arcade (FBNeo/MAME) | Gap aperto `arcade-emulation-engine`; percorso libretro da valutare |
-| EP-007 — Validazione su device Android fisico | Human, TSK-059 in-progress |
-| EP-008 — Submission Google Play e App Store | Human, dopo TSK-071 e TSK-072 (TSK-072 todo) |
-
-
 ## Sprint 19 — Visual fidelity prototipo (EP-021) + Release desktop (EP-006) — 7/7 done · CLOSED
 
 > **Stato:** Sprint 19 **completo** (2026-07-02). EP-021 chiuso (TSK-158..161). EP-006 US-104 chiusa (TSK-162..164: CI AppImage + smoke + GitHub Release workflow).
@@ -608,18 +711,12 @@ DAG Sprint 19 Wave B:
 Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: push tag `v*` → workflow `release-desktop.yml`.
 
 
-## Lookahead — Sprint 20+ (post-Sprint 19)
-
-| Area | Note |
-|------|------|
-| EP-006 — Code signing Win/macOS | Gate umano: segreti `CSC_*` / Apple notarization (ADR-007) |
-| EP-006 — Build Win/macOS in CI | Runner dedicati o build locale post-TSK-162 |
-| EP-007 — Capacitor device validation | TSK-059 human in-progress |
-| EP-008 — iOS WASM benchmark | TSK-072 human todo |
+<!-- Lookahead Sprint 20+ spostato in cima (Sprint 20 sezione) -->
 
 
 ## Note generali
 
+- **Stato globale (2026-07-03):** 161/163 TSK done · 1 in-progress (TSK-059, human gate device) · 1 todo (TSK-072, human gate iOS device) · **12 todo Sprint 20 (EP-022, TSK-165..176)**.
 - **Core web MVP completo** (20/20 done). 49 test verdi, typecheck OK.
 - **TSK-041 done** (bugfix canvas WasmBoy loadState — 8/8 e2e verdi).
 - Sprint 6 — 11/11 task done (EP-010 + EP-011). Tutti completati.
@@ -631,8 +728,8 @@ Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: p
 - **Sprint 10 — Remediation a11y & UX/UI (EP-012):** 6/6 done (5 scan TSK-079..083 + fix TSK-084).
   Fix a11y cross-cutting: TSK-084 (P1, **done**) — token contrasto 90s-party/dark/cyberpunk corretti; gap chiuso
   `ds-color-contrast-cross-cutting-90s-party-dark`. 6 TSK skip motivato applicato (infra/asset non-DOM).
-- **Sprint 11 — Design Intelligence (EP-013):** TSK-085..091 done.
-  EP-019 UX audit chiuso. EP-018 Functional Oracle re-check PASS. EP-022 Token Ledger attivo.
+- **Sprint 11 — Design Intelligence (EP-013):** 7/7 done (TSK-085..091).
+  Art-director statement EP-019 UX emulator-first; fix canvas collassato (TSK-086), TouchOverlay portrait (TSK-087), footer cleanup (TSK-088); design token audit (TSK-089); critic pass globale (TSK-090); Functional Oracle EP-018 re-check PASS (TSK-091). EP-022 Token Ledger attivato. Consumer distribution Sprint 11: agent=7, human=0.
 - **Sprint 12 — Robustezza codice (EP-014) + UX Player (EP-015):** 15/15 TSK done (TSK-092..106).
   EP-014 P0: TSK-092..097 done. EP-014 P2: TSK-098..099 done (refactor hook + test isolamento).
   EP-015 P0/P1: TSK-100..106 done (auto-avvio, HUD, gate cambio gioco, toggle, stabilità visiva).
@@ -643,8 +740,9 @@ Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: p
 - **Sprint 16 — Bridge RTC reale (EP-019 follow-up):** 3/3 done (TSK-133..135) — Sprint completo (2026-06-30). `WasmBoyRtcBridge` (GBC, MBC3) + `MgbaRtcBridge` (GBA, S-3511A BCD) consegnati (ADR-009 §4); e2e bridge detection sblocca `test.describe.skip` in `ep019-rtc.e2e.ts`. Test suite: 662/662 unit + 30/30 e2e verdi. **EP-019 chiuso** (`status: done`). Residuo (human gate, NON bloccante): fixture ROM Pokémon proprietarie — `test.fixme` con messaggio esplicito, sblocco previa aggiunta manuale in `public/test-roms/`. Consumer distribution Sprint 16: agent=3, human=0.
 - **Sprint 17 — Graphic Refactoring infra + Design Intelligence (EP-020):** **7/7 done** (TSK-136..142). Tailwind + Solids registry + shadcn CLI installati; design brief `wiki/design/ep020-design-brief.md`; prototipo `output/prototypes/ep020/`; UX/UI review prototipo (TSK-142 conditional → finding mappati in Wave B). Consumer distribution Sprint 17: agent=7, human=0.
 - **Sprint 18 — Graphic Refactoring migration + regression (EP-020):** **15/15 done** (TSK-143..157). Migrazione 4 tab + cross-cutting + CSS cleanup; pipeline FE completa (visual-oracle + a11y + ux-ui-review + code-review). Test suite finale: **671/671 unit** + 30/30 e2e verdi. **EP-020 chiuso** (`status: done`, 22/22 TSK totali). Consumer distribution Sprint 18: agent=15, human=0.
-- **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** **7/7 done**. EP-021 (TSK-158..161) + US-104 (TSK-162..164: CI AppImage, release-desktop.yml, smoke xvfb). **EP-006 chiuso**.
-- **Kanban hygiene 2026-07-02:** EP-001..006, EP-010..017, EP-021 chiusi (`done`); EP-007/008 `in-progress` (gate human); 157/160 TSK done.
+- **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** **7/7 done** (TSK-158..164). EP-021 (TSK-158..161) + US-104 (TSK-162..164: CI AppImage, release-desktop.yml, smoke xvfb). **EP-006 chiuso** (`status: done`).
+- **Kanban hygiene 2026-07-02:** EP-001..006, EP-010..017, EP-021 chiusi (`done`); EP-007/008 `in-progress` (gate human); 161/163 TSK done (post Sprint 19).
+- **Sprint 20 — Mobile-first Responsive & Visual Fidelity (EP-022):** 12 TSK generati (TSK-165..176). Bug P0 US-105 (navbar portrait overlay): fix = nascondi ThemeSwitcher dall'header su ≤640px (decision PO) + aggiungi in Settings. Consumer distribution: agent=11, human=1 (TSK-168 logo design).
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).

@@ -68,14 +68,18 @@ body{
 .sb-app{max-width:100%;margin:0;padding:0;}
 
 /* header / brand */
-.sb-logo{
-  width:34px;height:34px;border-radius:var(--sd-radius-md);
-  background:var(--sd-color-primary-subtle);color:var(--sd-color-primary-default);
-  display:flex;align-items:center;justify-content:center;font-size:20px;
-}
+/* TSK-166 (US-105 / EP-022) — Unificate due regole `.sb-logo` in conflitto.
+   Prima esistevano:
+     .sb-logo { width:34px; height:34px; background:...; display:flex; ... }
+     .sb-logo { display:block; height:40px; width:auto; max-width:200px; }
+   Il secondo blocco vinceva per cascade (stessa specificità, source order),
+   ma il primo lasciava proprietà zombie (background, border-radius su un
+   <img>: non hanno effetto ma sporcano la resa cognitiva e il devtools).
+   Ora una sola regola coerente con l'uso attuale in App.tsx
+   (`<img className="sb-logo" src={logoUrl} alt="Soli-boy">`). */
+.sb-logo{display:block;height:40px;width:auto;max-width:200px;}
 .sb-title{font-family:var(--sd-font-heading);font-weight:600;color:var(--sd-color-text-primary);}
 .sb-title--logo{margin:0;line-height:0;}
-.sb-logo{display:block;height:40px;width:auto;max-width:200px;}
 
 /* game tile accent ramps — TSK-146: .sb-art + .a-1..a-5 in Library.tsx */
 .sb-art{height:88px;border-radius:var(--sd-radius-sm);display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:30px;}
