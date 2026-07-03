@@ -38,3 +38,9 @@ packages/app/public/test-roms/*
 analytics/events/
 analytics/reports/
 .factory-upgrade-backup/
+
+# Capacitor native projects (android + ios) — rigenerabili con `npx cap sync` dopo build web.
+# Nessun codice nativo custom: solo boilerplate Capacitor. Vedi capacitor.config.ts per la config.
+# In CI: eseguire `npm run build && npx cap sync` prima di qualsiasi step nativo.
+packages/app/android/
+packages/app/ios/
