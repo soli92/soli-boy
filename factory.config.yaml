@@ -4,7 +4,8 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.26" # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01) → 2.26 (2026-07-02): upgrade a v2.26 (Prototype Generation Layer EP-035, opt-in).
+pattern_version: "2.27" # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01) → 2.26 (2026-07-02) → 2.27 (2026-07-06): upgrade a v2.27 (Tavola Rotonda Mode EP-039, opt-in).
+updated: "2026-07-06"
 
 owner: soli92
 language: it
@@ -429,3 +430,32 @@ prototyping:
     penpot:
       mcp_server: "penpot"
       instance_url: ""
+
+# =============================================================
+# Tavola Rotonda — modalità multi-agente collaborativa (EP-039, PATTERN §28)
+# Opt-in totale: non ha effetto se enabled: false (default)
+# =============================================================
+tavola_rotonda:
+  enabled: false                    # default off — backward compat totale
+
+  # Partecipanti: lista esplicita (v1) — auto escluso dall'MVP
+  partecipanti: []                  # es. [be-dev, lead-architect, qa-dev]
+
+  critico:
+    enabled: true                   # sempre on quando abilitata
+    mode: dedicated                 # dedicated | rotation
+
+  max_round: 4                      # obbligatorio — nessuna sessione illimitata
+
+  stop_su_consenso: true            # stop anticipato su consenso
+  definizione_consenso: unanimity   # unanimity | supermajority | no_blocking_objection
+
+  meccanismo_decisione: ibrido      # sintesi_moderatore | voto | voto_pesato | consenso | ibrido
+
+  budget:
+    max_cost_usd: ~                 # OBBLIGATORIO se enabled: true — fail se assente
+    max_tokens: ~                   # opzionale
+    max_latency_s: ~                # opzionale
+
+  topologia: lavagna                # lavagna (default, hub-and-spoke) | grafo_completo (sconsigliato)
+  sintesi_progressiva: true         # riassunto accordi/punti-aperti a ogni round

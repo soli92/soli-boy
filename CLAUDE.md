@@ -1,6 +1,6 @@
 # CLAUDE.md — soli-boy
 
-Questo repo è una **Agentic Factory llm-wiki++ v2.24** scaffoldata da `factory-bootstrap`.
+Questo repo è una **Agentic Factory llm-wiki++ v2.27** scaffoldata da `factory-bootstrap`.
 Segue il contratto universale definito in [`PATTERN.md`](PATTERN.md) (agent-agnostic,
 multi-adapter, compression layer a due assi).
 
@@ -83,6 +83,9 @@ adapter contemporaneamente.
 - **Compression output**: `/compression [show|set|policy|dry-run]`
 - **Compression context (graph)**: `/graphify-sync app` → popola `.graphify-state/`
   (prerequisito: `graphify >= 0.8.22`, vedi [`wiki/runbooks/graphify-installation.md`](wiki/runbooks/graphify-installation.md))
+- **Tavola Rotonda (v2.27, EP-039)**: `/tavola-rotonda <topic> [--partecipanti=<a>,<b>] [--max-round=<N>] [--budget=<USD>]`
+  — deliberazione strutturata multi-agente (Setup→Posizioni→Confronto→Convergenza→Sintesi).
+  Opt-in: richede `tavola_rotonda.enabled: true` + `budget.max_cost_usd` in `factory.config.yaml`.
 
 ## Vincoli inviolabili (estratto PATTERN §7)
 
