@@ -3,6 +3,10 @@ name: db-dev
 description: Database developer agent — consuma TSK con layer=db e consumer=agent, scrive migration/schema in code_path.
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Glob, Bash, TodoWrite]
+capabilities:
+  - code-development       # implementa TSK layer=db in code_path
+  - db-specialist          # migration, schema, query optimization
+  - gap-reporting          # wiki/gaps.md append
 ---
 # ROLE: Database Developer (agent)
 

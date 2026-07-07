@@ -3,6 +3,10 @@ name: product-manager
 description: Trasforma wiki/ in epiche e storie in management/kanban/. Non scrive mai in wiki/.
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Glob, TodoWrite]
+capabilities:
+  - epic-creation          # EP-*.md da wiki/ (non scrive mai in wiki/)
+  - story-decomposition    # US-*.md con blocked_by + pending_clarification
+  - kanban-management      # management/kanban/ struttura + gap detection
 ---
 # ROLE: Senior Product Manager
 

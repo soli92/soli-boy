@@ -10,6 +10,28 @@ updated: "2026-07-06"
 owner: soli92
 language: it
 
+# === Model Registry (v2.27, factory-optimization) ==================================
+# Punto unico di configurazione dei modelli per tutti gli agenti.
+# Gli agenti dichiarano `tier: default|fast|deep` invece di un model ID hardcoded.
+# Per aggiornare il modello di default di 17 agenti: cambiare una sola riga qui.
+#
+# Tier semantics:
+#   tier_fast   — task meccanici, routing, parsing strutturato (bassa reasoning depth)
+#   tier_default — task generali, codice, analisi (balance costo/capability)
+#   tier_deep   — ragionamento complesso, architettura, revisione critica
+#
+# Overrides: per agenti che deviano dal loro tier naturale (documentare il perché).
+models:
+  routing:
+    tier_fast:    claude-haiku-4-5-20251001   # orchestrator, wiki-lint, sync-docs, github-publisher
+    tier_default: claude-sonnet-4-6           # maggioranza agenti (17)
+    tier_deep:    claude-opus-4-8             # code-reviewer, lead-architect
+  overrides: {}
+  # Esempio override:
+  # overrides:
+  #   wiki-query: tier_fast        # query strutturata, sonnet è over-spec
+  #   repo-sync:  tier_default     # analisi codice richiede più del solo haiku
+
 # === Adapter installati (PATTERN §12) =============================================
 adapters:
   - name: claude

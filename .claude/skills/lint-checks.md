@@ -471,6 +471,109 @@ o `code_paths[i].vcs`). Assente → skip silenzioso (R.B10). **Severità**: WARN
 
 Read-only (coerente R.B7); solo WARNING/INFO; skip a blocco assente (R.B10).
 
+## Check 4ai — Agent Infrastructure Integrity (WARNING, always-on)
+
+**Trigger**: sempre attivo — verifica l'integrità strutturale del layer agenti (`.claude/agents/`).
+**Severità**: WARNING — mai ERROR, mai `heal-eligible`. Non blocca il lint.
+**Audience**: maintainer che aggiungono, rinominano o rimuovono agenti, skill o comandi.
+
+### Algoritmo
+
+1. **Scopri tutti gli agenti**: Glob `.claude/agents/*.md`.
+2. Per ogni agente estrai:
+   - Frontmatter `tools: [...]` — lista tool dichiarati.
+   - Riferimenti a skill nel body: token preceduti da `vedi`, `` ` ``, o path esplicito `.claude/skills/<name>.md`.
+   - Riferimenti a comandi nel body: slash-command `/(<name>)` e path espliciti `.claude/commands/<name>.md`.
+3. **Check 4ai.1 — Tool name validation**:
+   - Whitelist tool validi per agenti Claude Code:
+     `{Read, Write, Edit, Glob, Bash, TodoWrite, Task, Grep, WebFetch, WebSearch,
+       Agent, SendMessage, Monitor, CronCreate, CronDelete, CronList, DesignSync,
+       EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, NotebookEdit,
+       PushNotification, RemoteTrigger, TaskOutput, TaskStop}`.
+   - Ogni tool in `tools: [...]` **non in whitelist** → **WARNING `[4ai.1] agent-invalid-tool`**.
+4. **Check 4ai.2 — Skill reference validation**:
+   - Per ogni `<name>` estratto come riferimento a skill:
+     se `.claude/skills/<name>.md` **non esiste** → **WARNING `[4ai.2] agent-skill-missing`**.
+5. **Check 4ai.3 — Command reference validation**:
+   - Per ogni `<name>` estratto come riferimento a comando:
+     se `.claude/commands/<name>.md` **non esiste** → **WARNING `[4ai.3] agent-command-missing`**.
+
+### Invarianti
+
+- **Warning-only**: nessun ERROR — un riferimento pendente non blocca la factory (la skill o il
+  comando potrebbe essere in sviluppo / in-progress).
+- **Never heal-eligible**: la risoluzione richiede giudizio semantico (creare la skill/command
+  mancante o correggere il nome nel body dell'agente).
+- **Read-only**: legge solo `.claude/agents/`, `.claude/skills/`, `.claude/commands/`.
+- **Regex best-effort**: pattern text-search, non AST. False positive accettabili (allineato
+  alla soglia R.Q5). Solo token preceduti da `vedi`, o path espliciti `.claude/skills/<name>.md`
+  sono candidati — non ogni parola del body.
+- **Agent-name exclusion**: i nomi degli agenti (`.claude/agents/*.md` senza `.md`) NON sono
+  skill. Prima di emettere 4ai.2, escludere token che corrispondono a file esistenti in
+  `.claude/agents/`. Es.: `` `wiki-keeper` `` in un body è riferimento ad agente, non skill mancante.
+
+### Output format
+
+```
+## WARNING (igiene, mai heal-eligible)
+- [WARNING][agent-invalid-tool][4ai.1] .claude/agents/foo.md: tool 'TodoList' non in whitelist. Correggi il frontmatter tools:.
+- [WARNING][agent-skill-missing][4ai.2] .claude/agents/bar.md: referenzia skill 'my-draft-skill' ma .claude/skills/my-draft-skill.md non esiste.
+- [WARNING][agent-command-missing][4ai.3] .claude/agents/baz.md: referenzia comando /my-cmd ma .claude/commands/my-cmd.md non esiste.
+```
+
+### Numerazione
+
+«4ai» segue «4ah» (Branch Awareness config coherence, EP-034). Pattern allineato a Check 4ah
+(WARNING-only, always-on light, read-only). Non collide con alcun check esistente.
+
+### Cross-link
+
+4ai → `.claude/agents/` + `.claude/skills/` + `.claude/commands/` + `dispatch-policy.md` +
+PATTERN §2 (thin-agents-fat-skills).
+
+## Check 4aj — Model Registry Consistency (INFO, always-on)
+
+**Trigger**: solo se `factory.config.yaml.models.routing` è presente (Central Model Registry).
+**Severità**: INFO — non blocca il lint, non è `heal-eligible`. Audience: maintainer che
+aggiornano il model registry o aggiungono agenti.
+
+### Algoritmo
+
+1. Leggi `factory.config.yaml.models.routing`: estrai `tier_fast`, `tier_default`, `tier_deep`.
+   Costruisci l'insieme dei model ID tier: `{tier_fast, tier_default, tier_deep}`.
+2. Leggi `factory.config.yaml.models.overrides`: dizionario `{agent_name: model_id}`.
+   Questi override sono esplicitamente scelti — non vengono flaggati.
+3. Per ogni agente in `.claude/agents/*.md`:
+   - Estrai `model:` dal frontmatter.
+   - Se l'agente è in `models.overrides` → skip (override esplicito).
+   - Se il `model:` non corrisponde **esattamente** ad alcun tier value →
+     **INFO `[4aj] agent-model-not-in-registry`** (può essere shorthand o versione diversa).
+4. **Skip silenzioso** se `models.routing` non esiste → backward compat totale.
+
+### Invarianti
+
+- **INFO-only** — più lieve di WARNING. Non blocca mai. Non `heal-eligible` (la scelta del
+  modello richiede giudizio su costo/capacità).
+- **Read-only** — legge solo `factory.config.yaml` e frontmatter agenti.
+- **No-op senza registry**: factory che non usano il Central Model Registry non vedono mai 4aj.
+
+### Output format
+
+```
+## INFO (igiene)
+- [INFO][agent-model-not-in-registry][4aj] .claude/agents/orchestrator.md: model 'claude-haiku-4-5' non corrisponde a nessun tier value (tier_fast=claude-haiku-4-5-20251001, tier_default=claude-sonnet-4-6, tier_deep=claude-opus-4-8). Possibile shorthand o versione diversa. Verifica o aggiorna il registry.
+```
+
+### Numerazione
+
+«4aj» segue «4ai» nella serie alfanumerica. INFO-only (più lieve di WARNING — primo uso
+del livello INFO come livello autonomo, analogo a Check 4ag §INFO > 180 gg).
+
+### Cross-link
+
+4aj → `factory.config.yaml.models` (Central Model Registry v2.27) + PATTERN §29.2 +
+`.claude/agents/` (scope) + `dispatch-policy.md §8` (tier slug table).
+
 ## Log entry
 
 Append a `wiki/log.md` secondo `wiki-log-entry` (template `lint`).

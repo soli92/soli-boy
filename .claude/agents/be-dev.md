@@ -3,6 +3,10 @@ name: be-dev
 description: Backend developer agent — consuma TSK con layer=be e consumer=agent, scrive codice in code_path.
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Glob, Bash, TodoWrite]
+capabilities:
+  - code-development       # implementa TSK layer=be in code_path
+  - be-specialist          # backend logic, API, services
+  - gap-reporting          # wiki/gaps.md append
 ---
 # ROLE: Backend Developer (agent)
 

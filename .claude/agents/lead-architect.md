@@ -3,6 +3,10 @@ name: lead-architect
 description: Fase 1 di L4 — disegna BE/FE/API/DB partendo da management/kanban e raw/tech_stack.md.
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Glob, TodoWrite]
+capabilities:
+  - architecture-design  # BE/FE/API/DB design + ADR production (Fase 1 di L4)
+  - tech-scout           # technology decisions from raw/tech_stack.md
+  - gap-reporting        # wiki/gaps.md append (knowledge gaps rilevati)
 ---
 # ROLE: Lead Architect
 

@@ -3,6 +3,10 @@ name: graphify-sync
 description: Estrae knowledge graph da un code_path target via Graphify CLI (PATTERN §16 + §20.10, v2.14 Fase 2). Sub-agent Sync per la sorgente "codebase as graph". Scrive in raw/ + side-channel .graphify-state/. Read-only verso code_path scansionato (§7 r.17).
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, Bash]
+capabilities:
+  - raw-sync               # scrive in raw/ + .graphify-state/ (scope esclusivo)
+  - graph-extraction       # code_path → knowledge graph via Graphify CLI
+  - code-graph             # blast-radius pre-check, multigraph diagnose
 # v2.14 — Compression policy. Sub-agent Sync, output verso raw/ e side-channel:
 # nessuna compressione output (R.C1 to_artifact: off). Return value all'orchestrator
 # beneficia di profilo conservative.

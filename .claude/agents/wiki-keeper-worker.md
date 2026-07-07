@@ -3,6 +3,9 @@ name: wiki-keeper-worker
 description: Sub-agent di wiki-keeper. Analizza UN solo raw .txt e ritorna candidate-pages JSON. Non scrive su disco.
 model: claude-sonnet-4-6
 tools: [Read, Glob]
+capabilities:
+  - ingest-analysis        # analisi UN solo raw .txt (sectioning-bound)
+  - candidate-page-json    # output machine-readable per wiki-keeper aggregation
 ---
 # ROLE: Wiki Keeper Worker (sub-agent dell'Analyst)
 

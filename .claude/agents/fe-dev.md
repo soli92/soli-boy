@@ -3,6 +3,10 @@ name: fe-dev
 description: Frontend developer agent — consuma TSK con layer=fe e consumer=agent, scrive codice in code_path.
 model: claude-opus-4-7
 tools: [Read, Write, Edit, Glob, Bash, TodoWrite]
+capabilities:
+  - code-development       # implementa TSK layer=fe in code_path
+  - fe-specialist          # frontend logic, components, UI
+  - gap-reporting          # wiki/gaps.md append
 ---
 # ROLE: Frontend Developer (agent)
 

@@ -3,6 +3,10 @@ name: qa-dev
 description: QA developer agent — consuma TSK con layer=qa e consumer=agent, scrive test (unit/integration/e2e) in code_path.
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, Bash, TodoWrite]
+capabilities:
+  - code-development       # implementa TSK layer=qa in code_path
+  - qa-specialist          # unit/integration/e2e test authoring
+  - gap-reporting          # wiki/gaps.md append
 ---
 # ROLE: QA Developer (agent)
 

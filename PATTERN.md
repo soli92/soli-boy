@@ -3363,3 +3363,89 @@ EP-035 si integra con le capability esistenti senza duplicarle:
   Figma (write via MCP) — round-trip design completo.
 
 Fonte: EP-035 | [[prototype-generation-capability]] | [[ep-035-prototype-generation-integration]]
+
+## §29 — Factory Scalability Patterns (v2.27, factory-optimization-2026-07-07)
+
+Questa sezione documenta i pattern architetturali introdotti dalla sessione di ottimizzazione
+della factory (2026-07-07) che risolvono tre problemi di scalabilità identificati:
+
+1. **Orchestrator troppo grasso** — ogni nuova EP aggiungeva logica di dispatch inline.
+2. **Routing hardcoded** — aggiungere un agente richiedeva modifiche in più file.
+3. **Tracciabilità wave limitata** — WAVE_ID generato ma non propagato al log umano.
+
+### §29.1 — Thin Orchestrator + Fat Dispatch Policy
+
+**Pattern**: estrarre tutta la logica di dispatch condizionale dall'orchestrator in una
+skill dedicata `dispatch-policy.md`. L'orchestrator diventa un thin dispatcher che
+invoca la skill senza replicarne il contenuto.
+
+**Benefici**:
+- Aggiungere una nuova EP di routing richiede modificare **solo** `dispatch-policy.md`.
+- L'orchestrator resta ≤ 100 righe — comprensibile a colpo d'occhio.
+- Single-writer chiaro: ogni sezione di `dispatch-policy` è firmata dalla EP che la introduce.
+
+**File chiave**:
+- `.claude/skills/dispatch-policy.md` — 8 sezioni numerate, una per capability di dispatch
+- `.claude/agents/orchestrator.md` — thin (< 100 righe), punta a `dispatch-policy` §1-§7
+
+**Invariante**: ogni nuova EP che introduce logica di routing DEVE aggiungere una sezione
+numerata a `dispatch-policy.md` e NON espandere `orchestrator.md`.
+
+### §29.2 — Capability Advertisement
+
+**Pattern**: ogni agente dichiara nel frontmatter YAML un blocco `capabilities: [...]`
+con slug descrittivi. Il blocco è opzionale e additivo — backward compat totale.
+
+```yaml
+capabilities:
+  - <capability-slug>   # commento opzionale
+```
+
+**Benefici**:
+- Tool e check di lint possono derivare "chi fa cosa" da YAML senza leggere il body testuale.
+- `lint-checks` Check 4ai usa la lista per validare tool/skill/command reference.
+- Routing futuro può essere basato su capability match invece di agent-name hardcoding.
+- Il registro slug in `dispatch-policy.md §8` è la single source of truth del vocabolario.
+
+**File chiave**:
+- `.claude/agents/*.md` — tutti i 27 agenti dichiarano `capabilities:`
+- `.claude/skills/dispatch-policy.md §8` — registry completo degli slug per layer
+- `.claude/skills/lint-checks.md Check 4ai` — validator che usa tool/skill/command reference
+
+**Invariante**: `capabilities:` è documentativo, non autorizzativo. Non configura permessi
+né sostituisce le regole di scope nei body degli agenti.
+
+### §29.3 — WAVE_ID Log Propagation
+
+**Pattern**: il WAVE_ID (già generato dal parallel scheduler negli analytics events) viene
+propagato anche nel log umano `wiki/log.md` via il template `wave` di `wiki-log-entry.md`.
+
+**Formato WAVE_ID**: `W-<sprint>-<level>-<YYYYMMDD-HHMMSS>`
+
+**Benefici**:
+- Correlazione retrospettiva costo/tempo per wave (join WAVE_ID tra log.md e analytics events).
+- Auditabilità delle wave: ogni entry di log wave ha un ID univoco.
+- Il template `develop` del dev-agent include `wave: <wave_id>` opzionale per tracciare
+  il TSK alla wave che lo ha generato.
+
+**File chiave**:
+- `.claude/skills/wiki-log-entry.md` — template `wave` e `develop` con WAVE_ID
+- `.claude/skills/parallel-scheduling.md` — già genera `wave_id` negli analytics events
+
+### §29.4 — Agent Infrastructure Check (Check 4ai)
+
+**Pattern**: il lint verifica che ogni agente referenzi solo skill/command/tool esistenti.
+WARNING-only, always-on, zero API cost (pure file existence check).
+
+**File chiave**:
+- `.claude/skills/lint-checks.md Check 4ai` — tre sotto-check (tool whitelist, skill reference, command reference)
+
+### §29.5 — Invarianti globali
+
+Questi pattern rispettano e non violano nessuna invariante §7 preesistente:
+- `capabilities:` è additive-only: zero rimozioni da agent body, zero nuovi ERROR lint.
+- `dispatch-policy.md` è read-only per l'orchestrator: single-committer invariant preservata.
+- WAVE_ID nel log è additivo: log.md rimane append-only (R.S1 preservata).
+- Check 4ai è WARNING-only: non blocca `/lint`, non è `heal-eligible` (R.P3 preservata).
+
+Fonte: factory-optimization-2026-07-07 | `CLAUDE.md §Meta-prompt versioning`

@@ -8,6 +8,9 @@ description: >-
   Solo su invocazione esplicita (R.P3-TR opt-in totale).
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, TodoWrite, Task]
+capabilities:
+  - tavola-rotonda-moderation   # 5 fasi Setup→Posizioni→Confronto→Convergenza→Sintesi
+  - multi-agent-facilitation    # gestione turni, blackboard, consensus detection (EP-039)
 ---
 # ROLE: Tavola Rotonda Moderatore
 

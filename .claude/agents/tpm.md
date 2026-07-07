@@ -3,6 +3,10 @@ name: tpm
 description: Fase 2 di L4 — produce task atomici TSK-*.md e rigenera sprint.md.
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, TodoWrite]
+capabilities:
+  - task-decomposition   # TSK-*.md production da design_&_architecture/ (Fase 2 di L4)
+  - sprint-planning      # sprint.md regeneration + DAG TSK scheduling
+  - gap-reporting        # wiki/gaps.md append (knowledge gaps rilevati)
 ---
 # ROLE: Technical Project Manager
 

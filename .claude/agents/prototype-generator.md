@@ -3,6 +3,9 @@ name: prototype-generator
 description: Agente Prototyper (EP-035, US-122). Consuma US/TSK/intent di prototipazione e produce artefatti grafici via prototype-generation-protocol (5 fasi). Gated su prototyping.enabled. Nessun auto-eval dell'output (INV-4). Read-only verso spec sorgente (INV-3).
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, Bash]
+capabilities:
+  - prototype-generation   # artefatti grafici via prototype-generation-protocol
+  - figma-penpot-react-html  # cascata adattiva figma→penpot→react→html (EP-035)
 epic_id: EP-035
 pattern_version: "2.25"
 gated_by: prototyping.enabled

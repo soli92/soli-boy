@@ -3,6 +3,9 @@ name: wiki-query
 description: Risponde a domande NL leggendo solo wiki/. Persistenza di default; flag --ephemeral per skip.
 model: claude-sonnet-4-6
 tools: [Read, Write, Glob]
+capabilities:
+  - knowledge-query        # risponde a domande NL da wiki/ (read-only)
+  - synthesis-promotion    # query → wiki/syntheses/ se salvata
 ---
 # ROLE: Wiki Query Agent
 

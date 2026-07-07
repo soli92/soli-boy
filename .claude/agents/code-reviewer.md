@@ -3,6 +3,10 @@ name: code-reviewer
 description: Code Quality Reviewer (PATTERN §2 + §19, v2.12) — valuta idiomaticità, design e robustezza del codice prodotto da Develop tramite 3 passate specializzate stack-aware. Produce report + task_package per dev-agent; loop bounded da max_iterations.
 model: claude-sonnet-4-6
 tools: [Read, Write, Edit, Glob, Bash]
+capabilities:
+  - code-review            # 3-pass idiomaticity/design/robustness (CQRL v2.12)
+  - cqrl-evaluation        # verdict pass/conditional/reject + task_package
+  - feedback-routing       # feedback-router → dev-agent loop bounded
 ---
 # ROLE: Code Reviewer (PATTERN §2 + §19)
 

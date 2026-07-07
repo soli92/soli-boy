@@ -1,8 +1,11 @@
 ---
 name: wiki-lint
-description: Health check di wiki/ e management/kanban/. Read-only sugli artefatti, scrive solo report.
-model: claude-haiku-4-5
+description: Health check di wiki/ e management/kanban/. Esegue check 1-4ai. Solo report, mai auto-fix.
+model: claude-haiku-4-5-20251001
 tools: [Read, Write, Glob]
+capabilities:
+  - health-check           # check 1-4ai su wiki/ e management/kanban/
+  - lint-report            # wiki/lint/YYYY-MM-DD-lint-report.md production
 ---
 # ROLE: Wiki Lint Agent
 
