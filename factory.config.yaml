@@ -4,7 +4,7 @@
 # Questo file è CONFIG (cambia raramente, sotto controllo umano), non stato.
 # Lo stato del progetto resta derivato dal filesystem + wiki/log.md (PATTERN §8).
 
-pattern_version: "2.27" # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01) → 2.26 (2026-07-02) → 2.27 (2026-07-06): upgrade a v2.27 (Tavola Rotonda Mode EP-039, opt-in).
+pattern_version: "2.32" # bump 2.21→2.24 (2026-06-26) → 2.25 (2026-07-01) → 2.26 (2026-07-02) → 2.27 (2026-07-06): upgrade a v2.27 (Tavola Rotonda Mode EP-039, opt-in).
 updated: "2026-07-06"
 
 owner: soli92
@@ -481,3 +481,14 @@ tavola_rotonda:
 
   topologia: lavagna                # lavagna (default, hub-and-spoke) | grafo_completo (sconsigliato)
   sintesi_progressiva: true         # riassunto accordi/punti-aperti a ogni round
+
+# --- opt-in capabilities added by factory-upgrade -> v2.32 (20260713-1123); all disabled, no behavior change ---
+wiki_search:
+  enabled: false
+
+temporal:
+  estimate_protocol:
+    enabled: false
+
+capability_formativa:
+  enabled: false
