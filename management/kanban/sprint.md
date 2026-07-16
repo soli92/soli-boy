@@ -24,6 +24,9 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 
 ## Sprint 21 — Device validation + Code signing (EP-007 / EP-006 / EP-008) — 2/7 done · 5 todo (human)
 
+> **Focus corrente: Android** — TSK-178 (device fisico). Runbook: `wiki/runbooks/android-device-validation-runbook.md`.
+> Pre-check: `npm run e2e:android` (Pixel 7 browser). iOS (TSK-182, TSK-072) in standby.
+
 > **Obiettivo:** Validare su device fisico i fix responsive EP-022 (Android + iOS), completare benchmark WASM iOS (TSK-072), e preparare code signing desktop Win/macOS (ADR-007).
 >
 > **DAG:**

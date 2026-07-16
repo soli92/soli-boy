@@ -1,6 +1,7 @@
 # Device validation checklist — Soli-Boy (TSK-177)
 
 > Checklist unificata per validazione su **device fisico** Android e iOS dopo EP-022.
+> **Focus Android (Sprint 21):** runbook operativo → [`wiki/runbooks/android-device-validation-runbook.md`](../wiki/runbooks/android-device-validation-runbook.md)
 > Usata da: TSK-178 (Android), TSK-182 (iOS responsive), TSK-072 (iOS WASM benchmark).
 >
 > Compilare i report da template:
