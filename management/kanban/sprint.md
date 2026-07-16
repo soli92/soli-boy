@@ -18,11 +18,11 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **mobile-first responsive & fidelity overhaul (EP-022, Sprint 20)** +
 **device validation + code signing (Sprint 21)**.
 
-**Stato globale (2026-07-16): 173/179 TSK done · 6 todo Sprint 21 (TSK-177..182, TSK-072 human) · EP-022 chiusa**
+**Stato globale (2026-07-16): 175/179 TSK done · 5 todo Sprint 21 (human gates) · EP-022 chiusa**
 
 ---
 
-## Sprint 21 — Device validation + Code signing (EP-007 / EP-006 / EP-008) — 0/7 todo
+## Sprint 21 — Device validation + Code signing (EP-007 / EP-006 / EP-008) — 2/7 done · 5 todo (human)
 
 > **Obiettivo:** Validare su device fisico i fix responsive EP-022 (Android + iOS), completare benchmark WASM iOS (TSK-072), e preparare code signing desktop Win/macOS (ADR-007).
 >
@@ -36,7 +36,7 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-177 | Checklist + template report validazione device Android/iOS | US-111 | EP-007 | qa | agent | P1 | S | todo | — |
+| TSK-177 | Checklist + template report validazione device Android/iOS | US-111 | EP-007 | qa | agent | P1 | S | done | — |
 | TSK-178 | Validazione Android su device fisico + report | US-111 | EP-007 | qa | human | P0 | L | todo | TSK-177 |
 | TSK-182 | Validazione responsive iOS su device fisico | US-113 | EP-007 | qa | human | P1 | M | todo | TSK-177 |
 | TSK-072 | Benchmark iOS WASM su device reale + report | US-035 | EP-008 | qa | human | P0 | L | todo | TSK-059, TSK-060, TSK-177 |
@@ -45,7 +45,7 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 
 | TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|----|-------|----------|------|-----|--------|-----------|
-| TSK-179 | electron-builder signing condizionale + doc segreti CI | US-112 | EP-006 | infra | agent | P1 | M | todo | — |
+| TSK-179 | electron-builder signing condizionale + doc segreti CI | US-112 | EP-006 | infra | agent | P1 | M | done | — |
 | TSK-180 | Gate umano: notarization macOS release `v*` | US-112 | EP-006 | infra | human | P2 | L | todo | TSK-179 |
 | TSK-181 | Gate umano: code signing Windows release `v*` | US-112 | EP-006 | infra | human | P2 | L | todo | TSK-179 |
 
@@ -740,7 +740,7 @@ Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: p
 
 ## Note generali
 
-- **Stato globale (2026-07-16):** 173/179 TSK done · 6 todo Sprint 21 (TSK-177..182 + TSK-072 human) · **EP-022 chiusa** (`status: done`).
+- **Stato globale (2026-07-16):** 175/179 TSK done · 5 todo Sprint 21 (TSK-178, TSK-182, TSK-072, TSK-180, TSK-181 — human) · **EP-022 chiusa**.
 - **Core web MVP completo** (20/20 done). 49 test verdi, typecheck OK.
 - **TSK-041 done** (bugfix canvas WasmBoy loadState — 8/8 e2e verdi).
 - Sprint 6 — 11/11 task done (EP-010 + EP-011). Tutti completati.
@@ -765,7 +765,7 @@ Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: p
 - **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** **7/7 done** (TSK-158..164). EP-021 chiuso. US-104 unsigned release consegnata; US-112 code signing in Sprint 21.
 - **Kanban hygiene 2026-07-16:** EP-022 chiusa (`done`); EP-006 riaperta per US-112 signing; 173/179 TSK done.
 - **Sprint 20 — Mobile-first Responsive & Visual Fidelity (EP-022):** **12/12 done** (TSK-165..176). EP-022 chiusa. Regression guard `ep022-multi-viewport.e2e.ts`.
-- **Sprint 21 — Device validation + Code signing:** 7 TSK (TSK-177..182 + TSK-072). US-111 Android, US-113 iOS responsive, US-112 signing Win/macOS. Consumer: agent=2, human=5.
+- **Sprint 21 — Device validation + Code signing:** 7 TSK — TSK-177 + TSK-179 **done** (agent); residuo 5 human (TSK-178, TSK-182, TSK-072, TSK-180, TSK-181).
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).

@@ -41,6 +41,10 @@ xvfb-run -a npm run smoke:ci   # solo smoke (dopo build), per CI headless
 npm run dist               # tutti i target in electron-builder.yml
 npm run dist:linux         # solo AppImage Linux, --publish never
 npm run dist:linux:publish # AppImage + upload GitHub Releases (richiede GH_TOKEN)
+npm run dist:mac           # dmg + zip macOS, --publish never
+npm run dist:mac:publish   # dmg + zip + GitHub Releases (richiede GH_TOKEN + runner macOS)
+npm run dist:win           # NSIS Windows, --publish never
+npm run dist:win:publish   # NSIS + GitHub Releases (richiede GH_TOKEN + runner Windows)
 ```
 
 ## Release (GitHub Releases, tag `v*`)
@@ -49,9 +53,9 @@ Workflow: [`.github/workflows/release-desktop.yml`](../../.github/workflows/rele
 
 | Trigger | Comportamento |
 |---------|----------------|
-| Push tag `v*` (es. `v0.4.0`) | Build Linux AppImage **unsigned**, pubblica su [GitHub Releases](https://github.com/soli92/soli-boy/releases) + `latest-linux.yml` per auto-update (ADR-008, solo Linux AppImage) |
-| `workflow_dispatch` + `publish=false` | Dry-run: build + artifact CI, **nessuna** Release |
-| PR / push `main` | Job `desktop-dist` in CI: build + smoke + AppImage come artifact (7 giorni), senza publish |
+| Push tag `v*` (es. `v0.4.0`) | Build **Linux AppImage** + **macOS dmg/zip** + **Windows NSIS** su runner dedicati; pubblica su [GitHub Releases](https://github.com/soli92/soli-boy/releases) + metadata auto-update (`latest-linux.yml`, `latest-mac.yml`, `latest.yml`) |
+| `workflow_dispatch` | Dry-run: build + artifact CI per ogni piattaforma, **nessuna** Release |
+| PR / push `main` | Job `desktop-dist` in CI: build Linux + smoke + AppImage come artifact (7 giorni), senza publish |
 
 ### Scaricare l'AppImage
 
@@ -66,14 +70,14 @@ chmod +x Soli-Boy-0.4.0-linux-x86_64.AppImage
 
 Su PR/main, l'artifact `soli-boy-desktop-linux` è disponibile nella run Actions del job **Desktop Linux AppImage**.
 
-### Matrice target (Sprint 19)
+### Matrice target (Sprint 21)
 
-| Piattaforma | CI / Release | Note |
-|-------------|--------------|------|
-| Linux AppImage | ✅ CI + tag `v*` | Unsigned; auto-update via `latest-linux.yml` |
-| Linux deb | Locale (`npm run dist`) | `deb` non auto-updatable (ADR-008) |
-| Windows NSIS | Locale | Runner Windows o macchina dev; signing opzionale |
-| macOS dmg/zip | Locale | Richiede macOS; notarization = gate umano |
+| Piattaforma | CI / Release (`v*`) | Signing | Note |
+|-------------|---------------------|---------|------|
+| Linux AppImage | ✅ `ubuntu-latest` | Opzionale (GPG, non richiesto) | Auto-update via `latest-linux.yml` |
+| Linux deb | Locale (`npm run dist`) | — | `deb` non auto-updatable (ADR-008) |
+| macOS dmg/zip | ✅ `macos-latest` | Condizionale (`CSC_*` + `APPLE_*`) | Notarization solo se tutti i segreti Apple + CSC presenti |
+| Windows NSIS | ✅ `windows-latest` | Condizionale (`CSC_*`) | SmartScreen: EV consigliato per reputazione |
 
 ### Token per publish
 
@@ -81,17 +85,42 @@ Su PR/main, l'artifact `soli-boy-desktop-linux` è disponibile nella run Actions
 
 ```bash
 export GH_TOKEN=<PAT con scope repo>
-cd packages/desktop && npm run dist:linux:publish
+cd packages/desktop && npm run dist:linux:publish   # Linux
+cd packages/desktop && npm run dist:mac:publish     # macOS (solo su host macOS)
+cd packages/desktop && npm run dist:win:publish       # Windows (solo su host Windows)
 ```
 
-Nessun secret obbligatorio per CI base (build + smoke + artifact unsigned).
+Nessun secret obbligatorio per CI base (build unsigned + artifact).
 
-## Code signing (prerequisito human — R.14)
+## Code signing (US-112 / TSK-179 — gate umano R.14)
 
-Il primo release può uscire **unsigned** (installer funzionanti, warning Gatekeeper/SmartScreen su Win/macOS).
-Vedi [ADR-007 §Code signing](../../design_&_architecture/decisions/ADR-007.md) per i segreti opzionali:
-- macOS: `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`
-- Windows: `CSC_LINK`, `CSC_KEY_PASSWORD`
+Il release **unsigned** resta il default quando i segreti non sono configurati (installer funzionanti, warning Gatekeeper/SmartScreen su Win/macOS). `electron-builder` attiva firma e notarization **automaticamente** quando le variabili d'ambiente sotto sono presenti — nessuna modifica architetturale (ADR-007).
 
-electron-builder attiva la firma automaticamente quando i segreti sono presenti — nessuna
-modifica architetturale.
+### Tabella segreti GitHub Actions
+
+| Secret | Piattaforma | Obbligatorio per | Note |
+|--------|-------------|------------------|------|
+| `GITHUB_TOKEN` | Tutte | Publish su Releases | Fornito automaticamente dal workflow (`GH_TOKEN`) |
+| `CSC_LINK` | Win + macOS | Code signing | Base64 del certificato `.p12` (Developer ID su macOS, OV/EV su Windows) |
+| `CSC_KEY_PASSWORD` | Win + macOS | Code signing | Password del certificato in `CSC_LINK` |
+| `APPLE_ID` | macOS | Notarization | Apple ID del team developer |
+| `APPLE_APP_SPECIFIC_PASSWORD` | macOS | Notarization | App-specific password ([appleid.apple.com](https://appleid.apple.com)) |
+| `APPLE_TEAM_ID` | macOS | Notarization | Team ID da Apple Developer portal |
+
+**Comportamento CI (`release-desktop.yml`):**
+
+- **Linux**: sempre unsigned (nessun segreto richiesto).
+- **macOS**: unsigned se manca `CSC_LINK`; firmato se `CSC_*` presenti; **notarizzato** solo se anche `APPLE_*` sono tutti configurati (`--config.mac.notarize=true`).
+- **Windows**: unsigned se manca `CSC_LINK`; firmato se `CSC_*` presenti.
+
+### Prerequisiti certificati (owner)
+
+| Piattaforma | Requisito | Riferimento |
+|-------------|-----------|-------------|
+| macOS | Apple Developer Program ($99/anno) + Developer ID Application | [Apple Developer](https://developer.apple.com/account/) |
+| macOS | Notarization API / app-specific password | [Notarizing macOS Software](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution) |
+| Windows | Certificato Code Signing OV o EV da CA pubblica | [Microsoft Authenticode](https://learn.microsoft.com/en-us/windows/win32/seccrypto/cryptography-tools) |
+
+### Entitlements macOS
+
+`build-resources/entitlements.mac.plist` abilita JIT per i core WASM threaded (`hardenedRuntime: true` in `electron-builder.yml`). Richiesto per firma macOS, non impatta build unsigned.

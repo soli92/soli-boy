@@ -18,6 +18,10 @@
     "dist": "npm run build && electron-builder",
     "dist:linux": "npm run build && electron-builder --linux AppImage --publish never",
     "dist:linux:publish": "npm run build && electron-builder --linux AppImage --publish always",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip --publish never",
+    "dist:mac:publish": "npm run build && electron-builder --mac dmg zip --publish always",
+    "dist:win": "npm run build && electron-builder --win nsis --publish never",
+    "dist:win:publish": "npm run build && electron-builder --win nsis --publish always",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

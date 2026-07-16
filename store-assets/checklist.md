@@ -46,7 +46,8 @@ Soli-Boy è **on-device**: nessun dato utente (ROM, salvataggi, BIOS) lascia il 
 
 ## Riepilogo gate residui (umani)
 
-1. Generazione feature graphic + screenshot reali su device (no display in ambiente agent).
+1. **Validazione device** — seguire [`device-validation-checklist.md`](device-validation-checklist.md) (TSK-177); report Android/iOS.
+2. Generazione feature graphic + screenshot reali su device (no display in ambiente agent).
 2. Pubblicazione URL privacy policy pubblico.
 3. Downscale icona 512 + verifica no-alpha 1024 (tooling immagine).
 4. Submission effettiva con account developer + firma (Apple/Google).
