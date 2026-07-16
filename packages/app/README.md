@@ -24,8 +24,27 @@ npm run cap:copy   # copia solo il web asset nelle piattaforme native
 
 Capacitor è installato e configurato: `capacitor.config.ts` (`appId: com.soli92.soliboy`,
 `appName: Soli-boy`, `webDir: dist`). La SPA Vite è il renderer mobile (WebView), riusata
-1:1 come per il desktop. Plugin installati per i task successivi: `@capacitor/filesystem`
-(file picker), `@capacitor/app` (sospensione/ripresa), `@capacitor/haptics` (feedback aptico).
+1:1 come per il desktop. Plugin installati: `@capacitor/filesystem`, `@capacitor/app`,
+`@capacitor/haptics`.
+
+### Android — device fisico (TSK-178, Sprint 21)
+
+Runbook completo: [`wiki/runbooks/android-device-validation-runbook.md`](../../wiki/runbooks/android-device-validation-runbook.md)
+
+```bash
+# Pre-check browser (profilo Pixel 7, non sostituisce device reale)
+npm run e2e:android
+
+# Prepara build + sync Capacitor
+./scripts/android-device-prepare.sh
+
+# Installa su device USB (Android Studio o CLI)
+npm run cap:open:android    # Run ▶ su device in Android Studio
+# oppure
+npm run cap:run:android     # richiede adb + device autorizzato
+```
+
+Report validazione: [`store-assets/android-validation-report.md`](../../store-assets/android-validation-report.md)
 
 ### Prerequisiti nativi — gate umano (R.14)
 

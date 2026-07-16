@@ -47,6 +47,13 @@ export default defineConfig({
               browserName: "chromium",
             },
           },
+          {
+            name: "android",
+            use: {
+              ...devices["Pixel 7"],
+              browserName: "chromium",
+            },
+          },
         ]),
   ],
   webServer: [

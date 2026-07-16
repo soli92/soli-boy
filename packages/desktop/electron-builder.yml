@@ -24,9 +24,15 @@ publish:
   owner: soli92
   repo: soli-boy
 
+# Code signing (ADR-007): electron-builder firma automaticamente quando CSC_LINK +
+# CSC_KEY_PASSWORD sono impostati. Senza questi env → build unsigned (fallback US-104).
+# Notarization macOS: richiede anche APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID;
+# abilitata in CI solo quando i segreti Apple sono configurati (release-desktop.yml).
+
 win:
   target:
     - nsis
+  # signAndEditExecutable: default true — signing skipped se CSC_* assenti
 nsis:
   oneClick: false
   perMachine: false # per-user → auto-update senza privilegi admin (ADR-007)
@@ -36,6 +42,10 @@ mac:
     - dmg
     - zip # formato consigliato da electron-updater per il delta su macOS
   category: public.app-category.games
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build-resources/entitlements.mac.plist
+  entitlementsInherit: build-resources/entitlements.mac.plist
 
 linux:
   target:

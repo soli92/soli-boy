@@ -1,7 +1,15 @@
-# Continuous Deployment desktop su GitHub Releases (US-104 / TSK-163).
+# Continuous Deployment desktop su GitHub Releases (US-104 / TSK-163, US-112 / TSK-179).
 #
 # Allineato ad ADR-007/008 e policy CD web (TSK-051): produzione su tag `v*`.
-# Target Sprint 19: Linux AppImage unsigned (CI); Win/macOS = build locale o job futuri.
+# Target: Linux AppImage (sempre); macOS dmg/zip e Windows NSIS quando i runner
+# sono disponibili. Code signing **condizionale**: attivo solo se i segreti repo
+# sono configurati (vedi tabella in packages/desktop/README.md).
+#
+# Segreti opzionali (gate umano R.14):
+#   CSC_LINK + CSC_KEY_PASSWORD     → firma Win + macOS
+#   APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID → notarization macOS
+#
+# Senza segreti: build unsigned (nessuna regressione US-104).
 #
 # Prerequisiti:
 #   - Tag `v*` su `main` (es. `v0.4.0`).
@@ -94,5 +102,145 @@ jobs:
           path: |
             packages/desktop/release/*.AppImage
             packages/desktop/release/latest-linux.yml
+          retention-days: 7
+          if-no-files-found: error
+
+  release-macos:
+    name: macOS dmg/zip → GitHub Releases
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: |
+            packages/app/package-lock.json
+            packages/desktop/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: packages/app
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: packages/desktop
+        run: npm ci
+
+      - name: Build desktop (renderer + main)
+        working-directory: packages/desktop
+        run: npm run build
+
+      - name: Package macOS (signing + notarize if secrets present)
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          EXTRA_CONFIG=()
+          if [ -n "$APPLE_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ] && [ -n "$CSC_LINK" ]; then
+            EXTRA_CONFIG+=(--config.mac.notarize=true)
+            echo "Notarization enabled (Apple + CSC secrets present)"
+          else
+            echo "Unsigned / non-notarized build (missing Apple or CSC secrets)"
+          fi
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npx electron-builder --mac dmg zip --publish always "${EXTRA_CONFIG[@]}"
+          else
+            npx electron-builder --mac dmg zip --publish never "${EXTRA_CONFIG[@]}"
+          fi
+
+      - name: Verify auto-update metadata (latest-mac.yml)
+        if: github.event_name == 'push'
+        working-directory: packages/desktop/release
+        run: |
+          test -f latest-mac.yml || (echo "missing latest-mac.yml" && exit 1)
+          head -5 latest-mac.yml
+
+      - name: Upload build artifacts (workflow_dispatch dry-run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: soli-boy-desktop-macos-dry-run
+          path: |
+            packages/desktop/release/*.dmg
+            packages/desktop/release/*.zip
+            packages/desktop/release/latest-mac.yml
+          retention-days: 7
+          if-no-files-found: error
+
+  release-windows:
+    name: Windows NSIS → GitHub Releases
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: |
+            packages/app/package-lock.json
+            packages/desktop/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: packages/app
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: packages/desktop
+        run: npm ci
+
+      - name: Build desktop (renderer + main)
+        working-directory: packages/desktop
+        run: npm run build
+
+      - name: Package Windows (signing if CSC secrets present)
+        working-directory: packages/desktop
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          if [ -n "$CSC_LINK" ]; then
+            echo "Code signing enabled (CSC secrets present)"
+          else
+            echo "Unsigned build (missing CSC secrets)"
+          fi
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npx electron-builder --win nsis --publish always
+          else
+            npx electron-builder --win nsis --publish never
+          fi
+
+      - name: Verify auto-update metadata (latest.yml)
+        if: github.event_name == 'push'
+        working-directory: packages/desktop/release
+        shell: bash
+        run: |
+          test -f latest.yml || (echo "missing latest.yml" && exit 1)
+          head -5 latest.yml
+
+      - name: Upload build artifacts (workflow_dispatch dry-run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: soli-boy-desktop-windows-dry-run
+          path: |
+            packages/desktop/release/*.exe
+            packages/desktop/release/latest.yml
           retention-days: 7
           if-no-files-found: error
