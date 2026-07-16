@@ -2,7 +2,7 @@
 type: roadmap
 status: draft
 created: 2026-06-01
-updated: 2026-07-02T20:59:00+00:00
+updated: 2026-07-16T09:55:00+00:00
 ---
 
 # Roadmap — soli-boy
@@ -103,10 +103,30 @@ moduli già consegnati e abilitano i futuri).
 
 - **EP-021** chiusa 2026-07-02: parità strutturale shell/Play/Info/Player desktop col prototipo; e2e `ep021-visual-fidelity.e2e.ts`; 3 US, 4 TSK (TSK-158..161) `done`.
 
-## Release 2 — Desktop (in corso)
+## Release cross-cutting — Mobile responsive fidelity (completata)
 
 | EP | Titolo | Priorità | Confidence | Dipende da | Sprint |
 |----|--------|----------|-----------|-----------|--------|
-| EP-006 | Distribuzione desktop | medium | in-progress | EP-003 | 19 (US-104) |
+| EP-022 | Mobile-first Responsive & Visual Fidelity Overhaul | high | done | EP-020, EP-021 | 20 |
 
-- **EP-006** Sprint 19: US-104 release pipeline unsigned — TSK-162..164 (CI AppImage Linux, GitHub Release, smoke/doc). Epica `in-progress` fino a prima release `v*`.
+- **EP-022** chiusa 2026-07-16: audit 4 viewport, fix portrait P0, logo Solids dual-theme, regression `ep022-multi-viewport.e2e.ts`. 7 US (US-104..110), 12 TSK (TSK-165..176) tutti `done`.
+
+## Release 2 — Desktop (in corso — signing)
+
+| EP | Titolo | Priorità | Confidence | Dipende da | Sprint |
+|----|--------|----------|-----------|-----------|--------|
+| EP-006 | Distribuzione desktop | medium | in-progress | EP-003 | 19 (US-104), 21 (US-112) |
+
+- **EP-006** US-104 done (unsigned release pipeline). US-112 Sprint 21: code signing Win/macOS (ADR-007, gate umano certificati).
+
+## Sprint 21 — Device validation + Code signing (corrente)
+
+| EP | US | Titolo | TSK | Consumer |
+|----|-----|--------|-----|----------|
+| EP-007 | US-111 | Validazione device Android | TSK-177 (agent), TSK-178 (human) | mixed |
+| EP-007 | US-113 | Validazione responsive iOS device | TSK-182 (human) | human |
+| EP-008 | US-035 | Benchmark iOS WASM | TSK-072 (human) | human |
+| EP-006 | US-112 | Code signing Win/macOS | TSK-179 (agent), TSK-180/181 (human) | mixed |
+
+- **EP-007** agent work completo; residuo validazione device fisico (Sprint 21).
+- **EP-008** residuo TSK-072 (iOS WASM benchmark) — Sprint 21, dipende checklist TSK-177.

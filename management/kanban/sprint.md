@@ -1,7 +1,7 @@
 <!-- generated, do not edit -->
 # Sprint board — soli-boy
 
-View aggregata generata dal `tpm`. Generata: 2026-07-03. Scope: Core web MVP (EP-001 + EP-003) +
+View aggregata generata dal `tpm`. Generata: 2026-07-16. Scope: Core web MVP (EP-001 + EP-003) +
 emulazione reale (EP-003 ADR-004/005) + post-MVP backlog (EP-002/004/005) +
 identità di brand (EP-010) + CI/CD (EP-011) + desktop (EP-006) + mobile (EP-007) +
 conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
@@ -15,73 +15,97 @@ conformità store (EP-008) + **remediation a11y & UX/UI (EP-012, Sprint 10)** +
 **graphic refactoring Solids migration (EP-020, Sprint 17–18)** +
 **visual fidelity prototipo (EP-021, Sprint 19)** +
 **release desktop unsigned (EP-006, Sprint 19)** +
-**mobile-first responsive & fidelity overhaul (EP-022, Sprint 20)**.
+**mobile-first responsive & fidelity overhaul (EP-022, Sprint 20)** +
+**device validation + code signing (Sprint 21)**.
 
-**Stato globale (2026-07-03): 161/163 TSK done · 1 in-progress (TSK-059, human) · 1 todo (TSK-072, human) · 12 todo Sprint 20 (EP-022, TSK-165..176)**
+**Stato globale (2026-07-16): 173/179 TSK done · 6 todo Sprint 21 (TSK-177..182, TSK-072 human) · EP-022 chiusa**
 
 ---
 
-## Sprint 20 — Mobile-first Responsive & Visual Fidelity Overhaul (EP-022) — 0/12 todo
+## Sprint 21 — Device validation + Code signing (EP-007 / EP-006 / EP-008) — 0/7 todo
 
+> **Obiettivo:** Validare su device fisico i fix responsive EP-022 (Android + iOS), completare benchmark WASM iOS (TSK-072), e preparare code signing desktop Win/macOS (ADR-007).
+>
+> **DAG:**
+> - Wave A: TSK-177 (checklist agent) → TSK-178 ‖ TSK-182 ‖ TSK-072 (human device, parallelo dopo checklist)
+> - Wave B: TSK-179 (signing config agent) → TSK-180 ‖ TSK-181 (human certificati, parallelo)
+>
+> **Note:** 5/7 TSK sono `consumer: human` (device fisico + certificati). TSK-177 e TSK-179 sono sbloccanti agent.
+
+### Wave A — Device validation (dopo TSK-177)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-177 | Checklist + template report validazione device Android/iOS | US-111 | EP-007 | qa | agent | P1 | S | todo | — |
+| TSK-178 | Validazione Android su device fisico + report | US-111 | EP-007 | qa | human | P0 | L | todo | TSK-177 |
+| TSK-182 | Validazione responsive iOS su device fisico | US-113 | EP-007 | qa | human | P1 | M | todo | TSK-177 |
+| TSK-072 | Benchmark iOS WASM su device reale + report | US-035 | EP-008 | qa | human | P0 | L | todo | TSK-059, TSK-060, TSK-177 |
+
+### Wave B — Code signing desktop (parallelo a Wave A)
+
+| TSK | Titolo | US | EP | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|----|-------|----------|------|-----|--------|-----------|
+| TSK-179 | electron-builder signing condizionale + doc segreti CI | US-112 | EP-006 | infra | agent | P1 | M | todo | — |
+| TSK-180 | Gate umano: notarization macOS release `v*` | US-112 | EP-006 | infra | human | P2 | L | todo | TSK-179 |
+| TSK-181 | Gate umano: code signing Windows release `v*` | US-112 | EP-006 | infra | human | P2 | L | todo | TSK-179 |
+
+DAG Sprint 21:
+- Wave A: TSK-177 (radice) → TSK-178 ‖ TSK-182 ‖ TSK-072
+- Wave B: TSK-179 (radice) → TSK-180 ‖ TSK-181
+- Wave A e B indipendenti (parallelizzabili)
+
+Consumer distribution Sprint 21: agent=2, human=5.
+
+---
+
+## Lookahead — Sprint 22+ (post-Sprint 21)
+
+| Area | Note |
+|------|------|
+| EP-008 — Store submission | Dopo TSK-072 + device validation: submit Play Store / App Store (gate umano) |
+| EP-019 — e2e ROM proprietarie | Fixture Pokémon GBC/GBA in `public/test-roms/` — sblocca `test.fixme` TSK-135 |
+| EP-009 — Arcade emulation | FBNeo/MAME — epica futura (gap arcade-emulation-engine) |
+| EP-006 — Linux deb packaging | Target `deb` già in electron-builder; CI job opzionale |
+
+---
+
+## Sprint 20 — Mobile-first Responsive & Visual Fidelity Overhaul (EP-022) — 12/12 done · CLOSED
+
+> **Stato:** Sprint 20 **completo** (2026-07-16). EP-022 chiusa (`status: done`). Tutti i TSK-165..176 done.
+>
 > **Obiettivo:** Portare la produzione in parità visiva col prototipo EP-020 su tutti e quattro
 > i viewport (mobile portrait, mobile landscape, tablet, desktop), sanare il bug bloccante P0
 > mobile portrait (navbar overlay che nasconde il tab Play) e riprogettare il logo nel contesto
 > del design system Solids dual-theme.
->
-> **DAG:**
-> - Wave A (parallelo): TSK-165 (audit) ‖ TSK-166+167 (portrait fix P0) ‖ TSK-168 (logo design human)
-> - Wave B (parallelo, dopo Wave A): TSK-169 (logo impl) ‖ TSK-170+171 (landscape) ‖ TSK-172+173 (tablet) ‖ TSK-174+175 (desktop)
-> - Wave C (dopo Wave B): TSK-176 (regression e2e multi-viewport)
->
-> **Note:** TSK-168 è `consumer: human` (gate grafico). Tutti gli altri sono `consumer: agent`.
-> Pipeline FE per ogni TSK fe: `develop → visual-oracle → a11y → ux-ui-review → code-review`.
 
-### Wave A — Audit + interventi critici (parallelo)
+### Wave A — Audit + interventi critici (parallelo) — done
 
 | TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|-----------|
-| TSK-165 | Audit visivo 4 viewport × 4 tab × 2 temi — report EP-022-fidelity-audit.md | US-104 | qa | agent | P1 | M | todo | — |
-| TSK-166 | Fix P0 portrait — nascondi ThemeSwitcher header mobile + aggiungi in Settings | US-105 | fe | agent | P0 | M | todo | — |
-| TSK-167 | e2e Playwright portrait — visibilità + cliccabilità 4 tab + ThemeSwitcher in Settings | US-105 | qa | agent | P0 | S | todo | TSK-166 |
-| TSK-168 | Design SVG dual-theme — 4 varianti logo (horizontal, mono, icon, favicon) [HUMAN] | US-106 | fe | human | P1 | L | todo | — |
+| TSK-165 | Audit visivo 4 viewport × 4 tab × 2 temi — report EP-022-fidelity-audit.md | US-104 | qa | agent | P1 | M | done | — |
+| TSK-166 | Fix P0 portrait — nascondi ThemeSwitcher header mobile + aggiungi in Settings | US-105 | fe | agent | P0 | M | done | — |
+| TSK-167 | e2e Playwright portrait — visibilità + cliccabilità 4 tab + ThemeSwitcher in Settings | US-105 | qa | agent | P0 | S | done | TSK-166 |
+| TSK-168 | Design SVG dual-theme — 4 varianti logo (horizontal, mono, icon, favicon) [HUMAN] | US-106 | fe | human | P1 | L | done | — |
 
-### Wave B — Fix per viewport + logo implementation (parallelo max 4, dopo Wave A)
-
-| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
-|-----|--------|----|-------|----------|------|-----|--------|-----------|
-| TSK-169 | Implementazione SVG logo in packages/app/public/logo + aggiorna import App.tsx | US-106 | fe | agent | P1 | M | todo | TSK-168 |
-| TSK-170 | Fix layout mobile landscape — Tab bar, TouchOverlay safe-area, Player proporzionato | US-107 | fe | agent | P1 | M | todo | TSK-165, TSK-167 |
-| TSK-171 | Visual oracle landscape × 2 temi → EP-022-mobile-landscape/ | US-107 | qa | agent | P1 | S | todo | TSK-170 |
-| TSK-172 | Fix layout tablet — Library 3 col, Settings 2 col, Player portrait | US-108 | fe | agent | P1 | M | todo | TSK-165, TSK-167 |
-| TSK-173 | Visual oracle tablet × 2 temi → EP-022-tablet/ | US-108 | qa | agent | P1 | S | todo | TSK-172 |
-| TSK-174 | Fix delta desktop residui — Library 5 col, Player sidebar, Settings 3 col | US-109 | fe | agent | P2 | M | todo | TSK-165, TSK-167 |
-| TSK-175 | Visual oracle desktop + verifica marker EP-021 → EP-022-desktop/ | US-109 | qa | agent | P2 | S | todo | TSK-174 |
-
-### Wave C — Regression guard finale (dopo Wave B)
+### Wave B — Fix per viewport + logo implementation (parallelo max 4, dopo Wave A) — done
 
 | TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
 |-----|--------|----|-------|----------|------|-----|--------|-----------|
-| TSK-176 | Suite Playwright ep022-multi-viewport.e2e.ts — 4 viewport × 4 tab + doc operativa | US-110 | qa | agent | P1 | L | todo | TSK-167, TSK-171, TSK-173, TSK-175 |
+| TSK-169 | Implementazione SVG logo in packages/app/public/logo + aggiorna import App.tsx | US-106 | fe | agent | P1 | M | done | TSK-168 |
+| TSK-170 | Fix layout mobile landscape — Tab bar, TouchOverlay safe-area, Player proporzionato | US-107 | fe | agent | P1 | M | done | TSK-165, TSK-167 |
+| TSK-171 | Visual oracle landscape × 2 temi → EP-022-mobile-landscape/ | US-107 | qa | agent | P1 | S | done | TSK-170 |
+| TSK-172 | Fix layout tablet — Library 3 col, Settings 2 col, Player portrait | US-108 | fe | agent | P1 | M | done | TSK-165, TSK-167 |
+| TSK-173 | Visual oracle tablet × 2 temi → EP-022-tablet/ | US-108 | qa | agent | P1 | S | done | TSK-172 |
+| TSK-174 | Fix delta desktop residui — Library 5 col, Player sidebar, Settings 3 col | US-109 | fe | agent | P2 | M | done | TSK-165, TSK-167 |
+| TSK-175 | Visual oracle desktop + verifica marker EP-021 → EP-022-desktop/ | US-109 | qa | agent | P2 | S | done | TSK-174 |
 
-DAG Sprint 20:
-- Wave A (parallelo): TSK-165 ‖ TSK-166→TSK-167 ‖ TSK-168 (human gate)
-- Wave B (parallelo max 4): TSK-169→TSK-168; TSK-170→TSK-167,165; TSK-171→TSK-170; TSK-172→TSK-167,165; TSK-173→TSK-172; TSK-174→TSK-167,165; TSK-175→TSK-174
-- Wave C: TSK-176→TSK-167,171,173,175
+### Wave C — Regression guard finale (dopo Wave B) — done
 
-Consumer distribution Sprint 20: agent=11, human=1 (TSK-168).
+| TSK | Titolo | US | layer | consumer | prio | est | status | depends_on |
+|-----|--------|----|-------|----------|------|-----|--------|-----------|
+| TSK-176 | Suite Playwright ep022-multi-viewport.e2e.ts — 4 viewport × 4 tab + doc operativa | US-110 | qa | agent | P1 | L | done | TSK-167, TSK-171, TSK-173, TSK-175 |
 
----
-
-## Lookahead — Sprint 21+ (post-Sprint 20)
-
-| Area | Note |
-|------|------|
-| EP-022 — Verifica device reale (iOS/Android) | Post-fix landscape/tablet: validazione su device fisico (gate umano) |
-| EP-022 — Logo review ux-ui | TSK-168 gate umano sblocca TSK-169; review `ux-ui-reviewer` post implementazione |
-| EP-006 — Code signing Win/macOS | Gate umano: segreti `CSC_*` / Apple notarization (ADR-007) |
-| EP-007 — Capacitor device validation | TSK-059 human in-progress (Android Studio + Xcode gate) |
-| EP-008 — iOS WASM benchmark | TSK-072 human todo (dipende da TSK-059 + device fisico) |
-| EP-019 — e2e full ROM proprietarie (Pokémon GBC/GBA) | Gate umano: aggiungere ROM a `public/test-roms/`; sblocca `test.fixme` TSK-135 |
+Sprint 20 **completo**. EP-022 chiusa.
 
 ---
 
@@ -716,15 +740,13 @@ Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: p
 
 ## Note generali
 
-- **Stato globale (2026-07-03):** 161/163 TSK done · 1 in-progress (TSK-059, human gate device) · 1 todo (TSK-072, human gate iOS device) · **12 todo Sprint 20 (EP-022, TSK-165..176)**.
+- **Stato globale (2026-07-16):** 173/179 TSK done · 6 todo Sprint 21 (TSK-177..182 + TSK-072 human) · **EP-022 chiusa** (`status: done`).
 - **Core web MVP completo** (20/20 done). 49 test verdi, typecheck OK.
 - **TSK-041 done** (bugfix canvas WasmBoy loadState — 8/8 e2e verdi).
 - Sprint 6 — 11/11 task done (EP-010 + EP-011). Tutti completati.
 - Sprint 7 — 6/6 task done (EP-006 desktop). Wave A + Wave B completate (TSK-053..058).
-- Sprint 8 — 9 task EP-007: **8/9 done**; TSK-059 in-progress (human, gate device/Xcode).
-  TSK-060..067 done (TouchOverlay, mobile UX, e2e smoke).
-- Sprint 9 — 11 task: **10/11 done**. Residuo: TSK-072 (human, benchmark iOS WASM su device).
-  TSK-068/071/078 done.
+- Sprint 8 — 9 task EP-007: **9/9 done**; TSK-059 done (Capacitor init). Validazione device fisico → Sprint 21 (US-111, US-113).
+- Sprint 9 — 11 task: **10/11 done**. Residuo: TSK-072 (human, benchmark iOS WASM) — riprogrammato Sprint 21.
 - **Sprint 10 — Remediation a11y & UX/UI (EP-012):** 6/6 done (5 scan TSK-079..083 + fix TSK-084).
   Fix a11y cross-cutting: TSK-084 (P1, **done**) — token contrasto 90s-party/dark/cyberpunk corretti; gap chiuso
   `ds-color-contrast-cross-cutting-90s-party-dark`. 6 TSK skip motivato applicato (infra/asset non-DOM).
@@ -740,9 +762,10 @@ Sprint 19 **completo**. EP-006 chiuso (`status: done`). Prima release desktop: p
 - **Sprint 16 — Bridge RTC reale (EP-019 follow-up):** 3/3 done (TSK-133..135) — Sprint completo (2026-06-30). `WasmBoyRtcBridge` (GBC, MBC3) + `MgbaRtcBridge` (GBA, S-3511A BCD) consegnati (ADR-009 §4); e2e bridge detection sblocca `test.describe.skip` in `ep019-rtc.e2e.ts`. Test suite: 662/662 unit + 30/30 e2e verdi. **EP-019 chiuso** (`status: done`). Residuo (human gate, NON bloccante): fixture ROM Pokémon proprietarie — `test.fixme` con messaggio esplicito, sblocco previa aggiunta manuale in `public/test-roms/`. Consumer distribution Sprint 16: agent=3, human=0.
 - **Sprint 17 — Graphic Refactoring infra + Design Intelligence (EP-020):** **7/7 done** (TSK-136..142). Tailwind + Solids registry + shadcn CLI installati; design brief `wiki/design/ep020-design-brief.md`; prototipo `output/prototypes/ep020/`; UX/UI review prototipo (TSK-142 conditional → finding mappati in Wave B). Consumer distribution Sprint 17: agent=7, human=0.
 - **Sprint 18 — Graphic Refactoring migration + regression (EP-020):** **15/15 done** (TSK-143..157). Migrazione 4 tab + cross-cutting + CSS cleanup; pipeline FE completa (visual-oracle + a11y + ux-ui-review + code-review). Test suite finale: **671/671 unit** + 30/30 e2e verdi. **EP-020 chiuso** (`status: done`, 22/22 TSK totali). Consumer distribution Sprint 18: agent=15, human=0.
-- **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** **7/7 done** (TSK-158..164). EP-021 (TSK-158..161) + US-104 (TSK-162..164: CI AppImage, release-desktop.yml, smoke xvfb). **EP-006 chiuso** (`status: done`).
-- **Kanban hygiene 2026-07-02:** EP-001..006, EP-010..017, EP-021 chiusi (`done`); EP-007/008 `in-progress` (gate human); 161/163 TSK done (post Sprint 19).
-- **Sprint 20 — Mobile-first Responsive & Visual Fidelity (EP-022):** 12 TSK generati (TSK-165..176). Bug P0 US-105 (navbar portrait overlay): fix = nascondi ThemeSwitcher dall'header su ≤640px (decision PO) + aggiungi in Settings. Consumer distribution: agent=11, human=1 (TSK-168 logo design).
+- **Sprint 19 — Visual fidelity (EP-021) + Release desktop (EP-006):** **7/7 done** (TSK-158..164). EP-021 chiuso. US-104 unsigned release consegnata; US-112 code signing in Sprint 21.
+- **Kanban hygiene 2026-07-16:** EP-022 chiusa (`done`); EP-006 riaperta per US-112 signing; 173/179 TSK done.
+- **Sprint 20 — Mobile-first Responsive & Visual Fidelity (EP-022):** **12/12 done** (TSK-165..176). EP-022 chiusa. Regression guard `ep022-multi-viewport.e2e.ts`.
+- **Sprint 21 — Device validation + Code signing:** 7 TSK (TSK-177..182 + TSK-072). US-111 Android, US-113 iOS responsive, US-112 signing Win/macOS. Consumer: agent=2, human=5.
 - **Factory upgrade v2.18 (A11y + UX/UI):** Lint Check 4o/4p attivi.
   Debito pregressi: 6 skip motivati (B: infra/asset) + 21 scansionati (A: EP-012 done).
   Residuo lint a11y/UX: **0** (Check 4o e 4p puliti dopo TSK-084: 21 pass + 6 skip + 5 fix→pass).
