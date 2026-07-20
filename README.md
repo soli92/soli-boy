@@ -87,6 +87,41 @@ Comandi factory: `/run` · `/sync-docs` · `/query` · `/dev` · `/review` · `/
 Roadmap dettagliata: [`management/roadmap.md`](management/roadmap.md) ·
 board: [`management/kanban/sprint.md`](management/kanban/sprint.md).
 
+## Capability Factory
+
+Configurazione dei layer opt-in della factory v2.33 su questo progetto.
+Dettaglio completo: [`factory.config.yaml`](factory.config.yaml) · layer non usati: [`LAYERS-NOT-USED.md`](LAYERS-NOT-USED.md).
+
+### Attive
+
+| Layer | Flag config | Nota |
+|-------|-------------|------|
+| Code Quality Review (CQRL) | `code_quality.enabled: true` | 3 pass (idiomaticity / design / robustness); loop max 3 iterazioni |
+| FE Visual Oracle | `fe_correctness.enabled: true` | Render headless multi-viewport/tema + critica LLM su ogni TSK FE |
+| FE Functional Oracle | `fe_correctness.functional_oracle.enabled: true` | Esercita il flusso reale (carica ROM → avvia → asserzioni); verdict deterministico |
+| Accessibility Testing (A11y) | `a11y.enabled: true` | WCAG 2.2 AA via axe-playwright; agente a11y-specialist attivo |
+| UX/UI Review & Design | `ux_ui.enabled: true` | Rubrica anti-soggettivita' + agenti ux-ui-reviewer + ui-designer |
+| Design Intelligence Layer | `design_intelligence.enabled: true` | Art-director DSL + Critic/Judge 6 principi + Intention Economy |
+| Prototype Generation Layer | `prototyping.enabled: true` | Cascata figma→penpot→react→html; fallback html garantito |
+| Compression Output (Caveman) | `compression.output.enabled: true` | Policy conservative; riduce overhead messaggi agent-to-agent |
+| Compression Context (Graphify) | `compression.context.enabled: true` | Knowledge graph di `packages/app` come context replacement |
+| Task Analytics + Dogfooding | `analytics.measurement.enabled: true` | Misura costo reale agenti; harvest token su SessionEnd |
+| Token Ledger | `analytics.token_ledger.enabled: true` | Display token reali inline dopo ogni operazione |
+| Kanban Publish (GitHub) | `kanban_publish.provider: github` | Mirror push-only su `soli92/soli-boy` GH Issues/Milestones |
+
+### Disattivate
+
+| Layer | Flag config | Nota |
+|-------|-------------|------|
+| VCS Branch Awareness | `branch_awareness.enabled: false` | Monorepo single-HEAD: layer degenere, nessun submodule da allineare |
+| Semantic Drift Detection L3 | `wiki_lint.semantic_check.enabled: false` | L1 staleness always-on sufficiente per il volume wiki corrente |
+| Tavola Rotonda Mode | `tavola_rotonda.enabled: false` | Dominio single-dev: deliberazione multi-agente non necessaria |
+| Hybrid Wiki Search | `wiki_search.enabled: false` | 57 pagine wiki: ricerca testuale sufficiente |
+| Temporal Estimate Protocol | `temporal.estimate_protocol.enabled: false` | Sprint brevi: stima adattiva elapsed non necessaria |
+| Capability Formativa (Tutoring) | `capability_formativa.enabled: false` | Nessun use case tutoring adattivo |
+| Content Share Consumer Layer | `content_share.enabled: false` | Dispatch verso soli-frames non attivato |
+| Voice Channel / Voice Hardening | non scaffolded | Progetto non-voice (emulatore web): nessun I/O audio agente |
+
 ## Licenza
 
 Da definire. Il progetto non veicola contenuti protetti da copyright.
