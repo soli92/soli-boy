@@ -217,3 +217,63 @@ Re-scan iter-2 (axe-playwright, 3 temi × 2 viewport + scope sintetico): **0 fin
 **Impatto:** medio. Il tab Play NON è cliccabile con tap a centro-schermo su iPhone 14 Pro portrait quando si trova alla sinistra del nav overflowed con centering. Impatta l'UX reale (tap touch). Va aperto TSK separato (layer: fe, priority: P1).
 **Azione richiesta (TPM):** aprire TSK fe layer, P1, fix `justify-content` su TabsList in App.tsx o tabs.tsx; US-105 o nuova US.
 
+## 2026-08-24 — dangling-concept batch (sweep-reviews EP-056 battle-test)
+
+**Origine:** sweep-reviews (EP-056) — pass di qualità semantica su `wiki/`. Detector ha
+rilevato 29 wikilink `[[X]]` verso pagine inesistenti. Nessuno è typo/variante di una pagina
+soli-boy esistente (verifica manuale sulle pagine referenzianti): sono concetti del
+**meta-framework factory** (o di prodotti esterni) citati come cross-reference ma privi di
+pagina-concetto locale e privi di una fonte in `raw/` che li supporti. Risoluzione onesta =
+gap (nessuna pagina fabbricata, coerente con `sweep-reviews-protocol` §dangling-concept:
+"crea stub SE supportato da ≥1 fonte, altrimenti apri gap").
+
+### Cluster A — pattern/architettura del compression layer e framework
+- [[circuit-breaker]] — referenziato da concepts/factory-compression-layer.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[code-quality-review-layer]] — referenziato da concepts/factory-compression-layer.md, runbooks/accessibility-testing-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[evaluator-optimizer]] — referenziato da concepts/factory-compression-layer.md, runbooks/ux-ui-design-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[federated-topology]] — referenziato da concepts/factory-compression-layer.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[orchestrator-workers]] — referenziato da concepts/factory-compression-layer.md, concepts/knowledge-graph-codebase.md, syntheses/token-reduction-tools.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[parallel-scheduler]] — referenziato da concepts/factory-compression-layer.md, concepts/token-compression.md, runbooks/accessibility-testing-runbook.md, runbooks/compression-validation-template.md, syntheses/token-reduction-tools.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test). Nota: esiste la skill `.claude/skills/parallel-scheduling.md` (namespace diverso, nome diverso); non è una pagina-concetto wiki, quindi il link resta dangling e non è un typo correggibile.
+- [[stack-aware-ruleset]] — referenziato da concepts/factory-compression-layer.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[sync-adapters]] — referenziato da concepts/factory-compression-layer.md, concepts/knowledge-graph-codebase.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[verifier-as-gate]] — referenziato da concepts/factory-compression-layer.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+
+### Cluster B — riferimenti a source/deep-dive con prefisso data (raw senza pagina wiki)
+- [[2026-05-28-caveman-deep-dive]] — referenziato da concepts/factory-compression-layer.md ma assente (source `raw/caveman_deep_dive.md` non promosso a pagina wiki) — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[2026-05-28-graphify-deep-dive]] — referenziato da concepts/factory-compression-layer.md ma assente (source `raw/graphify_deep_dive.md` non promosso a pagina wiki) — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[2026-06-03-accessibility-testing-capability]] — referenziato da runbooks/accessibility-testing-runbook.md ma assente (source `raw/accessibility-testing-capability.md` non promosso) — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[2026-06-03-ux-ui-capability]] — referenziato da runbooks/ux-ui-design-runbook.md, runbooks/ux-ui-review-runbook.md ma assente (source `raw/ux-ui-capability.md` non promosso) — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[migration-v214]] — referenziato da concepts/factory-compression-layer.md, runbooks/compression-validation-template.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[migration-v214-fase2]] — referenziato da concepts/factory-compression-layer.md, runbooks/graphify-installation.md, runbooks/wiki-as-graph-poc-template.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+
+### Cluster C — capability a11y / UX-UI importate (concetti generici, non prodotto)
+- [[accessibility-testing-capability]] — referenziato da runbooks/accessibility-testing-runbook.md, runbooks/ux-ui-design-runbook.md, runbooks/ux-ui-review-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[axe-core]] — referenziato da runbooks/accessibility-testing-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[wcag-automated-coverage-limit]] — referenziato da runbooks/accessibility-testing-runbook.md, runbooks/ux-ui-review-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[ux-ui-review-design-capability]] — referenziato da runbooks/accessibility-testing-runbook.md, runbooks/ux-ui-design-runbook.md, runbooks/ux-ui-review-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[ux-ui-rubric-anti-subjectivity]] — referenziato da runbooks/ux-ui-design-runbook.md, runbooks/ux-ui-review-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[correctness-oracle]] — referenziato da runbooks/ux-ui-design-runbook.md, runbooks/ux-ui-review-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[design-token]] — referenziato da runbooks/ux-ui-design-runbook.md, runbooks/ux-ui-review-runbook.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test). Nota: esiste concepts/temi-e-design-token-solids.md ma è il concetto SoliDS-specifico di prodotto, distinto dal design-token generico citato in questi runbook di capability → non è un typo correggibile.
+
+### Cluster D — pattern wiki-as-graph / llm-wiki
+- [[citation-grounded]] — referenziato da runbooks/wiki-as-graph-poc-sub-corpus-snapshot.md, runbooks/wiki-as-graph-poc-template.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[llm-wiki-pattern]] — referenziato da runbooks/wiki-as-graph-poc-template.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[promotion-pipeline]] — referenziato da runbooks/wiki-as-graph-poc-template.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+
+### Cluster E — persone/entità del framework
+- [[andrej-karpathy]] — referenziato da concepts/factory-compression-layer.md, concepts/knowledge-graph-codebase.md, entities/graphify.md, syntheses/token-reduction-tools.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+
+### Cluster F — content-share / soli-frames (prodotto esterno)
+- [[content-share-hub-pattern]] — referenziato da runbooks/content-share-setup.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[soli-frames]] — referenziato da runbooks/content-share-setup.md ma assente (repo/prodotto esterno) — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+- [[soli-frames-integration]] — referenziato da runbooks/content-share-setup.md ma assente — aperto 2026-08-24 (sweep-reviews EP-056 battle-test)
+
+**Nota di verifica (onestà detection):** il detector battle-test `sweep_detect.py` conta i
+`[[...]]` grezzi nelle pagine e **non** implementa l'esenzione "presente in `wiki/gaps.md`"
+prevista dal `sweep-reviews-protocol` (§Categorie: dangling = link inesistente *e* non in
+gaps.md). Di conseguenza, dopo questa registrazione il conteggio grezzo resta 29: le 29
+occorrenze vivono ancora nelle pagine sorgente (non sono state fabbricate pagine né rimossi i
+link dai design-doc). La risoluzione onesta qui è il **tracciamento** in gaps.md, non
+l'azzeramento del contatore ingenuo. Feedback per l'hardening EP-056: il detector dovrebbe
+escludere gli slug già tracciati in `wiki/gaps.md` (e la stessa `gaps.md` come pagina-sorgente).
+
